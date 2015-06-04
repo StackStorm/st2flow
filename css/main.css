@@ -1,0 +1,13 @@
+@import '../node_modules/normalize.css/normalize.css';
+
+html {
+  color: #222;
+  font-size: 1em;
+  line-height: 1.4;
+}
+
+.some {
+  &thing {
+    color: red;
+  }
+}
