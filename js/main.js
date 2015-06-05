@@ -92,6 +92,15 @@ let draw
     draw(graph) {
       this.graph = graph;
 
+      // Temporary transformation to separate data from representation
+      {
+        _.each(this.graph.edges(), (e) => {
+          let edge = this.graph.edge(e.v, e.w);
+
+          edge.class = "st2-viewer__edge--" + edge.type;
+        });
+      }
+
       try {
         render(this.element, this.graph);
 

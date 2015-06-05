@@ -43,9 +43,18 @@ main {
   }
 
   .edgePath path {
-    stroke: #555;
-    fill: #555;
     stroke-width: 1.5px;
+  }
+
+  &__edge {
+    &--success path {
+      stroke: #050;
+      fill: #050;
+    }
+    &--failure path {
+      stroke: #500;
+      fill: #500;
+    }
   }
 }
 
