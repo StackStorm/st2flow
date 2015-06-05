@@ -101,11 +101,21 @@ let draw
         });
       }
 
+      let ok = this.render();
+
+      if (ok) {
+        this.centerElement();
+      }
+    }
+
+    render() {
       try {
         render(this.element, this.graph);
 
-        this.centerElement();
-      } catch(e) {}
+        return true;
+      } catch(e) {
+        return false;
+      }
     }
 
     centerElement() {
