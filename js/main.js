@@ -15,7 +15,8 @@ let draw
     let ast = YAML.safeLoad(data)
       , graph = new dagreD3.graphlib.Graph().setGraph({});
 
-    if (ast.chain && ast.chain.length) {
+    if (ast.chain && !_.isEmpty(ast.chain)) {
+
       _.each(ast.chain, (node) => {
         graph.setNode(node.name, {
           label: node.name
@@ -33,6 +34,43 @@ let draw
           });
         }
       });
+
+    } else if (ast.workflows && !_.isEmpty(ast.workflows)) {
+
+      _.each(ast.workflows, (wf) => {
+        _.each(wf.tasks, (task, task_name) => {
+
+          graph.setNode(task_name, {
+            label: task_name
+          });
+
+          if (task['on-success']) {
+            _.each(task['on-success'], (target) => {
+              graph.setEdge(task_name, target, {
+                type: 'success'
+              });
+            });
+          }
+
+          if (task['on-error']) {
+            _.each(task['on-error'], (target) => {
+              graph.setEdge(task_name, target, {
+                type: 'failure'
+              });
+            });
+          }
+
+          if (task['on-complete']) {
+            _.each(task['on-complete'], (target) => {
+              graph.setEdge(task_name, target, {
+                type: 'complete'
+              });
+            });
+          }
+
+        });
+      });
+
     }
 
     draw(graph);

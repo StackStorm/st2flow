@@ -53,6 +53,11 @@ main {
   }
 
   &__edge {
+    &--complete path {
+      stroke: #aa0;
+      fill: #aa0;
+    }
+
     &--success path {
       stroke: #0a0;
       fill: #0a0;
