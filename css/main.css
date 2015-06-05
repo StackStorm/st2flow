@@ -1,13 +1,71 @@
 @import '../node_modules/normalize.css/normalize.css';
 
+html, body, main {
+  height: 100%;
+  overflow: hidden;
+}
+
 html {
   color: #222;
   font-size: 1em;
   line-height: 1.4;
 }
 
-.some {
-  &thing {
-    color: red;
+main {
+  display: flex;
+}
+
+
+.st2-viewer {
+  flex: 1;
+
+  height: 100%;
+
+  background-color: #111;
+
+  position: relative;
+
+  &__canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  text {
+    font-weight: 300;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
+    font-size: 14px;
+  }
+
+  .node rect {
+    stroke: #777;
+    fill: #555;
+    stroke-width: 1.5px;
+  }
+
+  .edgePath path {
+    stroke: #555;
+    fill: #555;
+    stroke-width: 1.5px;
+  }
+}
+
+.st2-editor {
+  flex: 1;
+
+  ::-webkit-scrollbar {
+    width: 0.5em;
+  }
+
+  ::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.8);
+  }
+
+  ::-webkit-scrollbar-corner,
+  ::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(100, 100, 100, 0.4);
   }
 }
