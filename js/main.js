@@ -104,9 +104,7 @@ let draw
 // ------
 {
   let d3 = require('d3')
-    , dagreD3 = require('dagre-d3');
-
-  let render = dagreD3.render();
+    , dagre = require('dagre-d3').dagre;
 
   class Canvas {
     constructor() {
@@ -147,11 +145,83 @@ let draw
     }
 
     render() {
+      let createNodes = require("dagre-d3/lib/create-nodes")
+        , createClusters = require("dagre-d3/lib/create-clusters")
+        , createEdgeLabels = require("dagre-d3/lib/create-edge-labels")
+        , createEdgePaths = require("dagre-d3/lib/create-edge-paths")
+        , positionNodes = require("dagre-d3/lib/position-nodes")
+        , positionEdgeLabels = require("dagre-d3/lib/position-edge-labels")
+        , positionClusters = require("dagre-d3/lib/position-clusters")
+        , shapes = require("dagre-d3/lib/shapes")
+        , arrows = require("dagre-d3/lib/arrows")
+        ;
+
+      let createOrSelectGroup = function (root, name) {
+        var selection = root.select("g." + name);
+        if (selection.empty()) {
+          selection = root.append("g").attr("class", name);
+        }
+        return selection;
+      };
+
+      var NODE_DEFAULT_ATTRS = {
+        paddingLeft: 10,
+        paddingRight: 10,
+        paddingTop: 10,
+        paddingBottom: 10,
+        rx: 0,
+        ry: 0,
+        shape: "rect"
+      };
+
+      var EDGE_DEFAULT_ATTRS = {
+        arrowhead: "normal",
+        lineInterpolate: "linear"
+      };
+
+      let svg = this.element
+        , g = this.graph
+        ;
+
       try {
-        render(this.element, this.graph);
+        g.nodes().forEach(function(v) {
+          var node = g.node(v);
+          if (!_.has(node, "label") && !g.children(v).length) { node.label = v; }
+
+          _.defaults(node, NODE_DEFAULT_ATTRS);
+
+          _.each(["paddingLeft", "paddingRight", "paddingTop", "paddingBottom"], function(k) {
+            node[k] = Number(node[k]);
+          });
+        });
+
+        g.edges().forEach(function(e) {
+          var edge = g.edge(e);
+          if (!_.has(edge, "label")) { edge.label = ""; }
+          _.defaults(edge, EDGE_DEFAULT_ATTRS);
+        });
+
+        let outputGroup = createOrSelectGroup(svg, "output")
+          , clustersGroup = createOrSelectGroup(outputGroup, "clusters")
+          , edgePathsGroup = createOrSelectGroup(outputGroup, "edgePaths")
+          , edgeLabels = createEdgeLabels(createOrSelectGroup(outputGroup, "edgeLabels"), g)
+          ;
+
+        let nodes = createNodes(createOrSelectGroup(outputGroup, "nodes"), g, shapes)
+          ;
+
+        dagre.layout(g);
+
+        positionNodes(nodes, g);
+        positionEdgeLabels(edgeLabels, g);
+        createEdgePaths(edgePathsGroup, g, arrows);
+
+        var clusters = createClusters(clustersGroup, g);
+        positionClusters(clusters, g);
 
         return true;
       } catch(e) {
+        console.error(e);
         return false;
       }
     }
