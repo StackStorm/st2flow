@@ -36,10 +36,16 @@ main {
     font-size: 14px;
   }
 
-  .node rect {
-    stroke: #777;
-    fill: #555;
-    stroke-width: 1.5px;
+  .node {
+    rect {
+      stroke: #eee;
+      fill: #333;
+      stroke-width: 1px;
+    }
+
+    .label {
+      fill: #eee;
+    }
   }
 
   .edgePath path {
@@ -48,12 +54,13 @@ main {
 
   &__edge {
     &--success path {
-      stroke: #050;
-      fill: #050;
+      stroke: #0a0;
+      fill: #0a0;
     }
+
     &--failure path {
-      stroke: #500;
-      fill: #500;
+      stroke: #a00;
+      fill: #a00;
     }
   }
 }
