@@ -120,8 +120,12 @@ let draw
 
     centerElement() {
       if (this.element) {
-        let xCenterOffset = (this.svg[0][0].clientWidth - this.graph.graph().width) / 2;
-        let yCenterOffset = (this.svg[0][0].clientHeight - this.graph.graph().height) / 2;
+        let canvasBounds = this.svg[0][0].getBoundingClientRect()
+          , elementBounds = this.element[0][0].getBoundingClientRect();
+
+        let xCenterOffset = (canvasBounds.width - elementBounds.width) / 2;
+        let yCenterOffset = (canvasBounds.height - elementBounds.height) / 2;
+
         this.element.attr('transform', 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')');
       }
     }
