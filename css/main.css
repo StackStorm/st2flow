@@ -36,23 +36,25 @@ main {
     font-size: 14px;
   }
 
-  .node {
+  &__node {
     rect {
       stroke: #eee;
       fill: #333;
       stroke-width: 1px;
     }
 
-    .label {
+    &-label {
       fill: #eee;
     }
   }
 
-  .edgePath path {
-    stroke-width: 1.5px;
-  }
-
   &__edge {
+    &-path {
+      stroke-width: 1.5px;
+      stroke: white;
+      fill: none;
+    }
+
     &--complete path {
       stroke: #aa0;
       fill: #aa0;
