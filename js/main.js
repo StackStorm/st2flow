@@ -2,6 +2,8 @@
 
 let _ = require('lodash');
 
+require('object.observe');
+
 let draw
   , parse;
 
@@ -167,7 +169,10 @@ let draw
       svgNodes.enter()
         .append('g')
           .attr('class', st2Class('node'))
-          .style('opacity', 0);
+          .style('opacity', 0)
+          .on('click', (name) => {
+            g.__selected__ = name;
+          });
 
       // For every node currently in selection
       svgNodes.each(function(name) {
@@ -182,6 +187,16 @@ let draw
           // Set IDs
           if (node.id) { nodeGroup.attr('id', node.id); }
           if (node.labelId) { labelGroup.attr('id', node.labelId); }
+        }
+
+        {
+          // Set __selected__ handler
+          Object.observe(g, (changes) => {
+            let targetName = _.findLast(changes, {name: '__selected__'}).object.__selected__;
+
+            nodeGroup
+              .classed(st2Class('node--selected'), name === targetName);
+          });
         }
 
         {

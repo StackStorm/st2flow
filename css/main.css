@@ -37,13 +37,20 @@ main {
   }
 
   &__node {
+    cursor: pointer;
+
     rect {
       fill: #333;
       stroke-width: 1px;
     }
 
+    &--selected rect {
+      fill: #336;
+    }
+
     &-label {
       fill: #eee;
+      user-select: none;
     }
   }
 
