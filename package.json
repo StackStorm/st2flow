@@ -41,7 +41,7 @@
     "dagre-d3": "^0.4.8",
     "js-yaml": "^3.3.1",
     "lodash": "^3.9.3",
-    "normalize.css": "^3.0.3",
-    "object.observe": "^0.2.4"
+    "mixin": "^0.2.0",
+    "normalize.css": "^3.0.3"
   }
 }

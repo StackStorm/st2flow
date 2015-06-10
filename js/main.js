@@ -1,8 +1,9 @@
 'use strict';
 
-let _ = require('lodash');
-
-require('object.observe');
+let _ = require('lodash')
+  , EventEmitter = require('events').EventEmitter
+  , mixin = require('mixin')
+  ;
 
 let draw
   , parse;
@@ -13,60 +14,85 @@ let draw
   let YAML = require('js-yaml')
     , dagreD3 = require('dagre-d3');
 
+  class Graph extends mixin(dagreD3.graphlib.Graph, EventEmitter) {
+    constructor() {
+      super();
+
+      this.setMaxListeners(0);
+    }
+    select(name) {
+      this.__selected__ = name;
+      this.emit('select', name);
+    }
+    get selected() {
+      return this.node(this.__selected__);
+    }
+    isSelected(name) {
+      return this.__selected__ === name;
+    }
+  }
+
+  class Node {
+    constructor(graph, name) {
+      this.label = name;
+
+      this.graph = graph;
+      this.graph.setNode(name, this);
+    }
+
+    select() {
+      this.graph.select(this.label);
+    }
+
+    isSelected() {
+      return this.graph.isSelected(this.label);
+    }
+
+    connectTo(target, type='success') {
+      this.graph.setEdge(this.label, target, { type });
+    }
+  }
+
   parse = (data) => {
     let ast = YAML.safeLoad(data)
-      , graph = new dagreD3.graphlib.Graph().setGraph({});
+      , graph = new Graph().setGraph({});
 
     if (ast.chain && !_.isEmpty(ast.chain)) {
 
-      _.each(ast.chain, (node) => {
-        graph.setNode(node.name, {
-          label: node.name
-        });
+      _.each(ast.chain, (task) => {
+        let node = new Node(graph, task.name);
 
-        if (node['on-success']) {
-          graph.setEdge(node.name, node['on-success'], {
-            type: 'success'
-          });
+        if (task['on-success']) {
+          node.connectTo(task['on-success'], 'success');
         }
 
-        if (node['on-failure']) {
-          graph.setEdge(node.name, node['on-failure'], {
-            type: 'failure'
-          });
+        if (task['on-failure']) {
+          node.connectTo(task['on-failure'], 'failure');
         }
       });
 
     } else if (ast.workflows && !_.isEmpty(ast.workflows)) {
 
-      _.each(ast.workflows, (wf) => {
+      _.each(ast.workflows, (wf, wf_name) => {
         _.each(wf.tasks, (task, task_name) => {
 
-          graph.setNode(task_name, {
-            label: task_name
-          });
+          let node = new Node(graph, wf_name + ':' + task_name);
 
           if (task['on-success']) {
             _.each(task['on-success'], (target) => {
-              graph.setEdge(task_name, target, {
-                type: 'success'
-              });
+              node.connectTo(wf_name + ':' + target, 'success');
             });
           }
 
           if (task['on-error']) {
             _.each(task['on-error'], (target) => {
-              graph.setEdge(task_name, target, {
-                type: 'failure'
-              });
+              node.connectTo(wf_name + ':' + target, 'failure');
             });
           }
 
           if (task['on-complete']) {
             _.each(task['on-complete'], (target) => {
-              graph.setEdge(task_name, target, {
-                type: 'complete'
-              });
+              node.connectTo(wf_name + ':' + target, 'complete');
             });
           }
 
@@ -114,8 +140,10 @@ let draw
 
   let st2Class = (element) => `st2-viewer__${element}`;
 
-  class Canvas {
+  class Canvas extends EventEmitter {
     constructor() {
+      super();
+
       this.svg = d3
         .select('#canvas svg');
 
@@ -171,7 +199,7 @@ let draw
           .attr('class', st2Class('node'))
           .style('opacity', 0)
           .on('click', (name) => {
-            g.__selected__ = name;
+            this.emit('node:select', name, d3.event);
           });
 
       // For every node currently in selection
@@ -190,12 +218,9 @@ let draw
         }
 
         {
-          // Set __selected__ handler
-          Object.observe(g, (changes) => {
-            let targetName = _.findLast(changes, {name: '__selected__'}).object.__selected__;
-
-            nodeGroup
-              .classed(st2Class('node--selected'), name === targetName);
+          g.on('select', () => {
+            let result = node.isSelected();
+            nodeGroup.classed(st2Class('node--selected'), result);
           });
         }
 
@@ -444,6 +469,19 @@ let draw
   }
 
   let canvas = new Canvas();
+
+  canvas.on('node:select', function (name, event) {
+    let mode = event.shiftKey && 'edit';
+
+    switch(mode) {
+      case 'edit':
+        this.graph.selected.connectTo(name);
+        draw(this.graph);
+        break;
+      default:
+        this.graph.select(name);
+    }
+  });
 
   draw = (graph) => {
     canvas.draw(graph);
