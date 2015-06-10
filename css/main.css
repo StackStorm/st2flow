@@ -33,12 +33,11 @@ main {
   text {
     font-weight: 300;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
-    font-size: 14px;
+    font-size: 12px;
   }
 
   &__node {
     rect {
-      stroke: #eee;
       fill: #333;
       stroke-width: 1px;
     }

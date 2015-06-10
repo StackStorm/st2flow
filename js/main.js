@@ -105,6 +105,7 @@ let draw
 {
   let d3 = require('d3')
     , dagreD3 = require('dagre-d3')
+    , intersectRect = require('dagre-d3/lib/intersect/intersect-rect')
     ;
 
   let render = dagreD3.render();
@@ -118,8 +119,8 @@ let draw
 
       this.clear();
 
-      render.createNodes(this.createNodes);
-      render.createEdgePaths(this.createEdgePaths);
+      render.createNodes(this.createNodes.bind(this));
+      render.createEdgePaths(this.createEdgePaths.bind(this));
     }
 
     clear() {
@@ -153,9 +154,9 @@ let draw
       }
     }
 
-    createNodes(selection, g, shapes) {
+    createNodes(selection, g) {
       // Initialize selection with data set
-      let svgNodes = selection.selectAll(`g.${ st2Class('node') }`)
+      let svgNodes = selection.selectAll('.' + st2Class('node'))
         .data(g.nodes(), (v) => v)
         .classed('update', true);
 
@@ -169,18 +170,17 @@ let draw
           .style('opacity', 0);
 
       // For every node currently in selection
-      svgNodes.each(function(v) {
-        let node = g.node(v),
-            thisGroup = d3.select(this),
-            shape = shapes[node.shape];
+      svgNodes.each(function(name) {
+        let node = g.node(name),
+            nodeGroup = d3.select(this);
 
         node.elem = this;
 
-        let labelGroup = thisGroup.append('g').attr('class', st2Class('node-label'));
+        let labelGroup = nodeGroup.append('g').attr('class', st2Class('node-label'));
 
         {
           // Set IDs
-          if (node.id) { thisGroup.attr('id', node.id); }
+          if (node.id) { nodeGroup.attr('id', node.id); }
           if (node.labelId) { labelGroup.attr('id', node.labelId); }
         }
 
@@ -212,25 +212,60 @@ let draw
 
         {
           // Set class
-          thisGroup
+          nodeGroup
             .attr('class', st2Class('node'));
         }
 
-        {
+        (padding) => {
           // Add paddings
-          bbox.width += node.paddingLeft + node.paddingRight;
-          bbox.height += node.paddingTop + node.paddingBottom;
+          let top = 0
+            , right = 0
+            , bottom = 0
+            , left = 0
+            ;
 
-          let xNormOffset = (node.paddingLeft - node.paddingRight) / 2
-            , yNormOffset = (node.paddingTop - node.paddingBottom) / 2
+          if (_.isArray(padding)) {
+            [top, right, bottom, left] = padding;
+          } else if (_.isPlainObject(padding)) {
+            ({top, left, bottom, right} = padding); // jshint ignore:line
+          } else if (_.isString(padding)){
+            let _padding = _.parseInt(padding);
+
+            top = _padding;
+            left = _padding;
+            bottom = _padding;
+            right = _padding;
+          } else if (_.isNumber(padding)) {
+            top = padding;
+            left = padding;
+            bottom = padding;
+            right = padding;
+          }
+
+          bbox.width += left + right;
+          bbox.height += top + bottom;
+
+          let xNormOffset = (left - right) / 2
+            , yNormOffset = (top - bottom) / 2
             ;
 
           labelGroup.attr('transform', `translate(${xNormOffset},${yNormOffset})`);
-        }
+        }(7);
 
         {
           // Pick node shape
-          let shapeSvg = shape(d3.select(this), bbox, node);
+          let shapeSvg = nodeGroup.insert('rect', ':first-child')
+            .attr('rx', 5)
+            .attr('ry', 5)
+            .attr('x', -bbox.width / 2)
+            .attr('y', -bbox.height / 2)
+            .attr('width', bbox.width)
+            .attr('height', bbox.height);
+
+          node.intersect = function(point) {
+            return intersectRect(node, point);
+          };
+
           shapeSvg
             .attr('style', node.style);
 
@@ -253,7 +288,7 @@ let draw
       let escapeId = (str) => str ? String(str).replace(/:/g, '\\:') : '';
 
       // Initialize selection with data set
-      let svgPaths = selection.selectAll(`g.${st2Class('edge')}`)
+      let svgPaths = selection.selectAll('.' + st2Class('edge'))
         .data(g.edges(), (e) => `${escapeId(e.v)}:${escapeId(e.w)}:${escapeId(e.name)}`);
 
       {
@@ -277,8 +312,8 @@ let draw
                 });
 
             let line = d3.svg.line()
-              .x(function(d) { return d.x; })
-              .y(function(d) { return d.y; });
+              .x((d) => d.x)
+              .y((d) => d.y);
 
             return line(points);
           });
@@ -297,7 +332,7 @@ let draw
           .remove();
 
         // TODO: This very much looks like an artifact, either badly transferred from dagre-d3 or pending refactoring there. Figure out whether we have any use for that.
-        svgPathExit.select(`path.${st2Class('edge-path')}`)
+        svgPathExit.select('.' + st2Class('edge-path'))
           .attr('d', function(e) {
             let source = g.node(e.v);
 
@@ -336,7 +371,7 @@ let draw
 
       {
         // For every path
-        svgPaths.selectAll(`path.${st2Class('edge-path')}`)
+        svgPaths.selectAll('.' + st2Class('edge-path'))
           .each(function(e) {
             let edge = g.edge(e);
             edge.arrowheadId = _.uniqueId('arrowhead');
@@ -349,17 +384,17 @@ let draw
 
             domEdge
               .attr('d', function(e) {
-                let edge = g.edge(e),
-                    tail = g.node(e.v),
-                    head = g.node(e.w),
-                    points = edge.points.slice(1, edge.points.length - 1);
+                let edge = g.edge(e)
+                  , tail = g.node(e.v)
+                  , head = g.node(e.w)
+                  , points = edge.points.slice(1, edge.points.length - 1);
 
                 points.unshift(tail.intersect(points[0]));
                 points.push(head.intersect(points[points.length - 1]));
 
                 let line = d3.svg.line()
-                  .x(function(d) { return d.x; })
-                  .y(function(d) { return d.y; });
+                  .x((d) => d.x)
+                  .y((d) => d.y);
 
                 return line(points);
               });
