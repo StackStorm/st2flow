@@ -7,7 +7,8 @@ let _ = require('lodash')
 
 let canvas
   , graph
-  , parse;
+  , editor
+  ;
 
 // Parser
 // ------
@@ -26,6 +27,8 @@ let canvas
         'actionchain': ActionChainSpec,
         'mistral': MistralSpec
       };
+
+      this.notifyChange = _.debounce(() => this.emit('update', this), 0);
     }
 
     parse(code) {
@@ -40,12 +43,19 @@ let canvas
           console.log('More than one candidate found. Picking the first one and hope...');
         }
 
-        _.each(this.nodes(), (v) => this.removeNode(v));
+        this.reset();
 
-        _.first(candidates).buildGraph(ast, this);
+        this.spec = _.first(candidates);
+        this.spec.buildGraph(ast, this);
 
-        this.emit('update', this);
+        this.notifyChange();
       }
+    }
+
+    serialize() {
+      let ast = this.spec.buildAST(this);
+
+      return YAML.safeDump(ast);
     }
 
     select(name) {
@@ -61,7 +71,11 @@ let canvas
 
     connect(source, target, type='success') {
       this.setEdge(source, target, { type });
-      this.emit('update', this);
+      this.notifyChange();
+    }
+
+    reset() {
+      _.each(this.nodes(), (v) => this.removeNode(v));
     }
   }
 
@@ -89,9 +103,11 @@ let canvas
   class WorkflowSpec {
     static selector() {
       console.error('Not implemented');
-      return false;
     }
     static buildGraph() {
+      console.error('Not implemented');
+    }
+    static buildAST() {
       console.error('Not implemented');
     }
   }
@@ -104,6 +120,8 @@ let canvas
       _.each(ast.chain, (task) => {
         let node = new Node(graph, task.name);
 
+        node.ast = task;
+
         if (task['on-success']) {
           node.connectTo(task['on-success'], 'success');
         }
@@ -111,6 +129,21 @@ let canvas
         if (task['on-failure']) {
           node.connectTo(task['on-failure'], 'failure');
         }
+      });
+
+      graph.setGraph({ ast });
+    }
+    static buildAST(graph) {
+      let tasks = _.map(graph.nodes(), (v) => {
+        let node = graph.node(v);
+
+        return _.assign(node.ast, {
+          name: node.label
+        });
+      });
+
+      return  _.assign(graph.graph().ast, {
+        chain: tasks
       });
     }
   }
@@ -158,19 +191,11 @@ let canvas
   require('brace/mode/yaml');
   require('brace/theme/monokai');
 
-  let editor = ace.edit('editor');
+  editor = ace.edit('editor');
   editor.getSession().setMode('ace/mode/yaml');
   editor.setTheme('ace/theme/monokai');
 
   editor.$blockScrolling = Infinity;
-
-  window.editor = editor;
-
-  editor.on('change', _.debounce(function () {
-    let str = editor.env.document.doc.getAllLines();
-
-    parse(str.join('\n'));
-  }, 100));
 }
 
 
@@ -534,9 +559,15 @@ let canvas
     canvas.draw(graph);
   });
 
-  parse = (data) => {
-    graph.parse(data);
-  };
+  graph.on('update', (graph) => {
+    editor.getSession().setValue(graph.serialize());
+  });
+
+  editor.on('change', _.debounce(function () {
+    let str = editor.env.document.doc.getAllLines();
+
+    graph.parse(str.join('\n'));
+  }, 100));
 
   window.addEventListener('resize', () => {
     canvas.centerElement();
