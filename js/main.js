@@ -5,7 +5,8 @@ let _ = require('lodash')
   , mixin = require('mixin')
   ;
 
-let draw
+let canvas
+  , graph
   , parse;
 
 // Parser
@@ -19,7 +20,34 @@ let draw
       super();
 
       this.setMaxListeners(0);
+      this.setGraph({});
+
+      this.specs = {
+        'actionchain': ActionChainSpec,
+        'mistral': MistralSpec
+      };
     }
+
+    parse(code) {
+      let ast = YAML.safeLoad(code);
+
+      let candidates = _.filter(this.specs, (spec) => spec.selector(ast));
+
+      if (!candidates) {
+        console.log('No spec candidates found. Skipping building graph...');
+      } else {
+        if (candidates.length > 1) {
+          console.log('More than one candidate found. Picking the first one and hope...');
+        }
+
+        _.each(this.nodes(), (v) => this.removeNode(v));
+
+        _.first(candidates).buildGraph(ast, this);
+
+        this.emit('update', this);
+      }
+    }
+
     select(name) {
       this.__selected__ = name;
       this.emit('select', name);
@@ -29,6 +57,11 @@ let draw
     }
     isSelected(name) {
       return this.__selected__ === name;
+    }
+
+    connect(source, target, type='success') {
+      this.setEdge(source, target, { type });
+      this.emit('update', this);
     }
   }
 
@@ -48,17 +81,26 @@ let draw
       return this.graph.isSelected(this.label);
     }
 
-    connectTo(target, type='success') {
-      this.graph.setEdge(this.label, target, { type });
+    connectTo(target, type) {
+      this.graph.connect(this.label, target, type);
     }
   }
 
-  parse = (data) => {
-    let ast = YAML.safeLoad(data)
-      , graph = new Graph().setGraph({});
+  class WorkflowSpec {
+    static selector() {
+      console.error('Not implemented');
+      return false;
+    }
+    static buildGraph() {
+      console.error('Not implemented');
+    }
+  }
 
-    if (ast.chain && !_.isEmpty(ast.chain)) {
-
+  class ActionChainSpec extends WorkflowSpec {
+    static selector(ast={}) {
+      return ast.chain && !_.isEmpty(ast.chain);
+    }
+    static buildGraph(ast, graph) {
       _.each(ast.chain, (task) => {
         let node = new Node(graph, task.name);
 
@@ -70,9 +112,14 @@ let draw
           node.connectTo(task['on-failure'], 'failure');
         }
       });
+    }
+  }
 
-    } else if (ast.workflows && !_.isEmpty(ast.workflows)) {
-
+  class MistralSpec extends WorkflowSpec {
+    static selector(ast={}) {
+      return ast.workflows && !_.isEmpty(ast.workflows);
+    }
+    static buildGraph(ast, graph) {
       _.each(ast.workflows, (wf, wf_name) => {
         _.each(wf.tasks, (task, task_name) => {
 
@@ -98,11 +145,10 @@ let draw
 
         });
       });
-
     }
+  }
 
-    draw(graph);
-  };
+  graph = new Graph();
 }
 
 // Editor
@@ -468,23 +514,28 @@ let draw
     }
   }
 
-  let canvas = new Canvas();
+  canvas = new Canvas();
+}
 
+{
   canvas.on('node:select', function (name, event) {
     let mode = event.shiftKey && 'edit';
 
     switch(mode) {
       case 'edit':
         this.graph.selected.connectTo(name);
-        draw(this.graph);
         break;
       default:
         this.graph.select(name);
     }
   });
 
-  draw = (graph) => {
+  graph.on('update', (graph) => {
     canvas.draw(graph);
+  });
+
+  parse = (data) => {
+    graph.parse(data);
   };
 
   window.addEventListener('resize', () => {
