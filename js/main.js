@@ -43,12 +43,12 @@ let canvas
           console.log('More than one candidate found. Picking the first one and hope...');
         }
 
-        this.reset();
-
         this.spec = _.first(candidates);
-        this.spec.buildGraph(ast, this);
+        let changed = this.spec.buildGraph(ast, this);
 
-        this.notifyChange();
+        if (changed) {
+          this.notifyChange();
+        }
       }
     }
 
@@ -70,8 +70,13 @@ let canvas
     }
 
     connect(source, target, type='success') {
-      this.setEdge(source, target, { type });
-      this.notifyChange();
+      let edge = this.edge(source, target);
+      if (!edge) {
+        this.setEdge(source, target, { type });
+        this.notifyChange();
+        return true;
+      }
+      return false;
     }
 
     reset() {
@@ -96,16 +101,18 @@ let canvas
     }
 
     connectTo(target, type) {
-      this.graph.connect(this.label, target, type);
+      return this.graph.connect(this.label, target, type);
     }
   }
 
   class WorkflowSpec {
     static selector() {
       console.error('Not implemented');
+      return false;
     }
     static buildGraph() {
       console.error('Not implemented');
+      return false;
     }
     static buildAST() {
       console.error('Not implemented');
@@ -117,21 +124,35 @@ let canvas
       return ast.chain && !_.isEmpty(ast.chain);
     }
     static buildGraph(ast, graph) {
+      let changed = false
+        , preexistingNodes = graph.nodes();
+
       _.each(ast.chain, (task) => {
-        let node = new Node(graph, task.name);
+        let node = graph.node(task.name);
+
+        if (node) {
+          _.remove(preexistingNodes, (e) => e === task.name);
+        } else {
+          node = new Node(graph, task.name);
+          changed = true;
+        }
 
         node.ast = task;
 
         if (task['on-success']) {
-          node.connectTo(task['on-success'], 'success');
+          changed = node.connectTo(task['on-success'], 'success') || changed;
         }
 
         if (task['on-failure']) {
-          node.connectTo(task['on-failure'], 'failure');
+          changed = node.connectTo(task['on-failure'], 'failure') || changed;
         }
       });
 
+      _.each(preexistingNodes, (v) => graph.removeNode(v));
+
       graph.setGraph({ ast });
+
+      return changed;
     }
     static buildAST(graph) {
       let tasks = _.map(graph.nodes(), (v) => {
