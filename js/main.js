@@ -1,6 +1,7 @@
 'use strict';
 
 let _ = require('lodash')
+  , ace = require('brace')
   , EventEmitter = require('events').EventEmitter
   , mixin = require('mixin')
   ;
@@ -8,13 +9,34 @@ let _ = require('lodash')
 let canvas
   , graph
   , editor
+  , intermediate
   ;
 
 // Parser
 // ------
 {
-  let YAML = require('js-yaml')
-    , dagreD3 = require('dagre-d3');
+  let dagreD3 = require('dagre-d3');
+
+  class Node {
+    constructor(graph, name) {
+      this.label = name;
+
+      this.graph = graph;
+      this.graph.setNode(name, this);
+    }
+
+    select() {
+      this.graph.select(this.label);
+    }
+
+    isSelected() {
+      return this.graph.isSelected(this.label);
+    }
+
+    connectTo(target, type) {
+      return this.graph.connect(this.label, target, type);
+    }
+  }
 
   class Graph extends mixin(dagreD3.graphlib.Graph, EventEmitter) {
     constructor() {
@@ -23,39 +45,33 @@ let canvas
       this.setMaxListeners(0);
       this.setGraph({});
 
-      this.specs = {
-        'actionchain': ActionChainSpec,
-        'mistral': MistralSpec
-      };
-
       this.notifyChange = _.debounce(() => this.emit('update', this), 0);
     }
 
-    parse(code) {
-      let ast = YAML.safeLoad(code);
+    build(tasks) {
+      this.reset();
 
-      let candidates = _.filter(this.specs, (spec) => spec.selector(ast));
+      _.each(tasks, (task) => {
+        let node = this.node(task.name);
 
-      if (!candidates) {
-        console.log('No spec candidates found. Skipping building graph...');
-      } else {
-        if (candidates.length > 1) {
-          console.log('More than one candidate found. Picking the first one and hope...');
+        if (!node) {
+          node = new Node(this, task.name);
         }
 
-        this.spec = _.first(candidates);
-        let changed = this.spec.buildGraph(ast, this);
-
-        if (changed) {
-          this.notifyChange();
+        if (task.success) {
+          node.connectTo(task.success, 'success');
         }
-      }
-    }
 
-    serialize() {
-      let ast = this.spec.buildAST(this);
+        if (task.error) {
+          node.connectTo(task.error, 'failure');
+        }
 
-      return YAML.safeDump(ast);
+        if (task.complete) {
+          node.connectTo(task.complete, 'complete');
+        }
+      });
+
+      this.notifyChange();
     }
 
     select(name) {
@@ -84,131 +100,122 @@ let canvas
     }
   }
 
-  class Node {
-    constructor(graph, name) {
-      this.label = name;
-
-      this.graph = graph;
-      this.graph.setNode(name, this);
-    }
-
-    select() {
-      this.graph.select(this.label);
-    }
-
-    isSelected() {
-      return this.graph.isSelected(this.label);
-    }
-
-    connectTo(target, type) {
-      return this.graph.connect(this.label, target, type);
-    }
-  }
-
-  class WorkflowSpec {
-    static selector() {
-      console.error('Not implemented');
-      return false;
-    }
-    static buildGraph() {
-      console.error('Not implemented');
-      return false;
-    }
-    static buildAST() {
-      console.error('Not implemented');
-    }
-  }
-
-  class ActionChainSpec extends WorkflowSpec {
-    static selector(ast={}) {
-      return ast.chain && !_.isEmpty(ast.chain);
-    }
-    static buildGraph(ast, graph) {
-      let changed = false
-        , preexistingNodes = graph.nodes();
-
-      _.each(ast.chain, (task) => {
-        let node = graph.node(task.name);
-
-        if (node) {
-          _.remove(preexistingNodes, (e) => e === task.name);
-        } else {
-          node = new Node(graph, task.name);
-          changed = true;
-        }
-
-        node.ast = task;
-
-        if (task['on-success']) {
-          changed = node.connectTo(task['on-success'], 'success') || changed;
-        }
-
-        if (task['on-failure']) {
-          changed = node.connectTo(task['on-failure'], 'failure') || changed;
-        }
-      });
-
-      _.each(preexistingNodes, (v) => graph.removeNode(v));
-
-      graph.setGraph({ ast });
-
-      return changed;
-    }
-    static buildAST(graph) {
-      let tasks = _.map(graph.nodes(), (v) => {
-        let node = graph.node(v);
-
-        return _.assign(node.ast, {
-          name: node.label
-        });
-      });
-
-      return  _.assign(graph.graph().ast, {
-        chain: tasks
-      });
-    }
-  }
-
-  class MistralSpec extends WorkflowSpec {
-    static selector(ast={}) {
-      return ast.workflows && !_.isEmpty(ast.workflows);
-    }
-    static buildGraph(ast, graph) {
-      _.each(ast.workflows, (wf, wf_name) => {
-        _.each(wf.tasks, (task, task_name) => {
-
-          let node = new Node(graph, wf_name + ':' + task_name);
-
-          if (task['on-success']) {
-            _.each(task['on-success'], (target) => {
-              node.connectTo(wf_name + ':' + target, 'success');
-            });
-          }
-
-          if (task['on-error']) {
-            _.each(task['on-error'], (target) => {
-              node.connectTo(wf_name + ':' + target, 'failure');
-            });
-          }
-
-          if (task['on-complete']) {
-            _.each(task['on-complete'], (target) => {
-              node.connectTo(wf_name + ':' + target, 'complete');
-            });
-          }
-
-        });
-      });
-    }
-  }
-
   graph = new Graph();
+}
+
+{
+  class Intermediate extends EventEmitter {
+    constructor() {
+      super();
+
+      this.tasks = [];
+    }
+
+    parse(code) {
+      let lines = code.split('\n');
+
+      let state = {
+        isTaskBlock: false,
+        taskBlockIdent: null,
+        currentTask: null,
+        untouchedTasks: _.pluck(this.tasks, 'name')
+      };
+
+      let spec = {
+        WS_INDENT: /^(\s*)/,
+        TASK_BLOCK: /^\s*chain:\s*$/,
+        TASK: /^\s*-\s*/,
+        TASK_NAME: /(.*name:\s+)([\w\s]+)/,
+        TASK_SUCCESS_TRANSITION: /on-success:\s+([\w\s]+)/,
+        TASK_ERROR_TRANSITION: /on-failure:\s+([\w\s]+)/
+      };
+
+      _.each(lines, (line, lineNum) => {
+
+        let indent = line.match(spec.WS_INDENT)[0].length;
+
+        if (spec.TASK_BLOCK.test(line)) {
+          state.isTaskBlock = true;
+          state.taskBlockIdent = indent;
+          return;
+        }
+
+        if (state.isTaskBlock && state.taskBlockIdent >= indent) {
+          state.isTaskBlock = false;
+          return false;
+        }
+
+        if (state.isTaskBlock) {
+          let match;
+
+          if (spec.TASK.test(line)) {
+            if (state.currentTask) {
+              state.currentTask.endLine = lineNum;
+            }
+            state.currentTask = {
+              startLine: lineNum,
+              range: {}
+            };
+          }
+
+          match = spec.TASK_NAME.exec(line);
+          if (match) {
+            let [,_prefix,name] = match;
+
+            state.currentTask.range.name = {
+              startRow: lineNum,
+              startColumn: _prefix.length,
+              endRow: lineNum,
+              endColumn: _prefix.length + name.length
+            };
+
+            state.currentTask = this.task(name, state.currentTask);
+            _.remove(state.untouchedTasks, (e) => e === name);
+          }
+
+          match = spec.TASK_SUCCESS_TRANSITION.exec(line);
+          if (match) {
+            let [,success] = match;
+
+            state.currentTask.success = success;
+          }
+
+          match = spec.TASK_ERROR_TRANSITION.exec(line);
+          if (match) {
+            let [,error] = match;
+
+            state.currentTask.error = error;
+          }
+
+        }
+
+      });
+
+      _.each(state.untouchedTasks, (name) => _.remove(this.tasks, { name }));
+
+      this.emit('parse', this.tasks);
+    }
+
+    task(name, pending) {
+      let task = _.find(this.tasks, { name });
+
+      if (!task) {
+        task = { name };
+        this.tasks.push(task);
+      }
+
+      _.assign(task, pending);
+
+      return task;
+    }
+  }
+
+  intermediate = new Intermediate();
 }
 
 // Editor
 // ------
 {
-  let ace = require('brace');
   require('brace/mode/yaml');
   require('brace/theme/monokai');
 
@@ -564,12 +571,38 @@ let canvas
 }
 
 {
+  let AceRange = ace.acequire('ace/range').Range;
+
+  let rename = function rename(name) {
+    let task = intermediate.task(name)
+      , r = task.range.name
+      , range = new AceRange(r.startRow, r.startColumn, r.endRow, r.endColumn)
+      ;
+
+    editor.selection.setRange(range);
+    editor.centerSelection();
+    editor.focus();
+  };
+
   canvas.on('node:select', function (name, event) {
-    let mode = event.shiftKey && 'edit';
+    const SHIFT = 1
+        , ALT = 2
+        , CTRL = 4
+        , META = 8
+        ;
+
+    let mode =
+      event.shiftKey * SHIFT +
+      event.altKey * ALT +
+      event.ctrlKey * CTRL +
+      event.metaKey * META;
 
     switch(mode) {
-      case 'edit':
+      case SHIFT:
         this.graph.selected.connectTo(name);
+        break;
+      case META:
+        rename(name);
         break;
       default:
         this.graph.select(name);
@@ -580,17 +613,31 @@ let canvas
     canvas.draw(graph);
   });
 
-  graph.on('update', (graph) => {
-    editor.getSession().setValue(graph.serialize());
-  });
+  // graph.on('update', (graph) => {
+  //   editor.getSession().setValue(graph.serialize());
+  // });
 
   editor.on('change', _.debounce(function () {
     let str = editor.env.document.doc.getAllLines();
 
-    graph.parse(str.join('\n'));
+    intermediate.parse(str.join('\n'));
   }, 100));
+
+  intermediate.on('parse', (tasks) => {
+    graph.build(tasks);
+  });
+
+  graph.on('select', (taskName) => {
+    let task = intermediate.task(taskName)
+      , range = new AceRange(task.startLine, 0, task.endLine, 0);
+
+    editor.selection.setRange(range);
+    editor.centerSelection();
+  });
 
   window.addEventListener('resize', () => {
     canvas.centerElement();
   });
+
+  window.editor = editor;
 }
