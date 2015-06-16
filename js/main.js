@@ -134,12 +134,14 @@ let canvas
 
         let indent = line.match(spec.WS_INDENT)[0].length;
 
+        // If it starts with `chain:`, that's a start of task block
         if (spec.TASK_BLOCK.test(line)) {
           state.isTaskBlock = true;
           state.taskBlockIdent = indent;
           return;
         }
 
+        // If it has same or lesser indent, that's an end of task block
         if (state.isTaskBlock && state.taskBlockIdent >= indent) {
           state.isTaskBlock = false;
           return false;
@@ -148,6 +150,7 @@ let canvas
         if (state.isTaskBlock) {
           let match;
 
+          // If it starts with `-`, that's a new task
           if (spec.TASK.test(line)) {
             if (state.currentTask) {
               state.currentTask.endLine = lineNum;
@@ -158,6 +161,7 @@ let canvas
             };
           }
 
+          // If it has `name:`, that's task name
           match = spec.TASK_NAME.exec(line);
           if (match) {
             let [,_prefix,name] = match;
@@ -173,6 +177,7 @@ let canvas
             _.remove(state.untouchedTasks, (e) => e === name);
           }
 
+          // If it has `on-success:`, that's successfil transition pointer
           match = spec.TASK_SUCCESS_TRANSITION.exec(line);
           if (match) {
             let [,success] = match;
@@ -180,6 +185,7 @@ let canvas
             state.currentTask.success = success;
           }
 
+          // If it has `on-failure:`, that's unsuccessfil transition pointer
           match = spec.TASK_ERROR_TRANSITION.exec(line);
           if (match) {
             let [,error] = match;
@@ -191,6 +197,7 @@ let canvas
 
       });
 
+      // Delete all the tasks not updated during parsing
       _.each(state.untouchedTasks, (name) => _.remove(this.tasks, { name }));
 
       this.emit('parse', this.tasks);
@@ -613,6 +620,7 @@ let canvas
     canvas.draw(graph);
   });
 
+  // TODO: re-enable back channel when parser is done
   // graph.on('update', (graph) => {
   //   editor.getSession().setValue(graph.serialize());
   // });
