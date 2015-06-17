@@ -204,6 +204,14 @@ let canvas
 
       });
 
+      // Close the range of the last task
+      if (state.currentTask) {
+        _.assign(state.currentTask.range.task, {
+          endRow: lines.length,
+          endColumn: 0
+        });
+      }
+
       // Delete all the tasks not updated during parsing
       _.each(state.untouchedTasks, (name) => _.remove(this.tasks, { name }));
 
@@ -221,6 +229,14 @@ let canvas
       _.assign(task, pending);
 
       return task;
+    }
+
+    search(startRow, startColumn, endRow=startRow, endColumn=startColumn) {
+      return _.find(this.tasks, (e) => {
+        let { startRow: sr, startColumn: sc, endRow: er, endColumn:ec } = e.range.task;
+
+        return _.inRange(startRow, sr, er);
+      });
     }
   }
 
@@ -642,13 +658,29 @@ let canvas
     graph.build(tasks);
   });
 
+  let selectMarker;
+
   graph.on('select', (taskName) => {
     let task = intermediate.task(taskName)
       , r = task.range.task
-      , range = new AceRange(r.startRow, r.startColumn, r.endRow, r.endColumn);
+      // Since we're using `fullLine` marker, remove the last (zero character long) line from range
+      , range = new AceRange(r.startRow, r.startColumn, r.endRow - 1, Infinity);
 
-    editor.selection.setRange(range);
-    editor.centerSelection();
+    if (selectMarker) {
+      editor.session.removeMarker(selectMarker);
+    }
+
+    selectMarker = editor.session.addMarker(range, 'ace_active-line', 'fullLine');
+  });
+
+  editor.selection.on('changeCursor', () => {
+    let { row, column } = editor.selection.getCursor()
+      , task = intermediate.search(row, column)
+      ;
+
+    if (task) {
+      graph.select(task.name);
+    }
   });
 
   window.addEventListener('resize', () => {
