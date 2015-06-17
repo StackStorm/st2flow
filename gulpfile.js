@@ -114,4 +114,4 @@ gulp.task('watch', function() {
   gulp.watch(['js/**/*.js'], ['lint', 'browserify']);
 });
 
-gulp.task('default', ['lint', 'build', 'test', 'watch', 'serve']);
+gulp.task('default', ['lint', 'build', 'watch', 'serve']);

@@ -472,7 +472,7 @@ let canvas
   let rename = function rename(name) {
     let task = intermediate.task(name)
       , r = task.range.name
-      , range = new AceRange(r.startRow, r.startColumn, r.endRow, r.endColumn)
+      , range = new AceRange(r.start.row, r.start.column, r.end.row, r.end.column)
       ;
 
     editor.selection.setRange(range);
@@ -530,7 +530,7 @@ let canvas
     let task = intermediate.task(taskName)
       , r = task.range.task
       // Since we're using `fullLine` marker, remove the last (zero character long) line from range
-      , range = new AceRange(r.startRow, r.startColumn, r.endRow - 1, Infinity);
+      , range = new AceRange(r.start.row, r.start.column, r.end.row - 1, Infinity);
 
     if (selectMarker) {
       editor.session.removeMarker(selectMarker);

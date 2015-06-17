@@ -2,6 +2,7 @@
 
 let _ = require('lodash')
   , EventEmitter = require('events').EventEmitter
+  , Range = require('./range.js')
   ;
 
 class Intermediate extends EventEmitter {
@@ -53,17 +54,11 @@ class Intermediate extends EventEmitter {
         // If it starts with `-`, that's a new task
         if (spec.TASK.test(line)) {
           if (state.currentTask) {
-            _.assign(state.currentTask.range.task, {
-              endRow: lineNum,
-              endColumn: 0
-            });
+            state.currentTask.range.task.setEnd(lineNum, 0);
           }
           state.currentTask = {
             range: {
-              task: {
-                startRow: lineNum,
-                startColumn: 0
-              }
+              task: new Range(lineNum, 0).setType('task')
             }
           };
         }
@@ -71,14 +66,11 @@ class Intermediate extends EventEmitter {
         // If it has `name:`, that's task name
         match = spec.TASK_NAME.exec(line);
         if (match) {
-          let [,_prefix,name] = match;
+          let [,_prefix,name] = match
+            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + name.length]
+            ;
 
-          state.currentTask.range.name = {
-            startRow: lineNum,
-            startColumn: _prefix.length,
-            endRow: lineNum,
-            endColumn: _prefix.length + name.length
-          };
+          state.currentTask.range.name = new Range(...coords).setType('name');
 
           state.currentTask = this.task(name, state.currentTask);
           _.remove(state.untouchedTasks, (e) => e === name);
@@ -106,10 +98,7 @@ class Intermediate extends EventEmitter {
 
     // Close the range of the last task
     if (state.currentTask) {
-      _.assign(state.currentTask.range.task, {
-        endRow: lines.length,
-        endColumn: 0
-      });
+      state.currentTask.range.task.setEnd(lines.length, 0);
     }
 
     // Delete all the tasks not updated during parsing
@@ -132,10 +121,10 @@ class Intermediate extends EventEmitter {
   }
 
   search(startRow, startColumn, endRow=startRow, endColumn=startColumn) {
-    return _.find(this.tasks, (e) => {
-      let { startRow: sr, startColumn: sc, endRow: er, endColumn:ec } = e.range.task;
+    let range = new Range(startRow, startColumn, endRow, endColumn);
 
-      return _.inRange(startRow, sr, er);
+    return _.find(this.tasks, (e) => {
+      return e.range.task.intersects(range);
     });
   }
 }
