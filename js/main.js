@@ -467,12 +467,12 @@ let canvas
 }
 
 {
-  let AceRange = ace.acequire('ace/range').Range;
+  let Range = require('./lib/range');
 
   let rename = function rename(name) {
     let task = intermediate.task(name)
-      , r = task.range.name
-      , range = new AceRange(r.start.row, r.start.column, r.end.row, r.end.column)
+      , sector = task.sector.name
+      , range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column)
       ;
 
     editor.selection.setRange(range);
@@ -528,9 +528,9 @@ let canvas
 
   graph.on('select', (taskName) => {
     let task = intermediate.task(taskName)
-      , r = task.range.task
+      , sector = task.sector.task
       // Since we're using `fullLine` marker, remove the last (zero character long) line from range
-      , range = new AceRange(r.start.row, r.start.column, r.end.row - 1, Infinity);
+      , range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
 
     if (selectMarker) {
       editor.session.removeMarker(selectMarker);
@@ -541,12 +541,21 @@ let canvas
 
   editor.selection.on('changeCursor', () => {
     let { row, column } = editor.selection.getCursor()
-      , task = intermediate.search(row, column)
+      , range = new Range(row, column, row, column)
+      , sectors = intermediate.search(range, ['task'])
+      , sector = _.first(sectors)
       ;
 
-    if (task) {
-      graph.select(task.name);
+    if (sector && sector.task) {
+      graph.select(sector.task.name);
     }
+  });
+
+  editor.selection.on('changeSelection', (e, selection) => {
+    let sectors = intermediate.search(selection.getRange())
+      , types = _.groupBy(sectors, 'type');
+    console.log('->', `Selected ${types.task ? types.task.length : 'no'} tasks ` +
+                      `and ${types.name ? types.name.length : 'no'} names`);
   });
 
   window.addEventListener('resize', () => {

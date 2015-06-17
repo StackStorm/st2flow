@@ -82,7 +82,6 @@
     "yui"           : false,    // Yahoo User Interface
 
     // Custom Globals
-    "globals"       : {         // additional predefined global variables
-      "Range": true
-    }
+    "globals"       : {},       // additional predefined global variables
+    "predef"        : ["-Range"]
 }

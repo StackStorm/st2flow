@@ -2,7 +2,7 @@
 
 let _ = require('lodash')
   , EventEmitter = require('events').EventEmitter
-  , Range = require('./range.js')
+  , Sector = require('./sector.js')
   ;
 
 class Intermediate extends EventEmitter {
@@ -10,6 +10,7 @@ class Intermediate extends EventEmitter {
     super();
 
     this.tasks = [];
+    this.sectors = [];
   }
 
   parse(code) {
@@ -54,11 +55,14 @@ class Intermediate extends EventEmitter {
         // If it starts with `-`, that's a new task
         if (spec.TASK.test(line)) {
           if (state.currentTask) {
-            state.currentTask.range.task.setEnd(lineNum, 0);
+            state.currentTask.sector.task.setEnd(lineNum, 0);
           }
+
+          let sector = new Sector(lineNum, 0).setType('task');
+          this.sectors.push(sector);
           state.currentTask = {
-            range: {
-              task: new Range(lineNum, 0).setType('task')
+            sector: {
+              task: sector
             }
           };
         }
@@ -70,9 +74,12 @@ class Intermediate extends EventEmitter {
             , coords = [lineNum, _prefix.length, lineNum, _prefix.length + name.length]
             ;
 
-          state.currentTask.range.name = new Range(...coords).setType('name');
+          let sector = new Sector(...coords).setType('name');
+          this.sectors.push(sector);
+          state.currentTask.sector.name = sector;
 
           state.currentTask = this.task(name, state.currentTask);
+          state.currentTask.sector.task.setTask(state.currentTask);
           _.remove(state.untouchedTasks, (e) => e === name);
         }
 
@@ -96,9 +103,9 @@ class Intermediate extends EventEmitter {
 
     });
 
-    // Close the range of the last task
+    // Close the sector of the last task
     if (state.currentTask) {
-      state.currentTask.range.task.setEnd(lines.length, 0);
+      state.currentTask.sector.task.setEnd(lines.length, 0);
     }
 
     // Delete all the tasks not updated during parsing
@@ -120,11 +127,12 @@ class Intermediate extends EventEmitter {
     return task;
   }
 
-  search(startRow, startColumn, endRow=startRow, endColumn=startColumn) {
-    let range = new Range(startRow, startColumn, endRow, endColumn);
-
-    return _.find(this.tasks, (e) => {
-      return e.range.task.intersects(range);
+  search(range, type) {
+    if (type) {
+      type = [].concat(type);
+    }
+    return _.filter(this.sectors, (sector) => {
+      return (!type || _.includes(type, sector.type)) && sector.intersects(range);
     });
   }
 }

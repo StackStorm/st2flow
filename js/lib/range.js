@@ -553,15 +553,4 @@ exports.Range = Range;
 })(null, _ACE);
 /*jshint ignore: end*/
 
-
-let AceRange = _ACE.Range;
-
-class Range extends AceRange {
-  setType(type) {
-    this.type = type;
-
-    return this;
-  }
-}
-
-module.exports = Range;
+module.exports = _ACE.Range;
