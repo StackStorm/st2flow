@@ -4,7 +4,7 @@ var gulp = require('gulp')
   , jshint = require('gulp-jshint')
   , plumber = require('gulp-plumber')
   , browserify = require('browserify')
-  , babelify = require("babelify")
+  , babelify = require('babelify')
   , source = require('vinyl-source-stream')
   , mocha = require('gulp-mocha')
   , size = require('gulp-size')
@@ -29,8 +29,8 @@ gulp.task('lint', function() {
 gulp.task('css', function () {
   var processors = [
     require('autoprefixer-core')({browsers: ['last 2 version']}),
-    require("postcss-import")(),
-    require("postcss-nested")()
+    require('postcss-import')(),
+    require('postcss-nested')()
   ];
   return gulp.src('css/*.css')
     .pipe(plumber())
@@ -82,6 +82,7 @@ gulp.task('browserify', function() {
 });
 
 gulp.task('test', function () {
+  require('babelify/node_modules/babel-core/register');
   return gulp.src('tests/**/*.js', {read: false})
     .pipe(mocha({
       reporter: 'dot'
