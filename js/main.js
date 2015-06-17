@@ -153,11 +153,18 @@ let canvas
           // If it starts with `-`, that's a new task
           if (spec.TASK.test(line)) {
             if (state.currentTask) {
-              state.currentTask.endLine = lineNum;
+              _.assign(state.currentTask.range.task, {
+                endRow: lineNum,
+                endColumn: 0
+              });
             }
             state.currentTask = {
-              startLine: lineNum,
-              range: {}
+              range: {
+                task: {
+                  startRow: lineNum,
+                  startColumn: 0
+                }
+              }
             };
           }
 
@@ -637,7 +644,8 @@ let canvas
 
   graph.on('select', (taskName) => {
     let task = intermediate.task(taskName)
-      , range = new AceRange(task.startLine, 0, task.endLine, 0);
+      , r = task.range.task
+      , range = new AceRange(r.startRow, r.startColumn, r.endRow, r.endColumn);
 
     editor.selection.setRange(range);
     editor.centerSelection();
