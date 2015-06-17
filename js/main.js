@@ -19,22 +19,22 @@ let canvas
 
   class Node {
     constructor(graph, name) {
-      this.label = name;
+      this.name = name;
 
       this.graph = graph;
       this.graph.setNode(name, this);
     }
 
     select() {
-      this.graph.select(this.label);
+      this.graph.select(this.name);
     }
 
     isSelected() {
-      return this.graph.isSelected(this.label);
+      return this.graph.isSelected(this.name);
     }
 
     connectTo(target, type) {
-      return this.graph.connect(this.label, target, type);
+      return this.graph.connect(this.name, target, type);
     }
   }
 
@@ -340,7 +340,7 @@ let canvas
             .attr('xml:space', 'preserve')
             .attr('dy', '1em')
             .attr('x', '1')
-            .text(node.label);
+            .text(node.name);
 
           textNode
             .attr('style', node.labelStyle);
