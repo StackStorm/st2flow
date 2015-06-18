@@ -27,9 +27,9 @@ class Intermediate extends EventEmitter {
       WS_INDENT: /^(\s*)/,
       TASK_BLOCK: /^\s*chain:\s*$/,
       TASK: /^\s*-\s*/,
-      TASK_NAME: /(.*name:\s+)([\w\s]+)/,
-      TASK_SUCCESS_TRANSITION: /on-success:\s+([\w\s]+)/,
-      TASK_ERROR_TRANSITION: /on-failure:\s+([\w\s]+)/
+      TASK_NAME: /(.*name:\s+['"]*)([\w\s]+)/,
+      TASK_SUCCESS_TRANSITION: /on-success:\s+['"]*([\w\s]+)/,
+      TASK_ERROR_TRANSITION: /on-failure:\s+['"]*([\w\s]+)/
     };
 
     _.each(lines, (line, lineNum) => {
