@@ -118,6 +118,7 @@ let canvas
   editor = ace.edit('editor');
   editor.getSession().setMode('ace/mode/yaml');
   editor.setTheme('ace/theme/monokai');
+  editor.setHighlightActiveLine(false);
 
   editor.$blockScrolling = Infinity;
 }
@@ -524,11 +525,26 @@ let canvas
     graph.build(tasks);
   });
 
+  let debugSectorMarkers = [];
+  intermediate.on('parse', () => {
+    _.each(debugSectorMarkers, (marker) => {
+      editor.session.removeMarker(marker);
+    });
+    debugSectorMarkers = [];
+
+    _.each(intermediate.sectors, (sector) => {
+      let range, marker;
+
+      range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
+      marker = editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
+      debugSectorMarkers.push(marker);
+    });
+  });
+
   let selectMarker;
 
   graph.on('select', (taskName) => {
-    let task = intermediate.task(taskName)
-      , sector = task.sector.task
+    let sector = _.find(intermediate.sectors, { type: 'task', task: {name: taskName} })
       // Since we're using `fullLine` marker, remove the last (zero character long) line from range
       , range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
 
@@ -536,7 +552,7 @@ let canvas
       editor.session.removeMarker(selectMarker);
     }
 
-    selectMarker = editor.session.addMarker(range, 'ace_active-line', 'fullLine');
+    selectMarker = editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
   });
 
   editor.selection.on('changeCursor', () => {
