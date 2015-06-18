@@ -112,6 +112,21 @@ gulp.task('watch', function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
   gulp.watch(['js/**/*.js'], ['lint', 'browserify']);
+
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('readable', function() {
+    var chunk = process.stdin.read();
+    switch (chunk) {
+      case null:
+        gutil.log('This build system supports stdin commands');
+        break;
+      case 'test\n':
+        gulp.tasks.test.fn();
+        break;
+      default:
+        gutil.log('Unknown command');
+    }
+  });
 });
 
 gulp.task('default', ['lint', 'build', 'watch', 'serve']);
