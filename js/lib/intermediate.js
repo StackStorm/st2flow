@@ -2,7 +2,8 @@
 
 let _ = require('lodash')
   , EventEmitter = require('events').EventEmitter
-  , Sector = require('./sector.js')
+  , Sector = require('./sector')
+  , Task = require('./task')
   ;
 
 class Intermediate extends EventEmitter {
@@ -10,7 +11,13 @@ class Intermediate extends EventEmitter {
     super();
 
     this.tasks = [];
-    this.sectors = [];
+  }
+
+  get sectors() {
+    return _(this.tasks)
+      .map((task) => _.values(task.sectors))
+      .flatten()
+      .value();
   }
 
   parse(code) {
@@ -20,7 +27,7 @@ class Intermediate extends EventEmitter {
       isTaskBlock: false,
       taskBlockIdent: null,
       currentTask: null,
-      untouchedTasks: _.pluck(this.tasks, 'name')
+      untouchedTasks: _.map(this.tasks, (task) => task.getProperty('name'))
     };
 
     let spec = {
@@ -55,16 +62,11 @@ class Intermediate extends EventEmitter {
         // If it starts with `-`, that's a new task
         if (spec.TASK.test(line)) {
           if (state.currentTask) {
-            state.currentTask.sector.task.setEnd(lineNum, 0);
+            state.currentTask.endSector('task', lineNum, 0);
           }
 
           let sector = new Sector(lineNum, 0).setType('task');
-          this.sectors.push(sector);
-          state.currentTask = {
-            sector: {
-              task: sector
-            }
-          };
+          state.currentTask = new Task().setSector('task', sector);
         }
 
         // If it has `name:`, that's task name
@@ -75,11 +77,10 @@ class Intermediate extends EventEmitter {
             ;
 
           let sector = new Sector(...coords).setType('name');
-          this.sectors.push(sector);
-          state.currentTask.sector.name = sector;
+          state.currentTask.setSector('name', sector);
 
           state.currentTask = this.task(name, state.currentTask);
-          state.currentTask.sector.task.setTask(state.currentTask);
+          state.currentTask.getSector('task').setTask(state.currentTask);
           _.remove(state.untouchedTasks, (e) => e === name);
         }
 
@@ -88,7 +89,7 @@ class Intermediate extends EventEmitter {
         if (match) {
           let [,success] = match;
 
-          state.currentTask.success = success;
+          state.currentTask.setProperty('success', success);
         }
 
         // If it has `on-failure:`, that's unsuccessfil transition pointer
@@ -96,7 +97,7 @@ class Intermediate extends EventEmitter {
         if (match) {
           let [,error] = match;
 
-          state.currentTask.error = error;
+          state.currentTask.setProperty('error', error);
         }
 
       }
@@ -105,24 +106,29 @@ class Intermediate extends EventEmitter {
 
     // Close the sector of the last task
     if (state.currentTask) {
-      state.currentTask.sector.task.setEnd(lines.length, 0);
+      state.currentTask.endSector('task', lines.length, 0);
     }
 
     // Delete all the tasks not updated during parsing
-    _.each(state.untouchedTasks, (name) => _.remove(this.tasks, { name }));
+    _.each(state.untouchedTasks, (name) => {
+      _.remove(this.tasks, (task) => task.getProperty('name') === name);
+    });
 
     this.emit('parse', this.tasks);
   }
 
+  update(delta, str) {
+    this.emit('update', this.search(delta.data.range));
+    this.parse(str);
+  }
+
   task(name, pending) {
-    let task = _.find(this.tasks, { name });
+    let task = _.find(this.tasks, (e) => e.getProperty('name') === name);
 
     if (!task) {
-      task = { name };
+      task = pending.setProperty('name', name);
       this.tasks.push(task);
     }
-
-    _.assign(task, pending);
 
     return task;
   }

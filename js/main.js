@@ -52,22 +52,22 @@ let canvas
       this.reset();
 
       _.each(tasks, (task) => {
-        let node = this.node(task.name);
+        let node = this.node(task.getProperty('name'));
 
         if (!node) {
-          node = new Node(this, task.name);
+          node = new Node(this, task.getProperty('name'));
         }
 
-        if (task.success) {
-          node.connectTo(task.success, 'success');
+        if (task.getProperty('success')) {
+          node.connectTo(task.getProperty('success'), 'success');
         }
 
-        if (task.error) {
-          node.connectTo(task.error, 'failure');
+        if (task.getProperty('error')) {
+          node.connectTo(task.getProperty('error'), 'failure');
         }
 
-        if (task.complete) {
-          node.connectTo(task.complete, 'complete');
+        if (task.getProperty('complete')) {
+          node.connectTo(task.getProperty('complete'), 'complete');
         }
       });
 
@@ -472,7 +472,7 @@ let canvas
 
   let rename = function rename(name) {
     let task = intermediate.task(name)
-      , sector = task.sector.name
+      , sector = task.getSector('name')
       , range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column)
       ;
 
@@ -515,11 +515,11 @@ let canvas
   //   editor.getSession().setValue(graph.serialize());
   // });
 
-  editor.on('change', _.debounce(function () {
+  editor.on('change', (delta) => {
     let str = editor.env.document.doc.getAllLines();
 
-    intermediate.parse(str.join('\n'));
-  }, 100));
+    intermediate.update(delta, str.join('\n'));
+  });
 
   intermediate.on('parse', (tasks) => {
     graph.build(tasks);
@@ -527,26 +527,39 @@ let canvas
 
   let debugSectorMarkers = [];
   intermediate.on('parse', () => {
-    _.each(debugSectorMarkers, (marker) => {
-      editor.session.removeMarker(marker);
-    });
-    debugSectorMarkers = [];
+    {
+      _.each(debugSectorMarkers, (marker) => {
+        editor.session.removeMarker(marker);
+      });
+      debugSectorMarkers = [];
+    }
+
+    {
+      intermediate.sectors.map((e) =>
+        console.log(`[${e.start.row}, ${e.start.column}]->[${e.end.row}, ${e.end.column}]`)
+      );
+
+      console.log('---');
+    }
 
     _.each(intermediate.sectors, (sector) => {
-      let range, marker;
+        let range, marker;
 
-      range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
-      marker = editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
-      debugSectorMarkers.push(marker);
-    });
+        range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
+        marker = editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
+        debugSectorMarkers.push(marker);
+      });
   });
 
   let selectMarker;
 
   graph.on('select', (taskName) => {
-    let sector = _.find(intermediate.sectors, { type: 'task', task: {name: taskName} })
-      // Since we're using `fullLine` marker, remove the last (zero character long) line from range
-      , range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
+    let sector = _.find(intermediate.sectors, (e) => {
+      return e.type === 'task' && e.task.getProperty('name') === taskName;
+    });
+
+    // Since we're using `fullLine` marker, remove the last (zero character long) line from range
+    let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
 
     if (selectMarker) {
       editor.session.removeMarker(selectMarker);
@@ -563,7 +576,7 @@ let canvas
       ;
 
     if (sector && sector.task) {
-      graph.select(sector.task.name);
+      graph.select(sector.task.getProperty('name'));
     }
   });
 
@@ -571,6 +584,12 @@ let canvas
     let sectors = intermediate.search(selection.getRange())
       , types = _.groupBy(sectors, 'type');
     console.log('->', `Selected ${types.task ? types.task.length : 'no'} tasks ` +
+                      `and ${types.name ? types.name.length : 'no'} names`);
+  });
+
+  intermediate.on('update', (sectors) => {
+    let types = _.groupBy(sectors, 'type');
+    console.log('->', `Updates ${types.task ? types.task.length : 'no'} tasks ` +
                       `and ${types.name ? types.name.length : 'no'} names`);
   });
 
