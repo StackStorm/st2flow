@@ -35,8 +35,8 @@ class Intermediate extends EventEmitter {
       TASK_BLOCK: /^\s*chain:\s*$/,
       TASK: /^\s*-\s*/,
       TASK_NAME: /(.*name:\s+['"]*)([\w\s]+)/,
-      TASK_SUCCESS_TRANSITION: /on-success:\s+['"]*([\w\s]+)/,
-      TASK_ERROR_TRANSITION: /on-failure:\s+['"]*([\w\s]+)/
+      TASK_SUCCESS_TRANSITION: /(.*on-success:\s+['"]*)([\w\s]+)/,
+      TASK_ERROR_TRANSITION: /(.*on-failure:\s+['"]*)([\w\s]+)/
     };
 
     _.each(lines, (line, lineNum) => {
@@ -87,17 +87,23 @@ class Intermediate extends EventEmitter {
         // If it has `on-success:`, that's successfil transition pointer
         match = spec.TASK_SUCCESS_TRANSITION.exec(line);
         if (match) {
-          let [,success] = match;
+          let [,_prefix,success] = match
+            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + success.length]
+            ;
 
-          state.currentTask.setProperty('success', success);
+          let sector = new Sector(...coords).setType('success');
+          state.currentTask.setProperty('success', success).setSector('success', sector);
         }
 
         // If it has `on-failure:`, that's unsuccessfil transition pointer
         match = spec.TASK_ERROR_TRANSITION.exec(line);
         if (match) {
-          let [,error] = match;
+          let [,_prefix,error] = match
+            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + error.length]
+            ;
 
-          state.currentTask.setProperty('error', error);
+          let sector = new Sector(...coords).setType('error');
+          state.currentTask.setProperty('error', error).setSector('error', sector);
         }
 
       }
