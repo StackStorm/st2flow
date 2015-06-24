@@ -83,5 +83,5 @@
 
     // Custom Globals
     "globals"       : {},       // additional predefined global variables
-    "predef"        : ["-Range"]
+    "predef"        : ["-Range", "-Node"]
 }

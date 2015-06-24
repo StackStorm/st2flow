@@ -131,7 +131,7 @@ class Intermediate extends EventEmitter {
   task(name, pending) {
     let task = _.find(this.tasks, (e) => e.getProperty('name') === name);
 
-    if (!task) {
+    if (!task && pending) {
       task = pending.setProperty('name', name);
       this.tasks.push(task);
     }
