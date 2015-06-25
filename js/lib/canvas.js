@@ -3,17 +3,35 @@
 let _ = require('lodash')
   , d3 = require('d3')
   , dagreD3 = require('dagre-d3')
-  , intersectRect = require('dagre-d3/lib/intersect/intersect-rect')
   , EventEmitter = require('events').EventEmitter
   ;
 
 let render = dagreD3.render();
 
-let st2Class = (element) => `st2-viewer__${element}`;
+let st2BEM = (prefix, block, el, mod) =>
+  `${prefix ? prefix + '-' : ''}${block}${el ? '__' + el : ''}${_.isString(mod) ? '--' + mod : ''}`;
+
+let st2Class = (element, modifier, selector) => {
+  return st2BEM(selector || modifier === true ? '.st2' : 'st2', 'viewer', element, modifier);
+};
+
+let nodeTmpl = (node) =>
+`
+  <div class='${st2Class('node-name')}'>${node.name}</div>
+  <div class='${st2Class('node-ref')}'>${node.ref}</div>
+`;
 
 class Canvas extends EventEmitter {
   constructor() {
     super();
+
+    this.canvas = d3
+      .select('#canvas')
+      ;
+
+    this.overlay = this.canvas
+      .append('div')
+      .classed(st2Class('overlay'), true);
 
     this.svg = d3
       .select('#canvas svg');
@@ -46,284 +64,110 @@ class Canvas extends EventEmitter {
   }
 
   render() {
-    try {
-      render(this.element, this.graph);
+    let nodes = this.createNodes(this.overlay, this.graph);
 
-      return true;
-    } catch(e) {
-      return false;
-    }
+    dagreD3.dagre.layout(this.graph);
+
+    this.positionNodes(nodes, this.graph);
+    this.createEdgePaths(this.svg, this.graph, require('dagre-d3/lib/arrows'));
   }
 
   createNodes(selection, g) {
-    // Initialize selection with data set
-    let svgNodes = selection.selectAll('.' + st2Class('node'))
+    let nodes = selection
+      .selectAll(st2Class('node', true))
       .data(g.nodes(), (v) => v)
-      .classed('update', true);
+      ;
 
-    // Clean everything inside selection
-    svgNodes.selectAll('*').remove();
-
-    // For each new node added to the selection
-    svgNodes.enter()
-      .append('g')
+    nodes.enter()
+      .append('div')
         .attr('class', st2Class('node'))
-        .style('opacity', 0)
-        .on('click', (name) => {
-          this.emit('node:select', name, d3.event);
-        });
+        .html((d) => nodeTmpl(g.node(d)))
+        ;
 
-    // For every node currently in selection
-    svgNodes.each(function(name) {
-      let node = g.node(name),
-          nodeGroup = d3.select(this);
+    nodes.exit()
+      .remove()
+      ;
+
+    nodes.each(function (name) {
+      let node = g.node(name)
+        , nodeElement = d3.select(this);
+
+      let {width, height} = nodeElement.node().getBoundingClientRect();
+
+      node.width = width;
+      node.height = height;
 
       node.elem = this;
-
-      let labelGroup = nodeGroup.append('g').attr('class', st2Class('node-label'));
-
-      {
-        // Set IDs
-        if (node.id) { nodeGroup.attr('id', node.id); }
-        if (node.labelId) { labelGroup.attr('id', node.labelId); }
-      }
-
-      {
-        g.on('select', () => {
-          let result = node.isSelected();
-          nodeGroup.classed(st2Class('node--selected'), result);
-        });
-      }
-
-      {
-        // Add label
-        let labelDom = labelGroup.append('g')
-          , textNode = labelDom.append('text');
-
-        textNode
-          .append('tspan')
-          .attr('xml:space', 'preserve')
-          .attr('dy', '1em')
-          .attr('x', '1')
-          .text(node.name);
-
-        textNode
-          .attr('style', node.labelStyle);
-
-        let labelBBox = labelDom.node().getBBox()
-          , xMiddle = -labelBBox.width / 2
-          , yMiddle = -labelBBox.height / 2
-          ;
-
-        labelDom.attr('transform', `translate(${xMiddle},${yMiddle})`);
-
-      }
-
-      let bbox = _.pick(labelGroup.node().getBBox(), 'width', 'height');
-
-      {
-        // Set class
-        nodeGroup
-          .attr('class', st2Class('node'));
-      }
-
-      (padding) => {
-        // Add paddings
-        let top = 0
-          , right = 0
-          , bottom = 0
-          , left = 0
-          ;
-
-        if (_.isArray(padding)) {
-          [top, right, bottom, left] = padding;
-        } else if (_.isPlainObject(padding)) {
-          ({top, left, bottom, right} = padding); // jshint ignore:line
-        } else if (_.isString(padding)){
-          let _padding = _.parseInt(padding);
-
-          top = _padding;
-          left = _padding;
-          bottom = _padding;
-          right = _padding;
-        } else if (_.isNumber(padding)) {
-          top = padding;
-          left = padding;
-          bottom = padding;
-          right = padding;
-        }
-
-        bbox.width += left + right;
-        bbox.height += top + bottom;
-
-        let xNormOffset = (left - right) / 2
-          , yNormOffset = (top - bottom) / 2
-          ;
-
-        labelGroup.attr('transform', `translate(${xNormOffset},${yNormOffset})`);
-      }(7);
-
-      {
-        // Pick node shape
-        let shapeSvg = nodeGroup.insert('rect', ':first-child')
-          .attr('rx', 5)
-          .attr('ry', 5)
-          .attr('x', -bbox.width / 2)
-          .attr('y', -bbox.height / 2)
-          .attr('width', bbox.width)
-          .attr('height', bbox.height);
-
-        node.intersect = function(point) {
-          return intersectRect(node, point);
-        };
-
-        shapeSvg
-          .attr('style', node.style);
-
-        let shapeBBox = shapeSvg.node().getBBox();
-        node.width = shapeBBox.width;
-        node.height = shapeBBox.height;
-      }
-
     });
 
-    // For every node removed from selection
-    svgNodes.exit()
-      .style('opacity', 0)
-      .remove();
+    return nodes;
+  }
 
-    return svgNodes;
+  positionNodes(selection, g) {
+    selection.style('transform', (v) => {
+      let {x, y} = g.node(v);
+      return `translate(${x}px,${y}px)`;
+    });
   }
 
   createEdgePaths(selection, g, arrows) {
-    let escapeId = (str) => str ? String(str).replace(/:/g, '\\:') : '';
+    let {scrollWidth: width, scrollHeight: height} = this.canvas.node();
+
+    this.svg.attr('width', width);
+    this.svg.attr('height', height);
 
     // Initialize selection with data set
-    let svgPaths = selection.selectAll('.' + st2Class('edge'))
-      .data(g.edges(), (e) => `${escapeId(e.v)}:${escapeId(e.w)}:${escapeId(e.name)}`);
+    let svgPaths = selection.selectAll(st2Class('edge', true))
+      .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`);
 
-    {
-      // For each new edge added to the selection
-      let svgPathsEnter = svgPaths.enter()
-        .append('g')
-          .attr('class', st2Class('edge'))
-          .style('opacity', 0);
+    let svgPathsEnter = svgPaths.enter()
+      .append('g')
+        .attr('class', (e) => st2Class('edge') + ' ' + st2Class('edge', g.edge(e).type))
+        ;
 
-      // Add path
-      svgPathsEnter.append('path')
-        .attr('class', st2Class('edge-path'))
-        .attr('d', function(e) {
-          let edge = g.edge(e),
-              sourceElem = g.node(e.v).elem,
-              points = _.range(edge.points.length).map(function() {
-                let bbox = sourceElem.getBBox(),
-                    matrix = sourceElem.getTransformToElement(sourceElem.ownerSVGElement)
-                      .translate(bbox.width / 2, bbox.height / 2);
-                return { x: matrix.e, y: matrix.f };
-              });
+    svgPathsEnter.append('path')
+      .attr('class', st2Class('edge-path'));
 
-          let line = d3.svg.line()
-            .x((d) => d.x)
-            .y((d) => d.y);
+    svgPathsEnter.append('defs');
 
-          return line(points);
-        });
+    let svgPathExit = svgPaths.exit();
 
-      // Add resources block
-      svgPathsEnter.append('defs');
-    }
+    svgPathExit
+      .remove();
 
-    {
-      // For each edge removed from the selection
-      let svgPathExit = svgPaths.exit();
-
-      // Remove an edge
-      svgPathExit
-        .style('opacity', 0)
-        .remove();
-
-      // TODO: This very much looks like an artifact, either badly transferred from dagre-d3 or pending refactoring there. Figure out whether we have any use for that.
-      svgPathExit.select('.' + st2Class('edge-path'))
-        .attr('d', function(e) {
-          let source = g.node(e.v);
-
-          if (source) {
-            let points = _.range(this.pathSegList.length).map(function() { return source; });
-
-            let line = d3.svg.line()
-              .x(function(d) { return d.x; })
-              .y(function(d) { return d.y; });
-
-            return line(points);
-          } else {
-            return d3.select(this).attr('d');
-          }
-        });
-    }
-
-    svgPaths
-      .style('opacity', 1);
-
-    {
-      // For every edge currently in selection
-      svgPaths.each(function(e) {
-        let domEdge = d3.select(this);
+    svgPaths.selectAll(st2Class('edge-path', true))
+      .each(function(e) {
         let edge = g.edge(e);
-        edge.elem = this;
+        edge.arrowheadId = _.uniqueId('arrowhead');
 
-        if (edge.id) {
-          domEdge.attr('id', edge.id);
-        }
+        let domEdge = d3.select(this)
+          .attr('marker-end', function() {
+            return 'url(#' + edge.arrowheadId + ')';
+          })
+          .style('fill', 'none');
 
         domEdge
-          .attr('class', st2Class('edge') + ' ' + st2Class(`edge--${edge.type}`));
+          .attr('d', function(e) {
+            let tail = g.node(e.v)
+              , head = g.node(e.w)
+              , points = [tail.intersect(head), head.intersect(tail)];
+
+            let line = d3.svg.line()
+              .x((d) => d.x)
+              .y((d) => d.y);
+
+            return line(points);
+          });
       });
-    }
 
-    {
-      // For every path
-      svgPaths.selectAll('.' + st2Class('edge-path'))
-        .each(function(e) {
-          let edge = g.edge(e);
-          edge.arrowheadId = _.uniqueId('arrowhead');
-
-          let domEdge = d3.select(this)
-            .attr('marker-end', function() {
-              return 'url(#' + edge.arrowheadId + ')';
-            })
-            .style('fill', 'none');
-
-          domEdge
-            .attr('d', function(e) {
-              let edge = g.edge(e)
-                , tail = g.node(e.v)
-                , head = g.node(e.w)
-                , points = edge.points.slice(1, edge.points.length - 1);
-
-              points.unshift(tail.intersect(points[0]));
-              points.push(head.intersect(points[points.length - 1]));
-
-              let line = d3.svg.line()
-                .x((d) => d.x)
-                .y((d) => d.y);
-
-              return line(points);
-            });
-        });
-    }
-
-    {
-      // Add arrow shape
-      svgPaths.selectAll('defs *').remove();
-      svgPaths.selectAll('defs')
-        .each(function(e) {
-          let edge = g.edge(e),
-              arrowhead = arrows[edge.arrowhead];
-          arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
-        });
-    }
-
-    return svgPaths;
+    // Add arrow shape
+    svgPaths.selectAll('defs *').remove();
+    svgPaths.selectAll('defs')
+      .each(function(e) {
+        let edge = g.edge(e)
+          , arrowhead = arrows.normal;
+        arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
+      });
   }
 
   centerElement() {

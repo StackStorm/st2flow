@@ -1,5 +1,7 @@
 'use strict';
 
+let intersectRect = require('dagre-d3/lib/intersect/intersect-rect');
+
 class Node {
   constructor(graph, name) {
     this.name = name;
@@ -18,6 +20,19 @@ class Node {
 
   connectTo(target, type) {
     return this.graph.connect(this.name, target, type);
+  }
+
+  get center() {
+    return {
+      x: this.x + (this.width / 2),
+      y: this.y + (this.height / 2),
+      width: this.width,
+      height: this.height
+    };
+  }
+
+  intersect(node) {
+    return intersectRect(this.center, node.center);
   }
 }
 

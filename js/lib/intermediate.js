@@ -35,6 +35,7 @@ class Intermediate extends EventEmitter {
       TASK_BLOCK: /^\s*chain:\s*$/,
       TASK: /^\s*-\s*/,
       TASK_NAME: /(.*name:\s+['"]*)([\w\s]+)/,
+      TASK_REF: /(.*ref:\s+['"]*)([\w\s.]+)/,
       TASK_SUCCESS_TRANSITION: /(.*on-success:\s+['"]*)([\w\s]+)/,
       TASK_ERROR_TRANSITION: /(.*on-failure:\s+['"]*)([\w\s]+)/
     };
@@ -82,6 +83,17 @@ class Intermediate extends EventEmitter {
           state.currentTask = this.task(name, state.currentTask);
           state.currentTask.getSector('task').setTask(state.currentTask);
           _.remove(state.untouchedTasks, (e) => e === name);
+        }
+
+        // If it has `ref:`, that's action reference
+        match = spec.TASK_REF.exec(line);
+        if (match) {
+          let [,_prefix,ref] = match
+            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + ref.length]
+            ;
+
+          let sector = new Sector(...coords).setType('ref');
+          state.currentTask.setProperty('ref', ref).setSector('ref', sector);
         }
 
         // If it has `on-success:`, that's successfil transition pointer

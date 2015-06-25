@@ -25,6 +25,8 @@ class Graph extends mixin(dagreD3.graphlib.Graph, EventEmitter) {
         node = new Node(this, task.getProperty('name'));
       }
 
+      node.ref = task.getProperty('ref');
+
       if (task.getProperty('success')) {
         node.connectTo(task.getProperty('success'), 'success');
       }
