@@ -17,24 +17,67 @@ let st2Class = (element, modifier, selector) => {
 
 let nodeTmpl = (node) =>
 `
-  <div class='${st2Class('node-name')}'>${node.name}</div>
-  <div class='${st2Class('node-ref')}'>${node.ref}</div>
+  <div class="${st2Class('node-name')}">${node.name}</div>
+  <div class="${st2Class('node-ref')}">${node.ref}</div>
+  <div class="${st2Class('node-buttons')}">
+    <span class="${st2Class('node-button')} ${st2Class('node-button-move')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Class('node-button-success')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
+  </div>
 `;
+
+function pack(o) {
+  return JSON.stringify(o);
+}
+
+function unpack(s) {
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    return {};
+  }
+}
 
 class Canvas extends EventEmitter {
   constructor() {
     super();
 
-    this.canvas = d3
-      .select('#canvas')
+    let self = this;
+
+    this.viewer = d3
+      .select(st2Class(null, true))
       ;
 
-    this.overlay = this.canvas
+    this.overlay = this.viewer
       .append('div')
-      .classed(st2Class('overlay'), true);
+      .classed(st2Class('overlay'), true)
+      .on('dragover', function () {
+        if (event.target === this) {
+          event.stopPropagation();
+          self.dragOverOverlay(this, d3.event);
+        }
+      })
+      .on('dragenter', function () {
+        if (event.target === this) {
+          event.stopPropagation();
+          self.activateOverlay(this, d3.event);
+        }
+      })
+      .on('dragleave', function () {
+        if (event.target === this) {
+          event.stopPropagation();
+          self.deactivateOverlay(this, d3.event);
+        }
+      })
+      .on('drop', function () {
+        if (event.target === this) {
+          event.stopPropagation();
+          self.dropOnOverlay(this, d3.event);
+        }
+      });
 
-    this.svg = d3
-      .select('#canvas svg');
+    this.svg = this.viewer
+      .select(st2Class('canvas', true));
 
     this.clear();
 
@@ -72,17 +115,55 @@ class Canvas extends EventEmitter {
     this.createEdgePaths(this.svg, this.graph, require('dagre-d3/lib/arrows'));
   }
 
+  reposition() {
+    let nodes = this.overlay.selectAll(st2Class('node', true));
+
+    this.positionNodes(nodes, this.graph);
+    this.createEdgePaths(this.svg, this.graph, require('dagre-d3/lib/arrows'));
+  }
+
   createNodes(selection, g) {
+    let self = this;
+
     let nodes = selection
       .selectAll(st2Class('node', true))
       .data(g.nodes(), (v) => v)
       ;
 
-    nodes.enter()
+    let enter = nodes.enter()
       .append('div')
         .attr('class', st2Class('node'))
         .html((d) => nodeTmpl(g.node(d)))
-        ;
+        .on('dragenter', function () {
+          self.activateNode(this, d3.event);
+        })
+        .on('dragleave', function () {
+          self.deactivateNode(this, d3.event);
+        })
+        .on('dragover', function () {
+          self.dragOverNode(this, d3.event);
+        })
+        .on('drop', function (name) {
+          self.dropOnNode(this, d3.event, name);
+        });
+
+    enter.select(st2Class('node-button-move', true))
+      .on('dragstart', function (name) {
+        self.dragMove(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Class('node-button-success', true))
+      .on('dragstart', (name) => {
+        self.dragSuccess(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Class('node-button-error', true))
+      .on('dragstart', (name) => {
+        self.dragError(this, d3.event, name);
+      })
+      ;
 
     nodes.exit()
       .remove()
@@ -111,10 +192,10 @@ class Canvas extends EventEmitter {
   }
 
   createEdgePaths(selection, g, arrows) {
-    let {scrollWidth: width, scrollHeight: height} = this.canvas.node();
+    let {scrollWidth: width, scrollHeight: height} = this.viewer.node();
 
     this.svg.attr('width', width);
-    this.svg.attr('height', height);
+    this.svg.attr('height', height - 6); // A number of pixels my browser is adding for no particular reason;
 
     // Initialize selection with data set
     let svgPaths = selection.selectAll(st2Class('edge', true))
@@ -180,6 +261,93 @@ class Canvas extends EventEmitter {
 
       this.element.attr('transform', 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')');
     }
+  }
+
+  // Event Handlers
+
+  activateOverlay(element) {
+    element.classList.add(st2Class('overlay', 'active'));
+  }
+
+  deactivateOverlay(element) {
+    element.classList.remove(st2Class('overlay', 'active'));
+  }
+
+  dragOverOverlay(element, event) {
+    let dt = event.dataTransfer;
+
+    if (dt.effectAllowed === 'move') {
+      event.preventDefault();
+    }
+  }
+
+  dropOnOverlay(element, event) {
+    let { name, offsetX, offsetY } = unpack(event.dataTransfer.getData('nodePack'))
+      , {clientX: x, clientY: y} = event
+      ;
+
+    this.emit('move', name, x - offsetX, y - offsetY);
+    this.deactivateOverlay(element);
+  }
+
+  activateNode(element) {
+    element.classList.add(st2Class('node', 'active'));
+  }
+
+  deactivateNode(element) {
+    element.classList.remove(st2Class('node', 'active'));
+  }
+
+  dragOverNode(element, event) {
+    let dt = event.dataTransfer;
+
+    if (dt.effectAllowed === 'link') {
+      event.preventDefault();
+    }
+  }
+
+  dropOnNode(element, event, name) {
+    event.stopPropagation();
+
+    let dt = event.dataTransfer
+      , {source, type} = unpack(dt.getData('linkPack'))
+      , destination = name
+      ;
+
+    this.emit('link', source, destination, type);
+    this.deactivateNode(element);
+  }
+
+  dragMove(element, event, name) {
+    let dt = event.dataTransfer
+      , {clientX: x, clientY: y} = event
+      , node = this.graph.node(name)
+      , [offsetX, offsetY] = [x - node.x, y - node.y]
+      ;
+
+    dt.setDragImage(node.elem, offsetX, offsetY);
+    dt.setData('nodePack', pack({ name, offsetX, offsetY }));
+    dt.effectAllowed = 'move';
+  }
+
+  dragSuccess(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name,
+      type: 'success'
+    }));
+    dt.effectAllowed = 'link';
+  }
+
+  dragError(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name,
+      type: 'error'
+    }));
+    dt.effectAllowed = 'link';
   }
 }
 

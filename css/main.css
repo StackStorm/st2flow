@@ -38,6 +38,10 @@ main {
     right: 0;
     bottom: 0;
     left: 0;
+
+    &--active {
+      box-shadow: inset 0 0 0 5px red;
+    }
   }
 
   &__node {
@@ -47,27 +51,60 @@ main {
     color: #eee;
     font-size: 12px;
     position: absolute;
+    user-select: none;
+
+    cursor: pointer;
 
     &-name {
       font-style: italic;
+      pointer-events: none;
     }
 
     &-ref {
       color: #90d5fc;
+      pointer-events: none;
     }
 
-    rect {
-      fill: #333;
-      stroke-width: 1px;
+    &-buttons {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      padding: 9px;
     }
 
-    &--selected rect {
-      fill: #336;
+    &:hover &-buttons {
+      display: block;
     }
 
-    &-label {
-      fill: #eee;
-      user-select: none;
+    &-button {
+      display: inline-block;
+      width: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 12px;
+      background-color: white;
+      color: black;
+      pointer-events: auto;
+
+      &-move:after {
+        content: 'M'
+      }
+
+      &-success:after {
+        content: 'S'
+      }
+
+      &-error:after {
+        content: 'E'
+      }
+    }
+
+    &--active {
+      box-shadow: 0 0 0 1px red;
     }
   }
 

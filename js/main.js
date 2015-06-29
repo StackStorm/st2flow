@@ -79,6 +79,19 @@ class State {
       }
     });
 
+    this.canvas.on('move', (target, x, y) => {
+      let node = this.graph.node(target);
+
+      node.x = x;
+      node.y = y;
+
+      this.canvas.reposition();
+    });
+
+    this.canvas.on('link', (source, destination, type) => {
+      this.connect(source, destination, type);
+    });
+
     window.addEventListener('resize', () => {
       this.canvas.centerElement();
     });
