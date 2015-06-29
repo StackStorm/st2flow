@@ -1,181 +1,205 @@
 'use strict';
 
-let _ = require('lodash');
+let _ = require('lodash')
+  , ace = require('brace')
+  ;
 
-let draw
-  , parse;
+let Range = require('./lib/range')
+  , Graph = require('./lib/graph')
+  , Intermediate = require('./lib/intermediate')
+  , Canvas = require('./lib/canvas')
+  ;
 
-// Parser
-// ------
-{
-  let YAML = require('js-yaml')
-    , dagreD3 = require('dagre-d3');
+class State {
+  constructor() {
+    this.initGraph();
+    this.initCanvas();
+    this.initIntermediate();
+    this.initEditor();
 
-  parse = (data) => {
-    let ast = YAML.safeLoad(data)
-      , graph = new dagreD3.graphlib.Graph().setGraph({});
-
-    if (ast.chain && !_.isEmpty(ast.chain)) {
-
-      _.each(ast.chain, (node) => {
-        graph.setNode(node.name, {
-          label: node.name
-        });
-
-        if (node['on-success']) {
-          graph.setEdge(node.name, node['on-success'], {
-            type: 'success'
-          });
-        }
-
-        if (node['on-failure']) {
-          graph.setEdge(node.name, node['on-failure'], {
-            type: 'failure'
-          });
-        }
-      });
-
-    } else if (ast.workflows && !_.isEmpty(ast.workflows)) {
-
-      _.each(ast.workflows, (wf) => {
-        _.each(wf.tasks, (task, task_name) => {
-
-          graph.setNode(task_name, {
-            label: task_name
-          });
-
-          if (task['on-success']) {
-            _.each(task['on-success'], (target) => {
-              graph.setEdge(task_name, target, {
-                type: 'success'
-              });
-            });
-          }
-
-          if (task['on-error']) {
-            _.each(task['on-error'], (target) => {
-              graph.setEdge(task_name, target, {
-                type: 'failure'
-              });
-            });
-          }
-
-          if (task['on-complete']) {
-            _.each(task['on-complete'], (target) => {
-              graph.setEdge(task_name, target, {
-                type: 'complete'
-              });
-            });
-          }
-
-        });
-      });
-
-    }
-
-    draw(graph);
-  };
-}
-
-// Editor
-// ------
-{
-  let ace = require('brace');
-  require('brace/mode/yaml');
-  require('brace/theme/monokai');
-
-  let editor = ace.edit('editor');
-  editor.getSession().setMode('ace/mode/yaml');
-  editor.setTheme('ace/theme/monokai');
-
-  editor.$blockScrolling = Infinity;
-
-  window.editor = editor;
-
-  editor.on("change", _.debounce(function () {
-    var str = editor.env.document.doc.getAllLines();
-
-    parse(str.join('\n'));
-  }, 100));
-}
-
-
-// Canvas
-// ------
-{
-  let d3 = require('d3')
-    , dagreD3 = require('dagre-d3');
-
-  let render = dagreD3.render();
-
-  class Canvas {
-    constructor() {
-      this.svg = d3
-        .select('#canvas svg');
-
-      this.clear();
-    }
-
-    clear() {
-      this.svg
-        .selectAll('g')
-        .remove('*');
-
-      this.element = this.svg
-        .append('g');
-
-      return this;
-    }
-
-    draw(graph) {
-      this.graph = graph;
-
-      // Temporary transformation to separate data from representation
-      {
-        _.each(this.graph.edges(), (e) => {
-          let edge = this.graph.edge(e.v, e.w);
-
-          edge.class = "st2-viewer__edge--" + edge.type;
-        });
-      }
-
-      let ok = this.render();
-
-      if (ok) {
-        this.centerElement();
-      }
-    }
-
-    render() {
-      try {
-        render(this.element, this.graph);
-
-        return true;
-      } catch(e) {
-        return false;
-      }
-    }
-
-    centerElement() {
-      if (this.element) {
-        let canvasBounds = this.svg[0][0].getBoundingClientRect()
-          , elementBounds = this.element[0][0].getBoundingClientRect();
-
-        let xCenterOffset = (canvasBounds.width - elementBounds.width) / 2;
-        let yCenterOffset = (canvasBounds.height - elementBounds.height) / 2;
-
-        this.element.attr('transform', 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')');
-      }
-    }
+    this.showSelectedTask();
   }
 
-  let canvas = new Canvas();
+  initEditor() {
+    let editor = this.editor = ace.edit('editor');
 
-  draw = (graph) => {
-    canvas.draw(graph);
-  };
+    require('brace/mode/yaml');
+    editor.getSession().setMode('ace/mode/yaml');
 
-  window.addEventListener('resize', () => {
-    canvas.centerElement();
-  });
+    require('brace/theme/monokai');
+    editor.setTheme('ace/theme/monokai');
+
+    editor.setHighlightActiveLine(false);
+    editor.$blockScrolling = Infinity;
+
+    editor.on('change', (delta) => {
+      let str = this.editor.env.document.doc.getAllLines();
+
+      this.intermediate.update(delta, str.join('\n'));
+    });
+  }
+
+  initIntermediate() {
+    this.intermediate = new Intermediate();
+
+    this.intermediate.on('parse', (tasks) => {
+      this.graph.build(tasks);
+      this.canvas.draw(this.graph);
+    });
+  }
+
+  initCanvas() {
+    this.canvas = new Canvas();
+
+    this.canvas.on('node:select', (name) => {
+      const SHIFT = 1
+          , ALT = 2
+          , CTRL = 4
+          , META = 8
+          ;
+
+      let mode =
+        event.shiftKey * SHIFT +
+        event.altKey * ALT +
+        event.ctrlKey * CTRL +
+        event.metaKey * META;
+
+      switch(mode) {
+        case SHIFT:
+          this.connect(this.graph.__selected__, name, 'success');
+          break;
+        case SHIFT + ALT:
+          this.connect(this.graph.__selected__, name, 'error');
+          break;
+        case META:
+          this.rename(name);
+          break;
+        default:
+          this.graph.select(name);
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      this.canvas.centerElement();
+    });
+  }
+
+  initGraph() {
+    this.graph = new Graph();
+  }
+
+  connect(source, target, type='success') {
+    let task = this.intermediate.task(source);
+
+    if (!task) {
+      throw new Error('no such task:', source);
+    }
+
+    this.editor.env.document.replace(task.getSector(type), target);
+  }
+
+  rename(target) {
+    let task = this.intermediate.task(target);
+
+    if (!task) {
+      throw new Error('no such task:', target);
+    }
+
+    let name = window.prompt('What would be a new name for the task?', target);
+
+    let sectors = [task.getSector('name')];
+
+    _.each(this.intermediate.tasks, (t) =>
+      _.each(['success', 'error', 'complete'], (type) => {
+        if (t.getProperty(type) === task.getProperty('name')) {
+          sectors.push(t.getSector(type));
+        }
+      })
+    );
+
+    _.each(sectors, (sector) => this.editor.env.document.replace(sector, name));
+  }
+
+  debugSectors() {
+    let debugSectorMarkers = [];
+
+    this.intermediate.on('parse', () => {
+      {
+        _.each(debugSectorMarkers, (marker) => {
+          this.editor.session.removeMarker(marker);
+        });
+        debugSectorMarkers = [];
+      }
+
+      {
+        this.intermediate.sectors.map((e) =>
+          console.log(`[${e.start.row}, ${e.start.column}]->[${e.end.row}, ${e.end.column}]`)
+        );
+
+        console.log('---');
+      }
+
+      _.each(this.intermediate.sectors, (sector) => {
+          let range, marker;
+
+          range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
+          marker = this.editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
+          debugSectorMarkers.push(marker);
+        });
+    });
+  }
+
+  showSelectedTask() {
+    let selectMarker;
+
+    this.graph.on('select', (taskName) => {
+      let sector = _.find(this.intermediate.sectors, (e) => {
+        return e.type === 'task' && e.task.getProperty('name') === taskName;
+      });
+
+      // Since we're using `fullLine` marker, remove the last (zero character long) line from range
+      let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
+
+      if (selectMarker) {
+        this.editor.session.removeMarker(selectMarker);
+      }
+
+      selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
+    });
+
+    this.editor.selection.on('changeCursor', () => {
+      let { row, column } = this.editor.selection.getCursor()
+        , range = new Range(row, column, row, column)
+        , sectors = this.intermediate.search(range, ['task'])
+        , sector = _.first(sectors)
+        ;
+
+      if (sector && sector.task) {
+        this.graph.select(sector.task.getProperty('name'));
+      }
+    });
+  }
+
+  debugSearch() {
+    this.editor.selection.on('changeSelection', (e, selection) => {
+      let sectors = this.intermediate.search(selection.getRange())
+        , types = _.groupBy(sectors, 'type');
+      console.log('->', `Selected ${types.task ? types.task.length : 'no'} tasks, ` +
+                        `${types.name ? types.name.length : 'no'} names, ` +
+                        `${types.success ? types.success.length : 'no'} success transitions ` +
+                        `and ${types.error ? types.error.length : 'no'} error transitions`);
+    });
+  }
+
+  debugUpdate() {
+    this.intermediate.on('update', (sectors) => {
+      let types = _.groupBy(sectors, 'type');
+      console.log('->', `Updates ${types.task ? types.task.length : 'no'} tasks, ` +
+                        `${types.name ? types.name.length : 'no'} names, ` +
+                        `${types.success ? types.success.length : 'no'} success transitions ` +
+                        `and ${types.error ? types.error.length : 'no'} error transitions`);
+    });
+  }
 }
+
+window.st2flow = new State();

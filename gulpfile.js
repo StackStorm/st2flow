@@ -4,7 +4,7 @@ var gulp = require('gulp')
   , jshint = require('gulp-jshint')
   , plumber = require('gulp-plumber')
   , browserify = require('browserify')
-  , babelify = require("babelify")
+  , babelify = require('babelify')
   , source = require('vinyl-source-stream')
   , mocha = require('gulp-mocha')
   , size = require('gulp-size')
@@ -29,8 +29,8 @@ gulp.task('lint', function() {
 gulp.task('css', function () {
   var processors = [
     require('autoprefixer-core')({browsers: ['last 2 version']}),
-    require("postcss-import")(),
-    require("postcss-nested")()
+    require('postcss-import')(),
+    require('postcss-nested')()
   ];
   return gulp.src('css/*.css')
     .pipe(plumber())
@@ -82,6 +82,7 @@ gulp.task('browserify', function() {
 });
 
 gulp.task('test', function () {
+  require('babelify/node_modules/babel-core/register');
   return gulp.src('tests/**/*.js', {read: false})
     .pipe(mocha({
       reporter: 'dot'
@@ -111,6 +112,21 @@ gulp.task('watch', function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
   gulp.watch(['js/**/*.js'], ['lint', 'browserify']);
+
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('readable', function() {
+    var chunk = process.stdin.read();
+    switch (chunk) {
+      case null:
+        gutil.log('This build system supports stdin commands');
+        break;
+      case 'test\n':
+        gulp.tasks.test.fn();
+        break;
+      default:
+        gutil.log('Unknown command');
+    }
+  });
 });
 
-gulp.task('default', ['lint', 'build', 'test', 'watch', 'serve']);
+gulp.task('default', ['lint', 'build', 'watch', 'serve']);

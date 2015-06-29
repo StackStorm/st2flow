@@ -33,26 +33,34 @@ main {
   text {
     font-weight: 300;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
-    font-size: 14px;
+    font-size: 12px;
   }
 
-  .node {
+  &__node {
+    cursor: pointer;
+
     rect {
-      stroke: #eee;
       fill: #333;
       stroke-width: 1px;
     }
 
-    .label {
+    &--selected rect {
+      fill: #336;
+    }
+
+    &-label {
       fill: #eee;
+      user-select: none;
     }
   }
 
-  .edgePath path {
-    stroke-width: 1.5px;
-  }
-
   &__edge {
+    &-path {
+      stroke-width: 1.5px;
+      stroke: white;
+      fill: none;
+    }
+
     &--complete path {
       stroke: #aa0;
       fill: #aa0;
@@ -88,5 +96,17 @@ main {
   ::-webkit-scrollbar-corner,
   ::-webkit-scrollbar-thumb:window-inactive {
     background: rgba(100, 100, 100, 0.4);
+  }
+
+  &__active-task {
+    position: absolute;
+    background-color: rgba(255,255,255,0.1);
+    box-sizing: border-box;
+  }
+
+  &__active-name {
+    position: absolute;
+    border: 1px solid green;
+    box-sizing: border-box;
   }
 }
