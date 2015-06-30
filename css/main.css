@@ -26,22 +26,20 @@ main {
   position: relative;
   overflow: auto;
 
+  &--active {
+    background-color:#444;
+    background-image: linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px);
+    background-size:50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px
+  }
+
   text {
     font-weight: 300;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
     font-size: 12px;
-  }
-
-  &__overlay {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-
-    &--active {
-      box-shadow: inset 0 0 0 5px red;
-    }
   }
 
   &__node {
@@ -51,6 +49,8 @@ main {
     color: #eee;
     font-size: 12px;
     position: absolute;
+    top: 0;
+    left: 0;
     user-select: none;
 
     cursor: pointer;
@@ -104,7 +104,7 @@ main {
     }
 
     &--active {
-      box-shadow: 0 0 0 1px red;
+      box-shadow: 0 0 0 5px rgba(255,255,255,0.5);
     }
   }
 

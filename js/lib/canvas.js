@@ -48,36 +48,32 @@ class Canvas extends EventEmitter {
       .select(st2Class(null, true))
       ;
 
-    this.overlay = this.viewer
-      .append('div')
-      .classed(st2Class('overlay'), true)
+    this.svg = this.viewer
+      .select(st2Class('canvas', true))
       .on('dragover', function () {
-        if (event.target === this) {
-          event.stopPropagation();
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
           self.dragOverOverlay(this, d3.event);
         }
       })
       .on('dragenter', function () {
-        if (event.target === this) {
-          event.stopPropagation();
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
           self.activateOverlay(this, d3.event);
         }
       })
       .on('dragleave', function () {
-        if (event.target === this) {
-          event.stopPropagation();
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
           self.deactivateOverlay(this, d3.event);
         }
       })
       .on('drop', function () {
-        if (event.target === this) {
-          event.stopPropagation();
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
           self.dropOnOverlay(this, d3.event);
         }
       });
-
-    this.svg = this.viewer
-      .select(st2Class('canvas', true));
 
     this.clear();
 
@@ -107,7 +103,7 @@ class Canvas extends EventEmitter {
   }
 
   render() {
-    let nodes = this.createNodes(this.overlay, this.graph);
+    let nodes = this.createNodes(this.viewer, this.graph);
 
     dagreD3.dagre.layout(this.graph);
 
@@ -116,7 +112,7 @@ class Canvas extends EventEmitter {
   }
 
   reposition() {
-    let nodes = this.overlay.selectAll(st2Class('node', true));
+    let nodes = this.viewer.selectAll(st2Class('node', true));
 
     this.positionNodes(nodes, this.graph);
     this.createEdgePaths(this.svg, this.graph, require('dagre-d3/lib/arrows'));
@@ -266,11 +262,11 @@ class Canvas extends EventEmitter {
   // Event Handlers
 
   activateOverlay(element) {
-    element.classList.add(st2Class('overlay', 'active'));
+    element.classList.add(st2Class(null, 'active'));
   }
 
   deactivateOverlay(element) {
-    element.classList.remove(st2Class('overlay', 'active'));
+    element.classList.remove(st2Class(null, 'active'));
   }
 
   dragOverOverlay(element, event) {
@@ -283,7 +279,7 @@ class Canvas extends EventEmitter {
 
   dropOnOverlay(element, event) {
     let { name, offsetX, offsetY } = unpack(event.dataTransfer.getData('nodePack'))
-      , {clientX: x, clientY: y} = event
+      , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
       ;
 
     this.emit('move', name, x - offsetX, y - offsetY);
@@ -320,7 +316,7 @@ class Canvas extends EventEmitter {
 
   dragMove(element, event, name) {
     let dt = event.dataTransfer
-      , {clientX: x, clientY: y} = event
+      , {layerX: x, layerY: y} = event // Relative to the closest positioned element (Viewer)
       , node = this.graph.node(name)
       , [offsetX, offsetY] = [x - node.x, y - node.y]
       ;
