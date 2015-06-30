@@ -188,10 +188,7 @@ class Canvas extends EventEmitter {
   }
 
   createEdgePaths(selection, g, arrows) {
-    let {scrollWidth: width, scrollHeight: height} = this.viewer.node();
-
-    this.svg.attr('width', width);
-    this.svg.attr('height', height);
+    this.resizeCanvas();
 
     // Initialize selection with data set
     let svgPaths = selection.selectAll(st2Class('edge', true))
@@ -257,6 +254,28 @@ class Canvas extends EventEmitter {
 
       this.element.attr('transform', 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')');
     }
+  }
+
+  resizeCanvas() {
+    let element = this.viewer.node();
+
+    let { width, height } = _.reduce(this.graph.nodes(), (acc, name) => {
+      let {x, y, width, height} = this.graph.node(name);
+
+      x += width;
+      y += height;
+
+      acc.width = acc.width < x ? x : acc.width;
+      acc.height = acc.height < y ? y : acc.height;
+
+      return acc;
+    }, {
+      width: element.clientWidth,
+      height: element.clientHeight
+    });
+
+    this.svg.attr('width', width);
+    this.svg.attr('height', height);
   }
 
   // Event Handlers
