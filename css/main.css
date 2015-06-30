@@ -42,6 +42,10 @@ main {
     font-size: 12px;
   }
 
+  &__canvas {
+    position: absolute;
+  }
+
   &__node {
     cursor: pointer;
     padding: 5px;

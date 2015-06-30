@@ -191,7 +191,7 @@ class Canvas extends EventEmitter {
     let {scrollWidth: width, scrollHeight: height} = this.viewer.node();
 
     this.svg.attr('width', width);
-    this.svg.attr('height', height - 6); // A number of pixels my browser is adding for no particular reason;
+    this.svg.attr('height', height);
 
     // Initialize selection with data set
     let svgPaths = selection.selectAll(st2Class('edge', true))
