@@ -103,12 +103,11 @@ class Canvas extends EventEmitter {
   }
 
   render() {
-    let nodes = this.createNodes(this.viewer, this.graph);
+    this.createNodes(this.viewer, this.graph);
 
     dagreD3.dagre.layout(this.graph);
 
-    this.positionNodes(nodes, this.graph);
-    this.createEdgePaths(this.svg, this.graph, require('dagre-d3/lib/arrows'));
+    this.reposition();
   }
 
   reposition() {

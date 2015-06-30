@@ -26,6 +26,23 @@ main {
   position: relative;
   overflow: auto;
 
+  &::-webkit-scrollbar {
+    width: 0.5em;
+  }
+
+  &::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.8);
+  }
+
+  &::-webkit-scrollbar-corner,
+  &::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(100, 100, 100, 0.4);
+  }
+
   &--active {
     background-color:#444;
     background-image: linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
