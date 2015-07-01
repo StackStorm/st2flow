@@ -1,19 +1,16 @@
 'use strict';
 
 let _ = require('lodash')
+  , bem = require('./bem')
   , d3 = require('d3')
   , dagreD3 = require('dagre-d3')
   , EventEmitter = require('events').EventEmitter
+  , { pack, unpack } = require('./packer')
   ;
 
 let render = dagreD3.render();
 
-let st2BEM = (prefix, block, el, mod) =>
-  `${prefix ? prefix + '-' : ''}${block}${el ? '__' + el : ''}${_.isString(mod) ? '--' + mod : ''}`;
-
-let st2Class = (element, modifier, selector) => {
-  return st2BEM(selector || modifier === true ? '.st2' : 'st2', 'viewer', element, modifier);
-};
+let st2Class = bem('viewer');
 
 let nodeTmpl = (node) =>
 `
@@ -25,18 +22,6 @@ let nodeTmpl = (node) =>
     <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
   </div>
 `;
-
-function pack(o) {
-  return JSON.stringify(o);
-}
-
-function unpack(s) {
-  try {
-    return JSON.parse(s);
-  } catch (e) {
-    return {};
-  }
-}
 
 class Canvas extends EventEmitter {
   constructor() {
@@ -76,6 +61,7 @@ class Canvas extends EventEmitter {
       });
 
     this.clear();
+    this.resizeCanvas();
 
     render.createNodes(this.createNodes.bind(this));
     render.createEdgePaths(this.createEdgePaths.bind(this));
@@ -149,13 +135,13 @@ class Canvas extends EventEmitter {
       ;
 
     enter.select(st2Class('node-button-success', true))
-      .on('dragstart', (name) => {
+      .on('dragstart', function (name) {
         self.dragSuccess(this, d3.event, name);
       })
       ;
 
     enter.select(st2Class('node-button-error', true))
-      .on('dragstart', (name) => {
+      .on('dragstart', function (name) {
         self.dragError(this, d3.event, name);
       })
       ;
@@ -256,25 +242,28 @@ class Canvas extends EventEmitter {
   }
 
   resizeCanvas() {
-    let element = this.viewer.node();
+    let element = this.viewer.node()
+      , dimensions = {
+        width: element.clientWidth,
+        height: element.clientHeight
+      };
 
-    let { width, height } = _.reduce(this.graph.nodes(), (acc, name) => {
-      let {x, y, width, height} = this.graph.node(name);
+    if (this.graph) {
+       dimensions = _.reduce(this.graph.nodes(), (acc, name) => {
+        let {x, y, width, height} = this.graph.node(name);
 
-      x += width;
-      y += height;
+        x += width;
+        y += height;
 
-      acc.width = acc.width < x ? x : acc.width;
-      acc.height = acc.height < y ? y : acc.height;
+        acc.width = acc.width < x ? x : acc.width;
+        acc.height = acc.height < y ? y : acc.height;
 
-      return acc;
-    }, {
-      width: element.clientWidth,
-      height: element.clientHeight
-    });
+        return acc;
+      }, dimensions);
+    }
 
-    this.svg.attr('width', width);
-    this.svg.attr('height', height);
+    this.svg.attr('width', dimensions.width);
+    this.svg.attr('height', dimensions.height);
   }
 
   // Event Handlers
@@ -290,18 +279,35 @@ class Canvas extends EventEmitter {
   dragOverOverlay(element, event) {
     let dt = event.dataTransfer;
 
-    if (dt.effectAllowed === 'move') {
+    if (dt.effectAllowed === 'move' || dt.effectAllowed === 'copy') {
       event.preventDefault();
     }
   }
 
   dropOnOverlay(element, event) {
-    let { name, offsetX, offsetY } = unpack(event.dataTransfer.getData('nodePack'))
-      , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
-      ;
+    let packet;
 
-    this.emit('move', name, x - offsetX, y - offsetY);
-    this.deactivateOverlay(element);
+    packet = event.dataTransfer.getData('nodePack');
+    if (packet) {
+      let { name, offsetX, offsetY } = unpack(packet)
+        , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
+        ;
+
+      this.emit('move', name, x - offsetX, y - offsetY);
+      this.deactivateOverlay(element);
+      return;
+    }
+
+    packet = event.dataTransfer.getData('actionPack');
+    if (packet) {
+      let { action } = unpack(packet)
+        , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
+        ;
+
+      this.emit('create', action, x, y);
+      this.deactivateOverlay(element);
+      return;
+    }
   }
 
   activateNode(element) {

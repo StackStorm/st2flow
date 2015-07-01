@@ -16,6 +16,33 @@ main {
 }
 
 
+.st2-palette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 240px;
+  max-height: 100%;
+  z-index: 1;
+  padding: 10px;
+
+  &__action {
+    cursor: pointer;
+    padding: 5px;
+    background-color: #191f23;
+    color: #90d5fc;
+    font-size: 12px;
+    user-select: none;
+
+    &-name {
+      font-weight: bold;
+    }
+
+    &-description {
+      font-size: 0.9em;
+    }
+  }
+}
+
 .st2-viewer {
   flex: 1;
 
@@ -73,8 +100,6 @@ main {
     top: 0;
     left: 0;
     user-select: none;
-
-    cursor: pointer;
 
     &-name {
       font-style: italic;

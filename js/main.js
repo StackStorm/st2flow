@@ -8,6 +8,7 @@ let Range = require('./lib/range')
   , Graph = require('./lib/graph')
   , Intermediate = require('./lib/intermediate')
   , Canvas = require('./lib/canvas')
+  , Palette = require('./lib/palette')
   ;
 
 class State {
@@ -16,6 +17,7 @@ class State {
     this.initCanvas();
     this.initIntermediate();
     this.initEditor();
+    this.initPalette();
 
     this.showSelectedTask();
   }
@@ -92,6 +94,10 @@ class State {
       this.connect(source, destination, type);
     });
 
+    this.canvas.on('create', (action, x, y) => {
+      this.create(action, x, y);
+    });
+
     window.addEventListener('resize', () => {
       this.canvas.centerElement();
     });
@@ -99,6 +105,10 @@ class State {
 
   initGraph() {
     this.graph = new Graph();
+  }
+
+  initPalette() {
+    this.pallette = new Palette();
   }
 
   connect(source, target, type='success') {
@@ -131,6 +141,10 @@ class State {
     );
 
     _.each(sectors, (sector) => this.editor.env.document.replace(sector, name));
+  }
+
+  create(action, x, y) {
+    console.log('create', action.ref, 'at', x, y);
   }
 
   debugSectors() {
