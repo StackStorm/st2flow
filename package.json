@@ -39,7 +39,7 @@
   "dependencies": {
     "brace": "^0.5.1",
     "d3": "^3.5.5",
-    "dagre-d3": "^0.4.8",
+    "dagre": "^0.7.2",
     "lodash": "^3.9.3",
     "mixin": "^0.2.0",
     "normalize.css": "^3.0.3"

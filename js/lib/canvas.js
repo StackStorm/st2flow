@@ -3,12 +3,10 @@
 let _ = require('lodash')
   , bem = require('./bem')
   , d3 = require('d3')
-  , dagreD3 = require('dagre-d3')
+  , dagre = require('dagre')
   , EventEmitter = require('events').EventEmitter
   , { pack, unpack } = require('./packer')
   ;
-
-let render = dagreD3.render();
 
 let st2Class = bem('viewer');
 
@@ -62,9 +60,6 @@ class Canvas extends EventEmitter {
 
     this.clear();
     this.resizeCanvas();
-
-    render.createNodes(this.createNodes.bind(this));
-    render.createEdgePaths(this.createEdgePaths.bind(this));
   }
 
   clear() {
@@ -91,7 +86,7 @@ class Canvas extends EventEmitter {
   render() {
     this.createNodes(this.viewer, this.graph);
 
-    dagreD3.dagre.layout(this.graph);
+    dagre.layout(this.graph);
 
     this.reposition();
   }
@@ -100,7 +95,7 @@ class Canvas extends EventEmitter {
     let nodes = this.viewer.selectAll(st2Class('node', true));
 
     this.positionNodes(nodes, this.graph);
-    this.createEdgePaths(this.svg, this.graph, require('dagre-d3/lib/arrows'));
+    this.createEdgePaths(this.svg, this.graph, require('./arrows'));
   }
 
   createNodes(selection, g) {

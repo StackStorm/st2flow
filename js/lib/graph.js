@@ -1,13 +1,13 @@
 'use strict';
 
 let _ = require('lodash')
-  , dagreD3 = require('dagre-d3')
+  , dagre = require('dagre')
   , EventEmitter = require('events').EventEmitter
   , mixin = require('mixin');
 
 let Node = require('./node');
 
-class Graph extends mixin(dagreD3.graphlib.Graph, EventEmitter) {
+class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
   constructor() {
     super();
 

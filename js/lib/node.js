@@ -1,6 +1,6 @@
 'use strict';
 
-let intersectRect = require('dagre-d3/lib/intersect/intersect-rect');
+let intersectRect = require('./intersect-rect');
 
 class Node {
   constructor(graph, name) {
