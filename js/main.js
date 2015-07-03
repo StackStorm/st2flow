@@ -118,7 +118,23 @@ class State {
       throw new Error('no such task:', source);
     }
 
-    this.editor.env.document.replace(task.getSector(type), target);
+    let sector = task.getSector(type);
+
+    if (sector) {
+      this.editor.env.document.replace(sector, target);
+    } else {
+      let keys = {
+          success: 'on-success',
+          error: 'on-failure'
+        }
+        , text = this.intermediate.keyTemplate(task)({
+          key: keys[type],
+          value: target
+        })
+        ;
+
+      this.editor.env.document.doc.insertLines(task.getSector('task').end.row, text.split('\n'));
+    }
   }
 
   rename(target) {
@@ -144,7 +160,14 @@ class State {
   }
 
   create(action, x, y) {
-    console.log('create', action.ref, 'at', x, y);
+    console.log('create', action.ref, 'at', x, y, 'after', this.intermediate.taskBlock.end);
+
+    let task = this.intermediate.template({
+      name: 'task1',
+      ref: action.ref
+    });
+
+    this.editor.env.document.doc.insertLines( this.intermediate.taskBlock.end, task.split('\n'));
   }
 
   debugSectors() {
@@ -225,6 +248,20 @@ class State {
                         `${types.name ? types.name.length : 'no'} names, ` +
                         `${types.success ? types.success.length : 'no'} success transitions ` +
                         `and ${types.error ? types.error.length : 'no'} error transitions`);
+    });
+  }
+
+  debugTaskBlock() {
+    let taskBlockMarker;
+
+    this.intermediate.on('parse', () => {
+      let range = this.intermediate.taskBlock;
+
+      if (taskBlockMarker) {
+        this.editor.session.removeMarker(taskBlockMarker);
+      }
+
+      taskBlockMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
     });
   }
 }

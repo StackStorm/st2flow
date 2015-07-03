@@ -1,9 +1,15 @@
 'use strict';
 
+let _ = require('lodash');
+
 class Task {
   constructor() {
     this.properties = {};
     this.sectors = {};
+  }
+
+  isEmpty() {
+    return _.isEmpty(this.properties);
   }
 
   getProperty(name) {

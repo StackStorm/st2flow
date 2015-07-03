@@ -38,11 +38,11 @@ class Palette {
   constructor() {
     let self = this;
 
-    this.palette = d3
+    this.element = d3
       .select(st2Class(null, true))
       ;
 
-    this.actions = this.palette
+    this.actions = this.element
       .selectAll(st2Class('action', true))
       .data(ACTIONS)
       ;
