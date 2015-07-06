@@ -185,7 +185,7 @@ class Intermediate extends EventEmitter {
           return;
         }
 
-        if (state.currentTask.isEmpty() && spec.EMPTY_LINE.test(line)) {
+        if (state.currentTask && state.currentTask.isEmpty() && spec.EMPTY_LINE.test(line)) {
           state.currentTask.starter += '\n';
         }
 

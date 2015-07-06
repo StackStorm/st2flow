@@ -121,6 +121,19 @@ class Canvas extends EventEmitter {
         })
         .on('drop', function (name) {
           self.dropOnNode(this, d3.event, name);
+        })
+        .each(d => {
+          let node = g.node(d);
+
+          node.on('change', (changes) => {
+            const refChanges = _.find(changes, {name: 'ref'});
+
+            if (refChanges) {
+              d3.select(node.elem)
+                .select(st2Class('node-ref', true))
+                .text(refChanges.object.ref);
+            }
+          });
         });
 
     enter.select(st2Class('node-button-move', true))

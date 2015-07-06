@@ -16,10 +16,14 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
   }
 
   build(tasks) {
-    this.reset();
+    let nodes = this.nodes();
 
     _.each(tasks, (task) => {
-      let node = this.node(task.getProperty('name'));
+      const name = task.getProperty('name');
+
+      let node = this.node(name);
+
+      _.remove(nodes, e => e === name);
 
       if (!node) {
         node = new Node(this, task.getProperty('name'));
@@ -39,6 +43,8 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
         node.connectTo(task.getProperty('complete'), 'complete');
       }
     });
+
+    _.each(nodes, v => this.removeNode(v));
   }
 
   select(name) {

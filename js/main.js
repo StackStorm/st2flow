@@ -167,7 +167,7 @@ class State {
       ref: action.ref
     });
 
-    this.editor.env.document.doc.insertLines( this.intermediate.taskBlock.end, task.split('\n'));
+    this.editor.env.document.doc.insertLines(this.intermediate.taskBlock.end, task.split('\n'));
   }
 
   debugSectors() {

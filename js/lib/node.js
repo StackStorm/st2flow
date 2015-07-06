@@ -1,13 +1,21 @@
 'use strict';
 
-let intersectRect = require('./intersect-rect');
+let intersectRect = require('./intersect-rect')
+  , EventEmitter = require('events').EventEmitter
+  ;
 
-class Node {
+class Node extends EventEmitter {
   constructor(graph, name) {
+    super();
+
     this.name = name;
 
     this.graph = graph;
     this.graph.setNode(name, this);
+
+    Object.observe(this, changes => {
+      this.emit('change', changes);
+    });
   }
 
   select() {
