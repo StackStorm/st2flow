@@ -17,13 +17,13 @@ main {
 
 
 .st2-palette {
-  position: absolute;
   top: 0;
   left: 0;
   width: 240px;
   max-height: 100%;
   z-index: 1;
-  padding: 10px;
+
+  background-color: #191f23;
 
   &__action {
     cursor: pointer;

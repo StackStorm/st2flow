@@ -21,18 +21,31 @@ class Intermediate extends EventEmitter {
   }
 
   get template() {
-    let specimen = _(this.tasks)
-          .groupBy(task => task.starter)
-          .transform((acc, value, key) => acc.push({key, value}), [])
-          .max('value.length')
-      , starter = specimen.key
-      , indent = specimen.value[0].indent
-      ;
+    const specimen = _(this.tasks)
+            .groupBy(task => task.starter)
+            .transform((acc, value, key) => acc.push({key, value}), [])
+            .max('value.length')
+        , starter = specimen.key || '  - '
+        , indent = specimen.value && specimen.value[0].indent || '    '
+        , indices = _.map(this.tasks, task => {
+            const name = task.getProperty('name')
+                , expr = /task(\d+)/
+                , match = expr.exec(name)
+                ;
+
+            return _.parseInt(match && match[1]);
+          })
+        , index = _.max([0].concat(indices)) + 1
+        ;
 
     return _.template([
-      starter + 'name: ${name}',
+      starter + `name: task${index}`,
       indent +  'ref: ${ref}'
     ].join('\n'));
+  }
+
+  get taskBlockTemplate() {
+    return 'chain:\n';
   }
 
   keyTemplate(task) {
@@ -113,7 +126,11 @@ class Intermediate extends EventEmitter {
             ;
 
           if (state.currentTask.isEmpty()) {
-            state.currentTask.starter += _prefix; // FIX: won't work for a single line declaration
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
           } else {
             state.currentTask.indent = _prefix;
           }
@@ -136,7 +153,11 @@ class Intermediate extends EventEmitter {
             ;
 
           if (state.currentTask.isEmpty()) {
-            state.currentTask.starter += _prefix; // FIX: won't work for a single line declaration
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
           } else {
             state.currentTask.indent = _prefix;
           }
@@ -155,7 +176,11 @@ class Intermediate extends EventEmitter {
             ;
 
           if (state.currentTask.isEmpty()) {
-            state.currentTask.starter += _prefix; // FIX: won't work for a single line declaration
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
           } else {
             state.currentTask.indent = _prefix;
           }
@@ -174,7 +199,11 @@ class Intermediate extends EventEmitter {
             ;
 
           if (state.currentTask.isEmpty()) {
-            state.currentTask.starter += _prefix; // FIX: won't work for a single line declaration
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
           } else {
             state.currentTask.indent = _prefix;
           }

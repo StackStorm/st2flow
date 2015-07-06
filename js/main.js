@@ -34,6 +34,8 @@ class State {
     editor.setHighlightActiveLine(false);
     editor.$blockScrolling = Infinity;
 
+    editor.session.setTabSize(2);
+
     editor.on('change', (delta) => {
       let str = this.editor.env.document.doc.getAllLines();
 
@@ -160,14 +162,18 @@ class State {
   }
 
   create(action, x, y) {
-    console.log('create', action.ref, 'at', x, y, 'after', this.intermediate.taskBlock.end);
-
     let task = this.intermediate.template({
       name: 'task1',
       ref: action.ref
     });
 
-    this.editor.env.document.doc.insertLines(this.intermediate.taskBlock.end, task.split('\n'));
+    if (!this.intermediate.taskBlock) {
+      task = this.intermediate.taskBlockTemplate + task;
+    }
+
+    const cursor = this.intermediate.taskBlock && this.intermediate.taskBlock.end.row || 0;
+
+    this.editor.env.document.doc.insertLines(cursor, task.split('\n'));
   }
 
   debugSectors() {
