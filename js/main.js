@@ -162,10 +162,7 @@ class State {
   }
 
   create(action, x, y) {
-    let task = this.intermediate.template({
-      name: 'task1',
-      ref: action.ref
-    });
+    let task = this.intermediate.template(action);
 
     if (!this.intermediate.taskBlock) {
       task = this.intermediate.taskBlockTemplate + task;

@@ -44,6 +44,12 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
       }
     });
 
+    _.each(this.nodes(), name => {
+      if (!this.node(name)) {
+        this.removeNode(name);
+      }
+    });
+
     _.each(nodes, v => this.removeNode(v));
   }
 
@@ -58,13 +64,18 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
     return this.__selected__ === name;
   }
 
-  connect(source, target, type='success') {
-    let edge = this.edge(source, target);
-    if (!edge) {
+  connect(source, targets, type='success') {
+    targets = [].concat(targets);
+
+    _.each(this.successors(source), name => {
+      if (this.edge(source, name).type === type) {
+        this.removeEdge(source, name);
+      }
+    });
+
+    _.each(targets, target => {
       this.setEdge(source, target, { type });
-      return true;
-    }
-    return false;
+    });
   }
 
   reset() {

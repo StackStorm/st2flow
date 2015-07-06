@@ -119,6 +119,14 @@ class Canvas extends EventEmitter {
         .on('dragover', function () {
           self.dragOverNode(this, d3.event);
         })
+        .on('dragstart', function () {
+          d3.select(this)
+            .classed(st2Class('node', 'dragged'), true);
+        })
+        .on('dragend', function () {
+          d3.select(this)
+            .classed(st2Class('node', 'dragged'), false);
+        })
         .on('drop', function (name) {
           self.dropOnNode(this, d3.event, name);
         })
