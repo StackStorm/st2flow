@@ -1,15 +1,8 @@
 'use strict';
 
-let _ = require('lodash')
-  , ace = require('brace')
-  ;
-
-let Range = require('./lib/range')
-  , Graph = require('./lib/graph')
-  , Intermediate = require('./lib/intermediate')
-  , Canvas = require('./lib/canvas')
-  , Palette = require('./lib/palette')
-  ;
+const _ = require('lodash')
+    , Range = require('./lib/range')
+    ;
 
 class State {
   constructor() {
@@ -18,11 +11,12 @@ class State {
     this.initIntermediate();
     this.initEditor();
     this.initPalette();
-
-    this.showSelectedTask();
+    this.initControls();
   }
 
   initEditor() {
+    const ace = require('brace');
+
     let editor = this.editor = ace.edit('editor');
 
     require('brace/mode/yaml');
@@ -44,6 +38,7 @@ class State {
   }
 
   initIntermediate() {
+    const Intermediate = require('./lib/intermediate');
     this.intermediate = new Intermediate();
 
     this.intermediate.on('parse', (tasks) => {
@@ -53,6 +48,8 @@ class State {
   }
 
   initCanvas() {
+    const Canvas = require('./lib/canvas');
+
     this.canvas = new Canvas();
 
     this.canvas.on('node:select', (name) => {
@@ -106,11 +103,60 @@ class State {
   }
 
   initGraph() {
+    const Graph = require('./lib/graph');
     this.graph = new Graph();
   }
 
   initPalette() {
+    const Palette = require('./lib/palette');
     this.pallette = new Palette();
+  }
+
+  initControls() {
+    const d3 = require('d3')
+        , bem = require('./lib/bem')
+        ;
+
+    const st2Class = bem('controls');
+
+    const buttonTmpl = (control) =>
+    `
+      ${control.name[0].toUpperCase()}
+    `;
+
+    const element = d3
+      .select(st2Class(null, true))
+      ;
+
+    const controls = [{
+      name: 'undo',
+      action: () => {
+        this.editor.undo();
+      }
+    }, {
+      name: 'redo',
+      action: () => {
+        this.editor.redo();
+      }
+    }, {
+      name: 'layout',
+      action: () => {
+        this.graph.layout();
+        this.canvas.reposition();
+      }
+    }];
+
+    const buttons = element
+      .selectAll(st2Class('button'), true)
+      .data(controls, e => e.name)
+      ;
+
+    buttons.enter()
+      .append('div')
+      .attr('class', st2Class('button'))
+      .html(buttonTmpl)
+      .on('click', control => control.action())
+      ;
   }
 
   connect(source, target, type='success') {

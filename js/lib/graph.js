@@ -81,6 +81,10 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
   reset() {
     _.each(this.nodes(), (v) => this.removeNode(v));
   }
+
+  layout() {
+    dagre.layout(this);
+  }
 }
 
 module.exports = Graph;

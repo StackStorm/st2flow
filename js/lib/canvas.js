@@ -3,7 +3,6 @@
 let _ = require('lodash')
   , bem = require('./bem')
   , d3 = require('d3')
-  , dagre = require('dagre')
   , EventEmitter = require('events').EventEmitter
   , { pack, unpack } = require('./packer')
   ;
@@ -85,8 +84,6 @@ class Canvas extends EventEmitter {
 
   render() {
     this.createNodes(this.viewer, this.graph);
-
-    dagre.layout(this.graph);
 
     this.reposition();
   }
