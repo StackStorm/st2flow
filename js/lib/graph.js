@@ -13,6 +13,8 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
 
     this.setMaxListeners(0);
     this.setGraph({});
+
+    this.coordinates = {};
   }
 
   build(tasks) {
@@ -42,6 +44,11 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
       if (task.getProperty('complete')) {
         node.connectTo(task.getProperty('complete'), 'complete');
       }
+
+      const coords = this.coordinates[name] || {x: 0, y: 0};
+
+      node.x = coords.x;
+      node.y = coords.y;
     });
 
     _.each(this.nodes(), name => {
@@ -78,12 +85,25 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
     });
   }
 
+  move(target, x, y) {
+    this.coordinates[target] = { x, y };
+
+    const node = this.node(target);
+    _.assign(node, this.coordinates[target]);
+  }
+
   reset() {
     _.each(this.nodes(), (v) => this.removeNode(v));
   }
 
   layout() {
     dagre.layout(this);
+
+    _.each(this.nodes(), name => {
+      const { x, y } = this.node(name);
+
+      this.coordinates[name] = { x, y };
+    });
   }
 }
 

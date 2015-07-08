@@ -81,10 +81,7 @@ class State {
     });
 
     this.canvas.on('move', (target, x, y) => {
-      let node = this.graph.node(target);
-
-      node.x = x;
-      node.y = y;
+      this.graph.move(target, x, y);
 
       this.canvas.reposition();
     });
@@ -97,8 +94,12 @@ class State {
       this.create(action, x, y);
     });
 
+    this.canvas.on('rename', (target) => {
+      this.rename(target);
+    });
+
     window.addEventListener('resize', () => {
-      this.canvas.centerElement();
+      this.canvas.resizeCanvas();
     });
   }
 
@@ -208,7 +209,24 @@ class State {
   }
 
   create(action, x, y) {
-    let task = this.intermediate.template(action);
+    const indices = _.map(this.intermediate.tasks, task => {
+            const name = task.getProperty('name')
+                , expr = /task(\d+)/
+                , match = expr.exec(name)
+                ;
+
+            return _.parseInt(match && match[1]);
+          })
+        , index = _.max([0].concat(indices)) + 1
+        , name = `task${index}`
+        ;
+
+    this.graph.coordinates[name] = { x, y };
+
+    let task = this.intermediate.template({
+      name: name,
+      ref: action.ref
+    });
 
     if (!this.intermediate.taskBlock) {
       task = this.intermediate.taskBlockTemplate + task;

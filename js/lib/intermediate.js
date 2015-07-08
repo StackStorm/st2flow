@@ -27,19 +27,10 @@ class Intermediate extends EventEmitter {
             .max('value.length')
         , starter = specimen.key || '  - '
         , indent = specimen.value && specimen.value[0].indent || '    '
-        , indices = _.map(this.tasks, task => {
-            const name = task.getProperty('name')
-                , expr = /task(\d+)/
-                , match = expr.exec(name)
-                ;
-
-            return _.parseInt(match && match[1]);
-          })
-        , index = _.max([0].concat(indices)) + 1
         ;
 
     return _.template([
-      starter + `name: task${index}`,
+      starter + 'name: ${name}',
       indent +  'ref: ${ref}'
     ].join('\n'));
   }

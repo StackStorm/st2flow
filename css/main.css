@@ -118,7 +118,7 @@ main {
     top: 0;
     left: 0;
     user-select: none;
-    min-width: 88px;
+    min-width: 114px;
     height: 32px;
 
     &-name {
@@ -166,6 +166,10 @@ main {
 
       &-error:after {
         content: 'E'
+      }
+
+      &-rename:after {
+        content: 'R'
       }
     }
 
