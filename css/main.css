@@ -106,6 +106,10 @@ main {
 
   &__canvas {
     position: absolute;
+
+    padding: 42px 10px 10px;
+
+    box-sizing: border-box;
   }
 
   &__node {

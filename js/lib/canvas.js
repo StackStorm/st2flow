@@ -58,8 +58,34 @@ class Canvas extends EventEmitter {
         }
       });
 
+    const cStyle = window.getComputedStyle(this.svg.node());
+
+    this.paddings = {
+      top: parseInt(cStyle.getPropertyValue('padding-top')),
+      right: parseInt(cStyle.getPropertyValue('padding-right')),
+      bottom: parseInt(cStyle.getPropertyValue('padding-bottom')),
+      left: parseInt(cStyle.getPropertyValue('padding-left')),
+    };
+
     this.clear();
     this.resizeCanvas();
+  }
+
+  toInner(x, y) {
+    x -= this.paddings.left;
+    y -= this.paddings.top;
+
+    x = x < 0 ? 0 : x;
+    y = y < 0 ? 0 : y;
+
+    return [x, y];
+  }
+
+  fromInner(x, y) {
+    x += this.paddings.left;
+    y += this.paddings.top;
+
+    return [x, y];
   }
 
   clear() {
@@ -185,6 +211,9 @@ class Canvas extends EventEmitter {
   positionNodes(selection, g) {
     selection.style('transform', (v) => {
       let {x, y} = g.node(v);
+
+      [x, y] = this.fromInner(x, y);
+
       return `translate(${x}px,${y}px)`;
     });
   }
@@ -269,8 +298,10 @@ class Canvas extends EventEmitter {
        dimensions = _.reduce(this.graph.nodes(), (acc, name) => {
         let {x, y, width, height} = this.graph.node(name);
 
-        x += width;
-        y += height;
+        [x, y] = this.fromInner(x, y);
+
+        x += width + this.paddings.right;
+        y += height + this.paddings.bottom;
 
         acc.width = acc.width < x ? x : acc.width;
         acc.height = acc.height < y ? y : acc.height;
@@ -310,7 +341,9 @@ class Canvas extends EventEmitter {
         , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
         ;
 
-      this.emit('move', name, x - offsetX, y - offsetY);
+      [x, y] = this.toInner(x - offsetX, y - offsetY);
+
+      this.emit('move', name, x, y);
       this.deactivateOverlay(element);
       return;
     }
@@ -321,7 +354,9 @@ class Canvas extends EventEmitter {
         , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
         ;
 
-      this.emit('create', action, x, y);
+      [x, y] = this.toInner(x, y);
+
+      this.emit('create', action, x , y);
       this.deactivateOverlay(element);
       return;
     }
@@ -359,7 +394,7 @@ class Canvas extends EventEmitter {
     let dt = event.dataTransfer
       , {layerX: x, layerY: y} = event // Relative to the closest positioned element (Viewer)
       , node = this.graph.node(name)
-      , [offsetX, offsetY] = [x - node.x, y - node.y]
+      , [offsetX, offsetY] = this.toInner(x - node.x, y - node.y)// [x - node.x, y - node.y]
       ;
 
     dt.setDragImage(node.elem, offsetX, offsetY);
