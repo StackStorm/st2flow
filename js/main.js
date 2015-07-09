@@ -229,7 +229,7 @@ class State {
     });
 
     if (!this.intermediate.taskBlock) {
-      task = this.intermediate.taskBlockTemplate + task;
+      task = this.intermediate.taskBlockTemplate() + task;
     }
 
     const cursor = this.intermediate.taskBlock && this.intermediate.taskBlock.end.row || 0;
