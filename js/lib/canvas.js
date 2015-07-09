@@ -96,18 +96,14 @@ class Canvas extends EventEmitter {
     return this;
   }
 
-  draw(graph) {
+  render(graph) {
     this.graph = graph;
 
-    let ok = this.render();
-
-    if (ok) {
-      this.centerElement();
-    }
-  }
-
-  render() {
     this.createNodes(this.viewer, this.graph);
+
+    if (_.isEmpty(this.graph.coordinates)) {
+      this.graph.layout();
+    }
 
     this.reposition();
   }

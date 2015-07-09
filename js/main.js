@@ -43,7 +43,7 @@ class State {
 
     this.intermediate.on('parse', (tasks) => {
       this.graph.build(tasks);
-      this.canvas.draw(this.graph);
+      this.canvas.render(this.graph);
     });
   }
 
