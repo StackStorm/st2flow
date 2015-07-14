@@ -14,24 +14,22 @@ class ChainDefinition extends Definition {
   }
 
   get spec() {
-    return {
-      WS_INDENT: /^(\s*)/,
-      EMPTY_LINE: /^(\W*)$/,
+    return _.assign(super.spec, {
       TASK_BLOCK: /^\s*chain:\s*$/,
       TASK: /^(\s*-\s*)/,
       TASK_NAME: /(.*)(name:\s+['"]*)([\w\s]+)/,
       TASK_REF: /(.*)(ref:\s+['"]*)([\w\s.]+)/,
       TASK_SUCCESS_TRANSITION: /(.*)(on-success:\s+['"]*)([\w\s]+)/,
       TASK_ERROR_TRANSITION: /(.*)(on-failure:\s+['"]*)([\w\s]+)/
-    };
+    });
   }
 
   get template() {
-    return {
+    return _.assign(super.template, {
       taskBlock: () => _.template('chain:\n'),
       keyValue: (indent) => _.template(indent + '${key}: ${value}'),
       task: (starter, indent) => _.template(starter + 'name: ${name}\n' + indent +  'ref: ${ref}')
-    };
+    });
   }
 
   parseLine(state, line, lineNum) {

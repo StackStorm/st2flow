@@ -167,23 +167,37 @@ class State {
       throw new Error('no such task:', source);
     }
 
-    let sector = task.getSector(type);
+    const transitions = task.getProperty(type) || [];
 
-    if (sector) {
-      this.editor.env.document.replace(sector, target);
-    } else {
-      let keys = {
-          success: 'on-success',
-          error: 'on-failure'
-        }
-        , text = this.intermediate.keyTemplate(task)({
-          key: keys[type],
-          value: target
-        })
+    transitions.push(target);
+
+    this.setTransitions(source, transitions, type);
+  }
+
+  setTransitions(source, transitions, type) {
+    let task = this.intermediate.task(source);
+
+    if (!task) {
+      throw new Error('no such task:', source);
+    }
+
+    const templates = this.intermediate.definition.template
+        , blockTemplate = templates.block[type](task.getSector(type).indent)
+        , transitionTemplate = templates.transition(task.getSector(type).childStarter)
         ;
 
-      this.editor.env.document.doc.insertLines(task.getSector('task').end.row, text.split('\n'));
+    const block = _.reduce(transitions, (result, name) => {
+          return result + transitionTemplate({ name });
+        }, blockTemplate())
+        ;
+
+    if (task.getSector(type).isStart() && task.getSector(type).isEnd()) {
+      const coord = task.getSector('task').end;
+      task.getSector(type).setStart(coord);
+      task.getSector(type).setEnd(coord);
     }
+
+    this.editor.env.document.replace(task.getSector(type), block);
   }
 
   rename(target) {
@@ -197,13 +211,19 @@ class State {
 
     let sectors = [task.getSector('name')];
 
-    _.each(this.intermediate.tasks, (t) =>
+    _.each(this.intermediate.tasks, (t) => {
+      const tName = t.getProperty('name');
+
       _.each(['success', 'error', 'complete'], (type) => {
-        if (t.getProperty(type) === task.getProperty('name')) {
-          sectors.push(t.getSector(type));
+        const transitions = t.getProperty(type)
+            , index = transitions.indexOf(target)
+            ;
+        if (~index) { // jshint ignore:line
+          transitions[index] = name;
+          this.setTransitions(tName, transitions, type);
         }
-      })
-    );
+      });
+    });
 
     _.each(sectors, (sector) => this.editor.env.document.replace(sector, name));
   }
@@ -223,18 +243,33 @@ class State {
 
     this.graph.coordinates[name] = { x, y };
 
-    let task = this.intermediate.template({
+    let task = this.intermediate.template.task({
       name: name,
       ref: action.ref
     });
 
     if (!this.intermediate.taskBlock) {
-      task = this.intermediate.taskBlockTemplate() + task;
+      const blocks = this.intermediate.template.block
+          , type = {
+              name: 'main',
+              type: 'direct'
+            }
+          ;
+      task = blocks.base() + blocks.workflow(type) + blocks.tasks() + task;
     }
 
-    const cursor = this.intermediate.taskBlock && this.intermediate.taskBlock.end.row || 0;
+    const cursor = ((block) => {
+      if (block) {
+        const range = new Range();
+        range.setStart(block.end);
+        range.setEnd(block.end);
+        return range;
+      } else {
+        return new Range(0, 0, 0, 0);
+      }
+    })(this.intermediate.taskBlock);
 
-    this.editor.env.document.doc.insertLines(cursor, task.split('\n'));
+    this.editor.env.document.replace(cursor, task);
   }
 
   debugSectors() {

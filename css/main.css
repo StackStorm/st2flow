@@ -122,7 +122,7 @@ main {
     top: 0;
     left: 0;
     user-select: none;
-    min-width: 114px;
+    min-width: 142px;
     height: 32px;
 
     &-name {
@@ -172,6 +172,10 @@ main {
         content: 'E'
       }
 
+      &-complete:after {
+        content: 'C'
+      }
+
       &-rename:after {
         content: 'R'
       }
@@ -203,7 +207,7 @@ main {
       fill: #0a0;
     }
 
-    &--failure path {
+    &--error path {
       stroke: #a00;
       fill: #a00;
     }

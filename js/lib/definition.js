@@ -29,8 +29,38 @@ class Definition {
     };
   }
 
+  block(type, spec) {
+    const enter = (line, lineNum, state) => {
+      const indent = line.match(this.spec.WS_INDENT)[0].length + 1;
+
+      if (!state[type] && spec.test(line)) {
+        state[type] = indent;
+
+        return true;
+      }
+    };
+
+    const exit = (line, lineNum, state) => {
+      const indent = line.match(this.spec.WS_INDENT)[0].length + 1;
+
+      if (state[type] && state[type] >= indent) {
+        state[type] = false;
+
+        return true;
+      }
+    };
+
+    return {
+      enter,
+      exit
+    };
+  }
+
   get spec() {
-    return {};
+    return {
+      WS_INDENT: /^(\s*)/,
+      EMPTY_LINE: /^(\W*)$/,
+    };
   }
 
   get template() {

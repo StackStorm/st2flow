@@ -2,6 +2,7 @@
 
 let _ = require('lodash')
   , Chain = require('./definitions/chain')
+  , Mistral = require('./definitions/mistral')
   , EventEmitter = require('events').EventEmitter
   , Sector = require('./sector')
   , Task = require('./task')
@@ -13,17 +14,40 @@ class Intermediate extends EventEmitter {
 
     this.tasks = [];
 
-    this.definition = new Chain(this);
+    this.definition = new Mistral(this);
   }
 
   get sectors() {
     return _(this.tasks)
-      .map((task) => _.values(task.sectors))
+      .map((task) => _(task.sectors).values().flatten().value())
       .flatten()
       .value();
   }
 
   get template() {
+    const defs = this.definition.defaults.indents;
+
+    return {
+      task: (() => {
+        const specimen = _(this.tasks)
+                .groupBy(task => task.starter)
+                .transform((acc, value, key) => acc.push({key, value}), [])
+                .max('value.length')
+            , starter = specimen.key || defs.task //'  - '
+            , indent = specimen.value && specimen.value[0].indent || defs.property // '    '
+            ;
+
+        return this.definition.template.task(starter, indent);
+      })(),
+      block: {
+        base: this.definition.template.block.base(defs.base),
+        workflow: this.definition.template.block.workflow(defs.workflow, defs.tasks),
+        tasks: this.definition.template.block.tasks(defs.tasks)
+      }
+    };
+  }
+
+  get taskTemplate() {
     const specimen = _(this.tasks)
             .groupBy(task => task.starter)
             .transform((acc, value, key) => acc.push({key, value}), [])
@@ -83,16 +107,16 @@ class Intermediate extends EventEmitter {
   task(name, pending) {
     let task = _.find(this.tasks, (e) => e.getProperty('name') === name);
 
-    if (pending) {
-      if (!task) {
-        task = new Task();
-        this.tasks.push(task);
-      }
-
-      _.assign(task, pending);
-
-      task.setProperty('name', name);
+    if (!task) {
+      task = new Task();
+      this.tasks.push(task);
     }
+
+    if (pending) {
+      _.assign(task, pending);
+    }
+
+    task.setProperty('name', name);
 
     return task;
   }
