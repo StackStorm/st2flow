@@ -87,7 +87,11 @@ class State {
     });
 
     this.canvas.on('link', (source, destination, type) => {
-      this.connect(source, destination, type);
+      if (type) {
+        this.connect(source, destination, type);
+      } else {
+        this.disconnect(source, destination, type);
+      }
     });
 
     this.canvas.on('create', (action, x, y) => {
@@ -174,6 +178,18 @@ class State {
     this.setTransitions(source, transitions, type);
   }
 
+  disconnect(source, destination, type=['success', 'error', 'complete']) {
+    let task = this.intermediate.task(source);
+
+    _.each([].concat(type), (type) => {
+      const transitions = task.getProperty(type) || [];
+
+      _.remove(transitions, (transition) => transition === destination);
+
+      this.setTransitions(source, transitions, type);
+    });
+  }
+
   setTransitions(source, transitions, type) {
     let task = this.intermediate.task(source);
 
@@ -186,12 +202,15 @@ class State {
         , transitionTemplate = templates.transition(task.getSector(type).childStarter)
         ;
 
-    const block = _.reduce(transitions, (result, name) => {
-          return result + transitionTemplate({ name });
-        }, blockTemplate())
-        ;
+    let block = '';
 
-    if (task.getSector(type).isStart() && task.getSector(type).isEnd()) {
+    if (transitions.length) {
+      block += _.reduce(transitions, (result, name) => {
+        return result + transitionTemplate({ name });
+      }, blockTemplate());
+    }
+
+    if (task.getSector(type).isStart() || task.getSector(type).isEnd()) {
       const coord = task.getSector('task').end;
       task.getSector(type).setStart(coord);
       task.getSector(type).setEnd(coord);
@@ -285,7 +304,7 @@ class State {
 
       {
         this.intermediate.sectors.map((e) =>
-          console.log(`[${e.start.row}, ${e.start.column}]->[${e.end.row}, ${e.end.column}]`)
+          console.log(''+e, e.type)
         );
 
         console.log('---');

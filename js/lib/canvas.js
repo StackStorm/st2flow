@@ -18,6 +18,7 @@ let nodeTmpl = (node) =>
     <span class="${st2Class('node-button')} ${st2Class('node-button-success')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-complete')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Class('node-button-disconnect')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-rename')}" draggable="true"></span>
   </div>
 `;
@@ -183,6 +184,12 @@ class Canvas extends EventEmitter {
     enter.select(st2Class('node-button-complete', true))
       .on('dragstart', function (name) {
         self.dragComplete(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Class('node-button-disconnect', true))
+      .on('dragstart', function (name) {
+        self.dragDisconnect(this, d3.event, name);
       })
       ;
 
@@ -431,6 +438,15 @@ class Canvas extends EventEmitter {
     dt.setData('linkPack', pack({
       source: name,
       type: 'complete'
+    }));
+    dt.effectAllowed = 'link';
+  }
+
+  dragDisconnect(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name
     }));
     dt.effectAllowed = 'link';
   }

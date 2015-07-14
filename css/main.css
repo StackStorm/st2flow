@@ -176,6 +176,10 @@ main {
         content: 'C'
       }
 
+      &-disconnect:after {
+        content: 'X'
+      }
+
       &-rename:after {
         content: 'R'
       }
@@ -242,7 +246,31 @@ main {
 
   &__active-name {
     position: absolute;
+    border: 1px solid aqua;
+    box-sizing: border-box;
+  }
+
+  &__active-ref {
+    position: absolute;
+    border: 1px solid white;
+    box-sizing: border-box;
+  }
+
+  &__active-success {
+    position: absolute;
     border: 1px solid green;
+    box-sizing: border-box;
+  }
+
+  &__active-error {
+    position: absolute;
+    border: 1px solid red;
+    box-sizing: border-box;
+  }
+
+  &__active-complete {
+    position: absolute;
+    border: 1px solid yellow;
     box-sizing: border-box;
   }
 }
