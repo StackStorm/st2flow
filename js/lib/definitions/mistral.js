@@ -106,7 +106,6 @@ class MistralDefinition extends Definition {
 
       if (block.exit(line, lineNum, state)) {
         state.currentWorkflow.taskBlock.setEnd(lineNum, 0);
-        return;
       }
     }
 
@@ -151,8 +150,6 @@ class MistralDefinition extends Definition {
           });
 
           _.remove(state.untouchedTasks, (e) => e === name);
-
-          return;
         }
       }
 
