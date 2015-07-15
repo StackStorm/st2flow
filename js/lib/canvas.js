@@ -7,7 +7,9 @@ let _ = require('lodash')
   , { pack, unpack } = require('./packer')
   ;
 
-let st2Class = bem('viewer');
+const st2Class = bem('viewer')
+    , st2Icon = bem('icon')
+    ;
 
 let nodeTmpl = (node) =>
 `
@@ -16,12 +18,12 @@ let nodeTmpl = (node) =>
     <div class="${st2Class('node-name')}">${node.name}</div>
     <div class="${st2Class('node-ref')}">${node.ref}</div>
   </div>
-  <div class="${st2Class('node-edit')}"></div>
+  <div class="${st2Class('node-edit')} ${st2Icon('edit')}"></div>
   <div class="${st2Class('node-buttons')}">
-    <span class="${st2Class('node-button')} ${st2Class('node-button-success')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-complete')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-disconnect')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('success')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('error')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('complete')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('delete')}" draggable="true"></span>
   </div>
 `;
 
@@ -182,35 +184,35 @@ class Canvas extends EventEmitter {
           });
         });
 
-    enter.select(st2Class('node-button-success', true))
+    enter.select(st2Icon('success', true))
       .on('dragstart', function (name) {
         d3.event.stopPropagation();
         self.dragSuccess(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-button-error', true))
+    enter.select(st2Icon('error', true))
       .on('dragstart', function (name) {
         d3.event.stopPropagation();
         self.dragError(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-button-complete', true))
+    enter.select(st2Icon('complete', true))
       .on('dragstart', function (name) {
         d3.event.stopPropagation();
         self.dragComplete(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-button-disconnect', true))
+    enter.select(st2Icon('delete', true))
       .on('dragstart', function (name) {
         d3.event.stopPropagation();
         self.dragDisconnect(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-edit', true))
+    enter.select(st2Icon('edit', true))
       .on('click', function (name) {
         d3.event.stopPropagation();
         self.emit('rename', name);

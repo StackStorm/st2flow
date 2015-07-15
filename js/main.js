@@ -124,12 +124,9 @@ class State {
         , bem = require('./lib/bem')
         ;
 
-    const st2Class = bem('controls');
-
-    const buttonTmpl = (control) =>
-    `
-      ${control.name[0].toUpperCase()}
-    `;
+    const st2Class = bem('controls')
+        , st2Icon = bem('icon')
+        ;
 
     const element = d3
       .select(st2Class(null, true))
@@ -160,8 +157,7 @@ class State {
 
     buttons.enter()
       .append('div')
-      .attr('class', st2Class('button'))
-      .html(buttonTmpl)
+      .attr('class', d => `${st2Class('button')} ${st2Icon(d.name)}`)
       .on('click', control => control.action())
       ;
   }

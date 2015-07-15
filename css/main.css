@@ -1,4 +1,5 @@
 @import '../node_modules/normalize.css/normalize.css';
+@import '../dist/font/st2flow-embedded.css';
 
 html, body, main {
   height: 100%;
@@ -151,10 +152,6 @@ main {
       text-align: center;
 
       cursor: pointer;
-
-      &:before {
-        content: 'R'
-      }
     }
 
     &-name {
@@ -195,30 +192,6 @@ main {
       background-color: white;
       color: black;
       pointer-events: auto;
-
-      &-move:after {
-        content: 'M'
-      }
-
-      &-success:after {
-        content: 'S'
-      }
-
-      &-error:after {
-        content: 'E'
-      }
-
-      &-complete:after {
-        content: 'C'
-      }
-
-      &-disconnect:after {
-        content: 'X'
-      }
-
-      &-rename:after {
-        content: 'R'
-      }
     }
 
     &--active {

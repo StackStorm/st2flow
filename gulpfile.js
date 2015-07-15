@@ -13,6 +13,7 @@ var gulp = require('gulp')
   , webserver = require('gulp-webserver')
   , sourcemaps = require('gulp-sourcemaps')
   , gutil = require('gulp-util')
+  , fontello = require('gulp-fontello')
   ;
 
 gulp.task('clean', function(cb) {
@@ -26,7 +27,14 @@ gulp.task('lint', function() {
     .pipe(jshint.reporter('default'));
 });
 
-gulp.task('css', function () {
+gulp.task('font', function () {
+  return gulp.src('fontello.json')
+    .pipe(plumber())
+    .pipe(fontello())
+    .pipe(gulp.dest('./dist/font'));
+});
+
+gulp.task('css', ['font'], function () {
   var processors = [
     require('autoprefixer-core')({browsers: ['last 2 version']}),
     require('postcss-import')(),
