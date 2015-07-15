@@ -11,6 +11,13 @@ class Definition {
           , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
           ;
 
+        // Ace Editor updates syncroniously and goes through 'remove' and 'insert' stages on
+        // 'replace', so at some point, task with such name might not exist and it might interrupt
+        // the change in the middle of the process.
+        if (!task) {
+          return;
+        }
+
         if (task.isEmpty()) {
           if (task.starter === _prefix) {
             task.indent = ' '.repeat(_prefix.length);

@@ -11,15 +11,17 @@ let st2Class = bem('viewer');
 
 let nodeTmpl = (node) =>
 `
-  <div class="${st2Class('node-name')}">${node.name}</div>
-  <div class="${st2Class('node-ref')}">${node.ref}</div>
+  <div class="${st2Class('node-icon')}"></div>
+  <div class="${st2Class('node-content')}">
+    <div class="${st2Class('node-name')}">${node.name}</div>
+    <div class="${st2Class('node-ref')}">${node.ref}</div>
+  </div>
+  <div class="${st2Class('node-edit')}"></div>
   <div class="${st2Class('node-buttons')}">
-    <span class="${st2Class('node-button')} ${st2Class('node-button-move')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-success')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-complete')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Class('node-button-disconnect')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-rename')}" draggable="true"></span>
   </div>
 `;
 
@@ -128,25 +130,37 @@ class Canvas extends EventEmitter {
     let enter = nodes.enter()
       .append('div')
         .attr('class', st2Class('node'))
+        .attr('draggable', 'true')
         .html((d) => nodeTmpl(g.node(d)))
+        .on('click', function (name) {
+          d3.event.stopPropagation();
+          self.selectNode(this, d3.event, name);
+        })
         .on('dragenter', function () {
+          d3.event.stopPropagation();
           self.activateNode(this, d3.event);
         })
         .on('dragleave', function () {
+          d3.event.stopPropagation();
           self.deactivateNode(this, d3.event);
         })
         .on('dragover', function () {
+          d3.event.stopPropagation();
           self.dragOverNode(this, d3.event);
         })
-        .on('dragstart', function () {
+        .on('dragstart', function (name) {
+          d3.event.stopPropagation();
           d3.select(this)
             .classed(st2Class('node', 'dragged'), true);
+          self.dragMove(this, d3.event, name);
         })
         .on('dragend', function () {
+          d3.event.stopPropagation();
           d3.select(this)
             .classed(st2Class('node', 'dragged'), false);
         })
         .on('drop', function (name) {
+          d3.event.stopPropagation();
           self.dropOnNode(this, d3.event, name);
         })
         .each(d => {
@@ -161,40 +175,44 @@ class Canvas extends EventEmitter {
                 .text(refChanges.object.ref);
             }
           });
-        });
 
-    enter.select(st2Class('node-button-move', true))
-      .on('dragstart', function (name) {
-        self.dragMove(this, d3.event, name);
-      })
-      ;
+          g.on('select', (name) => {
+            d3.select(node.elem)
+              .classed(st2Class('node', 'selected'), name === d);
+          });
+        });
 
     enter.select(st2Class('node-button-success', true))
       .on('dragstart', function (name) {
+        d3.event.stopPropagation();
         self.dragSuccess(this, d3.event, name);
       })
       ;
 
     enter.select(st2Class('node-button-error', true))
       .on('dragstart', function (name) {
+        d3.event.stopPropagation();
         self.dragError(this, d3.event, name);
       })
       ;
 
     enter.select(st2Class('node-button-complete', true))
       .on('dragstart', function (name) {
+        d3.event.stopPropagation();
         self.dragComplete(this, d3.event, name);
       })
       ;
 
     enter.select(st2Class('node-button-disconnect', true))
       .on('dragstart', function (name) {
+        d3.event.stopPropagation();
         self.dragDisconnect(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-button-rename', true))
+    enter.select(st2Class('node-edit', true))
       .on('click', function (name) {
+        d3.event.stopPropagation();
         self.emit('rename', name);
       })
       ;
@@ -370,6 +388,10 @@ class Canvas extends EventEmitter {
       this.deactivateOverlay(element);
       return;
     }
+  }
+
+  selectNode(element, event, name) {
+    this.emit('select', name);
   }
 
   activateNode(element) {

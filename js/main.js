@@ -12,6 +12,8 @@ class State {
     this.initEditor();
     this.initPalette();
     this.initControls();
+
+    this.showSelectedTask();
   }
 
   initEditor() {
@@ -52,7 +54,7 @@ class State {
 
     this.canvas = new Canvas();
 
-    this.canvas.on('node:select', (name) => {
+    this.canvas.on('select', (name) => {
       const SHIFT = 1
           , ALT = 2
           , CTRL = 4
@@ -228,7 +230,7 @@ class State {
 
     let name = window.prompt('What would be a new name for the task?', target);
 
-    let sectors = [task.getSector('name')];
+    let sector = task.getSector('name');
 
     _.each(this.intermediate.tasks, (t) => {
       const tName = t.getProperty('name');
@@ -244,7 +246,7 @@ class State {
       });
     });
 
-    _.each(sectors, (sector) => this.editor.env.document.replace(sector, name));
+    this.editor.env.document.replace(sector, name);
   }
 
   create(action, x, y) {
@@ -324,9 +326,7 @@ class State {
     let selectMarker;
 
     this.graph.on('select', (taskName) => {
-      let sector = _.find(this.intermediate.sectors, (e) => {
-        return e.type === 'task' && e.task.getProperty('name') === taskName;
-      });
+      const sector = this.intermediate.task(taskName).getSector('task');
 
       // Since we're using `fullLine` marker, remove the last (zero character long) line from range
       let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);

@@ -114,7 +114,6 @@ main {
 
   &__node {
     cursor: pointer;
-    padding: 5px;
     background-color: #191f23;
     color: #eee;
     font-size: 12px;
@@ -123,7 +122,40 @@ main {
     left: 0;
     user-select: none;
     min-width: 142px;
-    height: 32px;
+    height: 42px;
+
+    display: flex;
+
+    &-icon {
+      padding: 5px;
+      box-sizing: content-box;
+      width: 32px;
+      background-color: #fff;
+      background-image:
+      repeating-linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px);
+      background-size: 32px 32px;
+      background-position: 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    &-content {
+      flex: 1;
+      padding: 5px 5px 5px 10px;
+    }
+
+    &-edit {
+      width: 24px;
+
+      line-height: 42px;
+      text-align: center;
+
+      cursor: pointer;
+
+      &:before {
+        content: 'R'
+      }
+    }
 
     &-name {
       font-style: italic;
@@ -135,15 +167,19 @@ main {
       pointer-events: none;
     }
 
+    &--selected &-ref {
+      color: #46b9fa;
+    }
+
     &-buttons {
       position: absolute;
-      top: 0;
+      top: 42px;
       left: 0;
-      bottom: 0;
       right: 0;
-      background-color: rgba(0,0,0,0.5);
       display: none;
-      padding: 9px;
+      padding: 5px 0;
+      text-align: center;
+      font-size: 11px;
     }
 
     &:hover &-buttons {
@@ -152,10 +188,10 @@ main {
 
     &-button {
       display: inline-block;
-      width: 24px;
-      line-height: 24px;
+      width: 16px;
+      line-height: 16px;
       text-align: center;
-      border-radius: 12px;
+      border-radius: 8px;
       background-color: white;
       color: black;
       pointer-events: auto;
@@ -190,7 +226,12 @@ main {
     }
 
     &--dragged {
-      pointer-events: none;
+      /*pointer-events: none;*/
+    }
+
+    &--selected {
+      background-color: #eee;
+      color: #222;
     }
   }
 
