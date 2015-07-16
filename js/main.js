@@ -100,8 +100,8 @@ class State {
       this.create(action, x, y);
     });
 
-    this.canvas.on('rename', (target) => {
-      this.rename(target);
+    this.canvas.on('rename', (target, name) => {
+      this.rename(target, name);
     });
 
     window.addEventListener('resize', () => {
@@ -217,14 +217,16 @@ class State {
     this.editor.env.document.replace(task.getSector(type), block);
   }
 
-  rename(target) {
+  rename(target, name) {
     let task = this.intermediate.task(target);
 
     if (!task) {
       throw new Error('no such task:', target);
     }
 
-    let name = window.prompt('What would be a new name for the task?', target);
+    if (!name || name === task.getProperty('name')) {
+      return;
+    }
 
     let sector = task.getSector('name');
 
@@ -241,6 +243,9 @@ class State {
         }
       });
     });
+
+    this.graph.coordinates[name] = this.graph.coordinates[target];
+    delete this.graph.coordinates[target];
 
     this.editor.env.document.replace(sector, name);
   }

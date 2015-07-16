@@ -170,6 +170,17 @@ main {
       font-style: italic;
       overflow: hidden;
       text-overflow: ellipsis;
+      background-color: transparent;
+      box-sizing: border-box;
+      border: 0;
+      padding: 3px;
+      margin: -3px;
+      outline: 0;
+      width: 100%;
+
+      &:focus {
+        background: #ddd;
+      }
     }
 
     &-ref {

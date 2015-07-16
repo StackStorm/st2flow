@@ -15,7 +15,9 @@ let nodeTmpl = (node) =>
 `
   <div class="${st2Class('node-icon')}"></div>
   <div class="${st2Class('node-content')}">
-    <div class="${st2Class('node-name')}">${node.name}</div>
+    <form class="${st2Class('node-name-form')}">
+      <input type="text" class="${st2Class('node-name')}" value="${node.name}"/>
+    </form>
     <div class="${st2Class('node-ref')}">${node.ref}</div>
   </div>
   <div class="${st2Class('node-edit')} ${st2Icon('edit')}"></div>
@@ -215,7 +217,36 @@ class Canvas extends EventEmitter {
     enter.select(st2Icon('edit', true))
       .on('click', function (name) {
         d3.event.stopPropagation();
-        self.emit('rename', name);
+        const node = g.node(name);
+        d3.select(node.elem)
+          .classed(st2Class('node', 'edited'), true)
+          .select(st2Class('node-name', true))
+            .node().select() // This one is HTMLInputElement.select, not d3.select
+            ;
+      })
+      ;
+
+    enter.select(st2Class('node-name', true))
+      .on('blur', function (name) {
+        const value = this.value // HTMLInputElement
+            ;
+
+        if (value) {
+          self.emit('rename', name, value);
+        } else {
+          this.value = name;
+        }
+      })
+      ;
+
+    enter.select(st2Class('node-name-form', true))
+      .on('submit', function () {
+        d3.event.preventDefault();
+
+        d3.select(this)
+          .select(st2Class('node-name', true))
+            .node().blur()
+            ;
       })
       ;
 
