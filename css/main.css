@@ -122,10 +122,15 @@ main {
     top: 0;
     left: 0;
     user-select: none;
-    min-width: 142px;
+    min-width: 140px;
+    max-width: 200px;
     height: 42px;
 
     display: flex;
+
+    & > * {
+      pointer-events: none;
+    }
 
     &-icon {
       padding: 5px;
@@ -152,16 +157,25 @@ main {
       text-align: center;
 
       cursor: pointer;
+
+      color: transparent;
+    }
+
+    &--selected &-edit {
+      color: inherit;
+      pointer-events: all;
     }
 
     &-name {
       font-style: italic;
-      pointer-events: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &-ref {
       color: #90d5fc;
-      pointer-events: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &--selected &-ref {
@@ -179,7 +193,11 @@ main {
       font-size: 11px;
     }
 
-    &:hover &-buttons {
+    &--selected &-buttons {
+      pointer-events: all;
+    }
+
+    &--selected:hover &-buttons {
       display: block;
     }
 

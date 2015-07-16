@@ -58,6 +58,10 @@ class MistralDefinition extends Definition {
   parseLine(state, line, lineNum) {
     state.workflowBlock = state.workflowBlock || new Sector();
 
+    if (this.spec.EMPTY_LINE.test(line)) {
+      return;
+    }
+
     let block = this.block('isWorkflowBlock', this.spec.WORKFLOWS_BLOCK);
 
     if (block.enter(line, lineNum, state)) {
@@ -88,6 +92,7 @@ class MistralDefinition extends Definition {
           state.currentWorkflow.indent = indent;
           state.currentWorkflow.name = name;
           state.currentWorkflow.taskBlock = new Sector();
+          state.taskBlock = state.currentWorkflow.taskBlock; // FIX: support multiple workflows
 
           return;
         }
@@ -110,7 +115,7 @@ class MistralDefinition extends Definition {
     }
 
     if (state.isWorkflowBlock && state.currentWorkflow && state.isTaskBlock) {
-      state.currentWorkflow.taskBlock.setEnd(lineNum, 0);
+      state.currentWorkflow.taskBlock.setEnd(lineNum + 1, 0);
 
       let match;
 
