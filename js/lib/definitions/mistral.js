@@ -140,6 +140,8 @@ class MistralDefinition extends Definition {
             .setSector('name', nameSector)
             ;
 
+          taskSector.task = state.currentTask;
+
           state.currentTask.starter = starter;
 
           const TYPES = ['success', 'error', 'complete'];
