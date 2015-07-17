@@ -121,6 +121,7 @@ class Canvas extends EventEmitter {
 
     this.positionNodes(nodes, this.graph);
     this.createEdgePaths(this.svg, this.graph, require('./arrows'));
+    this.createEdgeLabels(this.viewer, this.graph);
   }
 
   createNodes(selection, g) {
@@ -286,44 +287,45 @@ class Canvas extends EventEmitter {
     let svgPaths = selection.selectAll(st2Class('edge', true))
       .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`);
 
-    let svgPathsEnter = svgPaths.enter()
+    const svgPathsEnter = svgPaths.enter()
       .append('g')
         .attr('class', (e) => st2Class('edge') + ' ' + st2Class('edge', g.edge(e).type))
         ;
 
     svgPathsEnter.append('path')
-      .attr('class', st2Class('edge-path'));
+      .attr('class', st2Class('edge-path'))
+      ;
 
     svgPathsEnter.append('defs');
 
-    let svgPathExit = svgPaths.exit();
+    const svgPathExit = svgPaths.exit();
 
     svgPathExit
       .remove();
 
-    svgPaths.selectAll(st2Class('edge-path', true))
+    svgPaths
       .each(function(e) {
-        let edge = g.edge(e);
+        const element = d3.select(this)
+            , edge = g.edge(e)
+            ;
+
         edge.arrowheadId = _.uniqueId('arrowhead');
 
-        let domEdge = d3.select(this)
-          .attr('marker-end', function() {
-            return 'url(#' + edge.arrowheadId + ')';
-          })
-          .style('fill', 'none');
+        const tail = g.node(e.v)
+            , head = g.node(e.w)
+            , points = [tail.intersect(head), head.intersect(tail)]
+            ;
 
-        domEdge
-          .attr('d', function(e) {
-            let tail = g.node(e.v)
-              , head = g.node(e.w)
-              , points = [tail.intersect(head), head.intersect(tail)];
+        const line = d3.svg.line()
+          .x((d) => d.x)
+          .y((d) => d.y)
+          ;
 
-            let line = d3.svg.line()
-              .x((d) => d.x)
-              .y((d) => d.y);
-
-            return line(points);
-          });
+        element.select(st2Class('edge-path', true))
+          .attr('marker-end', () => `url(#${edge.arrowheadId})`)
+          .style('fill', 'none')
+          .attr('d', line(points))
+          ;
       });
 
     // Add arrow shape
@@ -334,6 +336,41 @@ class Canvas extends EventEmitter {
           , arrowhead = arrows.normal;
         arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
       });
+  }
+
+  createEdgeLabels(selection, g) {
+    let labels = selection
+      .selectAll(st2Class('label', true))
+      .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`)
+      ;
+
+    labels.enter()
+      .append('div')
+        .attr('class', (e) => st2Class('label') + ' ' + st2Class('label', g.edge(e).type))
+        ;
+
+    labels.exit()
+      .remove()
+      ;
+
+    labels
+      .style('transform', (e) => {
+        const head = g.node(e.v)
+            , tail = g.node(e.w)
+            ;
+
+        const [a, b] = [tail.intersect(head), head.intersect(tail)]
+            , c = {
+              x: (a.x - b.x)/2 + b.x,
+              y: (a.y - b.y)/2 + b.y
+            }
+            ;
+
+        let [x, y] = this.fromInner(c.x, c.y);
+
+        return `translate(${x}px,${y}px)`;
+      })
+      ;
   }
 
   centerElement() {
