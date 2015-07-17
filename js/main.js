@@ -104,6 +104,10 @@ class State {
       this.rename(target, name);
     });
 
+    this.canvas.on('disconnect', (edge) => {
+      this.disconnect(edge.v, edge.w);
+    });
+
     window.addEventListener('resize', () => {
       this.canvas.resizeCanvas();
     });

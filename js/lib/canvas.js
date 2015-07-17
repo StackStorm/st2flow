@@ -339,14 +339,19 @@ class Canvas extends EventEmitter {
   }
 
   createEdgeLabels(selection, g) {
-    let labels = selection
-      .selectAll(st2Class('label', true))
-      .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`)
-      ;
+    const self = this
+        , labels = selection
+            .selectAll(st2Class('label', true))
+            .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`)
+            ;
 
     labels.enter()
       .append('div')
         .attr('class', (e) => st2Class('label') + ' ' + st2Class('label', g.edge(e).type))
+        .on('click', function (edge) {
+          d3.event.stopPropagation();
+          self.deleteEdge(this, d3.event, edge);
+        })
         ;
 
     labels.exit()
@@ -541,6 +546,10 @@ class Canvas extends EventEmitter {
       source: name
     }));
     dt.effectAllowed = 'link';
+  }
+
+  deleteEdge(element, event, edge) {
+    this.emit('disconnect', edge);
   }
 }
 

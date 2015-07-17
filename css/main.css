@@ -314,6 +314,13 @@ main {
       color: #aa0;
       border-color: #aa0;
     }
+
+    &:hover:before {
+      content: '\e807';
+      color: inherit;
+      border-color: inherit;
+      cursor: pointer;
+    }
   }
 }
 
