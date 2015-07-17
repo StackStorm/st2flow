@@ -106,6 +106,7 @@ class MistralDefinition extends Definition {
 
       if (block.enter(line, lineNum, state)) {
         state.currentWorkflow.taskBlock.setStart(lineNum, 0);
+        state.currentWorkflow.taskBlock.setEnd(lineNum + 1, 0);
         return;
       }
 

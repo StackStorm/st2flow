@@ -209,9 +209,9 @@ class Canvas extends EventEmitter {
       ;
 
     enter.select(st2Icon('delete', true))
-      .on('dragstart', function (name) {
+      .on('click', function (name) {
         d3.event.stopPropagation();
-        self.dragDisconnect(this, d3.event, name);
+        self.deleteNode(this, d3.event, name);
       })
       ;
 
@@ -546,6 +546,10 @@ class Canvas extends EventEmitter {
       source: name
     }));
     dt.effectAllowed = 'link';
+  }
+
+  deleteNode(element, event, name) {
+    this.emit('delete', name);
   }
 
   deleteEdge(element, event, edge) {

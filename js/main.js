@@ -104,6 +104,10 @@ class State {
       this.rename(target, name);
     });
 
+    this.canvas.on('delete', (name) => {
+      this.delete(name);
+    });
+
     this.canvas.on('disconnect', (edge) => {
       this.disconnect(edge.v, edge.w);
     });
@@ -285,7 +289,7 @@ class State {
     }
 
     const cursor = ((block) => {
-      if (block) {
+      if (block && !block.isEnd()) {
         const range = new Range();
         range.setStart(block.end);
         range.setEnd(block.end);
@@ -296,6 +300,16 @@ class State {
     })(this.intermediate.taskBlock);
 
     this.editor.env.document.replace(cursor, task);
+  }
+
+  delete(name) {
+    const task = this.intermediate.task(name);
+
+    if (!task) {
+      throw new Error('no such task:', name);
+    }
+
+    this.editor.env.document.replace(task.getSector('task'), '');
   }
 
   debugSectors() {
