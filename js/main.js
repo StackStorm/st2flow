@@ -317,6 +317,8 @@ class State {
     })(this.intermediate.taskBlock);
 
     this.editor.env.document.replace(cursor, task);
+
+    this.canvas.edit(name);
   }
 
   delete(name) {

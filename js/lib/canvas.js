@@ -230,12 +230,7 @@ class Canvas extends EventEmitter {
     enter.select(st2Icon('edit', true))
       .on('click', function (name) {
         d3.event.stopPropagation();
-        const node = g.node(name);
-        d3.select(node.elem)
-          .classed(st2Class('node', 'edited'), true)
-          .select(st2Class('node-name', true))
-            .node().select() // This one is HTMLInputElement.select, not d3.select
-            ;
+        self.edit(name);
       })
       ;
 
@@ -427,6 +422,15 @@ class Canvas extends EventEmitter {
 
     this.svg.attr('width', dimensions.width);
     this.svg.attr('height', dimensions.height);
+  }
+
+  edit(name) {
+    const node = this.graph.node(name);
+    d3.select(node.elem)
+      .classed(st2Class('node', 'edited'), true)
+      .select(st2Class('node-name', true))
+        .node().select() // This one is HTMLInputElement.select, not d3.select
+        ;
   }
 
   // Event Handlers
