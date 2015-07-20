@@ -210,11 +210,9 @@ main {
       font-size: 11px;
     }
 
-    &--selected &-buttons {
+    &--selected &-buttons,
+    &:hover &-buttons {
       pointer-events: all;
-    }
-
-    &--selected:hover &-buttons {
       display: block;
     }
 
