@@ -61,7 +61,7 @@ class State {
           , META = 8
           ;
 
-      let mode =
+      const mode =
         event.shiftKey * SHIFT +
         event.altKey * ALT +
         event.ctrlKey * CTRL +
@@ -71,8 +71,11 @@ class State {
         case SHIFT:
           this.connect(this.graph.__selected__, name, 'success');
           break;
-        case SHIFT + ALT:
+        case ALT:
           this.connect(this.graph.__selected__, name, 'error');
+          break;
+        case SHIFT + ALT:
+          this.connect(this.graph.__selected__, name, 'complete');
           break;
         case META:
           this.rename(name);
@@ -110,6 +113,20 @@ class State {
 
     this.canvas.on('disconnect', (edge) => {
       this.disconnect(edge.v, edge.w);
+    });
+
+    this.canvas.on('keydown', (event) => {
+      const BACKSPACE = 8
+          , DELETE = 46
+          ;
+
+      switch(event.key || event.keyCode) {
+        case BACKSPACE:
+        case DELETE:
+          event.preventDefault();
+          this.delete(this.graph.__selected__);
+          break;
+      }
     });
 
     window.addEventListener('resize', () => {

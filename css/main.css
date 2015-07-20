@@ -72,6 +72,11 @@ main {
   position: relative;
   overflow: auto;
 
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 1px #90d5fc;
+  }
+
   &::-webkit-scrollbar {
     width: 0.5em;
   }

@@ -77,6 +77,18 @@ class Canvas extends EventEmitter {
 
     this.clear();
     this.resizeCanvas();
+
+    this.viewer
+      .attr('tabindex', '-1');
+
+    _.each(['keyup', 'keydown'], (type) => {
+      this.viewer
+        .on(type, () => {
+          this.emit(d3.event.type, d3.event);
+        })
+        ;
+    });
+
   }
 
   toInner(x, y) {
