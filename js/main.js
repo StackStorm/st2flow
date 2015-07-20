@@ -309,6 +309,20 @@ class State {
       throw new Error('no such task:', name);
     }
 
+    _.each(this.intermediate.tasks, (t) => {
+      const tName = t.getProperty('name');
+
+      _.each(['success', 'error', 'complete'], (type) => {
+        const transitions = t.getProperty(type)
+            , index = transitions.indexOf(name)
+            ;
+        if (~index) { // jshint ignore:line
+          transitions.splice(index, 1);
+          this.setTransitions(tName, transitions, type);
+        }
+      });
+    });
+
     this.editor.env.document.replace(task.getSector('task'), '');
   }
 
