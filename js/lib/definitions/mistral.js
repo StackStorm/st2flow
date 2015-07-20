@@ -161,134 +161,139 @@ class MistralDefinition extends Definition {
         }
       }
 
-      let handler;
+      if (state.currentTask) {
 
-      handler = this.handler('ref', this.spec.TASK_ACTION);
-      if (handler(line, lineNum, state.currentTask)) {
-        return;
-      }
+        let handler;
 
-      let block;
-
-      block = this.block('isSuccessBlock', this.spec.SUCCESS_BLOCK);
-
-      if (block.enter(line, lineNum, state)) {
-        const sector = state.currentTask.getSector('success');
-        sector.setStart(lineNum, 0);
-        sector.indent = ' '.repeat(state.isSuccessBlock - 1);
-        return;
-      }
-
-      if (block.exit(line, lineNum, state)) {
-        const sector = state.currentTask.getSector('success');
-        sector.setEnd(lineNum, 0);
-      }
-
-      if (state.isSuccessBlock) {
-        const sector = state.currentTask.getSector('success');
-        sector.setEnd(lineNum + 1, 0);
-
-        let match;
-
-        match = this.spec.TRANSITION.exec(line);
-        if (match) {
-          const [,starter,value] = match
-            ;
-
-          sector.childStarter = starter;
-
-          const type = 'success'
-            , task = state.currentTask
-            , values = task.getProperty(type)
-            ;
-
-          values.push(value);
-
-          task.setProperty(type, values);
-
+        handler = this.handler('ref', this.spec.TASK_ACTION);
+        if (handler(line, lineNum, state.currentTask)) {
           return;
         }
-      }
 
-      block = this.block('isErrorBlock', this.spec.ERROR_BLOCK);
+        let block;
 
-      if (block.enter(line, lineNum, state)) {
-        const sector = state.currentTask.getSector('error');
-        sector.setStart(lineNum, 0);
-        sector.indent = ' '.repeat(state.isErrorBlock - 1);
-        return;
-      }
+        block = this.block('isSuccessBlock', this.spec.SUCCESS_BLOCK);
 
-      if (block.exit(line, lineNum, state)) {
-        const sector = state.currentTask.getSector('error');
-        sector.setEnd(lineNum, 0);
-      }
-
-      if (state.isErrorBlock) {
-        const sector = state.currentTask.getSector('error');
-        sector.setEnd(lineNum + 1, 0);
-
-        let match;
-
-        match = this.spec.TRANSITION.exec(line);
-        if (match) {
-          const [,starter,value] = match
-            ;
-
-          sector.childStarter = starter;
-
-          const type = 'error'
-            , task = state.currentTask
-            , values = task.getProperty(type)
-            ;
-
-          values.push(value);
-
-          task.setProperty(type, values);
-
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('success');
+          sector.setStart(lineNum, 0);
+          sector.indent = ' '.repeat(state.isSuccessBlock - 1);
           return;
         }
-      }
 
-      block = this.block('isCompleteBlock', this.spec.COMPLETE_BLOCK);
+        if (block.exit(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('success');
+          sector.setEnd(lineNum, 0);
+        }
 
-      if (block.enter(line, lineNum, state)) {
-        const sector = state.currentTask.getSector('complete');
-        sector.setStart(lineNum, 0);
-        sector.indent = ' '.repeat(state.isCompleteBlock - 1);
-        return;
-      }
+        if (state.isSuccessBlock) {
+          const sector = state.currentTask.getSector('success');
+          sector.setEnd(lineNum + 1, 0);
 
-      if (block.exit(line, lineNum, state)) {
-        const sector = state.currentTask.getSector('complete');
-        sector.setEnd(lineNum, 0);
-      }
+          let match;
 
-      if (state.isCompleteBlock) {
-        const sector = state.currentTask.getSector('complete');
-        sector.setEnd(lineNum + 1, 0);
+          match = this.spec.TRANSITION.exec(line);
+          if (match) {
+            const [,starter,value] = match
+              ;
 
-        let match;
+            sector.childStarter = starter;
 
-        match = this.spec.TRANSITION.exec(line);
-        if (match) {
-          const [,starter,value] = match
-            ;
+            const type = 'success'
+              , task = state.currentTask
+              , values = task.getProperty(type)
+              ;
 
-          sector.childStarter = starter;
+            values.push(value);
 
-          const type = 'complete'
-            , task = state.currentTask
-            , values = task.getProperty(type)
-            ;
+            task.setProperty(type, values);
 
-          values.push(value);
+            return;
+          }
+        }
 
-          task.setProperty(type, values);
+        block = this.block('isErrorBlock', this.spec.ERROR_BLOCK);
 
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('error');
+          sector.setStart(lineNum, 0);
+          sector.indent = ' '.repeat(state.isErrorBlock - 1);
           return;
         }
+
+        if (block.exit(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('error');
+          sector.setEnd(lineNum, 0);
+        }
+
+        if (state.isErrorBlock) {
+          const sector = state.currentTask.getSector('error');
+          sector.setEnd(lineNum + 1, 0);
+
+          let match;
+
+          match = this.spec.TRANSITION.exec(line);
+          if (match) {
+            const [,starter,value] = match
+              ;
+
+            sector.childStarter = starter;
+
+            const type = 'error'
+              , task = state.currentTask
+              , values = task.getProperty(type)
+              ;
+
+            values.push(value);
+
+            task.setProperty(type, values);
+
+            return;
+          }
+        }
+
+        block = this.block('isCompleteBlock', this.spec.COMPLETE_BLOCK);
+
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('complete');
+          sector.setStart(lineNum, 0);
+          sector.indent = ' '.repeat(state.isCompleteBlock - 1);
+          return;
+        }
+
+        if (block.exit(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('complete');
+          sector.setEnd(lineNum, 0);
+        }
+
+        if (state.isCompleteBlock) {
+          const sector = state.currentTask.getSector('complete');
+          sector.setEnd(lineNum + 1, 0);
+
+          let match;
+
+          match = this.spec.TRANSITION.exec(line);
+          if (match) {
+            const [,starter,value] = match
+              ;
+
+            sector.childStarter = starter;
+
+            const type = 'complete'
+              , task = state.currentTask
+              , values = task.getProperty(type)
+              ;
+
+            values.push(value);
+
+            task.setProperty(type, values);
+
+            return;
+          }
+        }
+
       }
+
     }
 
   }
