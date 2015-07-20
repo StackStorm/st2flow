@@ -20,6 +20,29 @@ class Intermediate extends EventEmitter {
       .value();
   }
 
+  get template() {
+    const specimen = _(this.tasks)
+            .groupBy(task => task.starter)
+            .transform((acc, value, key) => acc.push({key, value}), [])
+            .max('value.length')
+        , starter = specimen.key || '  - '
+        , indent = specimen.value && specimen.value[0].indent || '    '
+        ;
+
+    return _.template([
+      starter + 'name: ${name}',
+      indent +  'ref: ${ref}'
+    ].join('\n'));
+  }
+
+  get taskBlockTemplate() {
+    return 'chain:\n';
+  }
+
+  keyTemplate(task) {
+    return _.template(task.indent + '${key}: ${value}');
+  }
+
   parse(code) {
     let lines = code.split('\n');
 
@@ -32,27 +55,40 @@ class Intermediate extends EventEmitter {
 
     let spec = {
       WS_INDENT: /^(\s*)/,
+      EMPTY_LINE: /^(\W*)$/,
       TASK_BLOCK: /^\s*chain:\s*$/,
-      TASK: /^\s*-\s*/,
-      TASK_NAME: /(.*name:\s+['"]*)([\w\s]+)/,
-      TASK_SUCCESS_TRANSITION: /(.*on-success:\s+['"]*)([\w\s]+)/,
-      TASK_ERROR_TRANSITION: /(.*on-failure:\s+['"]*)([\w\s]+)/
+      TASK: /^(\s*-\s*)/,
+      TASK_NAME: /(.*)(name:\s+['"]*)([\w\s]+)/,
+      TASK_REF: /(.*)(ref:\s+['"]*)([\w\s.]+)/,
+      TASK_SUCCESS_TRANSITION: /(.*)(on-success:\s+['"]*)([\w\s]+)/,
+      TASK_ERROR_TRANSITION: /(.*)(on-failure:\s+['"]*)([\w\s]+)/
     };
+
+    this.taskBlock = this.taskBlock || new Sector();
+
+    this.taskBlock.setStart(lines.length, 0);
+    this.taskBlock.setEnd(lines.length, 0);
 
     _.each(lines, (line, lineNum) => {
 
       let indent = line.match(spec.WS_INDENT)[0].length;
 
       // If it starts with `chain:`, that's a start of task block
-      if (spec.TASK_BLOCK.test(line)) {
+      if (!state.isTaskBlock && spec.TASK_BLOCK.test(line)) {
         state.isTaskBlock = true;
         state.taskBlockIdent = indent;
+
+        this.taskBlock.setStart(lineNum, 0);
+
         return;
       }
 
       // If it has same or lesser indent, that's an end of task block
       if (state.isTaskBlock && state.taskBlockIdent >= indent) {
         state.isTaskBlock = false;
+
+        this.taskBlock.setEnd(lineNum, 0);
+
         return false;
       }
 
@@ -60,50 +96,117 @@ class Intermediate extends EventEmitter {
         let match;
 
         // If it starts with `-`, that's a new task
-        if (spec.TASK.test(line)) {
+        match = spec.TASK.exec(line);
+        if (match) {
+          let [,starter] = match;
+
           if (state.currentTask) {
             state.currentTask.endSector('task', lineNum, 0);
           }
 
           let sector = new Sector(lineNum, 0).setType('task');
           state.currentTask = new Task().setSector('task', sector);
+          state.currentTask.starter = starter;
         }
 
         // If it has `name:`, that's task name
         match = spec.TASK_NAME.exec(line);
         if (match) {
-          let [,_prefix,name] = match
-            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + name.length]
+          let [,_prefix,key,value] = match
+            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
             ;
+
+          if (state.currentTask.isEmpty()) {
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
+          } else {
+            state.currentTask.indent = _prefix;
+          }
 
           let sector = new Sector(...coords).setType('name');
           state.currentTask.setSector('name', sector);
 
-          state.currentTask = this.task(name, state.currentTask);
+          state.currentTask = this.task(value, state.currentTask);
           state.currentTask.getSector('task').setTask(state.currentTask);
-          _.remove(state.untouchedTasks, (e) => e === name);
+          _.remove(state.untouchedTasks, (e) => e === value);
+
+          return;
+        }
+
+        // If it has `ref:`, that's action reference
+        match = spec.TASK_REF.exec(line);
+        if (match) {
+          let [,_prefix,key,value] = match
+            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
+            ;
+
+          if (state.currentTask.isEmpty()) {
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
+          } else {
+            state.currentTask.indent = _prefix;
+          }
+
+          let sector = new Sector(...coords).setType('ref');
+          state.currentTask.setProperty('ref', value).setSector('ref', sector);
+
+          return;
         }
 
         // If it has `on-success:`, that's successfil transition pointer
         match = spec.TASK_SUCCESS_TRANSITION.exec(line);
         if (match) {
-          let [,_prefix,success] = match
-            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + success.length]
+          let [,_prefix,key,value] = match
+            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
             ;
 
+          if (state.currentTask.isEmpty()) {
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
+          } else {
+            state.currentTask.indent = _prefix;
+          }
+
           let sector = new Sector(...coords).setType('success');
-          state.currentTask.setProperty('success', success).setSector('success', sector);
+          state.currentTask.setProperty('success', value).setSector('success', sector);
+
+          return;
         }
 
         // If it has `on-failure:`, that's unsuccessfil transition pointer
         match = spec.TASK_ERROR_TRANSITION.exec(line);
         if (match) {
-          let [,_prefix,error] = match
-            , coords = [lineNum, _prefix.length, lineNum, _prefix.length + error.length]
+          let [,_prefix,key,value] = match
+            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
             ;
 
+          if (state.currentTask.isEmpty()) {
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
+          } else {
+            state.currentTask.indent = _prefix;
+          }
+
           let sector = new Sector(...coords).setType('error');
-          state.currentTask.setProperty('error', error).setSector('error', sector);
+          state.currentTask.setProperty('error', value).setSector('error', sector);
+
+          return;
+        }
+
+        if (state.currentTask && state.currentTask.isEmpty() && spec.EMPTY_LINE.test(line)) {
+          state.currentTask.starter += '\n';
         }
 
       }
@@ -112,7 +215,7 @@ class Intermediate extends EventEmitter {
 
     // Close the sector of the last task
     if (state.currentTask) {
-      state.currentTask.endSector('task', lines.length, 0);
+      state.currentTask.endSector('task', this.taskBlock.end);
     }
 
     // Delete all the tasks not updated during parsing
@@ -131,9 +234,15 @@ class Intermediate extends EventEmitter {
   task(name, pending) {
     let task = _.find(this.tasks, (e) => e.getProperty('name') === name);
 
-    if (!task && pending) {
-      task = pending.setProperty('name', name);
-      this.tasks.push(task);
+    if (pending) {
+      if (!task) {
+        task = new Task();
+        this.tasks.push(task);
+      }
+
+      _.assign(task, pending);
+
+      task.setProperty('name', name);
     }
 
     return task;

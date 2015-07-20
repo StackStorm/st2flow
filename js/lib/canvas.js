@@ -1,27 +1,91 @@
 'use strict';
 
 let _ = require('lodash')
+  , bem = require('./bem')
   , d3 = require('d3')
-  , dagreD3 = require('dagre-d3')
-  , intersectRect = require('dagre-d3/lib/intersect/intersect-rect')
   , EventEmitter = require('events').EventEmitter
+  , { pack, unpack } = require('./packer')
   ;
 
-let render = dagreD3.render();
+let st2Class = bem('viewer');
 
-let st2Class = (element) => `st2-viewer__${element}`;
+let nodeTmpl = (node) =>
+`
+  <div class="${st2Class('node-name')}">${node.name}</div>
+  <div class="${st2Class('node-ref')}">${node.ref}</div>
+  <div class="${st2Class('node-buttons')}">
+    <span class="${st2Class('node-button')} ${st2Class('node-button-move')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Class('node-button-success')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Class('node-button-rename')}" draggable="true"></span>
+  </div>
+`;
 
 class Canvas extends EventEmitter {
   constructor() {
     super();
 
-    this.svg = d3
-      .select('#canvas svg');
+    let self = this;
+
+    this.viewer = d3
+      .select(st2Class(null, true))
+      ;
+
+    this.svg = this.viewer
+      .select(st2Class('canvas', true))
+      .on('dragover', function () {
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
+          self.dragOverOverlay(this, d3.event);
+        }
+      })
+      .on('dragenter', function () {
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
+          self.activateOverlay(this, d3.event);
+        }
+      })
+      .on('dragleave', function () {
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
+          self.deactivateOverlay(this, d3.event);
+        }
+      })
+      .on('drop', function () {
+        if (d3.event.target === this) {
+          d3.event.stopPropagation();
+          self.dropOnOverlay(this, d3.event);
+        }
+      });
+
+    const cStyle = window.getComputedStyle(this.svg.node());
+
+    this.paddings = {
+      top: parseInt(cStyle.getPropertyValue('padding-top')),
+      right: parseInt(cStyle.getPropertyValue('padding-right')),
+      bottom: parseInt(cStyle.getPropertyValue('padding-bottom')),
+      left: parseInt(cStyle.getPropertyValue('padding-left')),
+    };
 
     this.clear();
+    this.resizeCanvas();
+  }
 
-    render.createNodes(this.createNodes.bind(this));
-    render.createEdgePaths(this.createEdgePaths.bind(this));
+  toInner(x, y) {
+    x -= this.paddings.left;
+    y -= this.paddings.top;
+
+    x = x < 0 ? 0 : x;
+    y = y < 0 ? 0 : y;
+
+    return [x, y];
+  }
+
+  fromInner(x, y) {
+    x += this.paddings.left;
+    y += this.paddings.top;
+
+    return [x, y];
   }
 
   clear() {
@@ -29,301 +93,182 @@ class Canvas extends EventEmitter {
       .selectAll('g')
       .remove('*');
 
-    this.element = this.svg
-      .append('g');
-
     return this;
   }
 
-  draw(graph) {
+  render(graph) {
     this.graph = graph;
 
-    let ok = this.render();
+    this.createNodes(this.viewer, this.graph);
 
-    if (ok) {
-      this.centerElement();
+    if (_.isEmpty(this.graph.coordinates)) {
+      this.graph.layout();
     }
+
+    this.reposition();
   }
 
-  render() {
-    try {
-      render(this.element, this.graph);
+  reposition() {
+    let nodes = this.viewer.selectAll(st2Class('node', true));
 
-      return true;
-    } catch(e) {
-      return false;
-    }
+    this.positionNodes(nodes, this.graph);
+    this.createEdgePaths(this.svg, this.graph, require('./arrows'));
   }
 
   createNodes(selection, g) {
-    // Initialize selection with data set
-    let svgNodes = selection.selectAll('.' + st2Class('node'))
+    let self = this;
+
+    let nodes = selection
+      .selectAll(st2Class('node', true))
       .data(g.nodes(), (v) => v)
-      .classed('update', true);
+      ;
 
-    // Clean everything inside selection
-    svgNodes.selectAll('*').remove();
-
-    // For each new node added to the selection
-    svgNodes.enter()
-      .append('g')
+    let enter = nodes.enter()
+      .append('div')
         .attr('class', st2Class('node'))
-        .style('opacity', 0)
-        .on('click', (name) => {
-          this.emit('node:select', name, d3.event);
+        .html((d) => nodeTmpl(g.node(d)))
+        .on('dragenter', function () {
+          self.activateNode(this, d3.event);
+        })
+        .on('dragleave', function () {
+          self.deactivateNode(this, d3.event);
+        })
+        .on('dragover', function () {
+          self.dragOverNode(this, d3.event);
+        })
+        .on('dragstart', function () {
+          d3.select(this)
+            .classed(st2Class('node', 'dragged'), true);
+        })
+        .on('dragend', function () {
+          d3.select(this)
+            .classed(st2Class('node', 'dragged'), false);
+        })
+        .on('drop', function (name) {
+          self.dropOnNode(this, d3.event, name);
+        })
+        .each(d => {
+          let node = g.node(d);
+
+          node.on('change', (changes) => {
+            const refChanges = _.find(changes, {name: 'ref'});
+
+            if (refChanges) {
+              d3.select(node.elem)
+                .select(st2Class('node-ref', true))
+                .text(refChanges.object.ref);
+            }
+          });
         });
 
-    // For every node currently in selection
-    svgNodes.each(function(name) {
-      let node = g.node(name),
-          nodeGroup = d3.select(this);
+    enter.select(st2Class('node-button-move', true))
+      .on('dragstart', function (name) {
+        self.dragMove(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Class('node-button-success', true))
+      .on('dragstart', function (name) {
+        self.dragSuccess(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Class('node-button-error', true))
+      .on('dragstart', function (name) {
+        self.dragError(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Class('node-button-rename', true))
+      .on('click', function (name) {
+        self.emit('rename', name);
+      })
+      ;
+
+    nodes.exit()
+      .remove()
+      ;
+
+    nodes.each(function (name) {
+      let node = g.node(name)
+        , nodeElement = d3.select(this);
+
+      let {width, height} = nodeElement.node().getBoundingClientRect();
+
+      node.width = width;
+      node.height = height;
 
       node.elem = this;
-
-      let labelGroup = nodeGroup.append('g').attr('class', st2Class('node-label'));
-
-      {
-        // Set IDs
-        if (node.id) { nodeGroup.attr('id', node.id); }
-        if (node.labelId) { labelGroup.attr('id', node.labelId); }
-      }
-
-      {
-        g.on('select', () => {
-          let result = node.isSelected();
-          nodeGroup.classed(st2Class('node--selected'), result);
-        });
-      }
-
-      {
-        // Add label
-        let labelDom = labelGroup.append('g')
-          , textNode = labelDom.append('text');
-
-        textNode
-          .append('tspan')
-          .attr('xml:space', 'preserve')
-          .attr('dy', '1em')
-          .attr('x', '1')
-          .text(node.name);
-
-        textNode
-          .attr('style', node.labelStyle);
-
-        let labelBBox = labelDom.node().getBBox()
-          , xMiddle = -labelBBox.width / 2
-          , yMiddle = -labelBBox.height / 2
-          ;
-
-        labelDom.attr('transform', `translate(${xMiddle},${yMiddle})`);
-
-      }
-
-      let bbox = _.pick(labelGroup.node().getBBox(), 'width', 'height');
-
-      {
-        // Set class
-        nodeGroup
-          .attr('class', st2Class('node'));
-      }
-
-      (padding) => {
-        // Add paddings
-        let top = 0
-          , right = 0
-          , bottom = 0
-          , left = 0
-          ;
-
-        if (_.isArray(padding)) {
-          [top, right, bottom, left] = padding;
-        } else if (_.isPlainObject(padding)) {
-          ({top, left, bottom, right} = padding); // jshint ignore:line
-        } else if (_.isString(padding)){
-          let _padding = _.parseInt(padding);
-
-          top = _padding;
-          left = _padding;
-          bottom = _padding;
-          right = _padding;
-        } else if (_.isNumber(padding)) {
-          top = padding;
-          left = padding;
-          bottom = padding;
-          right = padding;
-        }
-
-        bbox.width += left + right;
-        bbox.height += top + bottom;
-
-        let xNormOffset = (left - right) / 2
-          , yNormOffset = (top - bottom) / 2
-          ;
-
-        labelGroup.attr('transform', `translate(${xNormOffset},${yNormOffset})`);
-      }(7);
-
-      {
-        // Pick node shape
-        let shapeSvg = nodeGroup.insert('rect', ':first-child')
-          .attr('rx', 5)
-          .attr('ry', 5)
-          .attr('x', -bbox.width / 2)
-          .attr('y', -bbox.height / 2)
-          .attr('width', bbox.width)
-          .attr('height', bbox.height);
-
-        node.intersect = function(point) {
-          return intersectRect(node, point);
-        };
-
-        shapeSvg
-          .attr('style', node.style);
-
-        let shapeBBox = shapeSvg.node().getBBox();
-        node.width = shapeBBox.width;
-        node.height = shapeBBox.height;
-      }
-
     });
 
-    // For every node removed from selection
-    svgNodes.exit()
-      .style('opacity', 0)
-      .remove();
+    return nodes;
+  }
 
-    return svgNodes;
+  positionNodes(selection, g) {
+    selection.style('transform', (v) => {
+      let {x, y} = g.node(v);
+
+      [x, y] = this.fromInner(x, y);
+
+      return `translate(${x}px,${y}px)`;
+    });
   }
 
   createEdgePaths(selection, g, arrows) {
-    let escapeId = (str) => str ? String(str).replace(/:/g, '\\:') : '';
+    this.resizeCanvas();
 
     // Initialize selection with data set
-    let svgPaths = selection.selectAll('.' + st2Class('edge'))
-      .data(g.edges(), (e) => `${escapeId(e.v)}:${escapeId(e.w)}:${escapeId(e.name)}`);
+    let svgPaths = selection.selectAll(st2Class('edge', true))
+      .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`);
 
-    {
-      // For each new edge added to the selection
-      let svgPathsEnter = svgPaths.enter()
-        .append('g')
-          .attr('class', st2Class('edge'))
-          .style('opacity', 0);
+    let svgPathsEnter = svgPaths.enter()
+      .append('g')
+        .attr('class', (e) => st2Class('edge') + ' ' + st2Class('edge', g.edge(e).type))
+        ;
 
-      // Add path
-      svgPathsEnter.append('path')
-        .attr('class', st2Class('edge-path'))
-        .attr('d', function(e) {
-          let edge = g.edge(e),
-              sourceElem = g.node(e.v).elem,
-              points = _.range(edge.points.length).map(function() {
-                let bbox = sourceElem.getBBox(),
-                    matrix = sourceElem.getTransformToElement(sourceElem.ownerSVGElement)
-                      .translate(bbox.width / 2, bbox.height / 2);
-                return { x: matrix.e, y: matrix.f };
-              });
+    svgPathsEnter.append('path')
+      .attr('class', st2Class('edge-path'));
 
-          let line = d3.svg.line()
-            .x((d) => d.x)
-            .y((d) => d.y);
+    svgPathsEnter.append('defs');
 
-          return line(points);
-        });
+    let svgPathExit = svgPaths.exit();
 
-      // Add resources block
-      svgPathsEnter.append('defs');
-    }
+    svgPathExit
+      .remove();
 
-    {
-      // For each edge removed from the selection
-      let svgPathExit = svgPaths.exit();
-
-      // Remove an edge
-      svgPathExit
-        .style('opacity', 0)
-        .remove();
-
-      // TODO: This very much looks like an artifact, either badly transferred from dagre-d3 or pending refactoring there. Figure out whether we have any use for that.
-      svgPathExit.select('.' + st2Class('edge-path'))
-        .attr('d', function(e) {
-          let source = g.node(e.v);
-
-          if (source) {
-            let points = _.range(this.pathSegList.length).map(function() { return source; });
-
-            let line = d3.svg.line()
-              .x(function(d) { return d.x; })
-              .y(function(d) { return d.y; });
-
-            return line(points);
-          } else {
-            return d3.select(this).attr('d');
-          }
-        });
-    }
-
-    svgPaths
-      .style('opacity', 1);
-
-    {
-      // For every edge currently in selection
-      svgPaths.each(function(e) {
-        let domEdge = d3.select(this);
+    svgPaths.selectAll(st2Class('edge-path', true))
+      .each(function(e) {
         let edge = g.edge(e);
-        edge.elem = this;
+        edge.arrowheadId = _.uniqueId('arrowhead');
 
-        if (edge.id) {
-          domEdge.attr('id', edge.id);
-        }
+        let domEdge = d3.select(this)
+          .attr('marker-end', function() {
+            return 'url(#' + edge.arrowheadId + ')';
+          })
+          .style('fill', 'none');
 
         domEdge
-          .attr('class', st2Class('edge') + ' ' + st2Class(`edge--${edge.type}`));
+          .attr('d', function(e) {
+            let tail = g.node(e.v)
+              , head = g.node(e.w)
+              , points = [tail.intersect(head), head.intersect(tail)];
+
+            let line = d3.svg.line()
+              .x((d) => d.x)
+              .y((d) => d.y);
+
+            return line(points);
+          });
       });
-    }
 
-    {
-      // For every path
-      svgPaths.selectAll('.' + st2Class('edge-path'))
-        .each(function(e) {
-          let edge = g.edge(e);
-          edge.arrowheadId = _.uniqueId('arrowhead');
-
-          let domEdge = d3.select(this)
-            .attr('marker-end', function() {
-              return 'url(#' + edge.arrowheadId + ')';
-            })
-            .style('fill', 'none');
-
-          domEdge
-            .attr('d', function(e) {
-              let edge = g.edge(e)
-                , tail = g.node(e.v)
-                , head = g.node(e.w)
-                , points = edge.points.slice(1, edge.points.length - 1);
-
-              points.unshift(tail.intersect(points[0]));
-              points.push(head.intersect(points[points.length - 1]));
-
-              let line = d3.svg.line()
-                .x((d) => d.x)
-                .y((d) => d.y);
-
-              return line(points);
-            });
-        });
-    }
-
-    {
-      // Add arrow shape
-      svgPaths.selectAll('defs *').remove();
-      svgPaths.selectAll('defs')
-        .each(function(e) {
-          let edge = g.edge(e),
-              arrowhead = arrows[edge.arrowhead];
-          arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
-        });
-    }
-
-    return svgPaths;
+    // Add arrow shape
+    svgPaths.selectAll('defs *').remove();
+    svgPaths.selectAll('defs')
+      .each(function(e) {
+        let edge = g.edge(e)
+          , arrowhead = arrows.normal;
+        arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
+      });
   }
 
   centerElement() {
@@ -336,6 +281,141 @@ class Canvas extends EventEmitter {
 
       this.element.attr('transform', 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')');
     }
+  }
+
+  resizeCanvas() {
+    let element = this.viewer.node()
+      , dimensions = {
+        width: element.clientWidth,
+        height: element.clientHeight
+      };
+
+    if (this.graph) {
+       dimensions = _.reduce(this.graph.nodes(), (acc, name) => {
+        let {x, y, width, height} = this.graph.node(name);
+
+        [x, y] = this.fromInner(x, y);
+
+        x += width + this.paddings.right;
+        y += height + this.paddings.bottom;
+
+        acc.width = acc.width < x ? x : acc.width;
+        acc.height = acc.height < y ? y : acc.height;
+
+        return acc;
+      }, dimensions);
+    }
+
+    this.svg.attr('width', dimensions.width);
+    this.svg.attr('height', dimensions.height);
+  }
+
+  // Event Handlers
+
+  activateOverlay(element) {
+    element.classList.add(st2Class(null, 'active'));
+  }
+
+  deactivateOverlay(element) {
+    element.classList.remove(st2Class(null, 'active'));
+  }
+
+  dragOverOverlay(element, event) {
+    let dt = event.dataTransfer;
+
+    if (dt.effectAllowed === 'move' || dt.effectAllowed === 'copy') {
+      event.preventDefault();
+    }
+  }
+
+  dropOnOverlay(element, event) {
+    let packet;
+
+    packet = event.dataTransfer.getData('nodePack');
+    if (packet) {
+      let { name, offsetX, offsetY } = unpack(packet)
+        , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
+        ;
+
+      [x, y] = this.toInner(x - offsetX, y - offsetY);
+
+      this.emit('move', name, x, y);
+      this.deactivateOverlay(element);
+      return;
+    }
+
+    packet = event.dataTransfer.getData('actionPack');
+    if (packet) {
+      let { action } = unpack(packet)
+        , {offsetX: x, offsetY: y} = event // Relative to itself (Viewer)
+        ;
+
+      [x, y] = this.toInner(x, y);
+
+      this.emit('create', action, x , y);
+      this.deactivateOverlay(element);
+      return;
+    }
+  }
+
+  activateNode(element) {
+    element.classList.add(st2Class('node', 'active'));
+  }
+
+  deactivateNode(element) {
+    element.classList.remove(st2Class('node', 'active'));
+  }
+
+  dragOverNode(element, event) {
+    let dt = event.dataTransfer;
+
+    if (dt.effectAllowed === 'link') {
+      event.preventDefault();
+    }
+  }
+
+  dropOnNode(element, event, name) {
+    event.stopPropagation();
+
+    let dt = event.dataTransfer
+      , {source, type} = unpack(dt.getData('linkPack'))
+      , destination = name
+      ;
+
+    this.emit('link', source, destination, type);
+    this.deactivateNode(element);
+  }
+
+  dragMove(element, event, name) {
+    let dt = event.dataTransfer
+      , {layerX: x, layerY: y} = event // Relative to the closest positioned element (Viewer)
+      , node = this.graph.node(name)
+      , [offsetX, offsetY] = this.toInner(x - node.x, y - node.y)// [x - node.x, y - node.y]
+      ;
+
+    dt.setDragImage(node.elem, offsetX, offsetY);
+    dt.setData('nodePack', pack({ name, offsetX, offsetY }));
+    dt.effectAllowed = 'move';
+  }
+
+  dragSuccess(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name,
+      type: 'success'
+    }));
+    dt.effectAllowed = 'link';
+  }
+
+  dragError(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name,
+      type: 'error'
+    }));
+    dt.effectAllowed = 'link';
   }
 }
 

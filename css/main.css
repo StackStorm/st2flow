@@ -16,18 +16,86 @@ main {
 }
 
 
+.st2-palette {
+  width: 240px;
+  max-height: 100%;
+  z-index: 1;
+
+  background-color: #191f23;
+
+  &__action {
+    cursor: pointer;
+    padding: 5px;
+    background-color: #191f23;
+    color: #90d5fc;
+    font-size: 12px;
+    user-select: none;
+
+    &-name {
+      font-weight: bold;
+    }
+
+    &-description {
+      font-size: 0.9em;
+    }
+  }
+}
+
+.st2-controls {
+  position: absolute;
+  top: 0;
+  left: 240px;
+  z-index: 1;
+
+  &__button {
+    width: 32px;
+    line-height: 32px;
+    background-color: rgba(0,0,0,.5);
+    color: #eee;
+    margin: 5px;
+    border-radius: 16px;
+    text-align: center;
+    display: inline-block;
+    user-select: none;
+    cursor: pointer;
+  }
+}
+
 .st2-viewer {
   flex: 1;
 
   height: 100%;
 
-  background-color: #111;
+  background-color: #444;
 
   position: relative;
+  overflow: auto;
 
-  &__canvas {
-    width: 100%;
-    height: 100%;
+  &::-webkit-scrollbar {
+    width: 0.5em;
+  }
+
+  &::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.8);
+  }
+
+  &::-webkit-scrollbar-corner,
+  &::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(100, 100, 100, 0.4);
+  }
+
+  &--active {
+    background-color:#444;
+    background-image: linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px),
+    linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+    background-size:50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px
   }
 
   text {
@@ -36,21 +104,85 @@ main {
     font-size: 12px;
   }
 
+  &__canvas {
+    position: absolute;
+
+    padding: 42px 10px 10px;
+
+    box-sizing: border-box;
+  }
+
   &__node {
     cursor: pointer;
+    padding: 5px;
+    background-color: #191f23;
+    color: #eee;
+    font-size: 12px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    user-select: none;
+    min-width: 114px;
+    height: 32px;
 
-    rect {
-      fill: #333;
-      stroke-width: 1px;
+    &-name {
+      font-style: italic;
+      pointer-events: none;
     }
 
-    &--selected rect {
-      fill: #336;
+    &-ref {
+      color: #90d5fc;
+      pointer-events: none;
     }
 
-    &-label {
-      fill: #eee;
-      user-select: none;
+    &-buttons {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      padding: 9px;
+    }
+
+    &:hover &-buttons {
+      display: block;
+    }
+
+    &-button {
+      display: inline-block;
+      width: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 12px;
+      background-color: white;
+      color: black;
+      pointer-events: auto;
+
+      &-move:after {
+        content: 'M'
+      }
+
+      &-success:after {
+        content: 'S'
+      }
+
+      &-error:after {
+        content: 'E'
+      }
+
+      &-rename:after {
+        content: 'R'
+      }
+    }
+
+    &--active {
+      box-shadow: 0 0 0 5px rgba(255,255,255,0.5);
+    }
+
+    &--dragged {
+      pointer-events: none;
     }
   }
 
