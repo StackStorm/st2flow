@@ -24,6 +24,25 @@ main {
 
   background-color: #191f23;
 
+  overflow: auto;
+
+  &::-webkit-scrollbar {
+    width: 0.5em;
+  }
+
+  &::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.8);
+  }
+
+  &::-webkit-scrollbar-corner,
+  &::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(100, 100, 100, 0.4);
+  }
+
   &__action {
     cursor: pointer;
     padding: 5px;
@@ -38,6 +57,39 @@ main {
 
     &-description {
       font-size: 0.9em;
+    }
+  }
+
+  &__pack {
+    &-header {
+      display: flex;
+      background-color: #647888;
+      user-select: none;
+    }
+
+    &-icon {
+      display: block;
+      padding: 5px;
+      box-sizing: content-box;
+      width: 32px;
+      height: 32px;
+      background-color: #fff;
+      background-image:
+      repeating-linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px);
+      background-size: 32px 32px;
+      background-position: 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    &-name {
+      flex: 1;
+      line-height: 22px;
+      color: #fff;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 }

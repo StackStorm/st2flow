@@ -43,7 +43,7 @@ class MistralDefinition extends Definition {
     return _.assign(super.template, {
       task: (starter, indent) => _.template(starter + '${name}:\n' + indent + 'action: ${ref}\n'),
       block: {
-        base: () => _.template(`version: '2.0'\n\nworkflows:\n`),
+        base: () => _.template(`---\nversion: '2.0'\n\nworkflows:\n`),
         workflow: (external='', internal=external + '  ') =>
           _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
         tasks: (indent='') => _.template(indent + 'tasks:\n'),
