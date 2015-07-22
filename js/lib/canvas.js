@@ -7,17 +7,25 @@ let _ = require('lodash')
   , { pack, unpack } = require('./packer')
   ;
 
-let st2Class = bem('viewer');
+const st2Class = bem('viewer')
+    , st2Icon = bem('icon')
+    ;
 
 let nodeTmpl = (node) =>
 `
-  <div class="${st2Class('node-name')}">${node.name}</div>
-  <div class="${st2Class('node-ref')}">${node.ref}</div>
+  <div class="${st2Class('node-icon')}"></div>
+  <div class="${st2Class('node-content')}">
+    <form class="${st2Class('node-name-form')}">
+      <input type="text" class="${st2Class('node-name')}" value="${node.name}"/>
+    </form>
+    <div class="${st2Class('node-ref')}">${node.ref}</div>
+  </div>
+  <div class="${st2Class('node-edit')} ${st2Icon('edit')}"></div>
   <div class="${st2Class('node-buttons')}">
-    <span class="${st2Class('node-button')} ${st2Class('node-button-move')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-success')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-error')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Class('node-button-rename')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('success')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('error')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('complete')}" draggable="true"></span>
+    <span class="${st2Class('node-button')} ${st2Icon('delete')}" draggable="true"></span>
   </div>
 `;
 
@@ -25,14 +33,44 @@ class Canvas extends EventEmitter {
   constructor() {
     super();
 
-    let self = this;
+    const self = this;
 
     this.viewer = d3
       .select(st2Class(null, true))
       ;
 
+    const drag = d3.behavior.drag();
+
+    drag.on('dragstart', function () {
+      if (d3.event.sourceEvent.target === this) {
+        d3.select(this)
+          .classed(st2Class(null, 'grabbing'), true)
+          ;
+      }
+    });
+
+    drag.on('dragend', function () {
+      if (d3.event.sourceEvent.target === this) {
+        d3.select(this)
+          .classed(st2Class(null, 'grabbing'), false)
+          ;
+      }
+    });
+
+    drag.on('drag', function () {
+      if (d3.event.sourceEvent.target === this) {
+        d3.event.sourceEvent.preventDefault();
+
+        const element = self.viewer.node();
+
+        element.scrollLeft -= d3.event.dx;
+        element.scrollTop -= d3.event.dy;
+      }
+    });
+
     this.svg = this.viewer
       .select(st2Class('canvas', true))
+      .call(drag)
       .on('dragover', function () {
         if (d3.event.target === this) {
           d3.event.stopPropagation();
@@ -69,6 +107,18 @@ class Canvas extends EventEmitter {
 
     this.clear();
     this.resizeCanvas();
+
+    this.viewer
+      .attr('tabindex', '-1');
+
+    _.each(['keyup', 'keydown'], (type) => {
+      this.viewer
+        .on(type, () => {
+          this.emit(d3.event.type, d3.event);
+        })
+        ;
+    });
+
   }
 
   toInner(x, y) {
@@ -113,6 +163,7 @@ class Canvas extends EventEmitter {
 
     this.positionNodes(nodes, this.graph);
     this.createEdgePaths(this.svg, this.graph, require('./arrows'));
+    this.createEdgeLabels(this.viewer, this.graph);
   }
 
   createNodes(selection, g) {
@@ -126,25 +177,37 @@ class Canvas extends EventEmitter {
     let enter = nodes.enter()
       .append('div')
         .attr('class', st2Class('node'))
+        .attr('draggable', 'true')
         .html((d) => nodeTmpl(g.node(d)))
+        .on('click', function (name) {
+          d3.event.stopPropagation();
+          self.selectNode(this, d3.event, name);
+        })
         .on('dragenter', function () {
+          d3.event.stopPropagation();
           self.activateNode(this, d3.event);
         })
         .on('dragleave', function () {
+          d3.event.stopPropagation();
           self.deactivateNode(this, d3.event);
         })
         .on('dragover', function () {
+          d3.event.stopPropagation();
           self.dragOverNode(this, d3.event);
         })
-        .on('dragstart', function () {
+        .on('dragstart', function (name) {
+          d3.event.stopPropagation();
           d3.select(this)
             .classed(st2Class('node', 'dragged'), true);
+          self.dragMove(this, d3.event, name);
         })
         .on('dragend', function () {
+          d3.event.stopPropagation();
           d3.select(this)
             .classed(st2Class('node', 'dragged'), false);
         })
         .on('drop', function (name) {
+          d3.event.stopPropagation();
           self.dropOnNode(this, d3.event, name);
         })
         .each(d => {
@@ -159,29 +222,71 @@ class Canvas extends EventEmitter {
                 .text(refChanges.object.ref);
             }
           });
+
+          g.on('select', (name) => {
+            d3.select(node.elem)
+              .classed(st2Class('node', 'selected'), name === d);
+          });
         });
 
-    enter.select(st2Class('node-button-move', true))
+    enter.select(st2Icon('success', true))
       .on('dragstart', function (name) {
-        self.dragMove(this, d3.event, name);
-      })
-      ;
-
-    enter.select(st2Class('node-button-success', true))
-      .on('dragstart', function (name) {
+        d3.event.stopPropagation();
         self.dragSuccess(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-button-error', true))
+    enter.select(st2Icon('error', true))
       .on('dragstart', function (name) {
+        d3.event.stopPropagation();
         self.dragError(this, d3.event, name);
       })
       ;
 
-    enter.select(st2Class('node-button-rename', true))
+    enter.select(st2Icon('complete', true))
+      .on('dragstart', function (name) {
+        d3.event.stopPropagation();
+        self.dragComplete(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Icon('delete', true))
       .on('click', function (name) {
-        self.emit('rename', name);
+        d3.event.stopPropagation();
+        self.deleteNode(this, d3.event, name);
+      })
+      ;
+
+    enter.select(st2Icon('edit', true))
+      .on('click', function (name) {
+        d3.event.stopPropagation();
+        self.edit(name);
+      })
+      ;
+
+    enter.select(st2Class('node-name', true))
+      .on('keyup', () => d3.event.stopPropagation())
+      .on('keydown', () => d3.event.stopPropagation())
+      .on('blur', function (name) {
+        const value = this.value // HTMLInputElement
+            ;
+
+        if (value) {
+          self.emit('rename', name, value);
+        } else {
+          this.value = name;
+        }
+      })
+      ;
+
+    enter.select(st2Class('node-name-form', true))
+      .on('submit', function () {
+        d3.event.preventDefault();
+
+        d3.select(this)
+          .select(st2Class('node-name', true))
+            .node().blur()
+            ;
       })
       ;
 
@@ -221,44 +326,45 @@ class Canvas extends EventEmitter {
     let svgPaths = selection.selectAll(st2Class('edge', true))
       .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`);
 
-    let svgPathsEnter = svgPaths.enter()
+    const svgPathsEnter = svgPaths.enter()
       .append('g')
         .attr('class', (e) => st2Class('edge') + ' ' + st2Class('edge', g.edge(e).type))
         ;
 
     svgPathsEnter.append('path')
-      .attr('class', st2Class('edge-path'));
+      .attr('class', st2Class('edge-path'))
+      ;
 
     svgPathsEnter.append('defs');
 
-    let svgPathExit = svgPaths.exit();
+    const svgPathExit = svgPaths.exit();
 
     svgPathExit
       .remove();
 
-    svgPaths.selectAll(st2Class('edge-path', true))
+    svgPaths
       .each(function(e) {
-        let edge = g.edge(e);
+        const element = d3.select(this)
+            , edge = g.edge(e)
+            ;
+
         edge.arrowheadId = _.uniqueId('arrowhead');
 
-        let domEdge = d3.select(this)
-          .attr('marker-end', function() {
-            return 'url(#' + edge.arrowheadId + ')';
-          })
-          .style('fill', 'none');
+        const tail = g.node(e.v)
+            , head = g.node(e.w)
+            , points = [tail.intersect(head), head.intersect(tail)]
+            ;
 
-        domEdge
-          .attr('d', function(e) {
-            let tail = g.node(e.v)
-              , head = g.node(e.w)
-              , points = [tail.intersect(head), head.intersect(tail)];
+        const line = d3.svg.line()
+          .x((d) => d.x)
+          .y((d) => d.y)
+          ;
 
-            let line = d3.svg.line()
-              .x((d) => d.x)
-              .y((d) => d.y);
-
-            return line(points);
-          });
+        element.select(st2Class('edge-path', true))
+          .attr('marker-end', () => `url(#${edge.arrowheadId})`)
+          .style('fill', 'none')
+          .attr('d', line(points))
+          ;
       });
 
     // Add arrow shape
@@ -269,6 +375,46 @@ class Canvas extends EventEmitter {
           , arrowhead = arrows.normal;
         arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
       });
+  }
+
+  createEdgeLabels(selection, g) {
+    const self = this
+        , labels = selection
+            .selectAll(st2Class('label', true))
+            .data(g.edges(), (e) => `${e.v}:${e.w}:${e.name}`)
+            ;
+
+    labels.enter()
+      .append('div')
+        .attr('class', (e) => st2Class('label') + ' ' + st2Class('label', g.edge(e).type))
+        .on('click', function (edge) {
+          d3.event.stopPropagation();
+          self.deleteEdge(this, d3.event, edge);
+        })
+        ;
+
+    labels.exit()
+      .remove()
+      ;
+
+    labels
+      .style('transform', (e) => {
+        const head = g.node(e.v)
+            , tail = g.node(e.w)
+            ;
+
+        const [a, b] = [tail.intersect(head), head.intersect(tail)]
+            , c = {
+              x: (a.x - b.x)/2 + b.x,
+              y: (a.y - b.y)/2 + b.y
+            }
+            ;
+
+        let [x, y] = this.fromInner(c.x, c.y);
+
+        return `translate(${x}px,${y}px)`;
+      })
+      ;
   }
 
   centerElement() {
@@ -308,6 +454,21 @@ class Canvas extends EventEmitter {
 
     this.svg.attr('width', dimensions.width);
     this.svg.attr('height', dimensions.height);
+  }
+
+  focus() {
+    this.viewer
+      .node()
+        .focus();
+  }
+
+  edit(name) {
+    const node = this.graph.node(name);
+    d3.select(node.elem)
+      .classed(st2Class('node', 'edited'), true)
+      .select(st2Class('node-name', true))
+        .node().select() // This one is HTMLInputElement.select, not d3.select
+        ;
   }
 
   // Event Handlers
@@ -356,6 +517,10 @@ class Canvas extends EventEmitter {
       this.deactivateOverlay(element);
       return;
     }
+  }
+
+  selectNode(element, event, name) {
+    this.emit('select', name);
   }
 
   activateNode(element) {
@@ -416,6 +581,33 @@ class Canvas extends EventEmitter {
       type: 'error'
     }));
     dt.effectAllowed = 'link';
+  }
+
+  dragComplete(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name,
+      type: 'complete'
+    }));
+    dt.effectAllowed = 'link';
+  }
+
+  dragDisconnect(element, event, name) {
+    let dt = event.dataTransfer;
+
+    dt.setData('linkPack', pack({
+      source: name
+    }));
+    dt.effectAllowed = 'link';
+  }
+
+  deleteNode(element, event, name) {
+    this.emit('delete', name);
+  }
+
+  deleteEdge(element, event, edge) {
+    this.emit('disconnect', edge);
   }
 }
 

@@ -38,7 +38,7 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
       }
 
       if (task.getProperty('error')) {
-        node.connectTo(task.getProperty('error'), 'failure');
+        node.connectTo(task.getProperty('error'), 'error');
       }
 
       if (task.getProperty('complete')) {

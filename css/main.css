@@ -1,4 +1,5 @@
 @import '../node_modules/normalize.css/normalize.css';
+@import '../dist/font/st2flow-embedded.css';
 
 html, body, main {
   height: 100%;
@@ -23,6 +24,25 @@ main {
 
   background-color: #191f23;
 
+  overflow: auto;
+
+  &::-webkit-scrollbar {
+    width: 0.5em;
+  }
+
+  &::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(100, 100, 100, 0.8);
+  }
+
+  &::-webkit-scrollbar-corner,
+  &::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(100, 100, 100, 0.4);
+  }
+
   &__action {
     cursor: pointer;
     padding: 5px;
@@ -37,6 +57,39 @@ main {
 
     &-description {
       font-size: 0.9em;
+    }
+  }
+
+  &__pack {
+    &-header {
+      display: flex;
+      background-color: #647888;
+      user-select: none;
+    }
+
+    &-icon {
+      display: block;
+      padding: 5px;
+      box-sizing: content-box;
+      width: 32px;
+      height: 32px;
+      background-color: #fff;
+      background-image:
+      repeating-linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px);
+      background-size: 32px 32px;
+      background-position: 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    &-name {
+      flex: 1;
+      line-height: 22px;
+      color: #fff;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 }
@@ -71,6 +124,13 @@ main {
   position: relative;
   overflow: auto;
 
+  cursor: grab;
+
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 1px #90d5fc;
+  }
+
   &::-webkit-scrollbar {
     width: 0.5em;
   }
@@ -86,6 +146,10 @@ main {
   &::-webkit-scrollbar-corner,
   &::-webkit-scrollbar-thumb:window-inactive {
     background: rgba(100, 100, 100, 0.4);
+  }
+
+  &--grabbing {
+    cursor: grabbing;
   }
 
   &--active {
@@ -114,7 +178,6 @@ main {
 
   &__node {
     cursor: pointer;
-    padding: 5px;
     background-color: #191f23;
     color: #eee;
     font-size: 12px;
@@ -122,58 +185,115 @@ main {
     top: 0;
     left: 0;
     user-select: none;
-    min-width: 114px;
-    height: 32px;
+    min-width: 140px;
+    max-width: 200px;
+    height: 42px;
+
+    display: flex;
+
+    & > * {
+      pointer-events: none;
+    }
+
+    &-icon {
+      padding: 5px;
+      box-sizing: content-box;
+      width: 32px;
+      background-color: #fff;
+      background-image:
+      repeating-linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px),
+      repeating-linear-gradient(45deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px);
+      background-size: 32px 32px;
+      background-position: 5px 5px;
+      background-repeat: no-repeat;
+    }
+
+    &-content {
+      flex: 1;
+      padding: 5px 5px 5px 10px;
+    }
+
+    &-edit {
+      width: 24px;
+
+      line-height: 42px;
+      text-align: center;
+
+      cursor: pointer;
+
+      color: transparent;
+    }
+
+    &--selected &-edit {
+      color: inherit;
+      pointer-events: all;
+    }
 
     &-name {
       font-style: italic;
-      pointer-events: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background-color: transparent;
+      box-sizing: border-box;
+      border: 0;
+      padding: 3px;
+      margin: -3px;
+      outline: 0;
+      width: 100%;
+
+      &:focus {
+        background: #ddd;
+      }
     }
 
     &-ref {
       color: #90d5fc;
-      pointer-events: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &--selected &-ref {
+      color: #46b9fa;
     }
 
     &-buttons {
       position: absolute;
-      top: 0;
+      top: 42px;
       left: 0;
-      bottom: 0;
       right: 0;
-      background-color: rgba(0,0,0,0.5);
       display: none;
-      padding: 9px;
+      padding: 5px 0;
+      text-align: center;
+      font-size: 11px;
     }
 
+    &--selected &-buttons,
     &:hover &-buttons {
+      pointer-events: all;
       display: block;
     }
 
     &-button {
       display: inline-block;
-      width: 24px;
-      line-height: 24px;
       text-align: center;
-      border-radius: 12px;
+      border-radius: 50%;
       background-color: white;
       color: black;
       pointer-events: auto;
+      border: 1px solid;
 
-      &-move:after {
-        content: 'M'
+      &.st2-icon__success {
+        color: #0a0;
+        border-color: #0a0;
       }
-
-      &-success:after {
-        content: 'S'
+      &.st2-icon__error {
+        color: #a00;
+        border-color: #a00;
       }
-
-      &-error:after {
-        content: 'E'
-      }
-
-      &-rename:after {
-        content: 'R'
+      &.st2-icon__complete {
+        color: #aa0;
+        border-color: #aa0;
       }
     }
 
@@ -182,7 +302,12 @@ main {
     }
 
     &--dragged {
-      pointer-events: none;
+      /*pointer-events: none;*/
+    }
+
+    &--selected {
+      background-color: #eee;
+      color: #222;
     }
   }
 
@@ -203,9 +328,59 @@ main {
       fill: #0a0;
     }
 
-    &--failure path {
+    &--error path {
       stroke: #a00;
       fill: #a00;
+    }
+  }
+
+  &__label {
+    position: absolute;
+
+    &:before {
+      display: block;
+
+      margin: -50%;
+      border-radius: 50%;
+      background-color: white;
+      border: 2px solid;
+
+      font-family: "st2flow";
+      font-style: normal;
+      font-weight: normal;
+      font-size: 11px;
+      text-align: center;
+      speak: none;
+
+      width: 15px;
+      line-height: 15px;
+
+      text-decoration: inherit;
+      font-variant: normal;
+      text-transform: none;
+    }
+
+    &--success:before {
+      content: '\e803';
+      color: #0a0;
+      border-color: #0a0;
+    }
+    &--error:before {
+      content: '\e804';
+      color: #a00;
+      border-color: #a00;
+    }
+    &--complete:before {
+      content: '\e805';
+      color: #aa0;
+      border-color: #aa0;
+    }
+
+    &:hover:before {
+      content: '\e807';
+      color: inherit;
+      border-color: inherit;
+      cursor: pointer;
     }
   }
 }
@@ -230,6 +405,10 @@ main {
     background: rgba(100, 100, 100, 0.4);
   }
 
+  .ace_gutter {
+    display: none;
+  }
+
   &__active-task {
     position: absolute;
     background-color: rgba(255,255,255,0.1);
@@ -238,7 +417,31 @@ main {
 
   &__active-name {
     position: absolute;
+    border: 1px solid aqua;
+    box-sizing: border-box;
+  }
+
+  &__active-ref {
+    position: absolute;
+    border: 1px solid white;
+    box-sizing: border-box;
+  }
+
+  &__active-success {
+    position: absolute;
     border: 1px solid green;
+    box-sizing: border-box;
+  }
+
+  &__active-error {
+    position: absolute;
+    border: 1px solid red;
+    box-sizing: border-box;
+  }
+
+  &__active-complete {
+    position: absolute;
+    border: 1px solid yellow;
     box-sizing: border-box;
   }
 }

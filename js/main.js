@@ -35,6 +35,18 @@ class State {
 
       this.intermediate.update(delta, str.join('\n'));
     });
+
+    this.editor.selection.on('changeCursor', () => {
+      let { row, column } = this.editor.selection.getCursor()
+        , range = new Range(row, column, row, column)
+        , sectors = this.intermediate.search(range, ['task'])
+        , sector = _.first(sectors)
+        ;
+
+      if (sector && sector.task) {
+        this.graph.select(sector.task.getProperty('name'));
+      }
+    });
   }
 
   initIntermediate() {
@@ -44,6 +56,7 @@ class State {
     this.intermediate.on('parse', (tasks) => {
       this.graph.build(tasks);
       this.canvas.render(this.graph);
+      this.showTask(this.graph.__selected__);
     });
   }
 
@@ -52,14 +65,14 @@ class State {
 
     this.canvas = new Canvas();
 
-    this.canvas.on('node:select', (name) => {
+    this.canvas.on('select', (name) => {
       const SHIFT = 1
           , ALT = 2
           , CTRL = 4
           , META = 8
           ;
 
-      let mode =
+      const mode =
         event.shiftKey * SHIFT +
         event.altKey * ALT +
         event.ctrlKey * CTRL +
@@ -69,8 +82,11 @@ class State {
         case SHIFT:
           this.connect(this.graph.__selected__, name, 'success');
           break;
-        case SHIFT + ALT:
+        case ALT:
           this.connect(this.graph.__selected__, name, 'error');
+          break;
+        case SHIFT + ALT:
+          this.connect(this.graph.__selected__, name, 'complete');
           break;
         case META:
           this.rename(name);
@@ -87,15 +103,41 @@ class State {
     });
 
     this.canvas.on('link', (source, destination, type) => {
-      this.connect(source, destination, type);
+      if (type) {
+        this.connect(source, destination, type);
+      } else {
+        this.disconnect(source, destination, type);
+      }
     });
 
     this.canvas.on('create', (action, x, y) => {
       this.create(action, x, y);
     });
 
-    this.canvas.on('rename', (target) => {
-      this.rename(target);
+    this.canvas.on('rename', (target, name) => {
+      this.rename(target, name);
+    });
+
+    this.canvas.on('delete', (name) => {
+      this.delete(name);
+    });
+
+    this.canvas.on('disconnect', (edge) => {
+      this.disconnect(edge.v, edge.w);
+    });
+
+    this.canvas.on('keydown', (event) => {
+      const BACKSPACE = 8
+          , DELETE = 46
+          ;
+
+      switch(event.key || event.keyCode) {
+        case BACKSPACE:
+        case DELETE:
+          event.preventDefault();
+          this.delete(this.graph.__selected__);
+          break;
+      }
     });
 
     window.addEventListener('resize', () => {
@@ -106,6 +148,8 @@ class State {
   initGraph() {
     const Graph = require('./lib/graph');
     this.graph = new Graph();
+
+    this.graph.on('select', (name) => this.showTask(name));
   }
 
   initPalette() {
@@ -118,12 +162,9 @@ class State {
         , bem = require('./lib/bem')
         ;
 
-    const st2Class = bem('controls');
-
-    const buttonTmpl = (control) =>
-    `
-      ${control.name[0].toUpperCase()}
-    `;
+    const st2Class = bem('controls')
+        , st2Icon = bem('icon')
+        ;
 
     const element = d3
       .select(st2Class(null, true))
@@ -154,8 +195,7 @@ class State {
 
     buttons.enter()
       .append('div')
-      .attr('class', st2Class('button'))
-      .html(buttonTmpl)
+      .attr('class', d => `${st2Class('button')} ${st2Icon(d.name)}`)
       .on('click', control => control.action())
       ;
   }
@@ -167,45 +207,85 @@ class State {
       throw new Error('no such task:', source);
     }
 
-    let sector = task.getSector(type);
+    const transitions = task.getProperty(type) || [];
 
-    if (sector) {
-      this.editor.env.document.replace(sector, target);
-    } else {
-      let keys = {
-          success: 'on-success',
-          error: 'on-failure'
-        }
-        , text = this.intermediate.keyTemplate(task)({
-          key: keys[type],
-          value: target
-        })
-        ;
+    transitions.push(target);
 
-      this.editor.env.document.doc.insertLines(task.getSector('task').end.row, text.split('\n'));
-    }
+    this.setTransitions(source, transitions, type);
   }
 
-  rename(target) {
+  disconnect(source, destination, type=['success', 'error', 'complete']) {
+    let task = this.intermediate.task(source);
+
+    _.each([].concat(type), (type) => {
+      const transitions = task.getProperty(type) || [];
+
+      _.remove(transitions, (transition) => transition === destination);
+
+      this.setTransitions(source, transitions, type);
+    });
+  }
+
+  setTransitions(source, transitions, type) {
+    let task = this.intermediate.task(source);
+
+    if (!task) {
+      throw new Error('no such task:', source);
+    }
+
+    const templates = this.intermediate.definition.template
+        , blockTemplate = templates.block[type](task.getSector(type).indent)
+        , transitionTemplate = templates.transition(task.getSector(type).childStarter)
+        ;
+
+    let block = '';
+
+    if (transitions.length) {
+      block += _.reduce(transitions, (result, name) => {
+        return result + transitionTemplate({ name });
+      }, blockTemplate());
+    }
+
+    if (task.getSector(type).isStart() || task.getSector(type).isEnd()) {
+      const coord = task.getSector('task').end;
+      task.getSector(type).setStart(coord);
+      task.getSector(type).setEnd(coord);
+    }
+
+    this.editor.env.document.replace(task.getSector(type), block);
+  }
+
+  rename(target, name) {
     let task = this.intermediate.task(target);
 
     if (!task) {
-      throw new Error('no such task:', target);
+      return;
     }
 
-    let name = window.prompt('What would be a new name for the task?', target);
+    if (!name || name === task.getProperty('name')) {
+      return;
+    }
 
-    let sectors = [task.getSector('name')];
+    let sector = task.getSector('name');
 
-    _.each(this.intermediate.tasks, (t) =>
+    _.each(this.intermediate.tasks, (t) => {
+      const tName = t.getProperty('name');
+
       _.each(['success', 'error', 'complete'], (type) => {
-        if (t.getProperty(type) === task.getProperty('name')) {
-          sectors.push(t.getSector(type));
+        const transitions = t.getProperty(type)
+            , index = transitions.indexOf(target)
+            ;
+        if (~index) { // jshint ignore:line
+          transitions[index] = name;
+          this.setTransitions(tName, transitions, type);
         }
-      })
-    );
+      });
+    });
 
-    _.each(sectors, (sector) => this.editor.env.document.replace(sector, name));
+    this.graph.coordinates[name] = this.graph.coordinates[target];
+    delete this.graph.coordinates[target];
+
+    this.editor.env.document.replace(sector, name);
   }
 
   create(action, x, y) {
@@ -223,18 +303,81 @@ class State {
 
     this.graph.coordinates[name] = { x, y };
 
-    let task = this.intermediate.template({
+    let task = this.intermediate.template.task({
       name: name,
       ref: action.ref
     });
 
     if (!this.intermediate.taskBlock) {
-      task = this.intermediate.taskBlockTemplate + task;
+      const blocks = this.intermediate.template.block
+          , type = {
+              name: 'main',
+              type: 'direct'
+            }
+          ;
+      task = blocks.base() + blocks.workflow(type) + blocks.tasks() + task;
     }
 
-    const cursor = this.intermediate.taskBlock && this.intermediate.taskBlock.end.row || 0;
+    const cursor = ((block) => {
+      if (block && !block.isEnd()) {
+        const range = new Range();
+        range.setStart(block.end);
+        range.setEnd(block.end);
+        return range;
+      } else {
+        return new Range(0, 0, 0, 0);
+      }
+    })(this.intermediate.taskBlock);
 
-    this.editor.env.document.doc.insertLines(cursor, task.split('\n'));
+    this.editor.env.document.replace(cursor, task);
+
+    this.canvas.edit(name);
+  }
+
+  delete(name) {
+    const task = this.intermediate.task(name);
+
+    if (!task) {
+      throw new Error('no such task:', name);
+    }
+
+    _.each(this.intermediate.tasks, (t) => {
+      const tName = t.getProperty('name');
+
+      _.each(['success', 'error', 'complete'], (type) => {
+        const transitions = t.getProperty(type) || []
+            , index = transitions.indexOf(name)
+            ;
+        if (~index) { // jshint ignore:line
+          transitions.splice(index, 1);
+          this.setTransitions(tName, transitions, type);
+        }
+      });
+    });
+
+    this.editor.env.document.replace(task.getSector('task'), '');
+
+    this.canvas.focus();
+  }
+
+  showTask(name) {
+    const task = this.intermediate.task(name);
+
+    if (!task) {
+      return;
+    }
+
+    const sector = task.getSector('task');
+
+    // Since we're using `fullLine` marker, remove the last (zero character long) line from range
+    let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
+
+    if (this.selectMarker) {
+      this.editor.session.removeMarker(this.selectMarker);
+    }
+
+    this.selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
+    this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
   }
 
   debugSectors() {
@@ -250,7 +393,7 @@ class State {
 
       {
         this.intermediate.sectors.map((e) =>
-          console.log(`[${e.start.row}, ${e.start.column}]->[${e.end.row}, ${e.end.column}]`)
+          console.log(''+e, e.type)
         );
 
         console.log('---');
@@ -263,37 +406,6 @@ class State {
           marker = this.editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
           debugSectorMarkers.push(marker);
         });
-    });
-  }
-
-  showSelectedTask() {
-    let selectMarker;
-
-    this.graph.on('select', (taskName) => {
-      let sector = _.find(this.intermediate.sectors, (e) => {
-        return e.type === 'task' && e.task.getProperty('name') === taskName;
-      });
-
-      // Since we're using `fullLine` marker, remove the last (zero character long) line from range
-      let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
-
-      if (selectMarker) {
-        this.editor.session.removeMarker(selectMarker);
-      }
-
-      selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
-    });
-
-    this.editor.selection.on('changeCursor', () => {
-      let { row, column } = this.editor.selection.getCursor()
-        , range = new Range(row, column, row, column)
-        , sectors = this.intermediate.search(range, ['task'])
-        , sector = _.first(sectors)
-        ;
-
-      if (sector && sector.task) {
-        this.graph.select(sector.task.getProperty('name'));
-      }
     });
   }
 

@@ -1,0 +1,58 @@
+{
+  "name": "st2flow",
+  "css_prefix_text": "st2-icon__",
+  "css_use_suffix": false,
+  "hinting": true,
+  "units_per_em": 1000,
+  "ascent": 850,
+  "glyphs": [
+    {
+      "uid": "14017aae737730faeda4a6fd8fb3a5f0",
+      "css": "success",
+      "code": 59395,
+      "src": "entypo"
+    },
+    {
+      "uid": "c709da589c923ba3c2ad48d9fc563e93",
+      "css": "error",
+      "code": 59396,
+      "src": "entypo"
+    },
+    {
+      "uid": "b6fc2f656ef87275889422e19550680a",
+      "css": "undo",
+      "code": 59392,
+      "src": "entypo"
+    },
+    {
+      "uid": "ec347024a3640deebeeab53fd0d5ad03",
+      "css": "redo",
+      "code": 59393,
+      "src": "entypo"
+    },
+    {
+      "uid": "c77fd2fd065b5fe16d6f2b41e190b266",
+      "css": "edit",
+      "code": 59398,
+      "src": "entypo"
+    },
+    {
+      "uid": "2626e3a1bbcd90e45849af3b58a1d594",
+      "css": "delete",
+      "code": 59399,
+      "src": "entypo"
+    },
+    {
+      "uid": "48f2e18872fe74d4579a4c8a1527fc1e",
+      "css": "complete",
+      "code": 59397,
+      "src": "entypo"
+    },
+    {
+      "uid": "8a1d446e5555e76f82ddb1c8b526f579",
+      "css": "layout",
+      "code": 59394,
+      "src": "entypo"
+    }
+  ]
+}

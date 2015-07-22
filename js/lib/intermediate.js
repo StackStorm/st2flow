@@ -1,6 +1,8 @@
 'use strict';
 
 let _ = require('lodash')
+  , Chain = require('./definitions/chain')
+  , Mistral = require('./definitions/mistral')
   , EventEmitter = require('events').EventEmitter
   , Sector = require('./sector')
   , Task = require('./task')
@@ -11,16 +13,41 @@ class Intermediate extends EventEmitter {
     super();
 
     this.tasks = [];
+
+    this.definition = new Mistral(this);
   }
 
   get sectors() {
     return _(this.tasks)
-      .map((task) => _.values(task.sectors))
+      .map((task) => _(task.sectors).values().flatten().value())
       .flatten()
       .value();
   }
 
   get template() {
+    const defs = this.definition.defaults.indents;
+
+    return {
+      task: (() => {
+        const specimen = _(this.tasks)
+                .groupBy(task => task.starter)
+                .transform((acc, value, key) => acc.push({key, value}), [])
+                .max('value.length')
+            , starter = specimen.key || defs.task //'  - '
+            , indent = specimen.value && specimen.value[0].indent || defs.property // '    '
+            ;
+
+        return this.definition.template.task(starter, indent);
+      })(),
+      block: {
+        base: this.definition.template.block.base(defs.base),
+        workflow: this.definition.template.block.workflow(defs.workflow, defs.tasks),
+        tasks: this.definition.template.block.tasks(defs.tasks)
+      }
+    };
+  }
+
+  get taskTemplate() {
     const specimen = _(this.tasks)
             .groupBy(task => task.starter)
             .transform((acc, value, key) => acc.push({key, value}), [])
@@ -29,18 +56,15 @@ class Intermediate extends EventEmitter {
         , indent = specimen.value && specimen.value[0].indent || '    '
         ;
 
-    return _.template([
-      starter + 'name: ${name}',
-      indent +  'ref: ${ref}'
-    ].join('\n'));
+    return this.definition.template.task(starter, indent);
   }
 
   get taskBlockTemplate() {
-    return 'chain:\n';
+    return this.definition.template.taskBlock();
   }
 
   keyTemplate(task) {
-    return _.template(task.indent + '${key}: ${value}');
+    return this.definition.template.keyValue(task.indent);
   }
 
   parse(code) {
@@ -53,170 +77,19 @@ class Intermediate extends EventEmitter {
       untouchedTasks: _.map(this.tasks, (task) => task.getProperty('name'))
     };
 
-    let spec = {
-      WS_INDENT: /^(\s*)/,
-      EMPTY_LINE: /^(\W*)$/,
-      TASK_BLOCK: /^\s*chain:\s*$/,
-      TASK: /^(\s*-\s*)/,
-      TASK_NAME: /(.*)(name:\s+['"]*)([\w\s]+)/,
-      TASK_REF: /(.*)(ref:\s+['"]*)([\w\s.]+)/,
-      TASK_SUCCESS_TRANSITION: /(.*)(on-success:\s+['"]*)([\w\s]+)/,
-      TASK_ERROR_TRANSITION: /(.*)(on-failure:\s+['"]*)([\w\s]+)/
-    };
+    state.taskBlock = this.taskBlock || new Sector();
 
-    this.taskBlock = this.taskBlock || new Sector();
+    state.taskBlock.setStart(lines.length, 0);
+    state.taskBlock.setEnd(lines.length, 0);
 
-    this.taskBlock.setStart(lines.length, 0);
-    this.taskBlock.setEnd(lines.length, 0);
-
-    _.each(lines, (line, lineNum) => {
-
-      let indent = line.match(spec.WS_INDENT)[0].length;
-
-      // If it starts with `chain:`, that's a start of task block
-      if (!state.isTaskBlock && spec.TASK_BLOCK.test(line)) {
-        state.isTaskBlock = true;
-        state.taskBlockIdent = indent;
-
-        this.taskBlock.setStart(lineNum, 0);
-
-        return;
-      }
-
-      // If it has same or lesser indent, that's an end of task block
-      if (state.isTaskBlock && state.taskBlockIdent >= indent) {
-        state.isTaskBlock = false;
-
-        this.taskBlock.setEnd(lineNum, 0);
-
-        return false;
-      }
-
-      if (state.isTaskBlock) {
-        let match;
-
-        // If it starts with `-`, that's a new task
-        match = spec.TASK.exec(line);
-        if (match) {
-          let [,starter] = match;
-
-          if (state.currentTask) {
-            state.currentTask.endSector('task', lineNum, 0);
-          }
-
-          let sector = new Sector(lineNum, 0).setType('task');
-          state.currentTask = new Task().setSector('task', sector);
-          state.currentTask.starter = starter;
-        }
-
-        // If it has `name:`, that's task name
-        match = spec.TASK_NAME.exec(line);
-        if (match) {
-          let [,_prefix,key,value] = match
-            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
-            ;
-
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = ' '.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
-          let sector = new Sector(...coords).setType('name');
-          state.currentTask.setSector('name', sector);
-
-          state.currentTask = this.task(value, state.currentTask);
-          state.currentTask.getSector('task').setTask(state.currentTask);
-          _.remove(state.untouchedTasks, (e) => e === value);
-
-          return;
-        }
-
-        // If it has `ref:`, that's action reference
-        match = spec.TASK_REF.exec(line);
-        if (match) {
-          let [,_prefix,key,value] = match
-            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
-            ;
-
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = ' '.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
-          let sector = new Sector(...coords).setType('ref');
-          state.currentTask.setProperty('ref', value).setSector('ref', sector);
-
-          return;
-        }
-
-        // If it has `on-success:`, that's successfil transition pointer
-        match = spec.TASK_SUCCESS_TRANSITION.exec(line);
-        if (match) {
-          let [,_prefix,key,value] = match
-            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
-            ;
-
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = ' '.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
-          let sector = new Sector(...coords).setType('success');
-          state.currentTask.setProperty('success', value).setSector('success', sector);
-
-          return;
-        }
-
-        // If it has `on-failure:`, that's unsuccessfil transition pointer
-        match = spec.TASK_ERROR_TRANSITION.exec(line);
-        if (match) {
-          let [,_prefix,key,value] = match
-            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
-            ;
-
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = ' '.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
-          let sector = new Sector(...coords).setType('error');
-          state.currentTask.setProperty('error', value).setSector('error', sector);
-
-          return;
-        }
-
-        if (state.currentTask && state.currentTask.isEmpty() && spec.EMPTY_LINE.test(line)) {
-          state.currentTask.starter += '\n';
-        }
-
-      }
-
-    });
+    state = _.transform(lines, this.definition.parseLine, state, this.definition);
 
     // Close the sector of the last task
     if (state.currentTask) {
-      state.currentTask.endSector('task', this.taskBlock.end);
+      state.currentTask.endSector('task', state.taskBlock.end);
     }
+
+    this.taskBlock = state.taskBlock;
 
     // Delete all the tasks not updated during parsing
     _.each(state.untouchedTasks, (name) => {
@@ -234,16 +107,20 @@ class Intermediate extends EventEmitter {
   task(name, pending) {
     let task = _.find(this.tasks, (e) => e.getProperty('name') === name);
 
-    if (pending) {
-      if (!task) {
-        task = new Task();
-        this.tasks.push(task);
-      }
-
-      _.assign(task, pending);
-
-      task.setProperty('name', name);
+    if (!pending) {
+      return task;
     }
+
+    if (!task) {
+      task = new Task();
+      this.tasks.push(task);
+    }
+
+    if (pending) {
+      _.assign(task, pending);
+    }
+
+    task.setProperty('name', name);
 
     return task;
   }
