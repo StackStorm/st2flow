@@ -135,7 +135,7 @@ class MistralDefinition extends Definition {
               , nameSector = new Sector(...coords).setType('name')
               ;
 
-          state.currentTask = this.model.task(name)
+          state.currentTask = this.model.task(name, {})
             .setSector('task', taskSector)
             .setSector('name', nameSector)
             ;

@@ -12,8 +12,6 @@ class State {
     this.initEditor();
     this.initPalette();
     this.initControls();
-
-    this.showSelectedTask();
   }
 
   initEditor() {
@@ -37,6 +35,18 @@ class State {
 
       this.intermediate.update(delta, str.join('\n'));
     });
+
+    this.editor.selection.on('changeCursor', () => {
+      let { row, column } = this.editor.selection.getCursor()
+        , range = new Range(row, column, row, column)
+        , sectors = this.intermediate.search(range, ['task'])
+        , sector = _.first(sectors)
+        ;
+
+      if (sector && sector.task) {
+        this.graph.select(sector.task.getProperty('name'));
+      }
+    });
   }
 
   initIntermediate() {
@@ -46,6 +56,7 @@ class State {
     this.intermediate.on('parse', (tasks) => {
       this.graph.build(tasks);
       this.canvas.render(this.graph);
+      this.showTask(this.graph.__selected__);
     });
   }
 
@@ -137,6 +148,8 @@ class State {
   initGraph() {
     const Graph = require('./lib/graph');
     this.graph = new Graph();
+
+    this.graph.on('select', (name) => this.showTask(name));
   }
 
   initPalette() {
@@ -246,7 +259,7 @@ class State {
     let task = this.intermediate.task(target);
 
     if (!task) {
-      throw new Error('no such task:', target);
+      return;
     }
 
     if (!name || name === task.getProperty('name')) {
@@ -332,7 +345,7 @@ class State {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
-        const transitions = t.getProperty(type)
+        const transitions = t.getProperty(type) || []
             , index = transitions.indexOf(name)
             ;
         if (~index) { // jshint ignore:line
@@ -343,6 +356,28 @@ class State {
     });
 
     this.editor.env.document.replace(task.getSector('task'), '');
+
+    this.canvas.focus();
+  }
+
+  showTask(name) {
+    const task = this.intermediate.task(name);
+
+    if (!task) {
+      return;
+    }
+
+    const sector = task.getSector('task');
+
+    // Since we're using `fullLine` marker, remove the last (zero character long) line from range
+    let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
+
+    if (this.selectMarker) {
+      this.editor.session.removeMarker(this.selectMarker);
+    }
+
+    this.selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
+    this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
   }
 
   debugSectors() {
@@ -371,36 +406,6 @@ class State {
           marker = this.editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
           debugSectorMarkers.push(marker);
         });
-    });
-  }
-
-  showSelectedTask() {
-    let selectMarker;
-
-    this.graph.on('select', (taskName) => {
-      const sector = this.intermediate.task(taskName).getSector('task');
-
-      // Since we're using `fullLine` marker, remove the last (zero character long) line from range
-      let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
-
-      if (selectMarker) {
-        this.editor.session.removeMarker(selectMarker);
-      }
-
-      selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
-      this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
-    });
-
-    this.editor.selection.on('changeCursor', () => {
-      let { row, column } = this.editor.selection.getCursor()
-        , range = new Range(row, column, row, column)
-        , sectors = this.intermediate.search(range, ['task'])
-        , sector = _.first(sectors)
-        ;
-
-      if (sector && sector.task) {
-        this.graph.select(sector.task.getProperty('name'));
-      }
     });
   }
 

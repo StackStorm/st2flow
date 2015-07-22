@@ -235,6 +235,8 @@ class Canvas extends EventEmitter {
       ;
 
     enter.select(st2Class('node-name', true))
+      .on('keyup', () => d3.event.stopPropagation())
+      .on('keydown', () => d3.event.stopPropagation())
       .on('blur', function (name) {
         const value = this.value // HTMLInputElement
             ;
@@ -422,6 +424,12 @@ class Canvas extends EventEmitter {
 
     this.svg.attr('width', dimensions.width);
     this.svg.attr('height', dimensions.height);
+  }
+
+  focus() {
+    this.viewer
+      .node()
+        .focus();
   }
 
   edit(name) {
