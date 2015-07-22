@@ -33,14 +33,44 @@ class Canvas extends EventEmitter {
   constructor() {
     super();
 
-    let self = this;
+    const self = this;
 
     this.viewer = d3
       .select(st2Class(null, true))
       ;
 
+    const drag = d3.behavior.drag();
+
+    drag.on('dragstart', function () {
+      if (d3.event.sourceEvent.target === this) {
+        d3.select(this)
+          .classed(st2Class(null, 'grabbing'), true)
+          ;
+      }
+    });
+
+    drag.on('dragend', function () {
+      if (d3.event.sourceEvent.target === this) {
+        d3.select(this)
+          .classed(st2Class(null, 'grabbing'), false)
+          ;
+      }
+    });
+
+    drag.on('drag', function () {
+      if (d3.event.sourceEvent.target === this) {
+        d3.event.sourceEvent.preventDefault();
+
+        const element = self.viewer.node();
+
+        element.scrollLeft -= d3.event.dx;
+        element.scrollTop -= d3.event.dy;
+      }
+    });
+
     this.svg = this.viewer
       .select(st2Class('canvas', true))
+      .call(drag)
       .on('dragover', function () {
         if (d3.event.target === this) {
           d3.event.stopPropagation();
