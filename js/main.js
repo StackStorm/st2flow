@@ -341,6 +341,8 @@ class State {
       throw new Error('no such task:', name);
     }
 
+    this.editor.env.document.replace(task.getSector('task'), '');
+
     _.each(this.intermediate.tasks, (t) => {
       const tName = t.getProperty('name');
 
@@ -354,8 +356,6 @@ class State {
         }
       });
     });
-
-    this.editor.env.document.replace(task.getSector('task'), '');
 
     this.canvas.focus();
   }
