@@ -5,6 +5,7 @@ let _ = require('lodash')
   , d3 = require('d3')
   , EventEmitter = require('events').EventEmitter
   , { pack, unpack } = require('./packer')
+  , Vector = require('./vector')
   ;
 
 const st2Class = bem('viewer')
@@ -469,6 +470,40 @@ class Canvas extends EventEmitter {
       .select(st2Class('node-name', true))
         .node().select() // This one is HTMLInputElement.select, not d3.select
         ;
+  }
+
+  show(name) {
+    const node = this.graph.node(name)
+        , view = this.viewer.node()
+        , { x, y } = node
+        , { scrollWidth: width, scrollHeight: height } = node.elem
+        , { scrollLeft, scrollTop, clientWidth, clientHeight } = view
+        , [ viewWidth, viewHeight ] = this.toInner(clientWidth, clientHeight)
+        ;
+
+    const A = new Vector(scrollLeft, scrollTop)
+        , B = new Vector(x, y)
+        , C = new Vector(x + width, y + height)
+        , D = new Vector(...this.toInner(scrollLeft + viewWidth, scrollTop + viewHeight))
+        , AB = B.subtract(A)
+        , CD = D.subtract(C)
+        ;
+
+    if (AB.x < 0) {
+      view.scrollLeft += AB.x;
+    }
+
+    if (AB.y < 0) {
+      view.scrollTop += AB.y;
+    }
+
+    if (CD.x < 0) {
+      view.scrollLeft -= CD.x;
+    }
+
+    if (CD.y < 0) {
+      view.scrollTop -= CD.y;
+    }
   }
 
   // Event Handlers

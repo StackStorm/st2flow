@@ -378,6 +378,8 @@ class State {
 
     this.selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
     this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
+
+    this.canvas.show(name);
   }
 
   debugSectors() {
