@@ -43,6 +43,10 @@ main {
     background: rgba(100, 100, 100, 0.4);
   }
 
+  &--hide {
+    display: none;
+  }
+
   &__action {
     cursor: pointer;
     padding: 5px;
@@ -94,12 +98,15 @@ main {
   }
 }
 
-.st2-controls {
-  position: absolute;
-  top: 0;
-  left: 240px;
-  z-index: 1;
+.st2-container {
+  flex: 1;
 
+  height: 100%;
+
+  position: relative;
+}
+
+.st2-controls {
   &__button {
     width: 32px;
     line-height: 32px;
@@ -112,11 +119,23 @@ main {
     user-select: none;
     cursor: pointer;
   }
+
+  &__left {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+  }
+
+  &__right {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+  }
 }
 
 .st2-viewer {
-  flex: 1;
-
   height: 100%;
 
   background-color: #444;
@@ -403,6 +422,10 @@ main {
   ::-webkit-scrollbar-corner,
   ::-webkit-scrollbar-thumb:window-inactive {
     background: rgba(100, 100, 100, 0.4);
+  }
+
+  &--hide {
+    display: none;
   }
 
   .ace_gutter {

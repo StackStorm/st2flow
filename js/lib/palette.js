@@ -173,6 +173,14 @@ class Palette {
     dt.setData('actionPack', pack({ action }));
     dt.effectAllowed = 'copy';
   }
+
+  collapse() {
+    this.element
+      .node()
+      .classList
+      .toggle(st2Class(null, 'hide'))
+      ;
+  }
 }
 
 module.exports = Palette;

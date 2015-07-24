@@ -31,6 +31,12 @@
       "src": "entypo"
     },
     {
+      "uid": "b6f32db98a3de777f5ae3005191b1831",
+      "css": "code",
+      "code": 59401,
+      "src": "entypo"
+    },
+    {
       "uid": "c77fd2fd065b5fe16d6f2b41e190b266",
       "css": "edit",
       "code": 59398,
@@ -46,6 +52,12 @@
       "uid": "48f2e18872fe74d4579a4c8a1527fc1e",
       "css": "complete",
       "code": 59397,
+      "src": "entypo"
+    },
+    {
+      "uid": "80451d627470ea7f977a263fdb771d7b",
+      "css": "palette",
+      "code": 59400,
       "src": "entypo"
     },
     {

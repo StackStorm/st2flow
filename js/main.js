@@ -36,7 +36,7 @@ class State {
       this.intermediate.update(delta, str.join('\n'));
     });
 
-    this.editor.selection.on('changeCursor', () => {
+    editor.selection.on('changeCursor', () => {
       let { row, column } = this.editor.selection.getCursor()
         , range = new Range(row, column, row, column)
         , sectors = this.intermediate.search(range, ['task'])
@@ -47,6 +47,15 @@ class State {
         this.graph.select(sector.task.getProperty('name'));
       }
     });
+
+    if (editor.collapse) {
+      throw new Error('Unable to override editor.collapse method.');
+    }
+    editor.collapse = function () {
+      const classList = editor.renderer.container.classList;
+
+      classList.toggle('st2-editor--hide');
+    };
   }
 
   initIntermediate() {
@@ -154,50 +163,28 @@ class State {
 
   initPalette() {
     const Palette = require('./lib/palette');
-    this.pallette = new Palette();
+    this.palette = new Palette();
   }
 
   initControls() {
-    const d3 = require('d3')
-        , bem = require('./lib/bem')
+    const Controls = require('./lib/controls')
+        , controls = this.controls = new Controls()
         ;
 
-    const st2Class = bem('controls')
-        , st2Icon = bem('icon')
-        ;
-
-    const element = d3
-      .select(st2Class(null, true))
-      ;
-
-    const controls = [{
-      name: 'undo',
-      action: () => {
-        this.editor.undo();
-      }
-    }, {
-      name: 'redo',
-      action: () => {
-        this.editor.redo();
-      }
-    }, {
-      name: 'layout',
-      action: () => {
-        this.graph.layout();
-        this.canvas.reposition();
-      }
-    }];
-
-    const buttons = element
-      .selectAll(st2Class('button'), true)
-      .data(controls, e => e.name)
-      ;
-
-    buttons.enter()
-      .append('div')
-      .attr('class', d => `${st2Class('button')} ${st2Icon(d.name)}`)
-      .on('click', control => control.action())
-      ;
+    controls.on('undo', () => this.editor.undo());
+    controls.on('redo', () => this.editor.redo());
+    controls.on('layout', () => {
+      this.graph.layout();
+      this.canvas.reposition();
+    });
+    controls.on('collapse-editor', () => {
+      this.editor.collapse();
+      this.canvas.resizeCanvas();
+    });
+    controls.on('collapse-palette', () => {
+      this.palette.collapse();
+      this.canvas.resizeCanvas();
+    });
   }
 
   connect(source, target, type='success') {
