@@ -379,6 +379,8 @@ class Canvas extends EventEmitter {
   }
 
   createEdgeLabels(selection, g) {
+    const ARROWHEAD_SIZE = 10;
+
     const self = this
         , labels = selection
             .selectAll(st2Class('label', true))
@@ -402,16 +404,13 @@ class Canvas extends EventEmitter {
       .style('transform', (e) => {
         const head = g.node(e.v)
             , tail = g.node(e.w)
+            , [A, B] = [head.intersect(tail), tail.intersect(head)]
+            , AB = B.subtract(A)
+            , unit = AB.unit()
+            , length = AB.length() - ARROWHEAD_SIZE
+            , C = unit.multiply(length/2).add(A)
+            , [x, y] = this.fromInner(C.x, C.y)
             ;
-
-        const [a, b] = [tail.intersect(head), head.intersect(tail)]
-            , c = {
-              x: (a.x - b.x)/2 + b.x,
-              y: (a.y - b.y)/2 + b.y
-            }
-            ;
-
-        let [x, y] = this.fromInner(c.x, c.y);
 
         return `translate(${x}px,${y}px)`;
       })
