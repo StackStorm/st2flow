@@ -22,6 +22,11 @@ const controls = [{
 }, {
   name: 'layout'
 }, {
+  name: 'meta',
+  type: 'toggle',
+  icon: 'code',
+  initial: false
+}, {
   name: 'collapse-editor',
   position: 'right',
   icon: 'code',

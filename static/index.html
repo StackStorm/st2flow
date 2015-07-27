@@ -19,7 +19,49 @@
           </svg>
         </div>
       </div>
-      <div id="editor" class="st2-editor"></div>
+      <div class="st2-panel">
+        <div class="st2-panel__panel st2-panel__editor st2-editor"></div>
+        <div class="st2-panel__panel st2-panel__meta">
+          <form>
+            <div class="st2-panel__header">
+              Metadata
+            </div>
+            <label class="st2-panel__field">
+              <div class="st2-panel__field-name">
+                Name
+              </div>
+              <input type="text" name="name" value="">
+            </label>
+            <label class="st2-panel__field">
+              <div class="st2-panel__field-name">
+                Description
+              </div>
+              <textarea name="description" rows="8" cols="40"></textarea>
+            </label>
+            <label class="st2-panel__field">
+              <div class="st2-panel__field-name">
+                Runner Type
+              </div>
+              <select name="runner_type">
+                <option value="mistral-v2">Mistral v2</option>
+                <option value="action-chain">Action Chain</option>
+              </select>
+            </label>
+            <label class="st2-panel__field">
+              <div class="st2-panel__field-name">
+                Entry Point
+              </div>
+              <input type="text" name="entry_point" value="">
+            </label>
+            <label class="st2-panel__field">
+              <input type="checkbox" name="enable">
+              <span class="st2-panel__field-name">
+                Enable
+              </span>
+            </label>
+          </form>
+        </div>
+      </div>
     </main>
 
     <script src="js/main.js"></script>

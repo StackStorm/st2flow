@@ -9,26 +9,16 @@ class State {
     this.initGraph();
     this.initCanvas();
     this.initIntermediate();
-    this.initEditor();
+    this.initPanel();
     this.initPalette();
     this.initControls();
   }
 
-  initEditor() {
-    const ace = require('brace');
+  initPanel() {
+    const Panel = require('./lib/panel');
+    this.panel = new Panel();
 
-    let editor = this.editor = ace.edit('editor');
-
-    require('brace/mode/yaml');
-    editor.getSession().setMode('ace/mode/yaml');
-
-    require('brace/theme/monokai');
-    editor.setTheme('ace/theme/monokai');
-
-    editor.setHighlightActiveLine(false);
-    editor.$blockScrolling = Infinity;
-
-    editor.session.setTabSize(2);
+    const editor = this.editor = this.panel.editor;
 
     editor.on('change', (delta) => {
       let str = this.editor.env.document.doc.getAllLines();
@@ -47,21 +37,6 @@ class State {
         this.graph.select(sector.task.getProperty('name'));
       }
     });
-
-    if (editor.collapse) {
-      throw new Error('Unable to override editor.collapse method.');
-    }
-    editor.toggleCollapse = function (open) {
-      const classList = editor.renderer.container.classList;
-
-      if (open === true) {
-        classList.remove('st2-editor--hide');
-      } else if (open === false) {
-        classList.add('st2-editor--hide');
-      } else {
-        classList.toggle('st2-editor--hide');
-      }
-    };
   }
 
   initIntermediate() {
@@ -194,12 +169,19 @@ class State {
       this.canvas.reposition();
     });
     controls.on('collapse-editor', (state) => {
-      this.editor.toggleCollapse(state);
+      this.panel.toggleCollapse(state);
       this.canvas.resizeCanvas();
     });
     controls.on('collapse-palette', (state) => {
       this.palette.toggleCollapse(state);
       this.canvas.resizeCanvas();
+    });
+    controls.on('meta', (state) => {
+      if (state) {
+        this.panel.show('meta');
+      } else {
+        this.panel.show('editor');
+      }
     });
   }
 

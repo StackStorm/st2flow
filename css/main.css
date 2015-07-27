@@ -403,8 +403,10 @@ main {
   }
 }
 
-.st2-editor {
+.st2-panel {
   flex: 1;
+  position: relative;
+  height: 100%;
 
   ::-webkit-scrollbar {
     width: 0.5em;
@@ -426,6 +428,36 @@ main {
   &--hide {
     display: none;
   }
+
+  &__editor {
+    z-index: 2;
+  }
+
+  &__panel {
+    background-color: #272822;
+    color: #F8F8F2;
+    overflow: auto;
+    padding: 10px;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    &--active {
+      z-index: 3;
+    }
+  }
+
+  &__field {
+    display: block;
+  }
+}
+
+.st2-editor {
+  width: 100%;
+  height: 100%;
 
   .ace_gutter {
     display: none;
