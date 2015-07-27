@@ -28,6 +28,11 @@ class Task {
 
     return this;
   }
+  startSector(type, ...coords) {
+    this.sectors[type].setStart(...coords);
+
+    return this;
+  }
   endSector(type, ...coords) {
     this.sectors[type].setEnd(...coords);
 

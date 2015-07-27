@@ -6,6 +6,7 @@ let _ = require('lodash')
   , EventEmitter = require('events').EventEmitter
   , Sector = require('./sector')
   , Task = require('./task')
+  , Workflow = require('./workflow')
   ;
 
 class Intermediate extends EventEmitter {
@@ -13,6 +14,7 @@ class Intermediate extends EventEmitter {
     super();
 
     this.tasks = [];
+    this.workflows = [];
 
     this.definition = new Mistral(this);
   }
@@ -123,6 +125,27 @@ class Intermediate extends EventEmitter {
     task.setProperty('name', name);
 
     return task;
+  }
+
+  workflow(name, pending) {
+    let workflow = _.find(this.workflows, (e) => e.getProperty('name') === name);
+
+    if (!pending) {
+      return workflow;
+    }
+
+    if (!workflow) {
+      workflow = new Workflow();
+      this.workflows.push(workflow);
+    }
+
+    if (pending) {
+      _.assign(workflow, pending);
+    }
+
+    workflow.setProperty('name', name);
+
+    return workflow;
   }
 
   search(range, type) {

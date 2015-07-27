@@ -1,5 +1,7 @@
 'use strict';
 
+const Vector = require('./vector');
+
 function intersectRect(node, point) {
   var x = node.x;
   var y = node.y;
@@ -28,7 +30,7 @@ function intersectRect(node, point) {
     sy = dx === 0 ? 0 : w * dy / dx;
   }
 
-  return {x: x + sx, y: y + sy};
+  return new Vector(x + sx, y + sy);
 }
 
 module.exports = intersectRect;

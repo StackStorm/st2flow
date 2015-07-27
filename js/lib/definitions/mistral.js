@@ -66,6 +66,7 @@ class MistralDefinition extends Definition {
 
     if (block.enter(line, lineNum, state)) {
       state.workflowBlock.setStart(lineNum, 0);
+      state.workflowBlock.setEnd(lineNum + 1, 0);
       return;
     }
 
@@ -75,24 +76,34 @@ class MistralDefinition extends Definition {
     }
 
     if (state.isWorkflowBlock) {
-      state.workflowBlock.setEnd(lineNum, 0); // ? lineNum + 1
+      state.workflowBlock.setEnd(lineNum + 1, 0); // ? lineNum + 1
 
       let match;
 
       match = this.spec.WORKFLOW_NAME.exec(line);
       if (match) {
-        let [,indent,name] = match;
+        let [,indent,name] = match
+          , coords = [lineNum, indent.length, lineNum, (indent+name).length]
+          ;
 
         if (!state.currentWorkflow || indent.length === state.currentWorkflow.indent.length) {
           if (state.currentWorkflow) {
-            state.currentWorkflow.setEnd(lineNum, 0);
+            state.currentWorkflow.endSector('workflow', lineNum, 0);
           }
 
-          state.currentWorkflow = new Sector(lineNum, 0).setType('workflow');
+          const workflowSector = new Sector(lineNum, 0).setType('workflow')
+              , nameSector = new Sector(...coords).setType('name')
+              , taskBlockSector = new Sector()
+              ;
+
+          state.currentWorkflow = this.model.workflow(name, {})
+            .setSector('workflow', workflowSector)
+            .setSector('name', nameSector)
+            .setSector('taskBlock', taskBlockSector)
+            ;
+
           state.currentWorkflow.indent = indent;
-          state.currentWorkflow.name = name;
-          state.currentWorkflow.taskBlock = new Sector();
-          state.taskBlock = state.currentWorkflow.taskBlock; // FIX: support multiple workflows
+          state.taskBlock = state.currentWorkflow.getSector('taskBlock'); // FIX: support multiple workflows
 
           return;
         }
@@ -100,23 +111,23 @@ class MistralDefinition extends Definition {
     }
 
     if (state.isWorkflowBlock && state.currentWorkflow) {
-      state.currentWorkflow.setEnd(lineNum, 0);
+      state.currentWorkflow.endSector('workflow', lineNum, 0);
 
       let block = this.block('isTaskBlock', this.spec.TASK_BLOCK);
 
       if (block.enter(line, lineNum, state)) {
-        state.currentWorkflow.taskBlock.setStart(lineNum, 0);
-        state.currentWorkflow.taskBlock.setEnd(lineNum + 1, 0);
+        state.currentWorkflow.startSector('taskBlock', lineNum, 0);
+        state.currentWorkflow.endSector('taskBlock', lineNum + 1, 0);
         return;
       }
 
       if (block.exit(line, lineNum, state)) {
-        state.currentWorkflow.taskBlock.setEnd(lineNum, 0);
+        state.currentWorkflow.endSector('taskBlock', lineNum, 0);
       }
     }
 
     if (state.isWorkflowBlock && state.currentWorkflow && state.isTaskBlock) {
-      state.currentWorkflow.taskBlock.setEnd(lineNum + 1, 0);
+      state.currentWorkflow.endSector('taskBlock', lineNum + 1, 0);
 
       let match;
 

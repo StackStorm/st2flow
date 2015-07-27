@@ -173,6 +173,20 @@ class Palette {
     dt.setData('actionPack', pack({ action }));
     dt.effectAllowed = 'copy';
   }
+
+  toggleCollapse(open) {
+    const classList = this.element
+      .node()
+      .classList;
+
+    if (open === true) {
+      classList.remove(st2Class(null, 'hide'));
+    } else if (open === false) {
+      classList.add(st2Class(null, 'hide'));
+    } else {
+      classList.toggle(st2Class(null, 'hide'));
+    }
+  }
 }
 
 module.exports = Palette;
