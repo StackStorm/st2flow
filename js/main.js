@@ -51,10 +51,16 @@ class State {
     if (editor.collapse) {
       throw new Error('Unable to override editor.collapse method.');
     }
-    editor.collapse = function () {
+    editor.toggleCollapse = function (open) {
       const classList = editor.renderer.container.classList;
 
-      classList.toggle('st2-editor--hide');
+      if (open === true) {
+        classList.remove('st2-editor--hide');
+      } else if (open === false) {
+        classList.add('st2-editor--hide');
+      } else {
+        classList.toggle('st2-editor--hide');
+      }
     };
   }
 
@@ -177,12 +183,12 @@ class State {
       this.graph.layout();
       this.canvas.reposition();
     });
-    controls.on('collapse-editor', () => {
-      this.editor.collapse();
+    controls.on('collapse-editor', (state) => {
+      this.editor.toggleCollapse(state);
       this.canvas.resizeCanvas();
     });
-    controls.on('collapse-palette', () => {
-      this.palette.collapse();
+    controls.on('collapse-palette', (state) => {
+      this.palette.toggleCollapse(state);
       this.canvas.resizeCanvas();
     });
   }

@@ -12,7 +12,9 @@ const st2Class = bem('controls')
 
 const controls = [{
   name: 'collapse-palette',
-  icon: 'palette'
+  icon: 'palette',
+  type: 'toggle',
+  initial: true
 }, {
   name: 'undo'
 }, {
@@ -22,12 +24,16 @@ const controls = [{
 }, {
   name: 'collapse-editor',
   position: 'right',
-  icon: 'code'
+  icon: 'code',
+  type: 'toggle',
+  initial: true
 }];
 
 class Controls extends EventEmitter {
   constructor() {
     super();
+
+    const self = this;
 
     this.element = d3
       .select(st2Class(null, true))
@@ -36,17 +42,37 @@ class Controls extends EventEmitter {
     const positions = _.groupBy(controls, (c) => c.position || 'left');
 
     _.each(positions, (controls, position) => {
-      const buttons = this.element
-        .append('div')
-        .attr('class', `${st2Class(position)}`)
-          .selectAll(st2Class('button'), true)
-          .data(controls, e => e.name)
-          ;
+      const opts = _.map(controls, (d) => ({
+              name: d.name,
+              icon: d.icon || d.name,
+              type: d.type || 'momentary',
+              event: d.event || d.name,
+              initial: d.initial || false,
+              state: d.initial || false
+            }))
+          , buttons = this.element
+              .append('div')
+              .attr('class', `${st2Class(position)}`)
+                .selectAll(st2Class('button'), true)
+                .data(opts, e => e.name)
+                ;
 
       buttons.enter()
         .append('div')
-        .attr('class', d => `${st2Class('button')} ${st2Icon(d.icon || d.name)}`)
-        .on('click', control => this.emit(control.name))
+        .attr('class', d =>
+          `${st2Class('button')} ${d.initial ? st2Class('button', 'active') : ''} ${st2Icon(d.icon)}`
+        )
+        .on('click', function (d) {
+          switch(d.type) {
+            case 'momenary':
+              self.emit(d.event);
+              break;
+            case 'toggle':
+              self.emit(d.event, d.state = !d.state);
+              d3.select(this).classed(st2Class('button', 'active'), d.state);
+              break;
+          }
+        })
         ;
     });
   }

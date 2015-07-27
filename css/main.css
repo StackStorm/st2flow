@@ -118,6 +118,10 @@ main {
     display: inline-block;
     user-select: none;
     cursor: pointer;
+
+    &--active {
+      color: #90d5fc;
+    }
   }
 
   &__left {

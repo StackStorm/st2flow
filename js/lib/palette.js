@@ -174,12 +174,18 @@ class Palette {
     dt.effectAllowed = 'copy';
   }
 
-  collapse() {
-    this.element
+  toggleCollapse(open) {
+    const classList = this.element
       .node()
-      .classList
-      .toggle(st2Class(null, 'hide'))
-      ;
+      .classList;
+
+    if (open === true) {
+      classList.remove(st2Class(null, 'hide'));
+    } else if (open === false) {
+      classList.add(st2Class(null, 'hide'));
+    } else {
+      classList.toggle(st2Class(null, 'hide'));
+    }
   }
 }
 
