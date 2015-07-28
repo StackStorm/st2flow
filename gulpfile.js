@@ -1,7 +1,7 @@
 'use strict';
 var gulp = require('gulp')
   , del = require('del')
-  , jshint = require('gulp-jshint')
+  , eslint = require('gulp-eslint')
   , plumber = require('gulp-plumber')
   , browserify = require('browserify')
   , babelify = require('babelify')
@@ -23,8 +23,8 @@ gulp.task('clean', function(cb) {
 gulp.task('lint', function() {
   return gulp.src(['js/**/*.js', 'tests/**/*.js'])
     .pipe(plumber())
-    .pipe(jshint())
-    .pipe(jshint.reporter('default'));
+    .pipe(eslint())
+    .pipe(eslint.format());
 });
 
 gulp.task('font', function () {

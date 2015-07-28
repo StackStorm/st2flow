@@ -260,7 +260,7 @@ class State {
         const transitions = t.getProperty(type)
             , index = transitions.indexOf(target)
             ;
-        if (~index) { // jshint ignore:line
+        if (~index) { // eslint-disable-line no-bitwise
           transitions[index] = name;
           this.setTransitions(tName, transitions, type);
         }
@@ -335,7 +335,7 @@ class State {
         const transitions = t.getProperty(type) || []
             , index = transitions.indexOf(name)
             ;
-        if (~index) { // jshint ignore:line
+        if (~index) { // eslint-disable-line no-bitwise
           transitions.splice(index, 1);
           this.setTransitions(tName, transitions, type);
         }

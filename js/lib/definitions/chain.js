@@ -28,7 +28,7 @@ class ChainDefinition extends Definition {
     return _.assign(super.template, {
       taskBlock: () => _.template('chain:\n'),
       keyValue: (indent) => _.template(indent + '${key}: ${value}'),
-      task: (starter, indent) => _.template(starter + 'name: ${name}\n' + indent +  'ref: ${ref}')
+      task: (starter, indent) => _.template(starter + 'name: ${name}\n' + indent + 'ref: ${ref}')
     });
   }
 

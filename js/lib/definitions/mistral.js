@@ -35,7 +35,7 @@ class MistralDefinition extends Definition {
       SUCCESS_BLOCK: /^\s*on-success:\s*$/,
       ERROR_BLOCK: /^\s*on-error:\s*$/,
       COMPLETE_BLOCK: /^\s*on-complete:\s*$/,
-      TRANSITION: /^(\s*-\s*)(\w+)/,
+      TRANSITION: /^(\s*-\s*)(\w+)/
     });
   }
 
@@ -49,7 +49,7 @@ class MistralDefinition extends Definition {
         tasks: (indent='') => _.template(indent + 'tasks:\n'),
         success: (indent) => _.template(indent + 'on-success:\n'),
         error: (indent) => _.template(indent + 'on-error:\n'),
-        complete: (indent) => _.template(indent + 'on-complete:\n'),
+        complete: (indent) => _.template(indent + 'on-complete:\n')
       },
       transition: (starter) => _.template(starter + '${name}\n')
     });

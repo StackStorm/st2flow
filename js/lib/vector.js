@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-/* jshint curly:false, eqeqeq:false */
+/* eslint curly:0, eqeqeq:0 */
 'use strict';
 
 // Provides a simple 3D vector class. Vector operations can be done using member

@@ -66,7 +66,7 @@ class Definition {
   get spec() {
     return {
       WS_INDENT: /^(\s*)/,
-      EMPTY_LINE: /^(\W*)$/,
+      EMPTY_LINE: /^(\W*)$/
     };
   }
 

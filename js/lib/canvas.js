@@ -118,7 +118,7 @@ class Canvas extends EventEmitter {
       top: parseInt(cStyle.getPropertyValue('padding-top')),
       right: parseInt(cStyle.getPropertyValue('padding-right')),
       bottom: parseInt(cStyle.getPropertyValue('padding-bottom')),
-      left: parseInt(cStyle.getPropertyValue('padding-left')),
+      left: parseInt(cStyle.getPropertyValue('padding-left'))
     };
 
     this.clear();
@@ -569,7 +569,7 @@ class Canvas extends EventEmitter {
 
       [x, y] = this.toInner(x, y);
 
-      this.emit('create', action, x , y);
+      this.emit('create', action, x, y);
       this.deactivateOverlay(element);
       return;
     }
