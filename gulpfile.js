@@ -98,7 +98,7 @@ gulp.task('test', function () {
 });
 
 gulp.task('static', function () {
-  gulp.src('static/*')
+  gulp.src('static/**/*')
     .pipe(gulp.dest('dist'))
     .pipe(buffer())
     .pipe(size({

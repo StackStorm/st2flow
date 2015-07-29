@@ -144,6 +144,7 @@ class State {
     this.canvas.on('keydown', (event) => {
       const BACKSPACE = 8
           , DELETE = 46
+          , Z = 90
           ;
 
       switch(event.key || event.keyCode) {
@@ -152,6 +153,15 @@ class State {
           event.preventDefault();
           this.delete(this.graph.__selected__);
           break;
+        case Z:
+          if (!event.ctrlKey && !event.metaKey) {
+            return;
+          }
+          if (event.shiftKey) {
+            this.editor.redo();
+          } else {
+            this.editor.undo();
+          }
       }
     });
 

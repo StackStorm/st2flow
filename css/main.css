@@ -223,12 +223,7 @@ main {
       box-sizing: content-box;
       width: 32px;
       background-color: #fff;
-      background-image:
-      repeating-linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px),
-      repeating-linear-gradient(45deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px);
-      background-size: 32px 32px;
-      background-position: 5px 5px;
-      background-repeat: no-repeat;
+
     }
 
     &-content {
@@ -236,10 +231,10 @@ main {
       padding: 5px 5px 5px 10px;
     }
 
-    &-edit {
+    &-actions {
       width: 24px;
 
-      line-height: 42px;
+      line-height: 21px;
       text-align: center;
 
       cursor: pointer;
@@ -247,7 +242,7 @@ main {
       color: transparent;
     }
 
-    &--selected &-edit {
+    &--selected &-actions {
       color: inherit;
       pointer-events: all;
     }
