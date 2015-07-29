@@ -12,9 +12,22 @@ const st2Class = bem('viewer')
     , st2Icon = bem('icon')
     ;
 
+const packIcon = (node={}) => {
+  const packs =  {
+    core: '/i/st2.svg',
+    linux: '/i/tux.svg'
+  };
+
+  const pack = node.ref && node.ref.split('.')[0];
+
+  return pack && packs[pack] || '';
+};
+
 let nodeTmpl = (node) =>
 `
-  <div class="${st2Class('node-icon')}"></div>
+  <div class="${st2Class('node-icon')}">
+    <img src="${packIcon(node)}" width="32" height="32" />
+  </div>
   <div class="${st2Class('node-content')}">
     <form class="${st2Class('node-name-form')}">
       <input type="text" class="${st2Class('node-name')}" value="${node.name}"/>
@@ -214,15 +227,22 @@ class Canvas extends EventEmitter {
           self.dropOnNode(this, d3.event, name);
         })
         .each(d => {
-          let node = g.node(d);
+          const node = g.node(d);
 
           node.on('change', (changes) => {
             const refChanges = _.find(changes, {name: 'ref'});
 
             if (refChanges) {
-              d3.select(node.elem)
+              const target = d3.select(node.elem);
+
+              target
                 .select(st2Class('node-ref', true))
                 .text(refChanges.object.ref);
+
+              target
+                .select(st2Class('node-icon', true) + ' img')
+                .attr('src', packIcon(node))
+                ;
             }
           });
 
