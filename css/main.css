@@ -236,10 +236,10 @@ main {
       padding: 5px 5px 5px 10px;
     }
 
-    &-edit {
+    &-actions {
       width: 24px;
 
-      line-height: 42px;
+      line-height: 21px;
       text-align: center;
 
       cursor: pointer;
@@ -247,7 +247,7 @@ main {
       color: transparent;
     }
 
-    &--selected &-edit {
+    &--selected &-actions {
       color: inherit;
       pointer-events: all;
     }

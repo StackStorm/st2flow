@@ -21,12 +21,14 @@ let nodeTmpl = (node) =>
     </form>
     <div class="${st2Class('node-ref')}">${node.ref}</div>
   </div>
-  <div class="${st2Class('node-edit')} ${st2Icon('edit')}"></div>
+  <div class="${st2Class('node-actions')}">
+    <div class="${st2Class('node-edit')} ${st2Icon('edit')}"></div>
+    <div class="${st2Class('node-delete')} ${st2Icon('delete')}"></div>
+  </div>
   <div class="${st2Class('node-buttons')}">
     <span class="${st2Class('node-button')} ${st2Icon('success')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Icon('error')}" draggable="true"></span>
     <span class="${st2Class('node-button')} ${st2Icon('complete')}" draggable="true"></span>
-    <span class="${st2Class('node-button')} ${st2Icon('delete')}" draggable="true"></span>
   </div>
 `;
 
