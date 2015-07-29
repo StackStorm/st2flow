@@ -64,7 +64,7 @@ class Controls extends EventEmitter {
         )
         .on('click', function (d) {
           switch(d.type) {
-            case 'momenary':
+            case 'momentary':
               self.emit(d.event);
               break;
             case 'toggle':
