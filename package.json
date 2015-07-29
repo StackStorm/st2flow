@@ -25,6 +25,7 @@
     "eslint": "^0.24.1",
     "eslint-plugin-react": "^3.1.0",
     "gulp": "^3.9.0",
+    "gulp-cached": "^1.1.0",
     "gulp-eslint": "^0.15.0",
     "gulp-fontello": "^0.2.0",
     "gulp-jshint": "^1.11.0",
@@ -38,7 +39,8 @@
     "postcss-import": "^5.2.2",
     "postcss-nested": "^0.3.2",
     "vinyl-buffer": "^1.0.0",
-    "vinyl-source-stream": "^1.1.0"
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.3.0"
   },
   "dependencies": {
     "brace": "^0.5.1",
