@@ -450,8 +450,60 @@ main {
     }
   }
 
+  &__header {
+    margin: 10px;
+    font-size: 20px;
+  }
+
   &__field {
     display: block;
+
+    margin: 15px 0;
+
+    &-name {
+      padding: 0 10px;
+      color: #bbb;
+    }
+
+    &-input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px;
+      background-color: #272822;
+      border: solid #444;
+      border-width: 1px 1px 3px;
+      outline: 0;
+      font-size: 12px;
+
+      &:focus {
+        background-color: rgba(0,0,0,0.2);
+      }
+
+      select& {
+        appearance: none;
+        border-radius: 0;
+      }
+
+      input[type=checkbox]& {
+        display: none;
+      }
+    }
+    input[type=checkbox]&-input ~ &-name {
+      user-select: none;
+      cursor: pointer;
+
+      &:before {
+        content: 'N';
+        padding-right: .5em;
+        width: 1em;
+        display: inline-block;
+      }
+    }
+    input[type=checkbox]&-input:checked ~ &-name {
+      &:before {
+        content: 'Y';
+      }
+    }
   }
 }
 

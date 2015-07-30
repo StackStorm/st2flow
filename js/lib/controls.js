@@ -24,8 +24,11 @@ const controls = [{
 }, {
   name: 'meta',
   type: 'toggle',
-  icon: 'code',
-  initial: false
+  icon: 'tools',
+  initial: true
+}, {
+  name: 'save',
+  icon: 'floppy'
 }, {
   name: 'collapse-editor',
   position: 'right',

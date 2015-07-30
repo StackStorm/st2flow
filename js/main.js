@@ -183,6 +183,9 @@ class State {
         this.panel.show('editor');
       }
     });
+    controls.on('save', () => {
+      console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines());
+    });
   }
 
   connect(source, target, type='success') {

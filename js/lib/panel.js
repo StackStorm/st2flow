@@ -3,6 +3,8 @@
 const d3 = require('d3')
     , ace = require('brace')
     , bem = require('./bem')
+    , React = require('react')
+    , Meta = require('./panels/meta')
     ;
 
 const st2Class = bem('panel')
@@ -19,6 +21,14 @@ class Panel {
       editor: st2Class('editor', true),
       meta: st2Class('meta', true)
     };
+
+    const metaElement = this.element
+      .append('div')
+        .attr('class', `${st2Class('panel')} ${st2Class('panel', 'active')} ${st2Class('meta')}`)
+        .node()
+        ;
+
+    this.meta = React.render(<Meta name="some"/>, metaElement);
   }
 
   initEditor() {

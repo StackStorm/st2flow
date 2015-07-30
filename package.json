@@ -48,6 +48,7 @@
     "dagre": "^0.7.2",
     "lodash": "^3.9.3",
     "mixin": "^0.2.0",
-    "normalize.css": "^3.0.3"
+    "normalize.css": "^3.0.3",
+    "react": "^0.13.3"
   }
 }

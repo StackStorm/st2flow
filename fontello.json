@@ -49,6 +49,18 @@
       "src": "entypo"
     },
     {
+      "uid": "bc64550dd022ce21604f97309b346cea",
+      "css": "cog",
+      "code": 59404,
+      "src": "entypo"
+    },
+    {
+      "uid": "6a7b9d4863bb7e6c79e9457a72d689b6",
+      "css": "tools",
+      "code": 59403,
+      "src": "entypo"
+    },
+    {
       "uid": "48f2e18872fe74d4579a4c8a1527fc1e",
       "css": "complete",
       "code": 59397,
@@ -58,6 +70,12 @@
       "uid": "80451d627470ea7f977a263fdb771d7b",
       "css": "palette",
       "code": 59400,
+      "src": "entypo"
+    },
+    {
+      "uid": "191bcf63575a78def53c907c3d3bf7f0",
+      "css": "floppy",
+      "code": 59402,
       "src": "entypo"
     },
     {
