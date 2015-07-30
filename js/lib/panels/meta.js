@@ -1,7 +1,11 @@
 'use strict';
 
 const _ = require('lodash')
+    , bem = require('../bem')
     , React = require('react')
+    ;
+
+const st2Class = bem('panel')
     ;
 
 class Meta extends React.Component {
@@ -94,8 +98,16 @@ class Meta extends React.Component {
         </label>
     };
 
+    const props = {
+      className: `${st2Class('panel')} ${st2Class('meta')}`
+    };
+
+    if (this.props.hide) {
+      props.className += ' ' + st2Class('panel', 'active');
+    }
+
     return (
-      <div className="st2-panel__panel st2-panel__meta">
+      <div {...props} >
         <form>
           <div className="st2-panel__header">
             Metadata
@@ -108,5 +120,9 @@ class Meta extends React.Component {
     );
   }
 }
+
+Meta.propTypes = {
+  hide: React.PropTypes.bool
+};
 
 module.exports = Meta;

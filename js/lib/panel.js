@@ -1,38 +1,25 @@
 'use strict';
 
-const d3 = require('d3')
-    , ace = require('brace')
+const ace = require('brace')
     , bem = require('./bem')
     , React = require('react')
     , Meta = require('./panels/meta')
     ;
 
 const st2Class = bem('panel')
-    , st2Editor = bem('editor')
     ;
 
-class Panel {
+class Panel extends React.Component {
   constructor() {
-    this.element = d3.select(st2Class(null, true));
+    super();
 
-    this.editor = this.initEditor();
-
-    this.panels = {
-      editor: st2Class('editor', true),
-      meta: st2Class('meta', true)
+    this.state = {
+      panel: 'meta'
     };
-
-    const metaElement = this.element
-      .append('div')
-        .attr('class', `${st2Class('panel')} ${st2Class('panel', 'active')} ${st2Class('meta')}`)
-        .node()
-        ;
-
-    this.meta = React.render(<Meta/>, metaElement);
   }
 
   initEditor() {
-    const editor = ace.edit(this.element.select(st2Editor(null, true)).node());
+    const editor = ace.edit(this.refs.editor.getDOMNode());
 
     require('brace/mode/yaml');
     editor.getSession().setMode('ace/mode/yaml');
@@ -48,34 +35,33 @@ class Panel {
     return editor;
   }
 
-  toggleCollapse(open) {
-    const classList = this.element.node().classList;
-
-    if (open === true) {
-      classList.remove('st2-panel--hide');
-    } else if (open === false) {
-      classList.add('st2-panel--hide');
-    } else {
-      classList.toggle('st2-panel--hide');
-    }
+  show(panel) {
+    this.setState({ panel });
   }
 
-  show(name) {
-    const selector = this.panels[name];
+  toggleCollapse(open) {
+    this.setState({hide: !open});
+  }
 
-    if (!selector) {
-      throw new Error('No such panel:', selector);
+  componentDidMount() {
+    this.editor = this.initEditor();
+    this.meta = this.refs.meta;
+  }
+
+  render() {
+    const props = {
+            className: st2Class(null)
+          }
+        ;
+
+    if (this.state.hide) {
+      props.className += ' ' + st2Class(null, 'hide');
     }
 
-    this.element
-      .selectAll(st2Class('panel', true))
-      .classed(st2Class('panel', 'active'), false)
-      ;
-
-    this.element
-      .select(selector)
-      .classed(st2Class('panel', 'active'), true)
-      ;
+    return <div {...props} >
+      <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
+      <Meta ref="meta" hide={this.state.panel === 'meta'}/>
+    </div>;
   }
 }
 

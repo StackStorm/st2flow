@@ -4,6 +4,7 @@ const _ = require('lodash')
     , Range = require('./lib/range')
     , React = require('react')
     , Palette = require('./lib/palette')
+    , Panel = require('./lib/panel')
     ;
 
 class Main extends React.Component {
@@ -17,9 +18,7 @@ class Main extends React.Component {
           </svg>
         </div>
       </div>
-      <div className="st2-panel">
-        <div className="st2-panel__panel st2-panel__editor st2-editor"></div>
-      </div>
+      <Panel ref="panel" />
     </main>;
   }
 }
@@ -29,6 +28,7 @@ class State {
     const render = React.render(<Main />, document.body);
 
     this.palette = render.refs.palette;
+    this.panel = render.refs.panel;
 
     this.initGraph();
     this.initCanvas();
@@ -38,9 +38,6 @@ class State {
   }
 
   initPanel() {
-    const Panel = require('./lib/panel');
-    this.panel = new Panel();
-
     const editor = this.editor = this.panel.editor;
 
     editor.on('change', (delta) => {
