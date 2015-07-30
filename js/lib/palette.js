@@ -2,8 +2,8 @@
 
 let _ = require('lodash')
   , bem = require('./bem')
-  , d3 = require('d3')
   , { pack } = require('./packer')
+  , React = require('react')
   ;
 
 const st2Class = bem('palette');
@@ -114,78 +114,79 @@ const ACTIONS = [{
   description: 'Wait for SSH'
 }];
 
-const packTmpl = (pack) =>
-`
-  <div class="${st2Class('pack-header')}">
-    <span class="${st2Class('pack-icon')}"></span>
-    <span class="${st2Class('pack-name')}">${pack.name}</span>
-  </div>
-  <div class="${st2Class('pack-content')}" rel="actions"></div>
-`;
-
-const actionTmpl = (action) =>
-`
-  <div class="${st2Class('action-name')}">${action.ref}</div>
-  <div class="${st2Class('action-description')}">${action.description}</div>
-`;
-
-class Palette {
-  constructor() {
-    const self = this;
-
-    this.element = d3
-      .select(st2Class(null, true))
-      ;
-
-    const packs = _.groupBy(ACTIONS, 'pack');
-
-    this.packs = this.element
-      .selectAll(st2Class('pack', true))
-      .data(_.keys(packs), (pack) => pack)
-      ;
-
-    this.packs.enter()
-      .append('div')
-      .attr('class', st2Class('pack'))
-      .html((name) => packTmpl({ name }))
-      .each(function (pack) {
-        this.actions = d3.select(this)
-          .select('[rel=actions]')
-          .selectAll(st2Class('action', true))
-          .data(packs[pack])
-          ;
-
-        this.actions.enter()
-          .append('div')
-            .attr('class', st2Class('action'))
-            .attr('draggable', 'true')
-            .html((action) => actionTmpl(action))
-            .on('dragstart', function (action) {
-              self.dragAction(this, d3.event, action);
-            })
-            ;
-      });
+class Pack extends React.Component {
+  render() {
+    return <div className={st2Class('pack')}>
+      <div className={st2Class('pack-header')}>
+        <span className={st2Class('pack-icon')}></span>
+        <span className={st2Class('pack-name')}>{this.props.name}</span>
+      </div>
+      <div className={st2Class('pack-content')}>{this.props.children}</div>
+    </div>;
   }
+}
 
-  dragAction(element, event, action) {
+Pack.propTypes = {
+  name: React.PropTypes.string.isRequired
+};
+
+class Action extends React.Component {
+  drag(event) {
     let dt = event.dataTransfer;
 
-    dt.setData('actionPack', pack({ action }));
+    dt.setData('actionPack', pack({ action: this.props.action }));
     dt.effectAllowed = 'copy';
   }
 
-  toggleCollapse(open) {
-    const classList = this.element
-      .node()
-      .classList;
+  render() {
+    return <div className={st2Class('action')} draggable={true} onDragStart={this.drag.bind(this)}>
+      <div className={st2Class('action-name')}>{this.props.action.ref}</div>
+      <div className={st2Class('action-description')}>{this.props.action.description}</div>
+    </div>;
+  }
+}
 
-    if (open === true) {
-      classList.remove(st2Class(null, 'hide'));
-    } else if (open === false) {
-      classList.add(st2Class(null, 'hide'));
-    } else {
-      classList.toggle(st2Class(null, 'hide'));
+Action.propTypes = {
+  action: React.PropTypes.shape({
+    ref: React.PropTypes.string.isRequired,
+    description: React.PropTypes.string.isRequired
+  })
+};
+
+class Palette extends React.Component {
+  constructor() {
+    super();
+    this.state = {};
+  }
+
+  toggleCollapse(open) {
+    this.setState({hide: !open});
+  }
+
+  render() {
+    const packs = _.groupBy(ACTIONS, 'pack')
+        , props = {
+            className: st2Class(null)
+          }
+        ;
+
+    if (this.state.hide) {
+      props.className += ' ' + st2Class(null, 'hide');
     }
+
+    return <div {...props} >
+      {
+        _.map(packs, (actions, name) =>
+          <Pack key={name} name={name}>
+            {
+              _.map(actions, (action) =>
+                <Action key={action.ref} action={action} ></Action>
+              )
+            }
+          </Pack>
+        )
+      }
+    </div>;
   }
 }
 

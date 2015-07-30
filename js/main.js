@@ -3,15 +3,37 @@
 const _ = require('lodash')
     , Range = require('./lib/range')
     , React = require('react')
+    , Palette = require('./lib/palette')
     ;
+
+class Main extends React.Component {
+  render() {
+    return <main>
+      <Palette ref="palette"/>
+      <div className="st2-container">
+        <div className="st2-controls"></div>
+        <div className="st2-viewer">
+          <svg className="st2-viewer__canvas">
+          </svg>
+        </div>
+      </div>
+      <div className="st2-panel">
+        <div className="st2-panel__panel st2-panel__editor st2-editor"></div>
+      </div>
+    </main>;
+  }
+}
 
 class State {
   constructor() {
+    const render = React.render(<Main />, document.body);
+
+    this.palette = render.refs.palette;
+
     this.initGraph();
     this.initCanvas();
     this.initIntermediate();
     this.initPanel();
-    this.initPalette();
     this.initControls();
   }
 
@@ -151,11 +173,6 @@ class State {
     this.graph = new Graph();
 
     this.graph.on('select', (name) => this.showTask(name));
-  }
-
-  initPalette() {
-    const Palette = require('./lib/palette');
-    this.palette = new Palette();
   }
 
   initControls() {
