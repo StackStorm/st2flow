@@ -2,6 +2,7 @@
 
 const _ = require('lodash')
     , Range = require('./lib/range')
+    , React = require('react')
     ;
 
 class State {
@@ -158,34 +159,55 @@ class State {
   }
 
   initControls() {
-    const Controls = require('./lib/controls')
-        , controls = this.controls = new Controls()
+    const Control = require('./lib/control')
+        , ControlGroup = require('./lib/controlgroup')
+        , bem = require('./lib/bem')
         ;
 
-    controls.on('undo', () => this.editor.undo());
-    controls.on('redo', () => this.editor.redo());
-    controls.on('layout', () => {
-      this.graph.layout();
-      this.canvas.reposition();
-    });
-    controls.on('collapse-editor', (state) => {
-      this.panel.toggleCollapse(state);
-      this.canvas.resizeCanvas();
-    });
-    controls.on('collapse-palette', (state) => {
-      this.palette.toggleCollapse(state);
-      this.canvas.resizeCanvas();
-    });
-    controls.on('meta', (state) => {
-      if (state) {
-        this.panel.show('meta');
-      } else {
-        this.panel.show('editor');
-      }
-    });
-    controls.on('save', () => {
-      console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines());
-    });
+    const st2Class = bem('controls')
+        ;
+
+    const undo = () => this.editor.undo()
+        , redo = () => this.editor.redo()
+        , layout = () => {
+            this.graph.layout();
+            this.canvas.reposition();
+          }
+        , collapseEditor = (state) => {
+            this.panel.toggleCollapse(state);
+            this.canvas.resizeCanvas();
+          }
+        , collapsePalette = (state) => {
+            this.palette.toggleCollapse(state);
+            this.canvas.resizeCanvas();
+          }
+        , meta = (state) => {
+            if (state) {
+              this.panel.show('meta');
+            } else {
+              this.panel.show('editor');
+            }
+          }
+        , save = () => {
+            console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines());
+          }
+        ;
+
+    const element = <div>
+      <ControlGroup position='left'>
+        <Control icon="palette" type="toggle" initial={true} onClick={collapsePalette} />
+        <Control icon="undo" onClick={undo} />
+        <Control icon="redo" onClick={redo} />
+        <Control icon="layout" onClick={layout} />
+        <Control icon="tools" type="toggle" initial={true} onClick={meta} />
+        <Control icon="floppy" onClick={save} />
+      </ControlGroup>
+      <ControlGroup position='right'>
+        <Control icon="code" type="toggle" initial={true} onClick={collapseEditor} />
+      </ControlGroup>
+    </div>;
+
+    React.render(element, document.querySelector(st2Class(null, true)));
   }
 
   connect(source, target, type='success') {

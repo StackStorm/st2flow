@@ -28,7 +28,7 @@ class Panel {
         .node()
         ;
 
-    this.meta = React.render(<Meta name="some"/>, metaElement);
+    this.meta = React.render(<Meta/>, metaElement);
   }
 
   initEditor() {
