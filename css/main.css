@@ -97,12 +97,6 @@ main {
       width: 32px;
       height: 32px;
       background-color: #fff;
-      background-image:
-      repeating-linear-gradient(135deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px),
-      repeating-linear-gradient(45deg, rgba(0,0,0,.3), rgba(0,0,0,.3) 1px, transparent 1px, transparent 22px);
-      background-size: 32px 32px;
-      background-position: 5px 5px;
-      background-repeat: no-repeat;
     }
 
     &-name {

@@ -6,20 +6,11 @@ import bem from './util/bem';
 import { pack, unpack } from './util/packer';
 import Vector from './util/vector';
 
+import packIcon from './util/icon-mock';
+
 const st2Class = bem('viewer')
     , st2Icon = bem('icon')
     ;
-
-const packIcon = (node={}) => {
-  const packs = {
-    core: '/i/st2.svg',
-    linux: '/i/tux.svg'
-  };
-
-  const pack = node.ref && node.ref.split('.')[0];
-
-  return pack && packs[pack] || '';
-};
 
 let nodeTmpl = (node) =>
 `

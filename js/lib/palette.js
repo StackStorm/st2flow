@@ -4,6 +4,8 @@ import React from 'react';
 import bem from './util/bem';
 import { pack } from './util/packer';
 
+import packIcon from './util/icon-mock';
+
 const st2Class = bem('palette');
 
 const ACTIONS = [{
@@ -120,7 +122,9 @@ class Pack extends React.Component {
   render() {
     return <div className={st2Class('pack')}>
       <div className={st2Class('pack-header')}>
-        <span className={st2Class('pack-icon')}></span>
+        <span className={st2Class('pack-icon')}>
+          <img src={packIcon({ ref: this.props.name })} width="32" height="32" />
+        </span>
         <span className={st2Class('pack-name')}>{this.props.name}</span>
       </div>
       <div className={st2Class('pack-content')}>{this.props.children}</div>
