@@ -78,7 +78,8 @@ gulp.task('css', ['font'], function () {
   var processors = [
     require('autoprefixer-core')({browsers: ['last 2 version']}),
     require('postcss-import')(),
-    require('postcss-nested')()
+    require('postcss-nested')(),
+    require('postcss-color-function')()
   ];
   return gulp.src('css/*.css')
     .pipe(plumber())

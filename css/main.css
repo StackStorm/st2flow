@@ -74,6 +74,10 @@ main {
     font-size: 12px;
     user-select: none;
 
+    &:hover {
+      background-color: color(#191f23 lightness(+10%));
+    }
+
     &-name {
       font-weight: bold;
     }
