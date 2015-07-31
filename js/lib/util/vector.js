@@ -19,12 +19,11 @@
 // THE SOFTWARE.
 
 /* eslint curly:0, eqeqeq:0 */
-'use strict';
 
 // Provides a simple 3D vector class. Vector operations can be done using member
 // functions, which return new vectors, or static functions, which reuse
 // existing vectors to avoid generating garbage.
-function Vector(x, y, z) {
+export default function Vector(x, y, z) {
   this.x = x || 0;
   this.y = y || 0;
   this.z = z || 0;
@@ -161,5 +160,3 @@ Vector.fromArray = function(a) {
 Vector.angleBetween = function(a, b) {
   return a.angleTo(b);
 };
-
-module.exports = Vector;

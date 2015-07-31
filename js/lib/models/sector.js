@@ -1,8 +1,6 @@
-'use strict';
+import Range from '../util/range';
 
-let Range = require('../util/range');
-
-class Sector extends Range {
+export default class Sector extends Range {
   setType(type) {
     this.type = type;
 
@@ -15,5 +13,3 @@ class Sector extends Range {
     return this;
   }
 }
-
-module.exports = Sector;

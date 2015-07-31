@@ -1,12 +1,10 @@
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash')
-  , Definition = require('../definition')
-  , Sector = require('../models/sector')
-  , Task = require('../models/task')
-  ;
+import Definition from '../definition';
+import Sector from '../models/sector';
+import Task from '../models/task';
 
-class ChainDefinition extends Definition {
+export default class ChainDefinition extends Definition {
   constructor (model) {
     super();
 
@@ -106,5 +104,3 @@ class ChainDefinition extends Definition {
     }
   }
 }
-
-module.exports = ChainDefinition;

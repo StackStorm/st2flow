@@ -1,12 +1,9 @@
-'use strict';
+import _ from 'lodash';
+import { expect } from 'chai';
+import fs from 'fs';
 
-let _ = require('lodash')
-  , expect = require('chai').expect
-  , fs = require('fs')
-  , Range = require('../js/lib/range')
-  ;
-
-let Intermediate = require('../js/lib/intermediate');
+import Range from '../js/lib/util/range';
+import Intermediate from '../js/lib/intermediate';
 
 describe('Intermediate', () => {
 

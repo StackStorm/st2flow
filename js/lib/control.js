@@ -1,14 +1,12 @@
-'use strict';
+import React from 'react';
 
-const bem = require('./util/bem')
-    , React = require('react')
-    ;
+import bem from './util/bem';
 
 const st2Class = bem('controls')
     , st2Icon = bem('icon')
     ;
 
-class Controls extends React.Component {
+export default class Controls extends React.Component {
   constructor(props) {
     super(props);
 
@@ -54,5 +52,3 @@ Controls.propTypes = {
   initial: React.PropTypes.bool,
   onClick: React.PropTypes.func.isRequired
 };
-
-module.exports = Controls;

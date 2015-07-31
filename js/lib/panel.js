@@ -1,15 +1,13 @@
-'use strict';
+import ace from 'brace';
+import React from 'react';
 
-const ace = require('brace')
-    , bem = require('./util/bem')
-    , React = require('react')
-    , Meta = require('./panels/meta')
-    ;
+import bem from './util/bem';
+import Meta from './panels/meta';
 
 const st2Class = bem('panel')
     ;
 
-class Panel extends React.Component {
+export default class Panel extends React.Component {
   constructor() {
     super();
 
@@ -64,5 +62,3 @@ class Panel extends React.Component {
     </div>;
   }
 }
-
-module.exports = Panel;

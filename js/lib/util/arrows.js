@@ -1,6 +1,4 @@
-'use strict';
-
-function normal(parent, id, edge, type) {
+export function normal(parent, id, edge, type) {
   var marker = parent.append('marker')
     .attr('id', id)
     .attr('viewBox', '0 0 10 10')
@@ -18,7 +16,7 @@ function normal(parent, id, edge, type) {
     .attr('style', edge[type + 'Style']);
 }
 
-function vee(parent, id, edge, type) {
+export function vee(parent, id, edge, type) {
   var marker = parent.append('marker')
     .attr('id', id)
     .attr('viewBox', '0 0 10 10')
@@ -36,7 +34,7 @@ function vee(parent, id, edge, type) {
     .attr('style', edge[type + 'Style']);
 }
 
-function undirected(parent, id, edge, type) {
+export function undirected(parent, id, edge, type) {
   var marker = parent.append('marker')
     .attr('id', id)
     .attr('viewBox', '0 0 10 10')
@@ -53,10 +51,3 @@ function undirected(parent, id, edge, type) {
     .style('stroke-dasharray', '1,0')
     .attr('style', edge[type + 'Style']);
 }
-
-module.exports = {
-  'default': normal,
-  'normal': normal,
-  'vee': vee,
-  'undirected': undirected
-};

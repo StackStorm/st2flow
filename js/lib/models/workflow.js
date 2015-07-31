@@ -1,9 +1,5 @@
-'use strict';
+import Task from './task';
 
-let Task = require('./task');
-
-class Workflow extends Task {
+export default class Workflow extends Task {
   // TODO: Figure out the difference
 }
-
-module.exports = Workflow;

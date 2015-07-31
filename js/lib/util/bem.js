@@ -1,12 +1,11 @@
-'use strict';
+import _ from 'lodash';
 
-let _ = require('lodash');
-
-const BEM = (prefix, block, el, mod) =>
+export const BEM = (prefix, block, el, mod) =>
   `${prefix ? prefix + '-' : ''}${block}${el ? '__' + el : ''}${_.isString(mod) ? '--' + mod : ''}`;
 
-module.exports = (block) =>
-  (element, modifier, selector) => {
-    let isSelector = selector || modifier === true;
+export default function bem(block) {
+  return (element, modifier, selector) => {
+    const isSelector = selector || modifier === true;
     return BEM(isSelector ? '.st2' : 'st2', block, element, modifier);
   };
+}

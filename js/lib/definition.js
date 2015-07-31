@@ -1,8 +1,6 @@
-'use strict';
+import Sector from './models/sector';
 
-const Sector = require('./models/sector');
-
-class Definition {
+export default class Definition {
   handler(type, spec) {
     return (line, lineNum, task) => {
       const match = spec.exec(line);
@@ -78,5 +76,3 @@ class Definition {
     throw new Error('Not implemented');
   }
 }
-
-module.exports = Definition;

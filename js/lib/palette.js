@@ -1,10 +1,8 @@
-'use strict';
+import _ from 'lodash';
+import React from 'react';
 
-let _ = require('lodash')
-  , bem = require('./util/bem')
-  , { pack } = require('./util/packer')
-  , React = require('react')
-  ;
+import bem from './util/bem';
+import { pack } from './util/packer';
 
 const st2Class = bem('palette');
 
@@ -177,7 +175,7 @@ SearchField.propTypes = {
   onChange: React.PropTypes.func.isRequired
 };
 
-class Palette extends React.Component {
+export default class Palette extends React.Component {
   constructor() {
     super();
     this.state = {
@@ -223,5 +221,3 @@ class Palette extends React.Component {
     </div>;
   }
 }
-
-module.exports = Palette;

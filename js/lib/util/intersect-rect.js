@@ -1,8 +1,6 @@
-'use strict';
+import Vector from './vector';
 
-const Vector = require('./vector');
-
-function intersectRect(node, point) {
+export default function intersectRect(node, point) {
   var x = node.x;
   var y = node.y;
 
@@ -32,5 +30,3 @@ function intersectRect(node, point) {
 
   return new Vector(x + sx, y + sy);
 }
-
-module.exports = intersectRect;

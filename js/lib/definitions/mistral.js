@@ -1,11 +1,9 @@
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash')
-  , Definition = require('../definition')
-  , Sector = require('../models/sector')
-  ;
+import Definition from '../definition';
+import Sector from '../models/sector';
 
-class MistralDefinition extends Definition {
+export default class MistralDefinition extends Definition {
   constructor (model) {
     super();
 
@@ -309,5 +307,3 @@ class MistralDefinition extends Definition {
 
   }
 }
-
-module.exports = MistralDefinition;

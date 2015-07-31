@@ -1,13 +1,11 @@
-'use strict';
+import React from 'react';
 
-const bem = require('./util/bem')
-    , React = require('react')
-    ;
+import bem from './util/bem';
 
 const st2Class = bem('controls')
     ;
 
-class ControlGroup extends React.Component {
+export default class ControlGroup extends React.Component {
   render() {
     return <div className={st2Class(this.props.position)}>{this.props.children}</div>;
   }
@@ -16,5 +14,3 @@ class ControlGroup extends React.Component {
 ControlGroup.propTypes = {
   position: React.PropTypes.string.isRequired
 };
-
-module.exports = ControlGroup;

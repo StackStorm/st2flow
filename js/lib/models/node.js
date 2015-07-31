@@ -1,10 +1,8 @@
-'use strict';
+import { EventEmitter } from 'events';
 
-let intersectRect = require('../util/intersect-rect')
-  , EventEmitter = require('events').EventEmitter
-  ;
+import intersectRect from '../util/intersect-rect';
 
-class Node extends EventEmitter {
+export default class Node extends EventEmitter {
   constructor(graph, name) {
     super();
 
@@ -43,5 +41,3 @@ class Node extends EventEmitter {
     return intersectRect(this.center, node.center);
   }
 }
-
-module.exports = Node;

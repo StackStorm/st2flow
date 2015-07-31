@@ -1,13 +1,14 @@
-'use strict';
+import _ from 'lodash';
+import React from 'react';
 
-const _ = require('lodash')
-    , Range = require('./lib/util/range')
-    , React = require('react')
-    , Palette = require('./lib/palette')
-    , Control = require('./lib/control')
-    , ControlGroup = require('./lib/controlgroup')
-    , Panel = require('./lib/panel')
-    ;
+import Range from './lib/util/range';
+import Palette from './lib/palette';
+import Control from './lib/control';
+import ControlGroup from './lib/controlgroup';
+import Panel from './lib/panel';
+import Intermediate from './lib/intermediate';
+import Canvas from './lib/canvas';
+import Graph from './lib/graph';
 
 class Main extends React.Component {
   componentDidMount() {
@@ -43,7 +44,6 @@ class Main extends React.Component {
   }
 
   initIntermediate() {
-    const Intermediate = require('./lib/intermediate');
     this.intermediate = new Intermediate();
 
     this.intermediate.on('parse', (tasks) => {
@@ -54,8 +54,6 @@ class Main extends React.Component {
   }
 
   initCanvas() {
-    const Canvas = require('./lib/canvas');
-
     this.canvas = new Canvas();
 
     this.canvas.on('select', (name, event) => {
@@ -141,7 +139,6 @@ class Main extends React.Component {
   }
 
   initGraph() {
-    const Graph = require('./lib/graph');
     this.graph = new Graph();
 
     this.graph.on('select', (name) => this.showTask(name));

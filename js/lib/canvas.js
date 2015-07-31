@@ -1,12 +1,10 @@
-'use strict';
+import _ from 'lodash';
+import d3 from 'd3';
+import { EventEmitter } from 'events';
 
-let _ = require('lodash')
-  , bem = require('./util/bem')
-  , d3 = require('d3')
-  , EventEmitter = require('events').EventEmitter
-  , { pack, unpack } = require('./util/packer')
-  , Vector = require('./util/vector')
-  ;
+import bem from './util/bem';
+import { pack, unpack } from './util/packer';
+import Vector from './util/vector';
 
 const st2Class = bem('viewer')
     , st2Icon = bem('icon')
@@ -45,7 +43,7 @@ let nodeTmpl = (node) =>
   </div>
 `;
 
-class Canvas extends EventEmitter {
+export default class Canvas extends EventEmitter {
   constructor() {
     super();
 
@@ -666,5 +664,3 @@ class Canvas extends EventEmitter {
     this.emit('disconnect', edge);
   }
 }
-
-module.exports = Canvas;

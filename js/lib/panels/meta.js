@@ -1,14 +1,12 @@
-'use strict';
+import _ from 'lodash';
+import React from 'react';
 
-const _ = require('lodash')
-    , bem = require('../util/bem')
-    , React = require('react')
-    ;
+import bem from '../util/bem';
 
 const st2Class = bem('panel')
     ;
 
-class Meta extends React.Component {
+export default class Meta extends React.Component {
   constructor() {
     super();
 
@@ -124,5 +122,3 @@ class Meta extends React.Component {
 Meta.propTypes = {
   hide: React.PropTypes.bool
 };
-
-module.exports = Meta;

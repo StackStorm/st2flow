@@ -1,6 +1,4 @@
-'use strict';
-
-let _ACE = {};
+export const _ACE = {};
 
 /*eslint-disable*/
 (function(require, exports, module) {
@@ -553,4 +551,4 @@ exports.Range = Range;
 })(null, _ACE);
 /*eslint-enable*/
 
-module.exports = _ACE.Range;
+export default _ACE.Range;
