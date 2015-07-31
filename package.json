@@ -51,6 +51,7 @@
     "lodash": "^3.9.3",
     "mixin": "^0.2.0",
     "normalize.css": "^3.0.3",
-    "react": "^0.13.3"
+    "react": "^0.13.3",
+    "st2client": "^0.3.4"
   }
 }

@@ -73,6 +73,7 @@ main {
     color: #90d5fc;
     font-size: 12px;
     user-select: none;
+    min-height: 32px;
 
     &:hover {
       background-color: color(#191f23 lightness(+10%));
@@ -80,6 +81,9 @@ main {
 
     &-name {
       font-weight: bold;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &-description {

@@ -11,6 +11,19 @@ import Canvas from './lib/canvas';
 import Graph from './lib/graph';
 
 class Main extends React.Component {
+  state = {
+    source: {
+      protocol: 'http',
+      host: 'st2stage201',
+      port: 9101,
+      auth: {
+        protocol: 'http',
+        host: 'st2stage201',
+        port: 9100
+      }
+    }
+  }
+
   componentDidMount() {
     this.palette = this.refs.palette;
     this.panel = this.refs.panel;
@@ -146,7 +159,7 @@ class Main extends React.Component {
 
   render() {
     return <main>
-      <Palette ref="palette"/>
+      <Palette ref="palette" source={this.state.source} />
       <div className="st2-container">
 
         <div className="st2-controls">
