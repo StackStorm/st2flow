@@ -5,7 +5,7 @@ let _ = require('lodash')
   , EventEmitter = require('events').EventEmitter
   , mixin = require('mixin');
 
-let Node = require('./node');
+let Node = require('./models/node');
 
 class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
   constructor() {

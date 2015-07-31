@@ -1,6 +1,6 @@
 'use strict';
 
-let Range = require('./range');
+let Range = require('../util/range');
 
 class Sector extends Range {
   setType(type) {

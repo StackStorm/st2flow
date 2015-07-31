@@ -1,6 +1,6 @@
 'use strict';
 
-const Sector = require('./sector');
+const Sector = require('./models/sector');
 
 class Definition {
   handler(type, spec) {

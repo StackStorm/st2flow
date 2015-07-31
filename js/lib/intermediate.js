@@ -4,9 +4,9 @@ let _ = require('lodash')
   , Chain = require('./definitions/chain')
   , Mistral = require('./definitions/mistral')
   , EventEmitter = require('events').EventEmitter
-  , Sector = require('./sector')
-  , Task = require('./task')
-  , Workflow = require('./workflow')
+  , Sector = require('./models/sector')
+  , Task = require('./models/task')
+  , Workflow = require('./models/workflow')
   ;
 
 class Intermediate extends EventEmitter {

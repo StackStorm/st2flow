@@ -1,11 +1,11 @@
 'use strict';
 
 let _ = require('lodash')
-  , bem = require('./bem')
+  , bem = require('./util/bem')
   , d3 = require('d3')
   , EventEmitter = require('events').EventEmitter
-  , { pack, unpack } = require('./packer')
-  , Vector = require('./vector')
+  , { pack, unpack } = require('./util/packer')
+  , Vector = require('./util/vector')
   ;
 
 const st2Class = bem('viewer')
@@ -178,7 +178,7 @@ class Canvas extends EventEmitter {
     let nodes = this.viewer.selectAll(st2Class('node', true));
 
     this.positionNodes(nodes, this.graph);
-    this.createEdgePaths(this.svg, this.graph, require('./arrows'));
+    this.createEdgePaths(this.svg, this.graph, require('./util/arrows'));
     this.createEdgeLabels(this.viewer, this.graph);
   }
 

@@ -2,8 +2,8 @@
 
 const _ = require('lodash')
   , Definition = require('../definition')
-  , Sector = require('../sector')
-  , Task = require('../task')
+  , Sector = require('../models/sector')
+  , Task = require('../models/task')
   ;
 
 class ChainDefinition extends Definition {

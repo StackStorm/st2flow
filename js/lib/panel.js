@@ -1,7 +1,7 @@
 'use strict';
 
 const ace = require('brace')
-    , bem = require('./bem')
+    , bem = require('./util/bem')
     , React = require('react')
     , Meta = require('./panels/meta')
     ;

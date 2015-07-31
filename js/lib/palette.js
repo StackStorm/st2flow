@@ -1,8 +1,8 @@
 'use strict';
 
 let _ = require('lodash')
-  , bem = require('./bem')
-  , { pack } = require('./packer')
+  , bem = require('./util/bem')
+  , { pack } = require('./util/packer')
   , React = require('react')
   ;
 

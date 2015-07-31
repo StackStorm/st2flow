@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash')
-    , Range = require('./lib/range')
+    , Range = require('./lib/util/range')
     , React = require('react')
     , Palette = require('./lib/palette')
     , Control = require('./lib/control')

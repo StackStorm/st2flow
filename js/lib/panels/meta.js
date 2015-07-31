@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash')
-    , bem = require('../bem')
+    , bem = require('../util/bem')
     , React = require('react')
     ;
 

@@ -2,7 +2,7 @@
 
 const _ = require('lodash')
   , Definition = require('../definition')
-  , Sector = require('../sector')
+  , Sector = require('../models/sector')
   ;
 
 class MistralDefinition extends Definition {

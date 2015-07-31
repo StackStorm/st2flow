@@ -1,6 +1,6 @@
 'use strict';
 
-let intersectRect = require('./intersect-rect')
+let intersectRect = require('../util/intersect-rect')
   , EventEmitter = require('events').EventEmitter
   ;
 

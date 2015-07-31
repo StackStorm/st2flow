@@ -1,6 +1,6 @@
 'use strict';
 
-const bem = require('./bem')
+const bem = require('./util/bem')
     , React = require('react')
     ;
 
