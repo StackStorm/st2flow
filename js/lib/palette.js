@@ -153,18 +153,51 @@ Action.propTypes = {
   })
 };
 
+class SearchField extends React.Component {
+  handleChange() {
+    this.props.onChange(
+      this.refs.filter.getDOMNode().value
+    );
+  }
+
+  render() {
+    return <form className={st2Class('search')}>
+      <input type="search"
+        className={st2Class('search-field')}
+        placeholder="Search..."
+        ref="filter"
+        value={this.props.filter}
+        onChange={this.handleChange.bind(this)} />
+    </form>;
+  }
+}
+
+SearchField.propTypes = {
+  filter: React.PropTypes.string,
+  onChange: React.PropTypes.func.isRequired
+};
+
 class Palette extends React.Component {
   constructor() {
     super();
-    this.state = {};
+    this.state = {
+      filter: ''
+    };
   }
 
   toggleCollapse(open) {
     this.setState({hide: !open});
   }
 
+  handleUserInput(filter) {
+    this.setState({ filter });
+  }
+
   render() {
-    const packs = _.groupBy(ACTIONS, 'pack')
+    const packs = _(ACTIONS)
+            .filter((action) => ~action.ref.indexOf(this.state.filter)) // eslint-disable-line no-bitwise
+            .groupBy('pack')
+            .value()
         , props = {
             className: st2Class(null)
           }
@@ -175,6 +208,7 @@ class Palette extends React.Component {
     }
 
     return <div {...props} >
+      <SearchField filter={this.state.filter} onChange={this.handleUserInput.bind(this)}/>
       {
         _.map(packs, (actions, name) =>
           <Pack key={name} name={name}>
