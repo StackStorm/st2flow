@@ -7,7 +7,7 @@ import Sector from './models/sector';
 import Task from './models/task';
 import Workflow from './models/workflow';
 
-export default class Intermediate extends EventEmitter {
+export default class Model extends EventEmitter {
   constructor() {
     super();
 

@@ -6,7 +6,7 @@ import Palette from './lib/palette';
 import Control from './lib/control';
 import ControlGroup from './lib/controlgroup';
 import Panel from './lib/panel';
-import Intermediate from './lib/intermediate';
+import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
 
@@ -17,7 +17,7 @@ class Main extends React.Component {
 
     this.initGraph();
     this.initCanvas();
-    this.initIntermediate();
+    this.initModel();
     this.initPanel();
   }
 
@@ -27,13 +27,13 @@ class Main extends React.Component {
     editor.on('change', (delta) => {
       let str = this.editor.env.document.doc.getAllLines();
 
-      this.intermediate.update(delta, str.join('\n'));
+      this.model.update(delta, str.join('\n'));
     });
 
     editor.selection.on('changeCursor', () => {
       let { row, column } = this.editor.selection.getCursor()
         , range = new Range(row, column, row, column)
-        , sectors = this.intermediate.search(range, ['task'])
+        , sectors = this.model.search(range, ['task'])
         , sector = _.first(sectors)
         ;
 
@@ -43,10 +43,10 @@ class Main extends React.Component {
     });
   }
 
-  initIntermediate() {
-    this.intermediate = new Intermediate();
+  initModel() {
+    this.model = new Model();
 
-    this.intermediate.on('parse', (tasks) => {
+    this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
       this.canvas.render(this.graph);
       this.showTask(this.graph.__selected__);
@@ -213,7 +213,7 @@ class Main extends React.Component {
   }
 
   connect(source, target, type='success') {
-    let task = this.intermediate.task(source);
+    let task = this.model.task(source);
 
     if (!task) {
       throw new Error('no such task:', source);
@@ -227,7 +227,7 @@ class Main extends React.Component {
   }
 
   disconnect(source, destination, type=['success', 'error', 'complete']) {
-    let task = this.intermediate.task(source);
+    let task = this.model.task(source);
 
     _.each([].concat(type), (type) => {
       const transitions = task.getProperty(type) || [];
@@ -239,13 +239,13 @@ class Main extends React.Component {
   }
 
   setTransitions(source, transitions, type) {
-    let task = this.intermediate.task(source);
+    let task = this.model.task(source);
 
     if (!task) {
       throw new Error('no such task:', source);
     }
 
-    const templates = this.intermediate.definition.template
+    const templates = this.model.definition.template
         , blockTemplate = templates.block[type](task.getSector(type).indent)
         , transitionTemplate = templates.transition(task.getSector(type).childStarter)
         ;
@@ -268,7 +268,7 @@ class Main extends React.Component {
   }
 
   rename(target, name) {
-    let task = this.intermediate.task(target);
+    let task = this.model.task(target);
 
     if (!task) {
       return;
@@ -280,7 +280,7 @@ class Main extends React.Component {
 
     let sector = task.getSector('name');
 
-    _.each(this.intermediate.tasks, (t) => {
+    _.each(this.model.tasks, (t) => {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
@@ -301,7 +301,7 @@ class Main extends React.Component {
   }
 
   create(action, x, y) {
-    const indices = _.map(this.intermediate.tasks, task => {
+    const indices = _.map(this.model.tasks, task => {
             const name = task.getProperty('name')
                 , expr = /task(\d+)/
                 , match = expr.exec(name)
@@ -315,13 +315,13 @@ class Main extends React.Component {
 
     this.graph.coordinates[name] = { x, y };
 
-    let task = this.intermediate.template.task({
+    let task = this.model.template.task({
       name: name,
       ref: action.ref
     });
 
-    if (!this.intermediate.taskBlock) {
-      const blocks = this.intermediate.template.block
+    if (!this.model.taskBlock) {
+      const blocks = this.model.template.block
           , type = {
               name: 'main',
               type: 'direct'
@@ -339,7 +339,7 @@ class Main extends React.Component {
       } else {
         return new Range(0, 0, 0, 0);
       }
-    })(this.intermediate.taskBlock);
+    })(this.model.taskBlock);
 
     this.editor.env.document.replace(cursor, task);
 
@@ -347,7 +347,7 @@ class Main extends React.Component {
   }
 
   delete(name) {
-    const task = this.intermediate.task(name);
+    const task = this.model.task(name);
 
     if (!task) {
       throw new Error('no such task:', name);
@@ -355,7 +355,7 @@ class Main extends React.Component {
 
     this.editor.env.document.replace(task.getSector('task'), '');
 
-    _.each(this.intermediate.tasks, (t) => {
+    _.each(this.model.tasks, (t) => {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
@@ -373,7 +373,7 @@ class Main extends React.Component {
   }
 
   showTask(name) {
-    const task = this.intermediate.task(name);
+    const task = this.model.task(name);
 
     if (!task) {
       return;
@@ -399,7 +399,7 @@ class Main extends React.Component {
   debugSectors() {
     let debugSectorMarkers = [];
 
-    this.intermediate.on('parse', () => {
+    this.model.on('parse', () => {
       {
         _.each(debugSectorMarkers, (marker) => {
           this.editor.session.removeMarker(marker);
@@ -408,14 +408,14 @@ class Main extends React.Component {
       }
 
       {
-        this.intermediate.sectors.map((e) =>
+        this.model.sectors.map((e) =>
           console.log(''+e, e.type)
         );
 
         console.log('---');
       }
 
-      _.each(this.intermediate.sectors, (sector) => {
+      _.each(this.model.sectors, (sector) => {
           let range, marker;
 
           range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
@@ -427,7 +427,7 @@ class Main extends React.Component {
 
   debugSearch() {
     this.editor.selection.on('changeSelection', (e, selection) => {
-      let sectors = this.intermediate.search(selection.getRange())
+      let sectors = this.model.search(selection.getRange())
         , types = _.groupBy(sectors, 'type');
       console.log('->', `Selected ${types.task ? types.task.length : 'no'} tasks, ` +
                         `${types.name ? types.name.length : 'no'} names, ` +
@@ -437,7 +437,7 @@ class Main extends React.Component {
   }
 
   debugUpdate() {
-    this.intermediate.on('update', (sectors) => {
+    this.model.on('update', (sectors) => {
       let types = _.groupBy(sectors, 'type');
       console.log('->', `Updates ${types.task ? types.task.length : 'no'} tasks, ` +
                         `${types.name ? types.name.length : 'no'} names, ` +
@@ -449,8 +449,8 @@ class Main extends React.Component {
   debugTaskBlock() {
     let taskBlockMarker;
 
-    this.intermediate.on('parse', () => {
-      let range = this.intermediate.taskBlock;
+    this.model.on('parse', () => {
+      let range = this.model.taskBlock;
 
       if (taskBlockMarker) {
         this.editor.session.removeMarker(taskBlockMarker);
