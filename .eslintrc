@@ -1,4 +1,4 @@
-
+parser: babel-eslint
 env:
   jasmine: false
   node: true
@@ -9,6 +9,7 @@ env:
 ecmaFeatures:
   jsx: true
   modules: true
+  classes: true
 rules:
   block-scoped-var: 0
   camelcase: 0

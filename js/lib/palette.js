@@ -113,6 +113,10 @@ const ACTIONS = [{
 }];
 
 class Pack extends React.Component {
+  static propTypes = {
+    name: React.PropTypes.string.isRequired
+  }
+
   render() {
     return <div className={st2Class('pack')}>
       <div className={st2Class('pack-header')}>
@@ -124,11 +128,14 @@ class Pack extends React.Component {
   }
 }
 
-Pack.propTypes = {
-  name: React.PropTypes.string.isRequired
-};
-
 class Action extends React.Component {
+  static propTypes = {
+    action: React.PropTypes.shape({
+      ref: React.PropTypes.string.isRequired,
+      description: React.PropTypes.string.isRequired
+    })
+  }
+
   drag(event) {
     let dt = event.dataTransfer;
 
@@ -144,14 +151,12 @@ class Action extends React.Component {
   }
 }
 
-Action.propTypes = {
-  action: React.PropTypes.shape({
-    ref: React.PropTypes.string.isRequired,
-    description: React.PropTypes.string.isRequired
-  })
-};
-
 class SearchField extends React.Component {
+  static propTypes = {
+    filter: React.PropTypes.string,
+    onChange: React.PropTypes.func.isRequired
+  }
+
   handleChange() {
     this.props.onChange(
       this.refs.filter.getDOMNode().value
@@ -170,17 +175,9 @@ class SearchField extends React.Component {
   }
 }
 
-SearchField.propTypes = {
-  filter: React.PropTypes.string,
-  onChange: React.PropTypes.func.isRequired
-};
-
 export default class Palette extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      filter: ''
-    };
+  state = {
+    filter: ''
   }
 
   toggleCollapse(open) {

@@ -7,12 +7,15 @@ const st2Class = bem('controls')
     ;
 
 export default class Controls extends React.Component {
-  constructor(props) {
-    super(props);
+  static propTypes = {
+    icon: React.PropTypes.string,
+    type: React.PropTypes.string,
+    initial: React.PropTypes.bool,
+    onClick: React.PropTypes.func.isRequired
+  }
 
-    this.state = {
-      value: props.initial
-    };
+  state = {
+    value: this.props.initial
   }
 
   handleClick() {
@@ -45,10 +48,3 @@ export default class Controls extends React.Component {
     return <div {...props} />;
   }
 }
-
-Controls.propTypes = {
-  icon: React.PropTypes.string,
-  type: React.PropTypes.string,
-  initial: React.PropTypes.bool,
-  onClick: React.PropTypes.func.isRequired
-};

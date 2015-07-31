@@ -8,13 +8,9 @@ const st2Class = bem('panel')
     ;
 
 export default class Panel extends React.Component {
-  constructor() {
-    super();
-
-    this.state = {
-      panel: 'meta'
-    };
-  }
+  state = {
+    panel: 'meta'
+  };
 
   initEditor() {
     const editor = ace.edit(this.refs.editor.getDOMNode());

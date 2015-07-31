@@ -7,16 +7,16 @@ const st2Class = bem('panel')
     ;
 
 export default class Meta extends React.Component {
-  constructor() {
-    super();
+  static propTypes = {
+    hide: React.PropTypes.bool
+  }
 
-    this.state = {
-      name: '',
-      description: '',
-      runner_type: 'mistral-v2',
-      entry_point: '',
-      enable: true
-    };
+  state = {
+    name: '',
+    description: '',
+    runner_type: 'mistral-v2',
+    entry_point: '',
+    enable: true
   }
 
   render() {
@@ -118,7 +118,3 @@ export default class Meta extends React.Component {
     );
   }
 }
-
-Meta.propTypes = {
-  hide: React.PropTypes.bool
-};

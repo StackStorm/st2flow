@@ -25,7 +25,9 @@ var customOpts = {
 };
 var opts = _.assign({}, watchify.args, customOpts);
 var b = watchify(browserify(opts))
-  .transform(babelify)
+  .transform(babelify.configure({
+    optional: ['es7.classProperties']
+  }))
   .on('update', bundle)
   .on('log', gutil.log)
   ;
