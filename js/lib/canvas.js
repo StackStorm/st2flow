@@ -13,7 +13,7 @@ const st2Class = bem('viewer')
     ;
 
 const packIcon = (node={}) => {
-  const packs =  {
+  const packs = {
     core: '/i/st2.svg',
     linux: '/i/tux.svg'
   };
@@ -576,7 +576,7 @@ class Canvas extends EventEmitter {
   }
 
   selectNode(element, event, name) {
-    this.emit('select', name);
+    this.emit('select', name, event);
   }
 
   activateNode(element) {

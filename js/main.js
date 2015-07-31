@@ -4,37 +4,20 @@ const _ = require('lodash')
     , Range = require('./lib/range')
     , React = require('react')
     , Palette = require('./lib/palette')
+    , Control = require('./lib/control')
+    , ControlGroup = require('./lib/controlgroup')
     , Panel = require('./lib/panel')
     ;
 
 class Main extends React.Component {
-  render() {
-    return <main>
-      <Palette ref="palette"/>
-      <div className="st2-container">
-        <div className="st2-controls"></div>
-        <div className="st2-viewer">
-          <svg className="st2-viewer__canvas">
-          </svg>
-        </div>
-      </div>
-      <Panel ref="panel" />
-    </main>;
-  }
-}
-
-class State {
-  constructor() {
-    const render = React.render(<Main />, document.body);
-
-    this.palette = render.refs.palette;
-    this.panel = render.refs.panel;
+  componentDidMount() {
+    this.palette = this.refs.palette;
+    this.panel = this.refs.panel;
 
     this.initGraph();
     this.initCanvas();
     this.initIntermediate();
     this.initPanel();
-    this.initControls();
   }
 
   initPanel() {
@@ -75,7 +58,7 @@ class State {
 
     this.canvas = new Canvas();
 
-    this.canvas.on('select', (name) => {
+    this.canvas.on('select', (name, event) => {
       const SHIFT = 1
           , ALT = 2
           , CTRL = 4
@@ -112,6 +95,12 @@ class State {
       this.canvas.reposition();
     });
 
+    this.canvas.on('create', (action, x, y) => this.create(action, x, y));
+
+    this.canvas.on('rename', (target, name) => this.rename(target, name));
+
+    this.canvas.on('delete', (name) => this.delete(name));
+
     this.canvas.on('link', (source, destination, type) => {
       if (type) {
         this.connect(source, destination, type);
@@ -120,21 +109,7 @@ class State {
       }
     });
 
-    this.canvas.on('create', (action, x, y) => {
-      this.create(action, x, y);
-    });
-
-    this.canvas.on('rename', (target, name) => {
-      this.rename(target, name);
-    });
-
-    this.canvas.on('delete', (name) => {
-      this.delete(name);
-    });
-
-    this.canvas.on('disconnect', (edge) => {
-      this.disconnect(edge.v, edge.w);
-    });
+    this.canvas.on('disconnect', (edge) => this.disconnect(edge.v, edge.w));
 
     this.canvas.on('keydown', (event) => {
       const BACKSPACE = 8
@@ -172,56 +147,72 @@ class State {
     this.graph.on('select', (name) => this.showTask(name));
   }
 
-  initControls() {
-    const Control = require('./lib/control')
-        , ControlGroup = require('./lib/controlgroup')
-        , bem = require('./lib/bem')
-        ;
+  render() {
+    return <main>
+      <Palette ref="palette"/>
+      <div className="st2-container">
 
-    const st2Class = bem('controls')
-        ;
+        <div className="st2-controls">
+          <ControlGroup position='left'>
+            <Control icon="palette" type="toggle" initial={true}
+              onClick={this.collapsePalette.bind(this)} />
+            <Control icon="undo" onClick={this.undo.bind(this)} />
+            <Control icon="redo" onClick={this.redo.bind(this)} />
+            <Control icon="layout" onClick={this.layout.bind(this)} />
+            <Control icon="tools" type="toggle" initial={true} onClick={this.meta.bind(this)} />
+            <Control icon="floppy" onClick={this.save.bind(this)} />
+          </ControlGroup>
+          <ControlGroup position='right'>
+            <Control icon="code" type="toggle" initial={true}
+              onClick={this.collapseEditor.bind(this)} />
+          </ControlGroup>
+        </div>
 
-    const undo = () => this.editor.undo()
-        , redo = () => this.editor.redo()
-        , layout = () => {
-            this.graph.layout();
-            this.canvas.reposition();
-          }
-        , collapseEditor = (state) => {
-            this.panel.toggleCollapse(state);
-            this.canvas.resizeCanvas();
-          }
-        , collapsePalette = (state) => {
-            this.palette.toggleCollapse(state);
-            this.canvas.resizeCanvas();
-          }
-        , meta = (state) => {
-            if (state) {
-              this.panel.show('meta');
-            } else {
-              this.panel.show('editor');
-            }
-          }
-        , save = () => {
-            console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines());
-          }
-        ;
+        <div className="st2-viewer">
+          <svg className="st2-viewer__canvas">
+          </svg>
+        </div>
 
-    const element = <div>
-      <ControlGroup position='left'>
-        <Control icon="palette" type="toggle" initial={true} onClick={collapsePalette} />
-        <Control icon="undo" onClick={undo} />
-        <Control icon="redo" onClick={redo} />
-        <Control icon="layout" onClick={layout} />
-        <Control icon="tools" type="toggle" initial={true} onClick={meta} />
-        <Control icon="floppy" onClick={save} />
-      </ControlGroup>
-      <ControlGroup position='right'>
-        <Control icon="code" type="toggle" initial={true} onClick={collapseEditor} />
-      </ControlGroup>
-    </div>;
+      </div>
+      <Panel ref="panel" />
+    </main>;
+  }
 
-    React.render(element, document.querySelector(st2Class(null, true)));
+  // Public methods
+
+  undo() {
+    this.editor.undo();
+  }
+
+  redo() {
+    this.editor.redo();
+  }
+
+  layout() {
+    this.graph.layout();
+    this.canvas.reposition();
+  }
+
+  collapseEditor(state) {
+    this.panel.toggleCollapse(state);
+    this.canvas.resizeCanvas();
+  }
+
+  collapsePalette(state) {
+    this.palette.toggleCollapse(state);
+    this.canvas.resizeCanvas();
+  }
+
+  meta(state) {
+    if (state) {
+      this.panel.show('meta');
+    } else {
+      this.panel.show('editor');
+    }
+  }
+
+  save() {
+    console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines());
   }
 
   connect(source, target, type='success') {
@@ -406,6 +397,8 @@ class State {
     this.canvas.show(name);
   }
 
+  // Debug helpers
+
   debugSectors() {
     let debugSectorMarkers = [];
 
@@ -471,4 +464,4 @@ class State {
   }
 }
 
-window.st2flow = new State();
+window.st2flow = React.render(<Main />, document.body);
