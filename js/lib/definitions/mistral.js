@@ -2,6 +2,7 @@ import _ from 'lodash';
 
 import Definition from '../definition';
 import Sector from '../models/sector';
+import Workflow from '../models/workflow';
 
 export default class MistralDefinition extends Definition {
   constructor (model) {
@@ -27,7 +28,7 @@ export default class MistralDefinition extends Definition {
   get spec() {
     return _.assign(super.spec, {
       WORKFLOWS_BLOCK: /^\s*workflows:\s*$/,
-      WORKFLOW_NAME: /^(\s*)(\w+):\s*$/,
+      WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
       TASK_BLOCK: /^\s*tasks:\s*$/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w\s.]+)/,
       SUCCESS_BLOCK: /^\s*on-success:\s*$/,
@@ -75,7 +76,9 @@ export default class MistralDefinition extends Definition {
 
     if (state.isWorkflowBlock) {
       state.workflowBlock.setEnd(lineNum + 1, 0); // ? lineNum + 1
+    }
 
+    {
       let match;
 
       match = this.spec.WORKFLOW_NAME.exec(line);
@@ -94,21 +97,39 @@ export default class MistralDefinition extends Definition {
               , taskBlockSector = new Sector()
               ;
 
-          state.currentWorkflow = this.model.workflow(name, {})
+          const wf = new Workflow()
+            .setProperty('name', name)
             .setSector('workflow', workflowSector)
             .setSector('name', nameSector)
             .setSector('taskBlock', taskBlockSector)
             ;
 
-          state.currentWorkflow.indent = indent;
-          state.taskBlock = state.currentWorkflow.getSector('taskBlock'); // FIX: support multiple workflows
+          wf.indent = indent;
+
+          if (state.isWorkflowBlock) {
+            state.currentWorkflow = this.model.workflow(name, wf);
+
+            state.taskBlock = state.currentWorkflow.getSector('taskBlock');
+            // FIX: support multiple workflows
+          } else {
+            state.potentialWorkflow = wf;
+          }
 
           return;
         }
       }
     }
 
-    if (state.isWorkflowBlock && state.currentWorkflow) {
+    const indent = line.match(this.spec.WS_INDENT)[0];
+
+    if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
+      const name = state.potentialWorkflow.getProperty('name');
+      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
+    }
+
+    state.potentialWorkflow = null;
+
+    if (state.currentWorkflow) {
       state.currentWorkflow.endSector('workflow', lineNum, 0);
 
       let block = this.block('isTaskBlock', this.spec.TASK_BLOCK);
@@ -124,7 +145,7 @@ export default class MistralDefinition extends Definition {
       }
     }
 
-    if (state.isWorkflowBlock && state.currentWorkflow && state.isTaskBlock) {
+    if (state.currentWorkflow && state.isTaskBlock) {
       state.currentWorkflow.endSector('taskBlock', lineNum + 1, 0);
 
       let match;
