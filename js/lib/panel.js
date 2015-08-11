@@ -8,8 +8,12 @@ const st2Class = bem('panel')
     ;
 
 export default class Panel extends React.Component {
+  static propTypes = {
+    onToggle: React.PropTypes.func
+  }
+
   state = {
-    panel: 'meta'
+    panel: 'editor'
   };
 
   initEditor() {
@@ -40,6 +44,12 @@ export default class Panel extends React.Component {
   componentDidMount() {
     this.editor = this.initEditor();
     this.meta = this.refs.meta;
+  }
+
+  componentDidUpdate(props, state) {
+    if (this.props.onToggle && this.state.hide !== state.hide) {
+      this.props.onToggle();
+    }
   }
 
   render() {

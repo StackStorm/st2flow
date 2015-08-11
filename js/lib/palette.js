@@ -85,7 +85,8 @@ export default class Palette extends React.Component {
         host: React.PropTypes.string,
         port: React.PropTypes.number
       })
-    })
+    }),
+    onToggle: React.PropTypes.func
   }
 
   state = {
@@ -110,7 +111,12 @@ export default class Palette extends React.Component {
       })
       .then((actions) => this.setState({ actions }))
       ;
+  }
 
+  componentDidUpdate(props, state) {
+    if (this.props.onToggle && this.state.hide !== state.hide) {
+      this.props.onToggle();
+    }
   }
 
   render() {

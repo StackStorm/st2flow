@@ -159,7 +159,7 @@ class Main extends React.Component {
 
   render() {
     return <main>
-      <Palette ref="palette" source={this.state.source} />
+      <Palette ref="palette" source={this.state.source} onToggle={this.resizeCanvas.bind(this)} />
       <div className="st2-container">
 
         <div className="st2-controls">
@@ -169,7 +169,7 @@ class Main extends React.Component {
             <Control icon="undo" onClick={this.undo.bind(this)} />
             <Control icon="redo" onClick={this.redo.bind(this)} />
             <Control icon="layout" onClick={this.layout.bind(this)} />
-            <Control icon="tools" type="toggle" initial={true} onClick={this.meta.bind(this)} />
+            <Control icon="tools" type="toggle" onClick={this.meta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
@@ -184,7 +184,7 @@ class Main extends React.Component {
         </div>
 
       </div>
-      <Panel ref="panel" />
+      <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} />
     </main>;
   }
 
@@ -205,11 +205,13 @@ class Main extends React.Component {
 
   collapseEditor(state) {
     this.panel.toggleCollapse(state);
-    this.canvas.resizeCanvas();
   }
 
   collapsePalette(state) {
     this.palette.toggleCollapse(state);
+  }
+
+  resizeCanvas() {
     this.canvas.resizeCanvas();
   }
 
@@ -222,7 +224,7 @@ class Main extends React.Component {
   }
 
   save() {
-    console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines());
+    console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines(), JSON.stringify(this.graph.coordinates));
   }
 
   connect(source, target, type='success') {
