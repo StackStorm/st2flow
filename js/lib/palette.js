@@ -269,7 +269,7 @@ class SourceForm extends React.Component {
       type: 'number',
       props: {
         value: this.state.port,
-        onChange: (event) => this.setState({port: event.target.value}),
+        onChange: (event) => this.setState({port: _.parseInt(event.target.value)}),
         pattern: '\\d+',
         required: true
       }
@@ -305,7 +305,7 @@ class SourceForm extends React.Component {
         type: 'text',
         props: {
           value: this.state.authPort,
-          onChange: (event) => this.setState({authPort: event.target.value}),
+          onChange: (event) => this.setState({authPort: _.parseInt(event.target.value)}),
           pattern: '\\d+',
           required: true
         }

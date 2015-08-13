@@ -289,6 +289,12 @@ class Main extends React.Component {
       task.getSector(type).setEnd(coord);
     }
 
+    // if file doesn't end with newline, add one to the new task
+    const lastRow = this.editor.env.document.doc.getLength() - 1;
+    if (task.getSector(type).compare(lastRow) < 0) {
+      block = '\n' + block;
+    }
+
     this.editor.env.document.replace(task.getSector(type), block);
   }
 
@@ -368,7 +374,7 @@ class Main extends React.Component {
 
     // if file doesn't end with newline, add one to the new task
     const lastRow = this.editor.env.document.doc.getLength() - 1;
-    if (lastRow < cursor.end.row) {
+    if (!cursor.compare(lastRow) <= 0) {
       task = '\n' + task;
     }
 
