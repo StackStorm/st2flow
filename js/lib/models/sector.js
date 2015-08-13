@@ -12,4 +12,10 @@ export default class Sector extends Range {
 
     return this;
   }
+
+  _setSpecial(key, value) {
+    this[key] = value;
+
+    return this;
+  }
 }
