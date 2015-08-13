@@ -28,6 +28,8 @@ main {
 
   position: relative;
 
+  font-size: 12px;
+
   &::-webkit-scrollbar {
     width: 0.5em;
   }
@@ -73,7 +75,6 @@ main {
     padding: 5px;
     background-color: #191f23;
     color: #90d5fc;
-    font-size: 12px;
     user-select: none;
     min-height: 32px;
 
@@ -111,6 +112,7 @@ main {
 
     &-name {
       flex: 1;
+      font-size: 16px;
       line-height: 22px;
       color: #fff;
       padding: 10px;
@@ -145,8 +147,21 @@ main {
 
   &__error {
     color: #fff;
-    padding: 10px;
-    text-align: center;
+    padding: 0 10px;
+    text-align: left;
+
+    code {
+      display: block;
+      margin: 10px;
+      padding: 5px;
+      border: 1px solid color(#191f23 lightness(+30%));
+      border-radius: 5px;
+      color: color(#191f23 lightness(+30%));
+    }
+
+    p {
+      margin: 10px 0;
+    }
   }
 }
 

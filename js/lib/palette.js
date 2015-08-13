@@ -5,6 +5,7 @@ import st2client from 'st2client';
 import bem from './util/bem';
 import { pack } from './util/packer';
 import forms from './util/forms';
+import ACTIONS from './util/default-actions';
 
 import packIcon from './util/icon-mock';
 
@@ -111,7 +112,7 @@ export default class Palette extends React.Component {
   reload() {
     const api = st2client(this.props.source);
 
-    this.setState({ error: undefined });
+    this.setState({ error: undefined, actions: undefined });
 
     (() => {
       if (this.props.source && this.props.source.auth) {
@@ -123,8 +124,8 @@ export default class Palette extends React.Component {
       .then(() => {
         return api.actions.list();
       })
-      .catch((error) => this.setState({ error }))
-      .then((actions) => this.setState({ actions }))
+      .then((actions) => { this.setState({ actions }); })
+      .catch((error) => this.setState({ error, actions: ACTIONS }))
       ;
   }
 
@@ -178,9 +179,10 @@ export default class Palette extends React.Component {
       }
       {
         this.state.error && <div className={st2Class('error')}>
-          Error loading actions from {this.props.source.host}:
-          <div>'{this.state.error.message.faultstring || this.state.error.message}'</div>
-          <div>Check your config by clicking <i className={st2Icon('cog')}></i> on the right.</div>
+          <p>Error loading actions from {this.props.source.host}:</p>
+          <code>{this.state.error.message.faultstring || this.state.error.message}</code>
+          <p>Check your config by clicking <i className={st2Icon('cog')}></i> button on the right.</p>
+          <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
         </div>
       }
       {
