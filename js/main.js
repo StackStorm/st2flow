@@ -1,45 +1,44 @@
-'use strict';
+import _ from 'lodash';
+import React from 'react';
 
-const _ = require('lodash')
-    , Range = require('./lib/range')
-    ;
+import Range from './lib/util/range';
+import Palette from './lib/palette';
+import Control from './lib/control';
+import ControlGroup from './lib/controlgroup';
+import Panel from './lib/panel';
+import Model from './lib/model';
+import Canvas from './lib/canvas';
+import Graph from './lib/graph';
+import settings from './lib/settings';
 
-class State {
-  constructor() {
-    this.initGraph();
-    this.initCanvas();
-    this.initIntermediate();
-    this.initEditor();
-    this.initPalette();
-    this.initControls();
+class Main extends React.Component {
+  state = {
+    source: settings.get('source')
   }
 
-  initEditor() {
-    const ace = require('brace');
+  componentDidMount() {
+    this.palette = this.refs.palette;
+    this.panel = this.refs.panel;
 
-    let editor = this.editor = ace.edit('editor');
+    this.initGraph();
+    this.initCanvas();
+    this.initModel();
+    this.initPanel();
+  }
 
-    require('brace/mode/yaml');
-    editor.getSession().setMode('ace/mode/yaml');
-
-    require('brace/theme/monokai');
-    editor.setTheme('ace/theme/monokai');
-
-    editor.setHighlightActiveLine(false);
-    editor.$blockScrolling = Infinity;
-
-    editor.session.setTabSize(2);
+  initPanel() {
+    const editor = this.editor = this.panel.editor;
 
     editor.on('change', (delta) => {
       let str = this.editor.env.document.doc.getAllLines();
 
-      this.intermediate.update(delta, str.join('\n'));
+      this.model.update(delta, str.join('\n'));
     });
 
     editor.selection.on('changeCursor', () => {
       let { row, column } = this.editor.selection.getCursor()
         , range = new Range(row, column, row, column)
-        , sectors = this.intermediate.search(range, ['task'])
+        , sectors = this.model.search(range, ['task'])
         , sector = _.first(sectors)
         ;
 
@@ -47,28 +46,12 @@ class State {
         this.graph.select(sector.task.getProperty('name'));
       }
     });
-
-    if (editor.collapse) {
-      throw new Error('Unable to override editor.collapse method.');
-    }
-    editor.toggleCollapse = function (open) {
-      const classList = editor.renderer.container.classList;
-
-      if (open === true) {
-        classList.remove('st2-editor--hide');
-      } else if (open === false) {
-        classList.add('st2-editor--hide');
-      } else {
-        classList.toggle('st2-editor--hide');
-      }
-    };
   }
 
-  initIntermediate() {
-    const Intermediate = require('./lib/intermediate');
-    this.intermediate = new Intermediate();
+  initModel() {
+    this.model = new Model();
 
-    this.intermediate.on('parse', (tasks) => {
+    this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
       this.canvas.render(this.graph);
       this.showTask(this.graph.__selected__);
@@ -76,11 +59,9 @@ class State {
   }
 
   initCanvas() {
-    const Canvas = require('./lib/canvas');
-
     this.canvas = new Canvas();
 
-    this.canvas.on('select', (name) => {
+    this.canvas.on('select', (name, event) => {
       const SHIFT = 1
           , ALT = 2
           , CTRL = 4
@@ -117,6 +98,12 @@ class State {
       this.canvas.reposition();
     });
 
+    this.canvas.on('create', (action, x, y) => this.create(action, x, y));
+
+    this.canvas.on('rename', (target, name) => this.rename(target, name));
+
+    this.canvas.on('delete', (name) => this.delete(name));
+
     this.canvas.on('link', (source, destination, type) => {
       if (type) {
         this.connect(source, destination, type);
@@ -125,21 +112,7 @@ class State {
       }
     });
 
-    this.canvas.on('create', (action, x, y) => {
-      this.create(action, x, y);
-    });
-
-    this.canvas.on('rename', (target, name) => {
-      this.rename(target, name);
-    });
-
-    this.canvas.on('delete', (name) => {
-      this.delete(name);
-    });
-
-    this.canvas.on('disconnect', (edge) => {
-      this.disconnect(edge.v, edge.w);
-    });
+    this.canvas.on('disconnect', (edge) => this.disconnect(edge.v, edge.w));
 
     this.canvas.on('keydown', (event) => {
       const BACKSPACE = 8
@@ -171,40 +144,101 @@ class State {
   }
 
   initGraph() {
-    const Graph = require('./lib/graph');
     this.graph = new Graph();
 
     this.graph.on('select', (name) => this.showTask(name));
   }
 
-  initPalette() {
-    const Palette = require('./lib/palette');
-    this.palette = new Palette();
+  handleSourceChange(config) {
+    settings.set('source', config).save();
+    this.setState({source: config});
+    this.refs.settingsButton.setValue(false);
   }
 
-  initControls() {
-    const Controls = require('./lib/controls')
-        , controls = this.controls = new Controls()
-        ;
+  render() {
+    return <main>
+      <Palette ref="palette"
+        source={this.state.source}
+        onSourceChange={this.handleSourceChange.bind(this)}
+        onToggle={this.resizeCanvas.bind(this)} />
 
-    controls.on('undo', () => this.editor.undo());
-    controls.on('redo', () => this.editor.redo());
-    controls.on('layout', () => {
-      this.graph.layout();
-      this.canvas.reposition();
-    });
-    controls.on('collapse-editor', (state) => {
-      this.editor.toggleCollapse(state);
-      this.canvas.resizeCanvas();
-    });
-    controls.on('collapse-palette', (state) => {
-      this.palette.toggleCollapse(state);
-      this.canvas.resizeCanvas();
-    });
+      <div className="st2-container">
+
+        <div className="st2-controls">
+          <ControlGroup position='left'>
+            <Control icon="palette" type="toggle" initial={true}
+              onClick={this.collapsePalette.bind(this)} />
+            <Control icon="cog" type="toggle" initial={!this.state.source} ref="settingsButton"
+              onClick={this.showSourceSettings.bind(this)} />
+            <Control icon="undo" onClick={this.undo.bind(this)} />
+            <Control icon="redo" onClick={this.redo.bind(this)} />
+            <Control icon="layout" onClick={this.layout.bind(this)} />
+            {/*
+            <Control icon="tools" type="toggle" onClick={this.meta.bind(this)} />
+            <Control icon="floppy" onClick={this.save.bind(this)} />
+            */}
+          </ControlGroup>
+          <ControlGroup position='right'>
+            <Control icon="code" type="toggle" initial={true}
+              onClick={this.collapseEditor.bind(this)} />
+          </ControlGroup>
+        </div>
+
+        <div className="st2-viewer">
+          <svg className="st2-viewer__canvas">
+          </svg>
+        </div>
+
+      </div>
+      <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} />
+    </main>;
+  }
+
+  // Public methods
+
+  showSourceSettings(state) {
+    this.palette.toggleSettings(state);
+  }
+
+  undo() {
+    this.editor.undo();
+  }
+
+  redo() {
+    this.editor.redo();
+  }
+
+  layout() {
+    this.graph.layout();
+    this.canvas.reposition();
+  }
+
+  collapseEditor(state) {
+    this.panel.toggleCollapse(state);
+  }
+
+  collapsePalette(state) {
+    this.palette.toggleCollapse(state);
+  }
+
+  resizeCanvas() {
+    this.canvas.resizeCanvas();
+  }
+
+  meta(state) {
+    if (state) {
+      this.panel.show('meta');
+    } else {
+      this.panel.show('editor');
+    }
+  }
+
+  save() {
+    console.log(this.panel.meta.state, this.editor.env.document.doc.getAllLines(), JSON.stringify(this.graph.coordinates));
   }
 
   connect(source, target, type='success') {
-    let task = this.intermediate.task(source);
+    let task = this.model.task(source);
 
     if (!task) {
       throw new Error('no such task:', source);
@@ -218,7 +252,7 @@ class State {
   }
 
   disconnect(source, destination, type=['success', 'error', 'complete']) {
-    let task = this.intermediate.task(source);
+    let task = this.model.task(source);
 
     _.each([].concat(type), (type) => {
       const transitions = task.getProperty(type) || [];
@@ -230,13 +264,13 @@ class State {
   }
 
   setTransitions(source, transitions, type) {
-    let task = this.intermediate.task(source);
+    let task = this.model.task(source);
 
     if (!task) {
       throw new Error('no such task:', source);
     }
 
-    const templates = this.intermediate.definition.template
+    const templates = this.model.definition.template
         , blockTemplate = templates.block[type](task.getSector(type).indent)
         , transitionTemplate = templates.transition(task.getSector(type).childStarter)
         ;
@@ -255,11 +289,17 @@ class State {
       task.getSector(type).setEnd(coord);
     }
 
+    // if file doesn't end with newline, add one to the new task
+    const lastRow = this.editor.env.document.doc.getLength() - 1;
+    if (task.getSector(type).compare(lastRow) < 0) {
+      block = '\n' + block;
+    }
+
     this.editor.env.document.replace(task.getSector(type), block);
   }
 
   rename(target, name) {
-    let task = this.intermediate.task(target);
+    let task = this.model.task(target);
 
     if (!task) {
       return;
@@ -271,14 +311,14 @@ class State {
 
     let sector = task.getSector('name');
 
-    _.each(this.intermediate.tasks, (t) => {
+    _.each(this.model.tasks, (t) => {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
         const transitions = t.getProperty(type)
             , index = transitions.indexOf(target)
             ;
-        if (~index) { // jshint ignore:line
+        if (~index) { // eslint-disable-line no-bitwise
           transitions[index] = name;
           this.setTransitions(tName, transitions, type);
         }
@@ -292,7 +332,7 @@ class State {
   }
 
   create(action, x, y) {
-    const indices = _.map(this.intermediate.tasks, task => {
+    const indices = _.map(this.model.tasks, task => {
             const name = task.getProperty('name')
                 , expr = /task(\d+)/
                 , match = expr.exec(name)
@@ -306,13 +346,13 @@ class State {
 
     this.graph.coordinates[name] = { x, y };
 
-    let task = this.intermediate.template.task({
+    let task = this.model.template.task({
       name: name,
       ref: action.ref
     });
 
-    if (!this.intermediate.taskBlock) {
-      const blocks = this.intermediate.template.block
+    if (!this.model.taskBlock) {
+      const blocks = this.model.template.block
           , type = {
               name: 'main',
               type: 'direct'
@@ -330,7 +370,13 @@ class State {
       } else {
         return new Range(0, 0, 0, 0);
       }
-    })(this.intermediate.taskBlock);
+    })(this.model.taskBlock);
+
+    // if file doesn't end with newline, add one to the new task
+    const lastRow = this.editor.env.document.doc.getLength() - 1;
+    if (!cursor.compare(lastRow) <= 0) {
+      task = '\n' + task;
+    }
 
     this.editor.env.document.replace(cursor, task);
 
@@ -338,7 +384,7 @@ class State {
   }
 
   delete(name) {
-    const task = this.intermediate.task(name);
+    const task = this.model.task(name);
 
     if (!task) {
       throw new Error('no such task:', name);
@@ -346,14 +392,14 @@ class State {
 
     this.editor.env.document.replace(task.getSector('task'), '');
 
-    _.each(this.intermediate.tasks, (t) => {
+    _.each(this.model.tasks, (t) => {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
         const transitions = t.getProperty(type) || []
             , index = transitions.indexOf(name)
             ;
-        if (~index) { // jshint ignore:line
+        if (~index) { // eslint-disable-line no-bitwise
           transitions.splice(index, 1);
           this.setTransitions(tName, transitions, type);
         }
@@ -364,7 +410,7 @@ class State {
   }
 
   showTask(name) {
-    const task = this.intermediate.task(name);
+    const task = this.model.task(name);
 
     if (!task) {
       return;
@@ -385,10 +431,12 @@ class State {
     this.canvas.show(name);
   }
 
+  // Debug helpers
+
   debugSectors() {
     let debugSectorMarkers = [];
 
-    this.intermediate.on('parse', () => {
+    this.model.on('parse', () => {
       {
         _.each(debugSectorMarkers, (marker) => {
           this.editor.session.removeMarker(marker);
@@ -397,14 +445,14 @@ class State {
       }
 
       {
-        this.intermediate.sectors.map((e) =>
+        this.model.sectors.map((e) =>
           console.log(''+e, e.type)
         );
 
         console.log('---');
       }
 
-      _.each(this.intermediate.sectors, (sector) => {
+      _.each(this.model.sectors, (sector) => {
           let range, marker;
 
           range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
@@ -416,7 +464,7 @@ class State {
 
   debugSearch() {
     this.editor.selection.on('changeSelection', (e, selection) => {
-      let sectors = this.intermediate.search(selection.getRange())
+      let sectors = this.model.search(selection.getRange())
         , types = _.groupBy(sectors, 'type');
       console.log('->', `Selected ${types.task ? types.task.length : 'no'} tasks, ` +
                         `${types.name ? types.name.length : 'no'} names, ` +
@@ -426,7 +474,7 @@ class State {
   }
 
   debugUpdate() {
-    this.intermediate.on('update', (sectors) => {
+    this.model.on('update', (sectors) => {
       let types = _.groupBy(sectors, 'type');
       console.log('->', `Updates ${types.task ? types.task.length : 'no'} tasks, ` +
                         `${types.name ? types.name.length : 'no'} names, ` +
@@ -438,8 +486,8 @@ class State {
   debugTaskBlock() {
     let taskBlockMarker;
 
-    this.intermediate.on('parse', () => {
-      let range = this.intermediate.taskBlock;
+    this.model.on('parse', () => {
+      let range = this.model.taskBlock;
 
       if (taskBlockMarker) {
         this.editor.session.removeMarker(taskBlockMarker);
@@ -450,4 +498,4 @@ class State {
   }
 }
 
-window.st2flow = new State();
+window.st2flow = React.render(<Main />, document.body);

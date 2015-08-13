@@ -1,8 +1,6 @@
-'use strict';
+export const _ACE = {};
 
-let _ACE = {};
-
-/*jshint ignore: start*/
+/*eslint-disable*/
 (function(require, exports, module) {
 /* ***** BEGIN LICENSE BLOCK *****
  * Distributed under the BSD license:
@@ -551,6 +549,6 @@ Range.comparePoints = function(p1, p2) {
 
 exports.Range = Range;
 })(null, _ACE);
-/*jshint ignore: end*/
+/*eslint-enable*/
 
-module.exports = _ACE.Range;
+export default _ACE.Range;

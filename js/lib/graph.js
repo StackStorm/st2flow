@@ -1,13 +1,11 @@
-'use strict';
+import _ from 'lodash';
+import dagre from 'dagre';
+import { EventEmitter } from 'events';
+import mixin from 'mixin';
 
-let _ = require('lodash')
-  , dagre = require('dagre')
-  , EventEmitter = require('events').EventEmitter
-  , mixin = require('mixin');
+import Node from './models/node';
 
-let Node = require('./node');
-
-class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
+export default class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
   constructor() {
     super();
 
@@ -106,5 +104,3 @@ class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
     });
   }
 }
-
-module.exports = Graph;

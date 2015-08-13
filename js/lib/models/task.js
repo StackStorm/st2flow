@@ -1,8 +1,6 @@
-'use strict';
+import _ from 'lodash';
 
-let _ = require('lodash');
-
-class Task {
+export default class Task {
   constructor() {
     this.properties = {};
     this.sectors = {};
@@ -39,5 +37,3 @@ class Task {
     return this;
   }
 }
-
-module.exports = Task;

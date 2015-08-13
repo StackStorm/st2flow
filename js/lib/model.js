@@ -1,22 +1,19 @@
-'use strict';
+import _ from 'lodash';
+import { EventEmitter } from 'events';
 
-let _ = require('lodash')
-  , Chain = require('./definitions/chain')
-  , Mistral = require('./definitions/mistral')
-  , EventEmitter = require('events').EventEmitter
-  , Sector = require('./sector')
-  , Task = require('./task')
-  , Workflow = require('./workflow')
-  ;
+import Definitions from './definitions';
+import Sector from './models/sector';
+import Task from './models/task';
+import Workflow from './models/workflow';
 
-class Intermediate extends EventEmitter {
-  constructor() {
+export default class Model extends EventEmitter {
+  constructor(type='mistral-v2') {
     super();
 
     this.tasks = [];
     this.workflows = [];
 
-    this.definition = new Mistral(this);
+    this.definition = new Definitions[type](this);
   }
 
   get sectors() {
@@ -157,5 +154,3 @@ class Intermediate extends EventEmitter {
     });
   }
 }
-
-module.exports = Intermediate;

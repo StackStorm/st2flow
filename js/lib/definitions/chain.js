@@ -1,12 +1,10 @@
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash')
-  , Definition = require('../definition')
-  , Sector = require('../sector')
-  , Task = require('../task')
-  ;
+import Definition from '../definition';
+import Sector from '../models/sector';
+import Task from '../models/task';
 
-class ChainDefinition extends Definition {
+export default class ChainDefinition extends Definition {
   constructor (model) {
     super();
 
@@ -28,7 +26,7 @@ class ChainDefinition extends Definition {
     return _.assign(super.template, {
       taskBlock: () => _.template('chain:\n'),
       keyValue: (indent) => _.template(indent + '${key}: ${value}'),
-      task: (starter, indent) => _.template(starter + 'name: ${name}\n' + indent +  'ref: ${ref}')
+      task: (starter, indent) => _.template(starter + 'name: ${name}\n' + indent + 'ref: ${ref}')
     });
   }
 
@@ -106,5 +104,3 @@ class ChainDefinition extends Definition {
     }
   }
 }
-
-module.exports = ChainDefinition;

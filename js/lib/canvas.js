@@ -1,27 +1,16 @@
-'use strict';
+import _ from 'lodash';
+import d3 from 'd3';
+import { EventEmitter } from 'events';
 
-let _ = require('lodash')
-  , bem = require('./bem')
-  , d3 = require('d3')
-  , EventEmitter = require('events').EventEmitter
-  , { pack, unpack } = require('./packer')
-  , Vector = require('./vector')
-  ;
+import bem from './util/bem';
+import { pack, unpack } from './util/packer';
+import Vector from './util/vector';
+
+import packIcon from './util/icon-mock';
 
 const st2Class = bem('viewer')
     , st2Icon = bem('icon')
     ;
-
-const packIcon = (node={}) => {
-  const packs =  {
-    core: '/i/st2.svg',
-    linux: '/i/tux.svg'
-  };
-
-  const pack = node.ref && node.ref.split('.')[0];
-
-  return pack && packs[pack] || '';
-};
 
 let nodeTmpl = (node) =>
 `
@@ -45,7 +34,7 @@ let nodeTmpl = (node) =>
   </div>
 `;
 
-class Canvas extends EventEmitter {
+export default class Canvas extends EventEmitter {
   constructor() {
     super();
 
@@ -118,7 +107,7 @@ class Canvas extends EventEmitter {
       top: parseInt(cStyle.getPropertyValue('padding-top')),
       right: parseInt(cStyle.getPropertyValue('padding-right')),
       bottom: parseInt(cStyle.getPropertyValue('padding-bottom')),
-      left: parseInt(cStyle.getPropertyValue('padding-left')),
+      left: parseInt(cStyle.getPropertyValue('padding-left'))
     };
 
     this.clear();
@@ -178,7 +167,7 @@ class Canvas extends EventEmitter {
     let nodes = this.viewer.selectAll(st2Class('node', true));
 
     this.positionNodes(nodes, this.graph);
-    this.createEdgePaths(this.svg, this.graph, require('./arrows'));
+    this.createEdgePaths(this.svg, this.graph, require('./util/arrows'));
     this.createEdgeLabels(this.viewer, this.graph);
   }
 
@@ -569,14 +558,14 @@ class Canvas extends EventEmitter {
 
       [x, y] = this.toInner(x, y);
 
-      this.emit('create', action, x , y);
+      this.emit('create', action, x, y);
       this.deactivateOverlay(element);
       return;
     }
   }
 
   selectNode(element, event, name) {
-    this.emit('select', name);
+    this.emit('select', name, event);
   }
 
   activateNode(element) {
@@ -666,5 +655,3 @@ class Canvas extends EventEmitter {
     this.emit('disconnect', edge);
   }
 }
-
-module.exports = Canvas;

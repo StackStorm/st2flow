@@ -1,192 +1,359 @@
-'use strict';
+import _ from 'lodash';
+import React from 'react';
+import st2client from 'st2client';
 
-let _ = require('lodash')
-  , bem = require('./bem')
-  , d3 = require('d3')
-  , { pack } = require('./packer')
-  ;
+import bem from './util/bem';
+import { pack } from './util/packer';
+import forms from './util/forms';
+import ACTIONS from './util/default-actions';
 
-const st2Class = bem('palette');
+import packIcon from './util/icon-mock';
 
-const ACTIONS = [{
-  pack: 'core',
-  ref: 'core.http',
-  description: 'Action that performs an http request.'
-}, {
-  pack: 'core',
-  ref: 'core.local',
-  description: 'Action that executes an arbitrary Linux command on the localhost.'
-}, {
-  pack: 'core',
-  ref: 'core.local_sudo',
-  description: 'Action that executes an arbitrary Linux command on the localhost.'
-}, {
-  pack: 'core',
-  ref: 'core.remote',
-  description: 'Action to execute arbitrary linux command remotely.'
-}, {
-  pack: 'core',
-  ref: 'core.remote_sudo',
-  description: 'Action to execute arbitrary linux command remotely.'
-}, {
-  pack: 'core',
-  ref: 'core.sendmail',
-  description: 'This sends an email'
-}, {
-  pack: 'linux',
-  ref: 'linux.check_loadavg',
-  description: 'Check CPU Load Average on a Host'
-}, {
-  pack: 'linux',
-  ref: 'linux.check_processes',
-  description: 'Check Interesting Processes'
-}, {
-  pack: 'linux',
-  ref: 'linux.cp',
-  description: 'Copy file(s)'
-}, {
-  pack: 'linux',
-  ref: 'linux.diag_loadavg',
-  description: 'Diagnostic workflow for high load alert'
-}, {
-  pack: 'linux',
-  ref: 'linux.dig',
-  description: 'Dig action'
-}, {
-  pack: 'linux',
-  ref: 'linux.file_touch',
-  description: 'Touches a file'
-}, {
-  pack: 'linux',
-  ref: 'linux.get_open_ports',
-  description: 'Retrieve open ports for a given host'
-}, {
-  pack: 'linux',
-  ref: 'linux.lsof',
-  description: 'Run lsof'
-}, {
-  pack: 'linux',
-  ref: 'linux.lsof_pids',
-  description: 'Run lsof for a group of PIDs'
-}, {
-  pack: 'linux',
-  ref: 'linux.mv',
-  description: 'Move file(s)'
-}, {
-  pack: 'linux',
-  ref: 'linux.netstat',
-  description: 'Run netstat'
-}, {
-  pack: 'linux',
-  ref: 'linux.netstat_grep',
-  description: 'Grep netstat results'
-}, {
-  pack: 'linux',
-  ref: 'linux.pkill',
-  description: 'Kill processes using pkill'
-}, {
-  pack: 'linux',
-  ref: 'linux.rm',
-  description: 'Remove file(s)'
-}, {
-  pack: 'linux',
-  ref: 'linux.rsync',
-  description: 'Copy file(s) from one place to another w/ rsync'
-}, {
-  pack: 'linux',
-  ref: 'linux.scp',
-  description: 'Secure copy file(s)'
-}, {
-  pack: 'linux',
-  ref: 'linux.service',
-  description: 'Stops, Starts, or Restarts a service'
-}, {
-  pack: 'linux',
-  ref: 'linux.traceroute',
-  description: 'Traceroute a Host'
-}, {
-  pack: 'linux',
-  ref: 'linux.vmstat',
-  description: 'Run vmstat'
-}, {
-  pack: 'linux',
-  ref: 'linux.wait_for_ssh',
-  description: 'Wait for SSH'
-}];
+const st2Class = bem('palette')
+    , st2Icon = bem('icon')
+    ;
 
-const packTmpl = (pack) =>
-`
-  <div class="${st2Class('pack-header')}">
-    <span class="${st2Class('pack-icon')}"></span>
-    <span class="${st2Class('pack-name')}">${pack.name}</span>
-  </div>
-  <div class="${st2Class('pack-content')}" rel="actions"></div>
-`;
-
-const actionTmpl = (action) =>
-`
-  <div class="${st2Class('action-name')}">${action.ref}</div>
-  <div class="${st2Class('action-description')}">${action.description}</div>
-`;
-
-class Palette {
-  constructor() {
-    const self = this;
-
-    this.element = d3
-      .select(st2Class(null, true))
-      ;
-
-    const packs = _.groupBy(ACTIONS, 'pack');
-
-    this.packs = this.element
-      .selectAll(st2Class('pack', true))
-      .data(_.keys(packs), (pack) => pack)
-      ;
-
-    this.packs.enter()
-      .append('div')
-      .attr('class', st2Class('pack'))
-      .html((name) => packTmpl({ name }))
-      .each(function (pack) {
-        this.actions = d3.select(this)
-          .select('[rel=actions]')
-          .selectAll(st2Class('action', true))
-          .data(packs[pack])
-          ;
-
-        this.actions.enter()
-          .append('div')
-            .attr('class', st2Class('action'))
-            .attr('draggable', 'true')
-            .html((action) => actionTmpl(action))
-            .on('dragstart', function (action) {
-              self.dragAction(this, d3.event, action);
-            })
-            ;
-      });
+class Pack extends React.Component {
+  static propTypes = {
+    name: React.PropTypes.string.isRequired
   }
 
-  dragAction(element, event, action) {
-    let dt = event.dataTransfer;
-
-    dt.setData('actionPack', pack({ action }));
-    dt.effectAllowed = 'copy';
-  }
-
-  toggleCollapse(open) {
-    const classList = this.element
-      .node()
-      .classList;
-
-    if (open === true) {
-      classList.remove(st2Class(null, 'hide'));
-    } else if (open === false) {
-      classList.add(st2Class(null, 'hide'));
-    } else {
-      classList.toggle(st2Class(null, 'hide'));
-    }
+  render() {
+    return <div className={st2Class('pack')}>
+      <div className={st2Class('pack-header')}>
+        <span className={st2Class('pack-icon')}>
+          <img src={packIcon({ ref: this.props.name })} width="32" height="32" />
+        </span>
+        <span className={st2Class('pack-name')}>{this.props.name}</span>
+      </div>
+      <div className={st2Class('pack-content')}>{this.props.children}</div>
+    </div>;
   }
 }
 
-module.exports = Palette;
+class Action extends React.Component {
+  static propTypes = {
+    action: React.PropTypes.shape({
+      ref: React.PropTypes.string.isRequired,
+      description: React.PropTypes.string.isRequired
+    })
+  }
+
+  drag(event) {
+    let dt = event.dataTransfer;
+
+    dt.setData('actionPack', pack({ action: this.props.action }));
+    dt.effectAllowed = 'copy';
+  }
+
+  render() {
+    return <div className={st2Class('action')} draggable={true} onDragStart={this.drag.bind(this)}>
+      <div className={st2Class('action-name')}>{this.props.action.ref}</div>
+      <div className={st2Class('action-description')}>{this.props.action.description}</div>
+    </div>;
+  }
+}
+
+class SearchField extends React.Component {
+  static propTypes = {
+    filter: React.PropTypes.string,
+    onChange: React.PropTypes.func.isRequired
+  }
+
+  handleChange() {
+    this.props.onChange(
+      this.refs.filter.getDOMNode().value
+    );
+  }
+
+  render() {
+    return <form className={st2Class('search')}>
+      <input type="search"
+        className={st2Class('search-field')}
+        placeholder="Search..."
+        ref="filter"
+        value={this.props.filter}
+        onChange={this.handleChange.bind(this)} />
+    </form>;
+  }
+}
+
+export default class Palette extends React.Component {
+  static propTypes = {
+    source: React.PropTypes.shape({
+      protocol: React.PropTypes.oneOf(['http', 'https']),
+      host: React.PropTypes.string,
+      port: React.PropTypes.number,
+      auth: React.PropTypes.shape({
+        protocol: React.PropTypes.oneOf(['http', 'https']),
+        host: React.PropTypes.string,
+        port: React.PropTypes.number,
+        login: React.PropTypes.string,
+        password: React.PropTypes.string
+      })
+    }),
+    onSourceChange: React.PropTypes.func,
+    onToggle: React.PropTypes.func
+  }
+
+  state = {
+    filter: '',
+    showSettings: !this.props.source
+  }
+
+  toggleCollapse(open) {
+    this.setState({hide: !open});
+  }
+
+  handleUserInput(filter) {
+    this.setState({ filter });
+  }
+
+  reload() {
+    const api = st2client(this.props.source);
+
+    this.setState({ error: undefined, actions: undefined });
+
+    (() => {
+      if (this.props.source && this.props.source.auth) {
+        return api.authenticate(this.props.source.auth.login, this.props.source.auth.password);
+      } else {
+        return new Promise((resolve) => resolve());
+      }
+    })()
+      .then(() => {
+        return api.actions.list();
+      })
+      .then((actions) => { this.setState({ actions }); })
+      .catch((error) => this.setState({ error, actions: ACTIONS }))
+      ;
+  }
+
+  toggleSettings(state) {
+    this.setState({ showSettings: state });
+  }
+
+  handleSettingsChange(...args) {
+    this.props.onSourceChange(...args);
+    this.setState({ showSettings: false });
+  }
+
+  componentDidMount() {
+    if (this.props.source) {
+      this.reload();
+    }
+  }
+
+  componentDidUpdate(props, state) {
+    if (this.props.onToggle && this.state.hide !== state.hide) {
+      this.props.onToggle();
+    }
+
+    if (this.props.source !== props.source) {
+      this.reload();
+    }
+  }
+
+  render() {
+    const packs = _(this.state.actions)
+            .filter((action) => ~action.ref.indexOf(this.state.filter)) // eslint-disable-line no-bitwise
+            .groupBy('pack')
+            .value()
+        , props = {
+            className: st2Class(null)
+          }
+        ;
+
+    if (this.state.hide) {
+      props.className += ' ' + st2Class(null, 'hide');
+    }
+
+    return <div {...props} >
+      <SearchField filter={this.state.filter} onChange={this.handleUserInput.bind(this)}/>
+      <SourceForm show={this.state.showSettings}
+          defaultValue={this.props.source}
+          onChange={this.handleSettingsChange.bind(this)} />
+      {
+        !this.state.actions && !this.state.error &&
+          <div className={st2Class('loader')}>Loading...</div>
+      }
+      {
+        this.state.error && <div className={st2Class('error')}>
+          <p>Error loading actions from {this.props.source.host}:</p>
+          <code>{this.state.error.message.faultstring || this.state.error.message}</code>
+          <p>Check your config by clicking <i className={st2Icon('cog')}></i> button on the right.</p>
+          <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
+        </div>
+      }
+      {
+        _.map(packs, (actions, name) =>
+          <Pack key={name} name={name}>
+            {
+              _.map(actions, (action) =>
+                <Action key={action.ref} action={action} ></Action>
+              )
+            }
+          </Pack>
+        )
+      }
+    </div>;
+  }
+}
+
+class SourceForm extends React.Component {
+  static propTypes = {
+    defaultValue: Palette.propTypes.source,
+    onChange: React.PropTypes.func.isRequired
+  }
+
+  constructor(props) {
+    super();
+
+    const def = props.defaultValue || {}
+        , defAuth = def.auth || {};
+
+    this.state = {
+      protocol: def.protocol || 'http',
+      host: def.host,
+      port: def.port || 9101,
+      isAuth: !!def.auth,
+      authProtocol: defAuth.protocol || 'http',
+      authHost: defAuth.host,
+      authPort: defAuth.port || 9100,
+      login: defAuth.login,
+      password: defAuth.password
+    };
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+
+    const result = {
+      protocol: this.state.protocol,
+      host: this.state.host,
+      port: this.state.port
+    };
+
+    if (this.state.isAuth) {
+      result.auth = {
+        protocol: this.state.authProtocol,
+        host: this.state.authHost,
+        port: this.state.authPort,
+        login: this.state.login,
+        password: this.state.password
+      };
+    }
+
+    this.props.onChange(result);
+  }
+
+  render() {
+    const fields = [{
+      name: 'Protocol',
+      type: 'select',
+      props: {
+        value: this.state.protocol,
+        onChange: (event) => this.setState({protocol: event.target.value})
+      },
+      options: ['http', 'https']
+    }, {
+      name: 'Host',
+      type: 'text',
+      props: {
+        value: this.state.host,
+        onChange: (event) => this.setState({host: event.target.value}),
+        required: true
+      }
+    }, {
+      name: 'Port',
+      type: 'number',
+      props: {
+        value: this.state.port,
+        onChange: (event) => this.setState({port: _.parseInt(event.target.value)}),
+        pattern: '\\d+',
+        required: true
+      }
+    }, {
+      name: 'Auth',
+      type: 'checkbox',
+      props: {
+        checked: !!this.state.isAuth,
+        onChange: (event) => this.setState({ isAuth: event.target.checked })
+      }
+    }];
+
+    if (this.state.isAuth) {
+      Array.prototype.push.apply(fields, [{
+        name: 'Auth Protocol',
+        type: 'select',
+        props: {
+          value: this.state.authProtocol,
+          onChange: (event) => this.setState({authProtocol: event.target.value})
+
+        },
+        options: ['http', 'https']
+      }, {
+        name: 'Auth Host',
+        type: 'text',
+        props: {
+          value: this.state.authHost,
+          onChange: (event) => this.setState({authHost: event.target.value}),
+          required: true
+        }
+      }, {
+        name: 'Auth Port',
+        type: 'text',
+        props: {
+          value: this.state.authPort,
+          onChange: (event) => this.setState({authPort: _.parseInt(event.target.value)}),
+          pattern: '\\d+',
+          required: true
+        }
+      }, {
+        name: 'Login',
+        type: 'text',
+        props: {
+          value: this.state.login,
+          onChange: (event) => this.setState({login: event.target.value}),
+          required: true
+        }
+      }, {
+        name: 'Password',
+        type: 'password',
+        props: {
+          value: this.state.password,
+          onChange: (event) => this.setState({password: event.target.value}),
+          required: true
+        }
+      }, {
+        name: 'password-comment',
+        type: 'comment',
+        content: 'Be aware that the password is stored in plaintext inside your browsers localStorage.'
+      }]);
+    }
+
+    const props = {
+      className: st2Class('source-form')
+    };
+
+    if (this.props.show) {
+      props.className += ' ' + st2Class('source-form', 'visible');
+    }
+
+    return <div {...props} >
+      {
+        !this.props.defaultValue
+        ? <div>No action source is set. Please enter credentials in the form below.</div>
+        : null
+      }
+      <form onSubmit={this.handleSubmit.bind(this)}>
+        {
+          _.map(fields, (field) => forms[field.type](field))
+        }
+        <input type="submit"
+          className="st2-panel__field-input"
+          value="Save" />
+      </form>
+    </div>;
+  }
+}

@@ -1,11 +1,10 @@
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash')
-  , Definition = require('../definition')
-  , Sector = require('../sector')
-  ;
+import Definition from '../definition';
+import Sector from '../models/sector';
+import Workflow from '../models/workflow';
 
-class MistralDefinition extends Definition {
+export default class MistralDefinition extends Definition {
   constructor (model) {
     super();
 
@@ -29,13 +28,13 @@ class MistralDefinition extends Definition {
   get spec() {
     return _.assign(super.spec, {
       WORKFLOWS_BLOCK: /^\s*workflows:\s*$/,
-      WORKFLOW_NAME: /^(\s*)(\w+):\s*$/,
+      WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
       TASK_BLOCK: /^\s*tasks:\s*$/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w\s.]+)/,
       SUCCESS_BLOCK: /^\s*on-success:\s*$/,
       ERROR_BLOCK: /^\s*on-error:\s*$/,
       COMPLETE_BLOCK: /^\s*on-complete:\s*$/,
-      TRANSITION: /^(\s*-\s*)(\w+)/,
+      TRANSITION: /^(\s*-\s*)(\w+)/
     });
   }
 
@@ -49,7 +48,7 @@ class MistralDefinition extends Definition {
         tasks: (indent='') => _.template(indent + 'tasks:\n'),
         success: (indent) => _.template(indent + 'on-success:\n'),
         error: (indent) => _.template(indent + 'on-error:\n'),
-        complete: (indent) => _.template(indent + 'on-complete:\n'),
+        complete: (indent) => _.template(indent + 'on-complete:\n')
       },
       transition: (starter) => _.template(starter + '${name}\n')
     });
@@ -77,7 +76,9 @@ class MistralDefinition extends Definition {
 
     if (state.isWorkflowBlock) {
       state.workflowBlock.setEnd(lineNum + 1, 0); // ? lineNum + 1
+    }
 
+    {
       let match;
 
       match = this.spec.WORKFLOW_NAME.exec(line);
@@ -96,21 +97,40 @@ class MistralDefinition extends Definition {
               , taskBlockSector = new Sector()
               ;
 
-          state.currentWorkflow = this.model.workflow(name, {})
+          const wf = new Workflow()
+            .setProperty('name', name)
             .setSector('workflow', workflowSector)
             .setSector('name', nameSector)
             .setSector('taskBlock', taskBlockSector)
             ;
 
-          state.currentWorkflow.indent = indent;
-          state.taskBlock = state.currentWorkflow.getSector('taskBlock'); // FIX: support multiple workflows
+          wf.indent = indent;
+
+          if (state.isWorkflowBlock) {
+            state.currentWorkflow = this.model.workflow(name, wf);
+
+            state.taskBlock = state.currentWorkflow.getSector('taskBlock');
+            // FIX: support multiple workflows
+          } else {
+            state.potentialWorkflow = wf;
+          }
 
           return;
         }
       }
     }
 
-    if (state.isWorkflowBlock && state.currentWorkflow) {
+    const indent = line.match(this.spec.WS_INDENT)[0];
+
+    if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
+      const name = state.potentialWorkflow.getProperty('name');
+      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
+      state.taskBlock = state.currentWorkflow.getSector('taskBlock');
+    }
+
+    state.potentialWorkflow = null;
+
+    if (state.currentWorkflow) {
       state.currentWorkflow.endSector('workflow', lineNum, 0);
 
       let block = this.block('isTaskBlock', this.spec.TASK_BLOCK);
@@ -126,7 +146,7 @@ class MistralDefinition extends Definition {
       }
     }
 
-    if (state.isWorkflowBlock && state.currentWorkflow && state.isTaskBlock) {
+    if (state.currentWorkflow && state.isTaskBlock) {
       state.currentWorkflow.endSector('taskBlock', lineNum + 1, 0);
 
       let match;
@@ -309,5 +329,3 @@ class MistralDefinition extends Definition {
 
   }
 }
-
-module.exports = MistralDefinition;

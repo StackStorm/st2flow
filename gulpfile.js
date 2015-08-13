@@ -1,7 +1,8 @@
 'use strict';
-var gulp = require('gulp')
+var _ = require('lodash')
+  , gulp = require('gulp')
   , del = require('del')
-  , jshint = require('gulp-jshint')
+  , eslint = require('gulp-eslint')
   , plumber = require('gulp-plumber')
   , browserify = require('browserify')
   , babelify = require('babelify')
@@ -14,7 +15,45 @@ var gulp = require('gulp')
   , sourcemaps = require('gulp-sourcemaps')
   , gutil = require('gulp-util')
   , fontello = require('gulp-fontello')
+  , cached = require('gulp-cached')
+  , watchify = require('watchify')
   ;
+
+var customOpts = {
+  entries: ['js/main.js'],
+  debug: true
+};
+var opts = _.assign({}, watchify.args, customOpts);
+var b = watchify(browserify(opts))
+  .transform(babelify.configure({
+    optional: ['es7.classProperties']
+  }))
+  .on('update', bundle)
+  .on('log', gutil.log)
+  ;
+
+function bundle() {
+  return b.bundle()
+    .on('error', function (error) {
+      gutil.log(
+        gutil.colors.cyan('Browserify') + gutil.colors.red(' found unhandled error:\n'),
+        error.toString()
+      );
+      this.emit('end');
+    })
+    .pipe(source('main.js'))
+    .pipe(buffer())
+    .pipe(sourcemaps.init({ loadMaps: true }))
+    .pipe(sourcemaps.write('./'))
+    .pipe(gulp.dest('dist/js'))
+    .pipe(size({
+      showFiles: true
+    }))
+    .pipe(size({
+      showFiles: true,
+      gzip: true
+    }));
+}
 
 gulp.task('clean', function(cb) {
   del(['dist'], cb);
@@ -23,8 +62,9 @@ gulp.task('clean', function(cb) {
 gulp.task('lint', function() {
   return gulp.src(['js/**/*.js', 'tests/**/*.js'])
     .pipe(plumber())
-    .pipe(jshint())
-    .pipe(jshint.reporter('default'));
+    .pipe(cached('linting'))
+    .pipe(eslint())
+    .pipe(eslint.format());
 });
 
 gulp.task('font', function () {
@@ -38,7 +78,8 @@ gulp.task('css', ['font'], function () {
   var processors = [
     require('autoprefixer-core')({browsers: ['last 2 version']}),
     require('postcss-import')(),
-    require('postcss-nested')()
+    require('postcss-nested')(),
+    require('postcss-color-function')()
   ];
   return gulp.src('css/*.css')
     .pipe(plumber())
@@ -63,37 +104,17 @@ gulp.task('css', ['font'], function () {
     }));
 });
 
-gulp.task('browserify', function() {
-  return browserify('js/main.js', {
-    debug: true
-  }).transform(babelify)
-    .bundle()
-    .on('error', function (error) {
-      gutil.log(
-        gutil.colors.cyan('Browserify') + gutil.colors.red(' found unhandled error:\n'),
-        error.toString()
-      );
-      this.emit('end');
-    })
-    .pipe(source('main.js'))
-    .pipe(buffer())
-    .pipe(sourcemaps.init({ loadMaps: true }))
-    .pipe(sourcemaps.write('./'))
-    .pipe(gulp.dest('dist/js'))
-    .pipe(size({
-      showFiles: true
-    }))
-    .pipe(size({
-      showFiles: true,
-      gzip: true
-    }));
-});
+gulp.task('browserify', ['lint'], bundle);
 
 gulp.task('test', function () {
-  require('babelify/node_modules/babel-core/register');
   return gulp.src('tests/**/*.js', {read: false})
     .pipe(mocha({
-      reporter: 'dot'
+      reporter: 'dot',
+      compilers: {
+        js: require('babelify/node_modules/babel-core/register')({
+          optional: ['es7.classProperties']
+        })
+      }
     }));
 });
 
@@ -119,7 +140,7 @@ gulp.task('build', ['css', 'browserify', 'static']);
 gulp.task('watch', function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
-  gulp.watch(['js/**/*.js'], ['lint', 'browserify']);
+  gulp.watch(['js/**/*.js'], ['lint']);
 
   process.stdin.setEncoding('utf8');
   process.stdin.on('readable', function() {
