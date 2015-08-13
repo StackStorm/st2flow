@@ -173,8 +173,10 @@ class Main extends React.Component {
             <Control icon="undo" onClick={this.undo.bind(this)} />
             <Control icon="redo" onClick={this.redo.bind(this)} />
             <Control icon="layout" onClick={this.layout.bind(this)} />
+            {/*
             <Control icon="tools" type="toggle" onClick={this.meta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
+            */}
           </ControlGroup>
           <ControlGroup position='right'>
             <Control icon="code" type="toggle" initial={true}
