@@ -35,6 +35,10 @@ export default class Controls extends React.Component {
     }
   }
 
+  setValue(value) {
+    this.setState({ value });
+  }
+
   render() {
     const props = {
       className: `${st2Class('button')} ${st2Icon(this.props.icon)}`,

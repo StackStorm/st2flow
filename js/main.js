@@ -9,19 +9,11 @@ import Panel from './lib/panel';
 import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
+import settings from './lib/settings';
 
 class Main extends React.Component {
   state = {
-    source: {
-      protocol: 'http',
-      host: 'st2stage201',
-      port: 9101,
-      auth: {
-        protocol: 'http',
-        host: 'st2stage201',
-        port: 9100
-      }
-    }
+    source: settings.get('source')
   }
 
   componentDidMount() {
@@ -157,15 +149,27 @@ class Main extends React.Component {
     this.graph.on('select', (name) => this.showTask(name));
   }
 
+  handleSourceChange(config) {
+    settings.set('source', config).save();
+    this.setState({source: config});
+    this.refs.settingsButton.setValue(false);
+  }
+
   render() {
     return <main>
-      <Palette ref="palette" source={this.state.source} onToggle={this.resizeCanvas.bind(this)} />
+      <Palette ref="palette"
+        source={this.state.source}
+        onSourceChange={this.handleSourceChange.bind(this)}
+        onToggle={this.resizeCanvas.bind(this)} />
+
       <div className="st2-container">
 
         <div className="st2-controls">
           <ControlGroup position='left'>
             <Control icon="palette" type="toggle" initial={true}
               onClick={this.collapsePalette.bind(this)} />
+            <Control icon="cog" type="toggle" initial={!this.state.source} ref="settingsButton"
+              onClick={this.showSourceSettings.bind(this)} />
             <Control icon="undo" onClick={this.undo.bind(this)} />
             <Control icon="redo" onClick={this.redo.bind(this)} />
             <Control icon="layout" onClick={this.layout.bind(this)} />
@@ -189,6 +193,10 @@ class Main extends React.Component {
   }
 
   // Public methods
+
+  showSourceSettings(state) {
+    this.palette.toggleSettings(state);
+  }
 
   undo() {
     this.editor.undo();

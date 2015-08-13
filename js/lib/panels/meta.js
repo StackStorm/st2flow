@@ -2,6 +2,7 @@ import _ from 'lodash';
 import React from 'react';
 
 import bem from '../util/bem';
+import templates from '../util/forms';
 
 const st2Class = bem('panel')
     ;
@@ -63,38 +64,6 @@ export default class Meta extends React.Component {
         onChange: (event) => this.setState({ enable: event.target.checked })
       }
     }];
-
-    const templates = {
-      text: (field) =>
-        <label className="st2-panel__field" key={ field.name }>
-          <div className="st2-panel__field-name">{ field.name }</div>
-          <input className="st2-panel__field-input" type="text" {...field.props} />
-        </label>,
-
-      textarea: (field) =>
-        <label className="st2-panel__field" key={ field.name }>
-          <div className="st2-panel__field-name">{ field.name }</div>
-          <textarea className="st2-panel__field-input" {...field.props} ></textarea>
-        </label>,
-
-      select: (field) =>
-        <label className="st2-panel__field" key={ field.name }>
-          <div className="st2-panel__field-name">{ field.name }</div>
-          <select className="st2-panel__field-input" {...field.props} >
-            {
-              _.map(field.options, (option) =>
-                <option key={option.value} value={option.value}>{option.name}</option>
-              )
-            }
-          </select>
-        </label>,
-
-      checkbox: (field) =>
-        <label className="st2-panel__field" key={ field.name }>
-          <input className="st2-panel__field-input" type="checkbox" {...field.props} />
-          <span className="st2-panel__field-name">{ field.name }</span>
-        </label>
-    };
 
     const props = {
       className: `${st2Class('panel')} ${st2Class('meta')}`

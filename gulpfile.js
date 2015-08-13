@@ -107,10 +107,14 @@ gulp.task('css', ['font'], function () {
 gulp.task('browserify', ['lint'], bundle);
 
 gulp.task('test', function () {
-  require('babelify/node_modules/babel-core/register');
   return gulp.src('tests/**/*.js', {read: false})
     .pipe(mocha({
-      reporter: 'dot'
+      reporter: 'dot',
+      compilers: {
+        js: require('babelify/node_modules/babel-core/register')({
+          optional: ['es7.classProperties']
+        })
+      }
     }));
 });
 

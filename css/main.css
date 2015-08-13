@@ -26,6 +26,8 @@ main {
 
   overflow: auto;
 
+  position: relative;
+
   &::-webkit-scrollbar {
     width: 0.5em;
   }
@@ -48,7 +50,7 @@ main {
   }
 
   &__search {
-    padding: 10px;
+    margin: 10px;
 
     &-field[type="search"] {
       width: 100%;
@@ -115,6 +117,23 @@ main {
       box-sizing: border-box;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+  }
+
+  &__source-form {
+    color: #fff;
+    display: none;
+    padding: 10px;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    background-color: #191f23;
+
+    &--visible {
+      display: block;
     }
   }
 }
@@ -498,6 +517,10 @@ main {
 
       &:focus {
         background-color: rgba(0,0,0,0.2);
+      }
+
+      &:invalid {
+        border-color: red;
       }
 
       select& {
