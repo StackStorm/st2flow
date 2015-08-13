@@ -125,6 +125,7 @@ export default class MistralDefinition extends Definition {
     if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
       const name = state.potentialWorkflow.getProperty('name');
       state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
+      state.taskBlock = state.currentWorkflow.getSector('taskBlock');
     }
 
     state.potentialWorkflow = null;
