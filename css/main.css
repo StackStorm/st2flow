@@ -136,6 +136,18 @@ main {
       display: block;
     }
   }
+
+  &__loader {
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+  }
+
+  &__error {
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+  }
 }
 
 .st2-container {

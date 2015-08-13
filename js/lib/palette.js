@@ -8,7 +8,9 @@ import forms from './util/forms';
 
 import packIcon from './util/icon-mock';
 
-const st2Class = bem('palette');
+const st2Class = bem('palette')
+    , st2Icon = bem('icon')
+    ;
 
 class Pack extends React.Component {
   static propTypes = {
@@ -109,6 +111,8 @@ export default class Palette extends React.Component {
   reload() {
     const api = st2client(this.props.source);
 
+    this.setState({ error: undefined });
+
     (() => {
       if (this.props.source && this.props.source.auth) {
         return api.authenticate(this.props.source.auth.login, this.props.source.auth.password);
@@ -119,7 +123,7 @@ export default class Palette extends React.Component {
       .then(() => {
         return api.actions.list();
       })
-      .catch((...args) => console.log('error:', ...args))
+      .catch((error) => this.setState({ error }))
       .then((actions) => this.setState({ actions }))
       ;
   }
@@ -168,6 +172,17 @@ export default class Palette extends React.Component {
       <SourceForm show={this.state.showSettings}
           defaultValue={this.props.source}
           onChange={this.handleSettingsChange.bind(this)} />
+      {
+        !this.state.actions && !this.state.error &&
+          <div className={st2Class('loader')}>Loading...</div>
+      }
+      {
+        this.state.error && <div className={st2Class('error')}>
+          Error loading actions from {this.props.source.host}:
+          <div>'{this.state.error.message.faultstring || this.state.error.message}'</div>
+          <div>Check your config by clicking <i className={st2Icon('cog')}></i> on the right.</div>
+        </div>
+      }
       {
         _.map(packs, (actions, name) =>
           <Pack key={name} name={name}>
