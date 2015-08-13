@@ -50,6 +50,10 @@ export default class Panel extends React.Component {
     if (this.props.onToggle && this.state.hide !== state.hide) {
       this.props.onToggle();
     }
+
+    if (!this.state.hide) {
+      this.editor.resize();
+    }
   }
 
   render() {
