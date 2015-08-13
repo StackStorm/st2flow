@@ -115,6 +115,8 @@ export class Settings {
 
     this.settings = settings;
 
+    this.saveFallback();
+
     return this;
   }
 
@@ -125,7 +127,7 @@ export class Settings {
       } catch (e) {
         throw new Error(`Unable to parse the fallback config. Error: ${e}`);
       }
-    };
+    }();
 
     return this;
   }

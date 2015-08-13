@@ -9,7 +9,8 @@ describe('Settings', () => {
   beforeEach(() => {
     global.window = {
       localStorage: {
-        getItem: () => null
+        getItem: () => null,
+        setItem: () => null
       }
     };
 
@@ -126,6 +127,25 @@ describe('Settings', () => {
       expect(settings.load.bind(settings)).to.throw(Error, `Validation failed after migration.`);
     });
 
+    it('should save successfully loaded settings as a fallback configuration', (ok) => {
+      const doc = {_rev: 1};
+      window.localStorage.getItem = () => JSON.stringify(doc);
+      window.localStorage.setItem = (key, value) => {
+        expect(value).to.be.equal(JSON.stringify(doc));
+        ok();
+      };
+      settings.revisions = [{
+        id: 1,
+        schema: {
+          _rev: {
+            type: 'number'
+          }
+        }
+      }];
+
+      settings.load();
+
+    });
   });
 
   describe('#get()', () => {
