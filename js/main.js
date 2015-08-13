@@ -364,6 +364,12 @@ class Main extends React.Component {
       }
     })(this.model.taskBlock);
 
+    // if file doesn't end with newline, add one to the new task
+    const lastRow = this.editor.env.document.doc.getLength() - 1;
+    if (lastRow < cursor.end.row) {
+      task = '\n' + task;
+    }
+
     this.editor.env.document.replace(cursor, task);
 
     this.canvas.edit(name);
