@@ -149,49 +149,6 @@ export default class MistralDefinition extends Definition {
     if (state.currentWorkflow && state.isTaskBlock) {
       state.currentWorkflow.endSector('taskBlock', lineNum + 1, 0);
 
-      let match;
-
-      match = this.spec.WORKFLOW_NAME.exec(line);
-      if (match) {
-        const [,starter,name] = match
-            , coords = [lineNum, starter.length, lineNum, (starter+name).length]
-            ;
-
-        if (!state.currentTask || starter.length === state.currentTask.starter.length) {
-          if (state.currentTask) {
-            state.currentTask.endSector('task', lineNum, 0);
-          }
-
-          const taskSector = new Sector(lineNum, 0).setType('task')
-              , nameSector = new Sector(...coords).setType('name')
-              ;
-
-          state.currentTask = this.model.task(name, {})
-            .setSector('task', taskSector)
-            .setSector('name', nameSector)
-            ;
-
-          taskSector.task = state.currentTask;
-
-          state.currentTask.starter = starter;
-
-          const TYPES = ['success', 'error', 'complete'];
-
-          _.each(TYPES, (type) => {
-            const sector = new Sector().setType(type);
-            sector.indent = starter + '  ';
-            sector.childStarter = starter + '    - ';
-
-            state.currentTask
-              .setProperty(type, [])
-              .setSector(type, sector)
-              ;
-          });
-
-          _.remove(state.untouchedTasks, (e) => e === name);
-        }
-      }
-
       if (state.currentTask) {
 
         let handler;
@@ -323,6 +280,49 @@ export default class MistralDefinition extends Definition {
           }
         }
 
+      }
+
+      let match;
+
+      match = this.spec.WORKFLOW_NAME.exec(line);
+      if (match) {
+        const [,starter,name] = match
+            , coords = [lineNum, starter.length, lineNum, (starter+name).length]
+            ;
+
+        if (!state.currentTask || starter.length === state.currentTask.starter.length) {
+          if (state.currentTask) {
+            state.currentTask.endSector('task', lineNum, 0);
+          }
+
+          const taskSector = new Sector(lineNum, 0).setType('task')
+              , nameSector = new Sector(...coords).setType('name')
+              ;
+
+          state.currentTask = this.model.task(name, {})
+            .setSector('task', taskSector)
+            .setSector('name', nameSector)
+            ;
+
+          taskSector.task = state.currentTask;
+
+          state.currentTask.starter = starter;
+
+          const TYPES = ['success', 'error', 'complete'];
+
+          _.each(TYPES, (type) => {
+            const sector = new Sector().setType(type);
+            sector.indent = starter + '  ';
+            sector.childStarter = starter + '    - ';
+
+            state.currentTask
+              .setProperty(type, [])
+              .setSector(type, sector)
+              ;
+          });
+
+          _.remove(state.untouchedTasks, (e) => e === name);
+        }
       }
 
     }

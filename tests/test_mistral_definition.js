@@ -132,7 +132,7 @@ describe('Mistral definition', () => {
         .setProperty('ref', 'autoscale.epoch')
         .setSector('task', new Sector(38,0,42,0).setType('task'))
         .setSector('name', new Sector(38,6,38,23).setType('name'))
-        .setSector('success', new Sector(undefined,undefined,38,0).setType('success')
+        .setSector('success', new Sector().setType('success')
           ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
         .setSector('error', new Sector().setType('error')
           ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
