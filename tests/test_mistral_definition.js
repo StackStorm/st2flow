@@ -316,6 +316,57 @@ describe('Mistral definition', () => {
       ].join('\n'));
     });
 
+    it('should properly handle tab indents', () => {
+      const code = getFixture('tabbed_workflow.yaml');
+
+      model.parse(code);
+
+      const specials = {
+        childStarter: '					- ',
+        indent: '				'
+      };
+
+      const task1 = new Task()
+        .setProperty('name', 'task1')
+        .setProperty('success', [])
+        .setProperty('error', [])
+        .setProperty('complete', [])
+        .setProperty('ref', 'core.local cmd') // !!!
+        .setSector('task', new Sector(10,0,15,0).setType('task'))
+        .setSector('name', new Sector(10,3,10,8).setType('name'))
+        .setSector('success', new Sector().setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('ref', new Sector(11,12,11,26).setType('ref'))
+        ;
+
+      task1.starter = '			';
+      task1.indent = '				';
+      task1.getSector('task').setTask(task1);
+
+      expect(model).to.have.property('tasks').deep.equal([task1]);
+
+      // Fragments
+
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        '			some:',
+        '				action: thing',
+        ''
+      ].join('\n'));
+
+      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+
+      expect(transitionString).to.deep.equal([
+        '				on-success:',
+        '					- some',
+        ''
+      ].join('\n'));
+    });
 
   });
 
