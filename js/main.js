@@ -254,6 +254,10 @@ class Main extends React.Component {
   disconnect(source, destination, type=['success', 'error', 'complete']) {
     let task = this.model.task(source);
 
+    if (!task) {
+      throw new Error('no such task:', source);
+    }
+
     _.each([].concat(type), (type) => {
       const transitions = task.getProperty(type) || [];
 
@@ -270,18 +274,9 @@ class Main extends React.Component {
       throw new Error('no such task:', source);
     }
 
-    const templates = this.model.definition.template
-        , blockTemplate = templates.block[type](task.getSector(type).indent)
-        , transitionTemplate = templates.transition(task.getSector(type).childStarter)
-        ;
+    const params = _.map(transitions, (name) => ({ name }));
 
-    let block = '';
-
-    if (transitions.length) {
-      block += _.reduce(transitions, (result, name) => {
-        return result + transitionTemplate({ name });
-      }, blockTemplate());
-    }
+    let block = this.model.fragments.transitions(task, params, type);
 
     if (task.getSector(type).isStart() || task.getSector(type).isEnd()) {
       const coord = task.getSector('task').end;
@@ -346,20 +341,10 @@ class Main extends React.Component {
 
     this.graph.coordinates[name] = { x, y };
 
-    let task = this.model.template.task({
+    let task = this.model.fragments.task({
       name: name,
       ref: action.ref
     });
-
-    if (!this.model.taskBlock) {
-      const blocks = this.model.template.block
-          , type = {
-              name: 'main',
-              type: 'direct'
-            }
-          ;
-      task = blocks.base() + blocks.workflow(type) + blocks.tasks() + task;
-    }
 
     const cursor = ((block) => {
       if (block && !block.isEnd()) {

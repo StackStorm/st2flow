@@ -16,32 +16,24 @@ export default class Definition {
           return;
         }
 
-        if (task.isEmpty()) {
-          if (task.starter === _prefix) {
-            task.indent = ' '.repeat(_prefix.length);
-          } else {
-            task.starter += _prefix;
-          }
-        } else {
-          task.indent = _prefix;
-        }
-
         let sector = new Sector(...coords).setType(type);
         task.setProperty(type, value).setSector(type, sector);
 
-        return true;
+        return match;
       }
     };
   }
 
   block(type, spec) {
     const enter = (line, lineNum, state) => {
-      const indent = line.match(this.spec.WS_INDENT)[0].length + 1;
+      const match = spec.exec(line);
 
-      if (!state[type] && spec.test(line)) {
-        state[type] = indent;
+      if (!state[type] && match) {
+        const [,_prefix] = match;
 
-        return true;
+        state[type] = _prefix.length + 1;
+
+        return match;
       }
     };
 

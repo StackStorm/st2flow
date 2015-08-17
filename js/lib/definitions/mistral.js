@@ -27,13 +27,13 @@ export default class MistralDefinition extends Definition {
 
   get spec() {
     return _.assign(super.spec, {
-      WORKFLOWS_BLOCK: /^\s*workflows:\s*$/,
+      WORKFLOWS_BLOCK: /^(\s*)workflows:\s*$/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
-      TASK_BLOCK: /^\s*tasks:\s*$/,
+      TASK_BLOCK: /^(\s*)tasks:\s*$/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w\s.]+)/,
-      SUCCESS_BLOCK: /^\s*on-success:\s*$/,
-      ERROR_BLOCK: /^\s*on-error:\s*$/,
-      COMPLETE_BLOCK: /^\s*on-complete:\s*$/,
+      SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
+      ERROR_BLOCK: /^(\s*)on-error:\s*$/,
+      COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
       TRANSITION: /^(\s*-\s*)(\w+)/
     });
   }
@@ -126,6 +126,7 @@ export default class MistralDefinition extends Definition {
       const name = state.potentialWorkflow.getProperty('name');
       state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
       state.taskBlock = state.currentWorkflow.getSector('taskBlock');
+      state.indent = indent;
     }
 
     state.potentialWorkflow = null;
@@ -136,8 +137,10 @@ export default class MistralDefinition extends Definition {
       let block = this.block('isTaskBlock', this.spec.TASK_BLOCK);
 
       if (block.enter(line, lineNum, state)) {
-        state.currentWorkflow.startSector('taskBlock', lineNum, 0);
-        state.currentWorkflow.endSector('taskBlock', lineNum + 1, 0);
+        const sector = state.currentWorkflow.getSector('taskBlock');
+        sector.setStart(lineNum, 0);
+        sector.setEnd(lineNum + 1, 0);
+        sector.indent = ' '.repeat(state.isTaskBlock - 1);
         return;
       }
 
@@ -151,10 +154,25 @@ export default class MistralDefinition extends Definition {
 
       if (state.currentTask) {
 
-        let handler;
+        let handler
+          , match
+          ;
 
         handler = this.handler('ref', this.spec.TASK_ACTION);
-        if (handler(line, lineNum, state.currentTask)) {
+        match = handler(line, lineNum, state.currentTask);
+        if (match) {
+          let [,_prefix] = match;
+
+          if (state.currentTask.isEmpty()) {
+            if (state.currentTask.starter === _prefix) {
+              state.currentTask.indent = ' '.repeat(_prefix.length);
+            } else {
+              state.currentTask.starter += _prefix;
+            }
+          } else {
+            state.currentTask.indent = _prefix;
+          }
+
           return;
         }
 
@@ -311,9 +329,13 @@ export default class MistralDefinition extends Definition {
           const TYPES = ['success', 'error', 'complete'];
 
           _.each(TYPES, (type) => {
-            const sector = new Sector().setType(type);
-            sector.indent = starter + '  ';
-            sector.childStarter = starter + '    - ';
+            const sector = new Sector().setType(type)
+                , outdent = state.taskBlock.indent
+                , unit = ' '.repeat(starter.length - outdent.length)
+                ;
+
+            sector.indent = starter + unit;
+            sector.childStarter = sector.indent + unit + '- ';
 
             state.currentTask
               .setProperty(type, [])

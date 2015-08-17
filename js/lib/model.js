@@ -23,47 +23,61 @@ export default class Model extends EventEmitter {
       .value();
   }
 
-  get template() {
-    const defs = this.definition.defaults.indents;
+  fragments = {
+    task: (params) => {
+      let result = '';
 
-    return {
-      task: (() => {
-        const specimen = _(this.tasks)
-                .groupBy(task => task.starter)
-                .transform((acc, value, key) => acc.push({key, value}), [])
-                .max('value.length')
-            , starter = specimen.key || defs.task //'  - '
-            , indent = specimen.value && specimen.value[0].indent || defs.property // '    '
-            ;
+      const defs = this.definition.defaults.indents;
 
-        return this.definition.template.task(starter, indent);
-      })(),
-      block: {
-        base: this.definition.template.block.base(defs.base),
-        workflow: this.definition.template.block.workflow(defs.workflow, defs.tasks),
-        tasks: this.definition.template.block.tasks(defs.tasks)
+      if (this.workflowBlock.isUndefined() && _.isEmpty(this.workflows)) {
+        result += this.definition.template.block.base()();
       }
-    };
-  }
 
-  get taskTemplate() {
-    const specimen = _(this.tasks)
-            .groupBy(task => task.starter)
-            .transform((acc, value, key) => acc.push({key, value}), [])
-            .max('value.length')
-        , starter = specimen.key || '  - '
-        , indent = specimen.value && specimen.value[0].indent || '    '
+      if (_.isEmpty(this.workflows)) {
+        const workflow = {
+          name: 'main',
+          type: 'direct'
+        };
+
+        result += this.definition.template.block.workflow(defs.workflow, defs.tasks)(workflow);
+      }
+
+      if (this.taskBlock.isUndefined()) {
+        result += this.definition.template.block.tasks(defs.tasks)();
+      }
+
+      const specimen = _(this.tasks)
+        .groupBy(task => task.starter)
+        .transform((acc, value, key) => acc.push({key, value}), [])
+        .max('value.length')
         ;
 
-    return this.definition.template.task(starter, indent);
-  }
+      const starter = specimen.key || defs.task //'  - '
+          , indent = specimen.value && specimen.value[0].indent || defs.property // '    '
+          ;
 
-  get taskBlockTemplate() {
-    return this.definition.template.taskBlock();
-  }
+      result += this.definition.template.task(starter, indent)(params);
 
-  keyTemplate(task) {
-    return this.definition.template.keyValue(task.indent);
+      return result;
+    },
+    transitions: (task, transitions, type) => {
+      let result = '';
+
+      const templates = this.definition.template
+          , blockTemplate = templates.block[type](task.getSector(type).indent)
+          , transitionTemplate = templates.transition(task.getSector(type).childStarter)
+          ;
+
+      if (transitions.length) {
+        result += blockTemplate();
+
+        _.each(transitions, (params) => {
+          result += transitionTemplate(params);
+        });
+      }
+
+      return result;
+    }
   }
 
   parse(code) {
@@ -78,9 +92,6 @@ export default class Model extends EventEmitter {
 
     state.taskBlock = this.taskBlock || new Sector();
 
-    state.taskBlock.setStart(lines.length, 0);
-    state.taskBlock.setEnd(lines.length, 0);
-
     state = _.transform(lines, this.definition.parseLine, state, this.definition);
 
     // Close the sector of the last task
@@ -88,6 +99,7 @@ export default class Model extends EventEmitter {
       state.currentTask.endSector('task', state.taskBlock.end);
     }
 
+    this.workflowBlock = state.workflowBlock;
     this.taskBlock = state.taskBlock;
 
     // Delete all the tasks not updated during parsing

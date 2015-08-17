@@ -30,6 +30,26 @@ describe('Mistral definition', () => {
 
       expect(model).to.have.property('tasks').deep.equal(tasks);
       expect(model).to.have.property('workflows').deep.equal(workflows);
+
+      // Fragments
+
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        `---`,
+        `version: '2.0'`,
+        ``,
+        `workflows:`,
+        `  main:`,
+        `    type: direct`,
+        `    tasks:`,
+        `      some:`,
+        `        action: thing`,
+        ``
+      ].join('\n'));
     });
 
     it('should properly parse empty workbook', () => {
@@ -54,12 +74,31 @@ describe('Mistral definition', () => {
 
       expect(model).to.have.property('tasks').deep.equal(tasks);
       expect(model).to.have.property('workflows').deep.equal(workflows);
+
+      // Fragments
+
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        '    tasks:',
+        '      some:',
+        '        action: thing',
+        ''
+      ].join('\n'));
     });
 
     it('should properly parse simple workbook', () => {
       const code = getFixture('simple_workbook.yaml');
 
       model.parse(code);
+
+      const specials = {
+        childStarter: '          - ',
+        indent: '        '
+      };
 
       const task1 = new Task()
         .setProperty('name', 'update_group_start_status')
@@ -69,12 +108,9 @@ describe('Mistral definition', () => {
         .setProperty('ref', 'st2.kv.set')
         .setSector('task', new Sector(15,0,23,0).setType('task'))
         .setSector('name', new Sector(15,6,15,31).setType('name'))
-        .setSector('success', new Sector(21,0,23,0).setType('success')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('error', new Sector().setType('error')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('complete', new Sector().setType('complete')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
+        .setSector('success', new Sector(21,0,23,0).setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('ref', new Sector(16,16,16,26).setType('ref'))
         ;
 
@@ -90,12 +126,9 @@ describe('Mistral definition', () => {
         .setProperty('ref', 'st2.kv.get')
         .setSector('task', new Sector(23,0,31,0).setType('task'))
         .setSector('name', new Sector(23,6,23,25).setType('name'))
-        .setSector('success', new Sector(29,0,31,0).setType('success')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('error', new Sector().setType('error')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('complete', new Sector().setType('complete')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
+        .setSector('success', new Sector(29,0,31,0).setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('ref', new Sector(24,16,24,26).setType('ref'))
         ;
 
@@ -111,12 +144,9 @@ describe('Mistral definition', () => {
         .setProperty('ref', 'slack.post_message')
         .setSector('task', new Sector(31,0,38,0).setType('task'))
         .setSector('name', new Sector(31,6,31,21).setType('name'))
-        .setSector('success', new Sector(36,0,38,0).setType('success')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('error', new Sector().setType('error')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('complete', new Sector().setType('complete')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
+        .setSector('success', new Sector(36,0,38,0).setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('ref', new Sector(32,16,32,34).setType('ref'))
         ;
 
@@ -132,12 +162,9 @@ describe('Mistral definition', () => {
         .setProperty('ref', 'autoscale.epoch')
         .setSector('task', new Sector(38,0,42,0).setType('task'))
         .setSector('name', new Sector(38,6,38,23).setType('name'))
-        .setSector('success', new Sector().setType('success')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('error', new Sector().setType('error')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
-        .setSector('complete', new Sector().setType('complete')
-          ._setSpecial('childStarter', '          - ')._setSpecial('indent', '        '))
+        .setSector('success', new Sector().setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('ref', new Sector(39,16,39,31).setType('ref'))
         ;
 
@@ -154,7 +181,7 @@ describe('Mistral definition', () => {
           },
           'sectors': {
             'name': new Sector(5,2,5,6).setType('name'),
-            'taskBlock': new Sector(14,0,42,0),
+            'taskBlock': new Sector(14,0,42,0)._setSpecial({ indent: '    ' }),
             'workflow': new Sector(5,0,41,0).setType('workflow')
           }
         }
@@ -162,7 +189,133 @@ describe('Mistral definition', () => {
 
       expect(model).to.have.property('tasks').deep.equal(tasks);
       expect(model).to.have.property('workflows').deep.equal(workflows);
+
+      // Fragments
+
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        '      some:',
+        '        action: thing',
+        ''
+      ].join('\n'));
+
+      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+
+      expect(transitionString).to.deep.equal([
+        '        on-success:',
+        '          - some',
+        ''
+      ].join('\n'));
     });
+
+    it('should properly handle four space indents', () => {
+      const code = getFixture('fourspace_workbook.yaml');
+
+      model.parse(code);
+
+      const specials = {
+        childStarter: '                    - ',
+        indent: '                '
+      };
+
+      const task1 = new Task()
+        .setProperty('name', 'update_group_start_status')
+        .setProperty('success', ['get_chatops_channel'])
+        .setProperty('error', [])
+        .setProperty('complete', [])
+        .setProperty('ref', 'st2.kv.set')
+        .setSector('task', new Sector(15,0,23,0).setType('task'))
+        .setSector('name', new Sector(15,12,15,37).setType('name'))
+        .setSector('success', new Sector(21,0,23,0).setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('ref', new Sector(16,24,16,34).setType('ref'))
+        ;
+
+      task1.starter = '            ';
+      task1.indent = '                ';
+      task1.getSector('task').setTask(task1);
+
+      expect(model).to.have.property('tasks').deep.equal([task1]);
+
+      // Fragments
+
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        '            some:',
+        '                action: thing',
+        ''
+      ].join('\n'));
+
+      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+
+      expect(transitionString).to.deep.equal([
+        '                on-success:',
+        '                    - some',
+        ''
+      ].join('\n'));
+    });
+
+    it('should properly handle workflows', () => {
+      const code = getFixture('fourspace_workflow.yaml');
+
+      model.parse(code);
+
+      const specials = {
+        childStarter: '                - ',
+        indent: '            '
+      };
+
+      const task1 = new Task()
+        .setProperty('name', 'task1')
+        .setProperty('success', [])
+        .setProperty('error', [])
+        .setProperty('complete', [])
+        .setProperty('ref', 'core.local cmd') // !!!
+        .setSector('task', new Sector(10,0,15,0).setType('task'))
+        .setSector('name', new Sector(10,8,10,13).setType('name'))
+        .setSector('success', new Sector().setType('success')._setSpecial(specials))
+        .setSector('error', new Sector().setType('error')._setSpecial(specials))
+        .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('ref', new Sector(11,20,11,34).setType('ref'))
+        ;
+
+      task1.starter = '        ';
+      task1.indent = '            ';
+      task1.getSector('task').setTask(task1);
+
+      expect(model).to.have.property('tasks').deep.equal([task1]);
+
+      // Fragments
+
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        '        some:',
+        '            action: thing',
+        ''
+      ].join('\n'));
+
+      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+
+      expect(transitionString).to.deep.equal([
+        '            on-success:',
+        '                - some',
+        ''
+      ].join('\n'));
+    });
+
 
   });
 
