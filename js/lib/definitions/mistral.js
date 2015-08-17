@@ -30,7 +30,7 @@ export default class MistralDefinition extends Definition {
       WORKFLOWS_BLOCK: /^(\s*)workflows:\s*$/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
       TASK_BLOCK: /^(\s*)tasks:\s*$/,
-      TASK_ACTION: /(.*)(action:\s+['"]*)([\w\s.]+)/,
+      TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
       SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
       ERROR_BLOCK: /^(\s*)on-error:\s*$/,
       COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,

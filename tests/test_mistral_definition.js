@@ -279,13 +279,13 @@ describe('Mistral definition', () => {
         .setProperty('success', [])
         .setProperty('error', [])
         .setProperty('complete', [])
-        .setProperty('ref', 'core.local cmd') // !!!
+        .setProperty('ref', 'core.local')
         .setSector('task', new Sector(10,0,15,0).setType('task'))
         .setSector('name', new Sector(10,8,10,13).setType('name'))
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
-        .setSector('ref', new Sector(11,20,11,34).setType('ref'))
+        .setSector('ref', new Sector(11,20,11,30).setType('ref'))
         ;
 
       task1.starter = '        ';
@@ -331,13 +331,13 @@ describe('Mistral definition', () => {
         .setProperty('success', [])
         .setProperty('error', [])
         .setProperty('complete', [])
-        .setProperty('ref', 'core.local cmd') // !!!
+        .setProperty('ref', 'core.local')
         .setSector('task', new Sector(10,0,15,0).setType('task'))
         .setSector('name', new Sector(10,3,10,8).setType('name'))
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
-        .setSector('ref', new Sector(11,12,11,26).setType('ref'))
+        .setSector('ref', new Sector(11,12,11,22).setType('ref'))
         ;
 
       task1.starter = '			';
