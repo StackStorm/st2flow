@@ -29,7 +29,7 @@ export default class Model extends EventEmitter {
 
       const defs = this.definition.defaults.indents;
 
-      if (this.workflowBlock.isUndefined() && _.isEmpty(this.workflows)) {
+      if (!this.workflowBlock || this.workflowBlock.isUndefined() && _.isEmpty(this.workflows)) {
         result += this.definition.template.block.base()();
       }
 
@@ -42,7 +42,7 @@ export default class Model extends EventEmitter {
         result += this.definition.template.block.workflow(defs.workflow, defs.tasks)(workflow);
       }
 
-      if (this.taskBlock.isUndefined()) {
+      if (!this.taskBlock || this.taskBlock.isUndefined()) {
         result += this.definition.template.block.tasks(defs.tasks)();
       }
 

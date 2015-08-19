@@ -20,6 +20,26 @@ describe('Mistral definition', () => {
 
   describe('cases', () => {
 
+    it('should properly output task fragment even before the parse', () => {
+      const taskStrings = model.fragments.task({
+        name: 'some',
+        ref: 'thing'
+      });
+
+      expect(taskStrings).to.deep.equal([
+        `---`,
+        `version: '2.0'`,
+        ``,
+        `workflows:`,
+        `  main:`,
+        `    type: direct`,
+        `    tasks:`,
+        `      some:`,
+        `        action: thing`,
+        ``
+      ].join('\n'));
+    });
+
     it('should properly parse empty file', () => {
       const code = '';
 
