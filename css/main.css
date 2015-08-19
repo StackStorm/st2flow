@@ -14,6 +14,40 @@ html {
 
 main {
   display: flex;
+
+  .&--loading{
+    &:before {
+      content: '';
+
+      display: block;
+
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+
+      background-color: rgba(0,0,0,0.5);
+
+      z-index: 5;
+    }
+    &:after {
+      content: 'Loading...';
+
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+
+      align-self: center;
+      flex: 1;
+
+      text-align: center;
+      color: #fff;
+
+      z-index: 6;
+    }
+  }
 }
 
 
