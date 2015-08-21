@@ -6,7 +6,7 @@ import bem from './util/bem';
 import { pack, unpack } from './util/packer';
 import Vector from './util/vector';
 
-import packIcon from './util/icon-mock';
+import icons from './util/icon';
 
 const st2Class = bem('viewer')
     , st2Icon = bem('icon')
@@ -15,7 +15,7 @@ const st2Class = bem('viewer')
 let nodeTmpl = (node) =>
 `
   <div class="${st2Class('node-icon')}">
-    <img src="${packIcon(node)}" width="32" height="32" />
+    <img src="${icons.icons[node.pack]}" width="32" height="32" />
   </div>
   <div class="${st2Class('node-content')}">
     <form class="${st2Class('node-name-form')}">
@@ -230,7 +230,7 @@ export default class Canvas extends EventEmitter {
 
               target
                 .select(st2Class('node-icon', true) + ' img')
-                .attr('src', packIcon(node))
+                .attr('src', icons.icons[node.pack])
                 ;
             }
           });

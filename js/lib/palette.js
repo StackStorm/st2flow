@@ -7,7 +7,7 @@ import { pack } from './util/packer';
 import forms from './util/forms';
 import ACTIONS from './util/default-actions';
 
-import packIcon from './util/icon-mock';
+import icons from './util/icon';
 
 const st2Class = bem('palette')
     , st2Icon = bem('icon')
@@ -15,14 +15,15 @@ const st2Class = bem('palette')
 
 class Pack extends React.Component {
   static propTypes = {
-    name: React.PropTypes.string.isRequired
+    name: React.PropTypes.string.isRequired,
+    icon: React.PropTypes.string
   }
 
   render() {
     return <div className={st2Class('pack')}>
       <div className={st2Class('pack-header')}>
         <span className={st2Class('pack-icon')}>
-          <img src={packIcon({ ref: this.props.name })} width="32" height="32" />
+          <img src={this.props.icon} width="32" height="32" />
         </span>
         <span className={st2Class('pack-name')}>{this.props.name}</span>
       </div>
@@ -98,7 +99,8 @@ export default class Palette extends React.Component {
 
   state = {
     filter: '',
-    showSettings: !this.props.source
+    showSettings: !this.props.source,
+    icons: {}
   }
 
   toggleCollapse(open) {
@@ -109,13 +111,13 @@ export default class Palette extends React.Component {
     this.setState({ filter });
   }
 
-  reload() {
-    const api = st2client(this.props.source);
+  load(source={}) {
+    const api = st2client(source);
 
     this.setState({ error: undefined, actions: undefined });
 
-    (() => {
-      if (this.props.source && this.props.source.auth) {
+    return (() => {
+      if (source.auth) {
         return api.authenticate(this.props.source.auth.login, this.props.source.auth.password);
       } else {
         return new Promise((resolve) => resolve());
@@ -140,7 +142,11 @@ export default class Palette extends React.Component {
 
   componentDidMount() {
     if (this.props.source) {
-      this.reload();
+      icons.load(this.props.source)
+        .then((icons) => {
+          this.setState({ icons });
+          this.load(this.props.source);
+        });
     }
   }
 
@@ -150,7 +156,9 @@ export default class Palette extends React.Component {
     }
 
     if (this.props.source !== props.source) {
-      this.reload();
+      this.load(this.props.source).then((icons) => {
+        this.setState({ icons });
+      });
     }
   }
 
@@ -187,7 +195,7 @@ export default class Palette extends React.Component {
       }
       {
         _.map(packs, (actions, name) =>
-          <Pack key={name} name={name}>
+          <Pack key={name} name={name} icon={this.state.icons[name]}>
             {
               _.map(actions, (action) =>
                 <Action key={action.ref} action={action} ></Action>

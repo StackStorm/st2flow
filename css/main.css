@@ -142,6 +142,11 @@ main {
       width: 32px;
       height: 32px;
       background-color: #fff;
+      image-rendering: pixelated;
+
+      img:not([src]) {
+        display: none;
+      }
     }
 
     &-name {
@@ -324,7 +329,11 @@ main {
       box-sizing: content-box;
       width: 32px;
       background-color: #fff;
+      image-rendering: pixelated;
 
+      img:not([src]) {
+        display: none;
+      }
     }
 
     &-content {
