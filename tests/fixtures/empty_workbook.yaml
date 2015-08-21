@@ -1,0 +1,14 @@
+---
+name: autoscale.asg.expand
+version: '2.0'
+
+workflows:
+  main:
+    description: Guard rails to expand the number of new nodes in an autoscale group
+    type: direct
+    input:
+      - asg
+      - force
+    task-defaults:
+      on-error:
+        - fail

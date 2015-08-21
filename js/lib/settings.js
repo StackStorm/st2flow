@@ -155,4 +155,11 @@ export class Settings {
   }
 }
 
-export default new Settings();
+// Avoid throwing exception in environement where `window` is not available
+export default () => {
+  try {
+    return new Settings();
+  } catch (e) {
+    console.error(e);
+  }
+}();

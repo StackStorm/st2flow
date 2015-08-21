@@ -1,0 +1,23 @@
+---
+name: autoscale.asg.expand
+version: '2.0'
+
+workflows:
+    main:
+        description: Guard rails to expand the number of new nodes in an autoscale group
+        type: direct
+        input:
+            - asg
+            - force
+        task-defaults:
+            on-error:
+                - fail
+        tasks:
+            update_group_start_status:
+                action: st2.kv.set
+                input:
+                    key: 'asg.<% $.asg %>.status'
+                    value: 'expanding'
+                    ttl: 900
+                on-success:
+                    - get_chatops_channel

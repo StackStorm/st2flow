@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import Range from '../util/range';
 
 export default class Sector extends Range {
@@ -11,5 +12,13 @@ export default class Sector extends Range {
     this.task = ref;
 
     return this;
+  }
+
+  _setSpecial(obj) {
+    return _.assign(this, obj);
+  }
+
+  isUndefined() {
+    return this.isStart() && this.isEnd();
   }
 }
