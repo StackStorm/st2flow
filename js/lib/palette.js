@@ -195,7 +195,7 @@ export default class Palette extends React.Component {
       }
       {
         _.map(packs, (actions, name) =>
-          <Pack key={name} name={name} icon={this.state.icons[name]}>
+          <Pack key={name} name={name} icon={this.state.icons && this.state.icons[name]}>
             {
               _.map(actions, (action) =>
                 <Action key={action.ref} action={action} ></Action>
