@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
-import st2client from 'st2client';
 
+import api from './api';
 import bem from './util/bem';
 import { pack } from './util/packer';
 import forms from './util/forms';
@@ -111,21 +111,10 @@ export default class Palette extends React.Component {
     this.setState({ filter });
   }
 
-  load(source={}) {
-    const api = st2client(source);
-
+  load(client) {
     this.setState({ error: undefined, actions: undefined });
 
-    return (() => {
-      if (source.auth) {
-        return api.authenticate(this.props.source.auth.login, this.props.source.auth.password);
-      } else {
-        return new Promise((resolve) => resolve());
-      }
-    })()
-      .then(() => {
-        return api.actions.list();
-      })
+    return client.actions.list()
       .then((actions) => { this.setState({ actions }); })
       .catch((error) => this.setState({ error, actions: ACTIONS }))
       ;
@@ -141,24 +130,13 @@ export default class Palette extends React.Component {
   }
 
   componentDidMount() {
-    if (this.props.source) {
-      icons.load(this.props.source)
-        .then((icons) => {
-          this.setState({ icons });
-          this.load(this.props.source);
-        });
-    }
+    api.on('connect', (client) => this.load(client));
+    icons.on('loaded', (icons) => this.setState({ icons }));
   }
 
   componentDidUpdate(props, state) {
     if (this.props.onToggle && this.state.hide !== state.hide) {
       this.props.onToggle();
-    }
-
-    if (this.props.source !== props.source) {
-      this.load(this.props.source).then((icons) => {
-        this.setState({ icons });
-      });
     }
   }
 

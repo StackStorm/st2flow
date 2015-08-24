@@ -4,6 +4,7 @@ import React from 'react';
 import { Router } from 'director';
 import st2client from 'st2client';
 
+import api from './lib/api';
 import Range from './lib/util/range';
 import Palette from './lib/palette';
 import Control from './lib/control';
@@ -34,6 +35,14 @@ class Main extends React.Component {
     this.initPanel();
 
     this.initRouter();
+
+    api.connect(this.state.source);
+  }
+
+  componentDidUpdate(props, state) {
+    if (state.source !== this.state.source) {
+      api.connect(this.state.source);
+    }
   }
 
   initEditor() {
