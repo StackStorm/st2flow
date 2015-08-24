@@ -9,7 +9,15 @@ const st2Class = bem('panel')
 
 export default class Meta extends React.Component {
   static propTypes = {
-    hide: React.PropTypes.bool
+    hide: React.PropTypes.bool,
+    meta: React.PropTypes.shape({
+      name: React.PropTypes.string,
+      description: React.PropTypes.string,
+      runner_type: React.PropTypes.oneOf(['mistral-v2', 'action-chain']),
+      entry_point: React.PropTypes.string,
+      enabled: React.PropTypes.bool
+    }),
+    onSubmit: React.PropTypes.func
   }
 
   state = {
@@ -17,7 +25,17 @@ export default class Meta extends React.Component {
     description: '',
     runner_type: 'mistral-v2',
     entry_point: '',
-    enable: true
+    enabled: true
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+
+    this.props.onSubmit(this.state);
+  }
+
+  componentWillReceiveProps(props) {
+    this.setState(props.meta);
   }
 
   render() {
@@ -57,11 +75,11 @@ export default class Meta extends React.Component {
         onChange: (event) => this.setState({ entry_point: event.target.value })
       }
     }, {
-      name: 'Enable',
+      name: 'Enabled',
       type: 'checkbox',
       props: {
-        checked: this.state.enable,
-        onChange: (event) => this.setState({ enable: event.target.checked })
+        checked: this.state.enabled,
+        onChange: (event) => this.setState({ enabled: event.target.checked })
       }
     }];
 
@@ -75,13 +93,16 @@ export default class Meta extends React.Component {
 
     return (
       <div {...props} >
-        <form>
+        <form onSubmit={this.handleSubmit.bind(this)}>
           <div className="st2-panel__header">
             Metadata
           </div>
           {
             _.map(fields, (field) => templates[field.type](field))
           }
+          <input type="submit"
+              className="st2-panel__field-input"
+              value="Save" />
         </form>
       </div>
     );
