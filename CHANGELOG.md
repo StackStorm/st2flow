@@ -4,6 +4,9 @@ Changelog
 in development
 --------------
 
+0.2.1 - August 24th, 2015 (alpha-2)
+-----------------------------------
+
 * Support indentation of custom length (bug-fix)
 * Support tabs as indentation (new-feature)
 * Exclude params from ref (bug-fix)
