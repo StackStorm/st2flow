@@ -633,8 +633,9 @@ main {
 
   &__active-task {
     position: absolute;
-    background-color: rgba(255,255,255,0.1);
+    background-color: #5d6874;
     box-sizing: border-box;
+    border-left: 4px solid #e4b741;
   }
 
   &__active-name {
@@ -678,7 +679,7 @@ main {
       background: #555651;
     }
     & {
-      background-color: #272822;
+      background-color: #363d45;
       color: #F8F8F2;
     }
     .ace_cursor {
@@ -714,7 +715,7 @@ main {
     .ace_keyword,
     .ace_meta.ace_tag,
     .ace_storage {
-      color: #F92672;
+      color: #90d5fc;
     }
     .ace_punctuation,
     .ace_punctuation.ace_tag {
@@ -764,8 +765,6 @@ main {
     .ace_comment {
       color: #75715E;
     }
-    .ace_indent-guide {
-      background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZgbYnAAAAEklEQVQImWPQ0FD0ZXBzd/wPAAjVAoxeSgNeAAAAAElFTkSuQmCC) right repeat-y;
-    }
+    .ace_indent-guide {}
   }
 }
