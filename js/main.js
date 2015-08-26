@@ -51,8 +51,9 @@ class Main extends React.Component {
     require('brace/mode/yaml');
     editor.getSession().setMode('ace/mode/yaml');
 
-    require('brace/theme/monokai');
-    editor.setTheme('ace/theme/monokai');
+    editor.setTheme({
+      cssClass: 'ace-st2'
+    });
 
     editor.setHighlightActiveLine(false);
     editor.$blockScrolling = Infinity;
