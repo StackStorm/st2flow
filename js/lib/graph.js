@@ -30,6 +30,7 @@ export default class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
       }
 
       node.ref = task.getProperty('ref');
+      node.pack = node.ref && node.ref.split('.')[0];
 
       if (task.getProperty('success')) {
         node.connectTo(task.getProperty('success'), 'success');
