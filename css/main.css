@@ -1,5 +1,6 @@
 @import '../node_modules/normalize.css/normalize.css';
 @import '../dist/font/st2flow-embedded.css';
+@import 'https://fonts.googleapis.com/css?family=Oswald:400,300,700';
 
 html, body, main {
   height: 100%;
@@ -106,21 +107,24 @@ main {
 
   &__action {
     cursor: pointer;
-    padding: 5px;
-    background-color: #191f23;
+    padding: 5px 10px;
+    background-color: #363d45;
     color: #90d5fc;
     user-select: none;
-    min-height: 32px;
+    min-height: 54px;
+    margin: 5px;
+    border-radius: 5px;
 
     &:hover {
       background-color: color(#191f23 lightness(+10%));
     }
 
     &-name {
-      font-weight: bold;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-size: 16px;
+      font-family: Oswald;
     }
 
     &-description {
@@ -131,8 +135,9 @@ main {
   &__pack {
     &-header {
       display: flex;
-      background-color: #647888;
       user-select: none;
+      margin: 10px;
+      font-family: Oswald;
     }
 
     &-icon {
@@ -143,6 +148,7 @@ main {
       height: 32px;
       background-color: #fff;
       image-rendering: pixelated;
+      border-radius: 5px;
 
       img:not([src]) {
         display: none;
