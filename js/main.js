@@ -225,6 +225,8 @@ class Main extends React.Component {
           <ControlGroup position='left'>
             <Control icon="palette" type="toggle" initial={true}
               onClick={this.collapsePalette.bind(this)} />
+          </ControlGroup>
+          <ControlGroup position='center'>
             <Control icon="cog" type="toggle" initial={!this.state.source} ref="settingsButton"
               onClick={this.showSourceSettings.bind(this)} />
             <Control icon="undo" onClick={this.undo.bind(this)} />
