@@ -9,6 +9,7 @@ const st2Class = bem('controls')
 export default class Controls extends React.Component {
   static propTypes = {
     icon: React.PropTypes.string,
+    activeIcon: React.PropTypes.string,
     type: React.PropTypes.string,
     initial: React.PropTypes.bool,
     onClick: React.PropTypes.func.isRequired
@@ -41,9 +42,15 @@ export default class Controls extends React.Component {
 
   render() {
     const props = {
-      className: `${st2Class('button')} ${st2Icon(this.props.icon)}`,
+      className: `${st2Class('button')}`,
       onClick: () => this.handleClick()
     };
+
+    if (this.props.activeIcon && this.state.value) {
+      props.className += ' ' + st2Icon(this.props.activeIcon);
+    } else {
+      props.className += ' ' + st2Icon(this.props.icon);
+    }
 
     if (this.state.value) {
       props.className += ' ' + st2Class('button', 'active');

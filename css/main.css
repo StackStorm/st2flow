@@ -564,7 +564,7 @@ main {
 
     &:hover:before {
       content: '\e807';
-      color: inherit;
+      color: white;
       border-color: inherit;
       cursor: pointer;
     }
