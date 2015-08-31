@@ -77,6 +77,22 @@ export default class Model extends EventEmitter {
       }
 
       return result;
+    },
+    coord: (task, x, y) => {
+      let result = '';
+
+      const templates = this.definition.template
+          , blockTemplate = templates.block.coord(task.indent)
+          , coordTemplate = templates.coord()
+          ;
+
+      result = coordTemplate({ x, y });
+
+      if (task.getSector('coord').isEmpty()) {
+        result = blockTemplate({ coord: result });
+      }
+
+      return result;
     }
   }
 
