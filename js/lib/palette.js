@@ -19,13 +19,41 @@ class Pack extends React.Component {
     icon: React.PropTypes.string
   }
 
+  state = {
+    collapsed: false
+  }
+
+  handleClick() {
+    this.setState({ collapsed: !this.state.collapsed });
+  }
+
   render() {
-    return <div className={st2Class('pack')}>
-      <div className={st2Class('pack-header')}>
+    const props = {
+      className: st2Class('pack')
+    };
+
+    if (this.state.collapsed) {
+      props.className += ' ' + st2Class('pack', 'collapsed');
+    }
+
+    const toggleProps = {
+      className: st2Class('pack-toggle')
+    };
+
+    if (this.state.collapsed) {
+      toggleProps.className += ' ' + st2Icon('left-open');
+    } else {
+      toggleProps.className += ' ' + st2Icon('down-open');
+    }
+
+    return <div {...props} >
+      <div className={st2Class('pack-header')}
+          onClick={this.handleClick.bind(this)} >
         <span className={st2Class('pack-icon')}>
           <img src={this.props.icon} width="32" height="32" />
         </span>
         <span className={st2Class('pack-name')}>{this.props.name}</span>
+        <i {...toggleProps} ></i>
       </div>
       <div className={st2Class('pack-content')}>{this.props.children}</div>
     </div>;

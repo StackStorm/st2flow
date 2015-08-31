@@ -140,11 +140,20 @@ main {
   }
 
   &__pack {
+    &--collapsed &-content {
+      display: none;
+    }
+
     &-header {
       display: flex;
       user-select: none;
       margin: 10px;
       font-family: Oswald;
+      cursor: pointer;
+
+      font-size: 16px;
+      line-height: 22px;
+      color: #fff;
     }
 
     &-icon {
@@ -164,13 +173,14 @@ main {
 
     &-name {
       flex: 1;
-      font-size: 16px;
-      line-height: 22px;
-      color: #fff;
-      padding: 10px;
       box-sizing: border-box;
       overflow: hidden;
       text-overflow: ellipsis;
+      padding: 10px;
+    }
+
+    &-toggle {
+      padding: 10px 0;
     }
   }
 
