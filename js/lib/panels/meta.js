@@ -4,12 +4,12 @@ import React from 'react';
 import bem from '../util/bem';
 import templates from '../util/forms';
 
-const st2Class = bem('panel')
+const st2Class = bem('popup')
     ;
 
 export default class Meta extends React.Component {
   static propTypes = {
-    hide: React.PropTypes.bool,
+    show: React.PropTypes.bool,
     meta: React.PropTypes.shape({
       name: React.PropTypes.string,
       description: React.PropTypes.string,
@@ -21,11 +21,14 @@ export default class Meta extends React.Component {
   }
 
   state = {
-    name: '',
-    description: '',
-    runner_type: 'mistral-v2',
-    entry_point: '',
-    enabled: true
+    doc: {
+      name: '',
+      description: '',
+      runner_type: 'mistral-v2',
+      entry_point: '',
+      enabled: true
+    },
+    show: false
   }
 
   handleSubmit(event) {
@@ -34,8 +37,17 @@ export default class Meta extends React.Component {
     this.props.onSubmit(this.state);
   }
 
+  handleCancel(event) {
+    event.preventDefault();
+
+    this.setState({ show: !this.state.show });
+  }
+
   componentWillReceiveProps(props) {
-    this.setState(props.meta);
+    this.setState({
+      doc: props.meta,
+      show: props.show
+    });
   }
 
   render() {
@@ -84,26 +96,34 @@ export default class Meta extends React.Component {
     }];
 
     const props = {
-      className: `${st2Class('panel')} ${st2Class('meta')}`
+      className: `${st2Class(null)}`,
+      onClick: this.handleCancel.bind(this)
     };
 
-    if (this.props.hide) {
-      props.className += ' ' + st2Class('panel', 'active');
+    if (this.state.show) {
+      props.className += ' ' + st2Class(null, 'active');
     }
+
+    const contentProps = {
+      className: st2Class('content'),
+      onClick: (event) => event.stopPropagation()
+    };
 
     return (
       <div {...props} >
-        <form onSubmit={this.handleSubmit.bind(this)}>
-          <div className="st2-panel__header">
-            Metadata
-          </div>
-          {
-            _.map(fields, (field) => templates[field.type](field))
-          }
-          <input type="submit"
-              className="st2-panel__field-input"
-              value="Save" />
-        </form>
+        <div {...contentProps} >
+          <form onSubmit={this.handleSubmit.bind(this)}>
+            <div className="st2-panel__header">
+              Metadata
+            </div>
+            {
+              _.map(fields, (field) => templates[field.type](field))
+            }
+            <input type="submit"
+                className="st2-panel__field-input"
+                value="Save" />
+          </form>
+        </div>
       </div>
     );
   }
