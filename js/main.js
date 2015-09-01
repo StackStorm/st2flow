@@ -119,6 +119,10 @@ class Main extends React.Component {
 
       this.showTask(this.graph.__selected__);
     });
+
+    this.model.messages.on('change', _.debounce((messages) => {
+      this.editor.session.setAnnotations(messages);
+    }));
   }
 
   initCanvas() {
