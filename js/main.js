@@ -51,8 +51,9 @@ class Main extends React.Component {
     require('brace/mode/yaml');
     editor.getSession().setMode('ace/mode/yaml');
 
-    require('brace/theme/monokai');
-    editor.setTheme('ace/theme/monokai');
+    editor.setTheme({
+      cssClass: 'ace-st2'
+    });
 
     editor.setHighlightActiveLine(false);
     editor.$blockScrolling = Infinity;
@@ -222,8 +223,10 @@ class Main extends React.Component {
 
         <div className="st2-controls">
           <ControlGroup position='left'>
-            <Control icon="palette" type="toggle" initial={true}
+            <Control icon="right-open" activeIcon="left-open" type="toggle" initial={true}
               onClick={this.collapsePalette.bind(this)} />
+          </ControlGroup>
+          <ControlGroup position='center'>
             <Control icon="cog" type="toggle" initial={!this.state.source} ref="settingsButton"
               onClick={this.showSourceSettings.bind(this)} />
             <Control icon="undo" onClick={this.undo.bind(this)} />
@@ -234,7 +237,7 @@ class Main extends React.Component {
             <Control icon="floppy" onClick={this.save.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
-            <Control icon="code" type="toggle" initial={true}
+            <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
               onClick={this.collapseEditor.bind(this)} />
           </ControlGroup>
         </div>
