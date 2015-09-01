@@ -695,10 +695,6 @@ main {
 
   box-sizing: border-box;
 
-  .ace_gutter {
-    display: none;
-  }
-
   &__active-task {
     position: absolute;
     background-color: #5d6874;
@@ -739,8 +735,8 @@ main {
   /* theme */
   &.ace-st2 {
     .ace_gutter {
-      background: #2F3129;
-      color: #8F908A;
+      background: transparent;
+      color: color(#90d5fc s(50%));
     }
     .ace_print-margin {
       width: 1px;
