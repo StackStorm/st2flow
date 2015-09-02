@@ -269,9 +269,9 @@ class Main extends React.Component {
         <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
       </Panel>
 
-      <Meta ref="meta" show={this.state.meta}
-          meta={this.state.action}
-          onSubmit={this.handleMetaSubmit.bind(this)}/>
+      <Meta ref="meta" ref="metaPopup"
+        meta={this.state.action}
+        onSubmit={this.handleMetaSubmit.bind(this)}/>
     </main>;
   }
 
@@ -317,7 +317,7 @@ class Main extends React.Component {
   }
 
   showMeta() {
-    this.setState({ meta: true });
+    this.refs.metaPopup.show();
   }
 
   handleMetaSubmit(action) {

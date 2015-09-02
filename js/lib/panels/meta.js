@@ -43,6 +43,10 @@ export default class Meta extends React.Component {
     this.setState({ show: !this.state.show });
   }
 
+  show() {
+    this.setState({ show: true });
+  }
+
   componentWillReceiveProps(props) {
     this.setState({
       doc: props.meta,
