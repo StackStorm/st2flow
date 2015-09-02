@@ -1,7 +1,7 @@
 import Sector from './models/sector';
 
 export default class Definition {
-  handler(type, spec) {
+  handler(type, spec, parser) {
     return (line, lineNum, task) => {
       const match = spec.exec(line);
       if (match) {
@@ -14,6 +14,10 @@ export default class Definition {
         // the change in the middle of the process.
         if (!task) {
           return;
+        }
+
+        if (parser) {
+          value = parser(value);
         }
 
         let sector = new Sector(...coords).setType(type);

@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { EventEmitter } from 'events';
 
 import Definitions from './definitions';
+import Messages from './models/messages';
 import Sector from './models/sector';
 import Task from './models/task';
 import Workflow from './models/workflow';
@@ -14,6 +15,7 @@ export default class Model extends EventEmitter {
     this.workflows = [];
 
     this.definition = new Definitions[type](this);
+    this.messages = new Messages();
   }
 
   get sectors() {
@@ -77,16 +79,34 @@ export default class Model extends EventEmitter {
       }
 
       return result;
+    },
+    coord: (task, x, y) => {
+      let result = '';
+
+      const templates = this.definition.template
+          , blockTemplate = templates.block.coord(task.indent)
+          , coordTemplate = templates.coord()
+          ;
+
+      result = coordTemplate({ x, y });
+
+      if (task.getSector('coord').isEmpty()) {
+        result = blockTemplate({ coord: result });
+      }
+
+      return result;
     }
   }
 
   parse(code) {
+    this.messages.clear();
     let lines = code.split('\n');
 
     let state = {
       isTaskBlock: false,
       taskBlockIdent: null,
       currentTask: null,
+      touched: [],
       untouchedTasks: _.map(this.tasks, (task) => task.getProperty('name'))
     };
 
