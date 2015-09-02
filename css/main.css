@@ -753,6 +753,10 @@ main {
       input[type=checkbox]& {
         display: none;
       }
+
+      &::placeholder {
+        color: #23282d;
+      }
     }
     input[type=checkbox]&-input ~ &-name {
       user-select: none;
@@ -769,6 +773,10 @@ main {
       &:before {
         content: 'Y';
       }
+    }
+    hr {
+      border: 0;
+      border-bottom: 1px solid #6b8ca3;
     }
   }
 }

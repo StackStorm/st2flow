@@ -50,6 +50,11 @@ const templates = {
       <span className="st2-panel__field-name">{ field.name }</span>
     </label>,
 
+  separator: (field) =>
+    <label className="st2-panel__field" key={ field.name }>
+      <hr />
+    </label>,
+
   comment: (field) =>
     <div className="st2-panel__field" key={ field.name }>{ field.content }</div>
 };

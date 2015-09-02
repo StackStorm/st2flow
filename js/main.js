@@ -21,7 +21,8 @@ import settings from './lib/settings';
 
 class Main extends React.Component {
   state = {
-    source: settings.get('source'),
+    sources: settings.get('sources'),
+    source: settings.get('selected'),
     panel: 'editor',
     action: {}
   }
@@ -273,8 +274,23 @@ class Main extends React.Component {
   }
 
   handleSourceChange(config) {
-    settings.set('source', config).save();
-    this.setState({source: config});
+    const source = config;
+
+    let sources = this.state.sources;
+
+    if (!_.find(sources, (e) => e.api === source.api)) {
+      sources.push({
+        api: source.api,
+        auth: source.auth
+      });
+    }
+
+    settings
+      .set('selected', config)
+      .set('sources', sources)
+      .save();
+
+    this.setState({ source, sources });
     this.refs.settingsButton.setValue(false);
   }
 
@@ -289,6 +305,7 @@ class Main extends React.Component {
 
     return <main {...props} >
       <Palette ref="palette"
+        sources={this.state.sources}
         source={this.state.source}
         actions={this.state.actions}
         error={this.state.error}

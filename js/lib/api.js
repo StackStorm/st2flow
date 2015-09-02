@@ -1,12 +1,35 @@
+import _ from 'lodash';
 import { EventEmitter } from 'events';
 import st2client from 'st2client';
+import URI from 'URIjs';
 
-class API extends EventEmitter {
-  connect(server) {
-    this.server = server;
-    this.client = st2client(server);
+export class API extends EventEmitter {
+  connect(source={}, login, password) {
+    const api = new URI.parse(source.api || '')
+        , auth = source.auth && new URI.parse(source.auth)
+        ;
 
-    return this._auth(server).then(() => {
+    this.server = {
+      protocol: api.protocol,
+      host: api.hostname,
+      port: api.port
+    };
+
+    if (auth) {
+      this.server.auth = {
+        protocol: auth.protocol,
+        host: auth.hostname,
+        port: auth.port
+      };
+    }
+
+    if (!_.isEmpty(source.token)) {
+      this.server.token = source.token;
+    }
+
+    this.client = st2client(this.server);
+
+    return this._auth(this.server, login, password).then(() => {
       this.emit('connect', this.client);
       return this.client;
     }).catch((err) => {
@@ -15,9 +38,9 @@ class API extends EventEmitter {
     });
   }
 
-  _auth(server) {
-    if (server.auth) {
-      return this.client.authenticate(server.auth.login, server.auth.password);
+  _auth(server, login, password) {
+    if (server.auth && login && password) {
+      return this.client.authenticate(login, password);
     } else {
       return new Promise((resolve) => resolve(this.client));
     }
