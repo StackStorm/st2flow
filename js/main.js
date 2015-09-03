@@ -431,13 +431,17 @@ class Main extends React.Component {
   }
 
   rename(target, name) {
+    this.embedCoords();
+
     let task = this.model.task(target);
 
     if (!task) {
       return;
     }
 
-    if (!name || name === task.getProperty('name')) {
+    const oldName = task.getProperty('name');
+
+    if (!name || name === oldName) {
       return;
     }
 
@@ -455,6 +459,12 @@ class Main extends React.Component {
           this.setTransitions(tName, transitions, type);
         }
       });
+    });
+
+    _.each(this.model.sectors, (sector) => {
+      if (sector.type === 'yaql' && sector.value === oldName) {
+        this.editor.env.document.replace(sector, name);
+      }
     });
 
     this.editor.env.document.replace(sector, name);

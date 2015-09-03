@@ -36,6 +36,7 @@ export default class MistralDefinition extends Definition {
       SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
       ERROR_BLOCK: /^(\s*)on-error:\s*$/,
       COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
+      YAQL_VARIABLE: /(.*\$\.)(\w+)/,
       TRANSITION: /^(\s*-\s*)(\w+)/
     });
   }
@@ -175,7 +176,30 @@ export default class MistralDefinition extends Definition {
       if (state.currentTask) {
 
         let handler
+          , match
           ;
+
+        // Will also match comments and text fields, which in some cases may not
+        // be what you would expect, but the proper implementation requires full
+        // blown AST parser
+        let subline = line;
+        while (match = this.spec.YAQL_VARIABLE.exec(subline)) { // eslint-disable-line no-cond-assign
+          const [,starter,name] = match
+              , coords = [lineNum, starter.length, lineNum, (starter+name).length]
+              ;
+
+          const yaqlSector = new Sector(...coords).setType('yaql');
+
+          // we don't usually set value for the sector, but this time, lets try
+          yaqlSector.value = name;
+
+          const sectors = state.currentTask.getSector('yaql');
+          sectors.push(yaqlSector);
+
+          state.currentTask.setSector('yaql', sectors);
+
+          subline = starter;
+        }
 
         handler = this.handler('coord', this.spec.TASK_COORD, (e) => {
           const [x, y] = _.map(e.split(','), _.parseInt);
@@ -342,6 +366,7 @@ export default class MistralDefinition extends Definition {
             .setSector('task', taskSector)
             .setSector('name', nameSector)
             .setSector('coord', coordSector)
+            .setSector('yaql', [])
             ;
 
           taskSector.task = state.currentTask;

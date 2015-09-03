@@ -736,6 +736,12 @@ main {
     box-sizing: border-box;
   }
 
+  &__active-yaql {
+    position: absolute;
+    border: 1px solid purple;
+    box-sizing: border-box;
+  }
+
   /* theme */
   &.ace-st2 {
     .ace_gutter {
