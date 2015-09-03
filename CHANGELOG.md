@@ -7,6 +7,7 @@ in development
 * Allow loading workflow from and saving to st2 (new-feature)
 * Load icons from st2 (new-feature)
 * Enable undo for positional changes (new-feature)
+* Make packs collapsible (new-feature)
 
 0.2.1 - August 24th, 2015 (alpha-2)
 -----------------------------------

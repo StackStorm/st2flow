@@ -175,7 +175,6 @@ export default class MistralDefinition extends Definition {
       if (state.currentTask) {
 
         let handler
-          , match
           ;
 
         handler = this.handler('coord', this.spec.TASK_COORD, (e) => {
