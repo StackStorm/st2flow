@@ -2,11 +2,12 @@ import _ from 'lodash';
 import d3 from 'd3';
 import { EventEmitter } from 'events';
 
+import Arrow from './util/arrow';
 import bem from './util/bem';
 import { pack, unpack } from './util/packer';
 import Vector from './util/vector';
 
-import packIcon from './util/icon-mock';
+import icons from './util/icon';
 
 const st2Class = bem('viewer')
     , st2Icon = bem('icon')
@@ -15,7 +16,7 @@ const st2Class = bem('viewer')
 let nodeTmpl = (node) =>
 `
   <div class="${st2Class('node-icon')}">
-    <img src="${packIcon(node)}" width="32" height="32" />
+    <img src="${icons.icons[node.pack]}" width="32" height="32" />
   </div>
   <div class="${st2Class('node-content')}">
     <form class="${st2Class('node-name-form')}">
@@ -156,10 +157,6 @@ export default class Canvas extends EventEmitter {
 
     this.createNodes(this.viewer, this.graph);
 
-    if (_.isEmpty(this.graph.coordinates)) {
-      this.graph.layout();
-    }
-
     this.reposition();
   }
 
@@ -167,7 +164,7 @@ export default class Canvas extends EventEmitter {
     let nodes = this.viewer.selectAll(st2Class('node', true));
 
     this.positionNodes(nodes, this.graph);
-    this.createEdgePaths(this.svg, this.graph, require('./util/arrows'));
+    this.createEdgePaths(this.svg, this.graph);
     this.createEdgeLabels(this.viewer, this.graph);
   }
 
@@ -230,7 +227,7 @@ export default class Canvas extends EventEmitter {
 
               target
                 .select(st2Class('node-icon', true) + ' img')
-                .attr('src', packIcon(node))
+                .attr('src', icons.icons[node.pack])
                 ;
             }
           });
@@ -331,7 +328,7 @@ export default class Canvas extends EventEmitter {
     });
   }
 
-  createEdgePaths(selection, g, arrows) {
+  createEdgePaths(selection, g) {
     this.resizeCanvas();
 
     // Initialize selection with data set
@@ -364,7 +361,12 @@ export default class Canvas extends EventEmitter {
 
         const tail = g.node(e.v)
             , head = g.node(e.w)
-            , points = [tail.intersect(head), head.intersect(tail)]
+            , A = tail.intersect(head)
+            , B = head.intersect(tail)
+            // Shift line back a little
+            , AB = B.subtract(A)
+            , delta = AB.unit().multiply(Arrow.size.x)
+            , points = [A.subtract(delta), B.subtract(delta)]
             ;
 
         const line = d3.svg.line()
@@ -384,14 +386,12 @@ export default class Canvas extends EventEmitter {
     svgPaths.selectAll('defs')
       .each(function(e) {
         let edge = g.edge(e)
-          , arrowhead = arrows.normal;
-        arrowhead(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
+          ;
+        new Arrow(d3.select(this), edge.arrowheadId, edge, 'arrowhead');
       });
   }
 
   createEdgeLabels(selection, g) {
-    const ARROWHEAD_SIZE = 10;
-
     const self = this
         , labels = selection
             .selectAll(st2Class('label', true))
@@ -416,10 +416,10 @@ export default class Canvas extends EventEmitter {
         const head = g.node(e.v)
             , tail = g.node(e.w)
             , [A, B] = [head.intersect(tail), tail.intersect(head)]
+            // find mid point on the line excluding arrow
             , AB = B.subtract(A)
-            , unit = AB.unit()
-            , length = AB.length() - ARROWHEAD_SIZE
-            , C = unit.multiply(length/2).add(A)
+            , length = AB.length() - Arrow.size.x
+            , C = AB.unit().multiply(length/2).add(A)
             , [x, y] = this.fromInner(C.x, C.y)
             ;
 
@@ -519,11 +519,11 @@ export default class Canvas extends EventEmitter {
   // Event Handlers
 
   activateOverlay(element) {
-    element.classList.add(st2Class(null, 'active'));
+    element.classList.add(st2Class('canvas', 'active'));
   }
 
   deactivateOverlay(element) {
-    element.classList.remove(st2Class(null, 'active'));
+    element.classList.remove(st2Class('canvas', 'active'));
   }
 
   dragOverOverlay(element, event) {

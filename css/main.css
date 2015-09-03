@@ -1,5 +1,6 @@
 @import '../node_modules/normalize.css/normalize.css';
 @import '../dist/font/st2flow-embedded.css';
+@import 'https://fonts.googleapis.com/css?family=Oswald:400,300,700';
 
 html, body, main {
   height: 100%;
@@ -14,6 +15,40 @@ html {
 
 main {
   display: flex;
+
+  .&--loading{
+    &:before {
+      content: '';
+
+      display: block;
+
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+
+      background-color: rgba(0,0,0,0.5);
+
+      z-index: 5;
+    }
+    &:after {
+      content: 'Loading...';
+
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+
+      align-self: center;
+      flex: 1;
+
+      text-align: center;
+      color: #fff;
+
+      z-index: 6;
+    }
+  }
 }
 
 
@@ -22,7 +57,7 @@ main {
   max-height: 100%;
   z-index: 1;
 
-  background-color: #191f23;
+  background-color: #23282d;
 
   overflow: auto;
 
@@ -66,27 +101,37 @@ main {
 
       padding: 2px 10px;
 
-      font-size: 12px
+      font-size: 12px;
+
+      background-color: #6b8ca3;
+      color: #eee;
+
+      &::placeholder {
+        color: #23282d;
+      }
     }
   }
 
   &__action {
     cursor: pointer;
-    padding: 5px;
-    background-color: #191f23;
+    padding: 5px 10px;
+    background-color: #363d45;
     color: #90d5fc;
     user-select: none;
-    min-height: 32px;
+    min-height: 54px;
+    margin: 5px;
+    border-radius: 5px;
 
     &:hover {
       background-color: color(#191f23 lightness(+10%));
     }
 
     &-name {
-      font-weight: bold;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-size: 16px;
+      font-family: Oswald;
     }
 
     &-description {
@@ -95,10 +140,20 @@ main {
   }
 
   &__pack {
+    &--collapsed &-content {
+      display: none;
+    }
+
     &-header {
       display: flex;
-      background-color: #647888;
       user-select: none;
+      margin: 10px;
+      font-family: Oswald;
+      cursor: pointer;
+
+      font-size: 16px;
+      line-height: 22px;
+      color: #fff;
     }
 
     &-icon {
@@ -108,17 +163,24 @@ main {
       width: 32px;
       height: 32px;
       background-color: #fff;
+      image-rendering: pixelated;
+      border-radius: 5px;
+
+      img:not([src]) {
+        display: none;
+      }
     }
 
     &-name {
       flex: 1;
-      font-size: 16px;
-      line-height: 22px;
-      color: #fff;
-      padding: 10px;
       box-sizing: border-box;
       overflow: hidden;
       text-overflow: ellipsis;
+      padding: 10px;
+    }
+
+    &-toggle {
+      padding: 10px 0;
     }
   }
 
@@ -174,11 +236,21 @@ main {
 }
 
 .st2-controls {
-  &__button {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+
+  &__center &__button {
     width: 32px;
     line-height: 32px;
-    background-color: rgba(0,0,0,.5);
-    color: #eee;
+    background-color: #596a78;
+    color: #d2e2ee;
     margin: 5px;
     border-radius: 16px;
     text-align: center;
@@ -191,18 +263,26 @@ main {
     }
   }
 
-  &__left {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
+  &__left &__button,
+  &__right &__button {
+    line-height: 42px;
+    color: #eee;
   }
 
-  &__right {
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 1;
+  &__left &__button {
+    background-color: #23282d;
+
+    &:last-child {
+      border-radius: 0 0 3px 0;
+    }
+  }
+
+  &__right &__button {
+    background-color: #363d45;
+
+    &:first-child {
+      border-radius: 0 0 0 3px;
+    }
   }
 }
 
@@ -242,16 +322,6 @@ main {
     cursor: grabbing;
   }
 
-  &--active {
-    background-color:#444;
-    background-image: linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px),
-    linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
-    background-size:50px 50px, 50px 50px, 10px 10px, 10px 10px;
-    background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px
-  }
-
   text {
     font-weight: 300;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serf;
@@ -264,13 +334,32 @@ main {
     padding: 42px 10px 10px;
 
     box-sizing: border-box;
+
+    & {
+      background-color: #fff;
+      background-image:
+        linear-gradient(color(black alpha(.05)) 1px, transparent 1px),
+        linear-gradient(90deg, color(black alpha(.05)) 1px, transparent 1px),
+        linear-gradient(color(black alpha(.02)) 1px, transparent 1px),
+        linear-gradient(90deg, color(black alpha(.02)) 1px, transparent 1px);
+      background-size:50px 50px, 50px 50px, 10px 10px, 10px 10px;
+      background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px
+    }
+
+    &--active {
+      background-image:
+        linear-gradient(color(black alpha(.2)) 1px, transparent 1px),
+        linear-gradient(90deg, color(black alpha(.2)) 1px, transparent 1px),
+        linear-gradient(color(black alpha(.1)) 1px, transparent 1px),
+        linear-gradient(90deg, color(black alpha(.1)) 1px, transparent 1px);
+    }
   }
 
   &__node {
     cursor: pointer;
-    background-color: #191f23;
-    color: #eee;
-    font-size: 12px;
+    background-color: #23282d;
+    color: #222;
+    font-size: 14px;
     position: absolute;
     top: 0;
     left: 0;
@@ -278,6 +367,9 @@ main {
     min-width: 140px;
     max-width: 200px;
     height: 42px;
+    border-radius: 3px;
+    padding: 5px;
+    z-index: 1;
 
     display: flex;
 
@@ -285,17 +377,31 @@ main {
       pointer-events: none;
     }
 
+    &--selected {
+      background-color: #8b939b;
+      color: #eee;
+    }
+
     &-icon {
       padding: 5px;
       box-sizing: content-box;
       width: 32px;
       background-color: #fff;
+      image-rendering: pixelated;
+      border-radius: 3px;
 
+      img {
+        border-radius: 3px;
+      }
+
+      img:not([src]) {
+        display: none;
+      }
     }
 
     &-content {
       flex: 1;
-      padding: 5px 5px 5px 10px;
+      padding: 2px 10px;
     }
 
     &-actions {
@@ -315,7 +421,6 @@ main {
     }
 
     &-name {
-      font-style: italic;
       overflow: hidden;
       text-overflow: ellipsis;
       background-color: transparent;
@@ -325,9 +430,19 @@ main {
       margin: -3px;
       outline: 0;
       width: 100%;
+      color: #eee;
 
       &:focus {
         background: #ddd;
+      }
+    }
+
+    &--selected &-name {
+      color: #eee;
+
+      &:focus {
+        /* specificity */
+        color: #222;
       }
     }
 
@@ -336,15 +451,16 @@ main {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-family: Oswald;
     }
 
     &--selected &-ref {
-      color: #46b9fa;
+      color: white;
     }
 
     &-buttons {
       position: absolute;
-      top: 42px;
+      top: 100%;
       left: 0;
       right: 0;
       display: none;
@@ -363,22 +479,25 @@ main {
       display: inline-block;
       text-align: center;
       border-radius: 50%;
-      background-color: white;
-      color: black;
+      color: white;
+      background-color: black;
       pointer-events: auto;
-      border: 1px solid;
+      height: 1.5em;
+      width: 1.5em;
+
+      &:before {
+        /* emperically */
+        line-height: 1.7em;
+      }
 
       &.st2-icon__success {
-        color: #0a0;
-        border-color: #0a0;
+        background-color: #0a0;
       }
       &.st2-icon__error {
-        color: #a00;
-        border-color: #a00;
+        background-color: #a00;
       }
       &.st2-icon__complete {
-        color: #aa0;
-        border-color: #aa0;
+        background-color: #aa0;
       }
     }
 
@@ -389,16 +508,11 @@ main {
     &--dragged {
       /*pointer-events: none;*/
     }
-
-    &--selected {
-      background-color: #eee;
-      color: #222;
-    }
   }
 
   &__edge {
     &-path {
-      stroke-width: 1.5px;
+      stroke-width: 6px;
       stroke: white;
       fill: none;
     }
@@ -427,8 +541,7 @@ main {
 
       margin: -50%;
       border-radius: 50%;
-      background-color: white;
-      border: 2px solid;
+      color: white;
 
       font-family: "st2flow";
       font-style: normal;
@@ -437,8 +550,9 @@ main {
       text-align: center;
       speak: none;
 
-      width: 15px;
-      line-height: 15px;
+      width: 1.5em;
+      height: 1.5em;
+      line-height: 1.7em;
 
       text-decoration: inherit;
       font-variant: normal;
@@ -447,23 +561,20 @@ main {
 
     &--success:before {
       content: '\e803';
-      color: #0a0;
-      border-color: #0a0;
+      background-color: #0a0;
     }
     &--error:before {
       content: '\e804';
-      color: #a00;
-      border-color: #a00;
+      background-color: #a00;
     }
     &--complete:before {
       content: '\e805';
-      color: #aa0;
-      border-color: #aa0;
+      background-color: #aa0;
     }
 
     &:hover:before {
       content: '\e807';
-      color: inherit;
+      color: white;
       border-color: inherit;
       cursor: pointer;
     }
@@ -590,8 +701,9 @@ main {
 
   &__active-task {
     position: absolute;
-    background-color: rgba(255,255,255,0.1);
+    background-color: #5d6874;
     box-sizing: border-box;
+    border-left: 4px solid #e4b741;
   }
 
   &__active-name {
@@ -622,5 +734,105 @@ main {
     position: absolute;
     border: 1px solid yellow;
     box-sizing: border-box;
+  }
+
+  /* theme */
+  &.ace-st2 {
+    .ace_gutter {
+      background: #2F3129;
+      color: #8F908A;
+    }
+    .ace_print-margin {
+      width: 1px;
+      background: #555651;
+    }
+    & {
+      background-color: #363d45;
+      color: #F8F8F2;
+    }
+    .ace_cursor {
+      color: #F8F8F0;
+    }
+    .ace_marker-layer .ace_selection {
+      background: color(#363d45 lightness(+10%));
+    }
+    .ace-monokai.ace_multiselect .ace_selection.ace_start {
+      box-shadow: 0 0 3px 0px #272822;
+      border-radius: 2px;
+    }
+    .ace_marker-layer .ace_step {
+      background: rgb(102, 82, 0);
+    }
+    .ace_marker-layer .ace_bracket {
+      margin: -1px 0 0 -1px;
+      border: 1px solid #49483E;
+    }
+    .ace_marker-layer .ace_active-line {
+      background: #202020;
+    }
+    .ace_gutter-active-line {
+      background-color: #272727;
+    }
+    .ace_marker-layer .ace_selected-word {
+      border: 1px solid #49483E;
+    }
+    .ace_invisible {
+      color: #52524d;
+    }
+    .ace_entity.ace_name.ace_tag,
+    .ace_keyword,
+    .ace_meta.ace_tag,
+    .ace_storage {
+      color: #90d5fc;
+    }
+    .ace_punctuation,
+    .ace_punctuation.ace_tag {
+      color: #fff;
+    }
+    .ace_constant.ace_character,
+    .ace_constant.ace_language,
+    .ace_constant.ace_numeric,
+    .ace_constant.ace_other {
+      color: #AE81FF;
+    }
+    .ace_invalid {
+      color: #F8F8F0;
+      background-color: #F92672;
+    }
+    .ace_invalid.ace_deprecated {
+      color: #F8F8F0;
+      background-color: #AE81FF;
+    }
+    .ace_support.ace_constant,
+    .ace_support.ace_function {
+      color: #66D9EF;
+    }
+    .ace_fold {
+      background-color: #A6E22E;
+      border-color: #F8F8F2;
+    }
+    .ace_storage.ace_type,
+    .ace_support.ace_class,
+    .ace_support.ace_type {
+      font-style: italic;
+      color: #66D9EF;
+    }
+    .ace_entity.ace_name.ace_function,
+    .ace_entity.ace_other,
+    .ace_entity.ace_other.ace_attribute-name,
+    .ace_variable {
+      color: #A6E22E;
+    }
+    .ace_variable.ace_parameter {
+    font-style: italic;
+      color: #FD971F;
+    }
+    .ace_string {
+      color: #E6DB74;
+    }
+    .ace_comment {
+      color: #75715E;
+    }
+    .ace_indent-guide {}
   }
 }

@@ -1,13 +1,13 @@
 import _ from 'lodash';
 import React from 'react';
-import st2client from 'st2client';
 
+import api from './api';
 import bem from './util/bem';
 import { pack } from './util/packer';
 import forms from './util/forms';
 import ACTIONS from './util/default-actions';
 
-import packIcon from './util/icon-mock';
+import icons from './util/icon';
 
 const st2Class = bem('palette')
     , st2Icon = bem('icon')
@@ -15,16 +15,45 @@ const st2Class = bem('palette')
 
 class Pack extends React.Component {
   static propTypes = {
-    name: React.PropTypes.string.isRequired
+    name: React.PropTypes.string.isRequired,
+    icon: React.PropTypes.string
+  }
+
+  state = {
+    collapsed: false
+  }
+
+  handleClick() {
+    this.setState({ collapsed: !this.state.collapsed });
   }
 
   render() {
-    return <div className={st2Class('pack')}>
-      <div className={st2Class('pack-header')}>
+    const props = {
+      className: st2Class('pack')
+    };
+
+    if (this.state.collapsed) {
+      props.className += ' ' + st2Class('pack', 'collapsed');
+    }
+
+    const toggleProps = {
+      className: st2Class('pack-toggle')
+    };
+
+    if (this.state.collapsed) {
+      toggleProps.className += ' ' + st2Icon('left-open');
+    } else {
+      toggleProps.className += ' ' + st2Icon('down-open');
+    }
+
+    return <div {...props} >
+      <div className={st2Class('pack-header')}
+          onClick={this.handleClick.bind(this)} >
         <span className={st2Class('pack-icon')}>
-          <img src={packIcon({ ref: this.props.name })} width="32" height="32" />
+          <img src={this.props.icon} width="32" height="32" />
         </span>
         <span className={st2Class('pack-name')}>{this.props.name}</span>
+        <i {...toggleProps} ></i>
       </div>
       <div className={st2Class('pack-content')}>{this.props.children}</div>
     </div>;
@@ -98,7 +127,8 @@ export default class Palette extends React.Component {
 
   state = {
     filter: '',
-    showSettings: !this.props.source
+    showSettings: !this.props.source,
+    icons: {}
   }
 
   toggleCollapse(open) {
@@ -109,21 +139,10 @@ export default class Palette extends React.Component {
     this.setState({ filter });
   }
 
-  reload() {
-    const api = st2client(this.props.source);
-
+  load(client) {
     this.setState({ error: undefined, actions: undefined });
 
-    (() => {
-      if (this.props.source && this.props.source.auth) {
-        return api.authenticate(this.props.source.auth.login, this.props.source.auth.password);
-      } else {
-        return new Promise((resolve) => resolve());
-      }
-    })()
-      .then(() => {
-        return api.actions.list();
-      })
+    return client.actions.list()
       .then((actions) => { this.setState({ actions }); })
       .catch((error) => this.setState({ error, actions: ACTIONS }))
       ;
@@ -139,18 +158,13 @@ export default class Palette extends React.Component {
   }
 
   componentDidMount() {
-    if (this.props.source) {
-      this.reload();
-    }
+    api.on('connect', (client) => this.load(client));
+    icons.on('loaded', (icons) => this.setState({ icons }));
   }
 
   componentDidUpdate(props, state) {
     if (this.props.onToggle && this.state.hide !== state.hide) {
       this.props.onToggle();
-    }
-
-    if (this.props.source !== props.source) {
-      this.reload();
     }
   }
 
@@ -187,7 +201,7 @@ export default class Palette extends React.Component {
       }
       {
         _.map(packs, (actions, name) =>
-          <Pack key={name} name={name}>
+          <Pack key={name} name={name} icon={this.state.icons && this.state.icons[name]}>
             {
               _.map(actions, (action) =>
                 <Action key={action.ref} action={action} ></Action>
