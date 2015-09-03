@@ -2,7 +2,8 @@ import Sector from './models/sector';
 
 export default class Definition {
   handler(type, spec, parser) {
-    return (line, lineNum, task) => {
+    return (line, lineNum, state) => {
+      const task = state.currentTask;
       const match = spec.exec(line);
       if (match) {
         let [,_prefix,key,value] = match
@@ -22,6 +23,16 @@ export default class Definition {
 
         let sector = new Sector(...coords).setType(type);
         task.setProperty(type, value).setSector(type, sector);
+
+        if (task.isEmpty()) {
+          if (task.starter === _prefix) {
+            task.indent = state.unit.repeat(_prefix.length);
+          } else {
+            task.starter += _prefix;
+          }
+        } else {
+          task.indent = _prefix;
+        }
 
         return match;
       }

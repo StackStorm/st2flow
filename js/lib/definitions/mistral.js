@@ -32,6 +32,7 @@ export default class MistralDefinition extends Definition {
       TASK_BLOCK: /^(\s*)tasks:\s*$/,
       TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
+      TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
       SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
       ERROR_BLOCK: /^(\s*)on-error:\s*$/,
       COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
@@ -181,38 +182,17 @@ export default class MistralDefinition extends Definition {
           const [x, y] = _.map(e.split(','), _.parseInt);
           return { x, y };
         });
-        match = handler(line, lineNum, state.currentTask);
-        if (match) {
-          let [,_prefix] = match;
-
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = state.unit.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
+        if (handler(line, lineNum, state)) {
           return;
         }
 
         handler = this.handler('ref', this.spec.TASK_ACTION);
-        match = handler(line, lineNum, state.currentTask);
-        if (match) {
-          let [,_prefix] = match;
+        if (handler(line, lineNum, state)) {
+          return;
+        }
 
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = state.unit.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
+        handler = this.handler('workflow', this.spec.TASK_WORKFLOW);
+        if (handler(line, lineNum, state)) {
           return;
         }
 
