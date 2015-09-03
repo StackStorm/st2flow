@@ -113,7 +113,7 @@ class Main extends React.Component {
         };
 
         if (!_.any(nodes, hasCoords)) {
-          this.layout();
+          this.graph.layout();
         }
       }
 
@@ -288,11 +288,7 @@ class Main extends React.Component {
   layout() {
     this.graph.layout();
 
-    _.each(this.graph.nodes(), name => {
-      const { x, y } = this.graph.node(name);
-
-      this.move(name, x, y);
-    });
+    this.embedCoords();
 
     this.canvas.reposition();
   }
@@ -464,18 +460,16 @@ class Main extends React.Component {
     this.editor.env.document.replace(sector, name);
   }
 
-  move(target, x, y) {
-    const task = this.model.task(target);
+  move(name, x, y) {
+    const node = this.graph.node(name);
 
-    if (!task) {
+    if (!node) {
       return;
     }
 
-    const sector = task.getSector('coord')
-        , fragment = this.model.fragments.coord(task, x, y)
-        ;
+    _.assign(node, { x, y });
 
-    this.editor.env.document.replace(sector, fragment);
+    this.embedCoords();
   }
 
   create(action, x, y) {
@@ -566,6 +560,20 @@ class Main extends React.Component {
     this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
 
     this.canvas.show(name);
+  }
+
+  embedCoords() {
+    _.each(this.graph.nodes(), name => {
+      const { x, y } = this.graph.node(name);
+
+      const task = this.model.task(name);
+
+      const sector = task.getSector('coord')
+          , fragment = this.model.fragments.coord(task, x, y)
+          ;
+
+      this.editor.env.document.replace(sector, fragment);
+    });
   }
 
   // Debug helpers
