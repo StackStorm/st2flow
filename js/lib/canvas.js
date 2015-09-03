@@ -157,10 +157,6 @@ export default class Canvas extends EventEmitter {
 
     this.createNodes(this.viewer, this.graph);
 
-    if (_.isEmpty(this.graph.coordinates)) {
-      this.graph.layout();
-    }
-
     this.reposition();
   }
 

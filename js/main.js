@@ -103,6 +103,20 @@ class Main extends React.Component {
     this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
       this.canvas.render(this.graph);
+
+      const nodes = this.graph.nodes();
+      if (!_.isEmpty(nodes)) {
+        const hasCoords = (name) => {
+          const { x, y } = this.graph.node(name);
+
+          return x !== undefined && y !== undefined;
+        };
+
+        if (!_.any(nodes, hasCoords)) {
+          this.graph.layout();
+        }
+      }
+
       this.showTask(this.graph.__selected__);
     });
   }
@@ -142,7 +156,7 @@ class Main extends React.Component {
     });
 
     this.canvas.on('move', (target, x, y) => {
-      this.graph.move(target, x, y);
+      this.move(target, x, y);
 
       this.canvas.reposition();
     });
@@ -273,6 +287,9 @@ class Main extends React.Component {
 
   layout() {
     this.graph.layout();
+
+    this.embedCoords();
+
     this.canvas.reposition();
   }
 
@@ -325,10 +342,9 @@ class Main extends React.Component {
         ]);
       })
       .then((files) => {
-        const [workflow, coordinates] = files;
+        const [workflow] = files;
 
         this.graph.reset();
-        this.graph.coordinates = JSON.parse(coordinates);
         this.editor.setValue(workflow);
       })
       .then(() => {
@@ -344,9 +360,6 @@ class Main extends React.Component {
       data_files: [{
         file_path: this.state.action.entry_point,
         content: this.editor.env.document.doc.getAllLines().join('\n')
-      }, {
-        file_path: `maps/${this.state.action.name}.map`,
-        content: JSON.stringify(this.graph.coordinates)
       }]
     });
 
@@ -444,10 +457,19 @@ class Main extends React.Component {
       });
     });
 
-    this.graph.coordinates[name] = this.graph.coordinates[target];
-    delete this.graph.coordinates[target];
-
     this.editor.env.document.replace(sector, name);
+  }
+
+  move(name, x, y) {
+    const node = this.graph.node(name);
+
+    if (!node) {
+      return;
+    }
+
+    _.assign(node, { x, y });
+
+    this.embedCoords();
   }
 
   create(action, x, y) {
@@ -463,11 +485,11 @@ class Main extends React.Component {
         , name = `task${index}`
         ;
 
-    this.graph.coordinates[name] = { x, y };
-
     let task = this.model.fragments.task({
       name: name,
-      ref: action.ref
+      ref: action.ref,
+      x: x,
+      y: y
     });
 
     const cursor = ((block) => {
@@ -538,6 +560,20 @@ class Main extends React.Component {
     this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
 
     this.canvas.show(name);
+  }
+
+  embedCoords() {
+    _.each(this.graph.nodes(), name => {
+      const { x, y } = this.graph.node(name);
+
+      const task = this.model.task(name);
+
+      const sector = task.getSector('coord')
+          , fragment = this.model.fragments.coord(task, x, y)
+          ;
+
+      this.editor.env.document.replace(sector, fragment);
+    });
   }
 
   // Debug helpers

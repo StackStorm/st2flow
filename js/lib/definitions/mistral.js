@@ -30,7 +30,9 @@ export default class MistralDefinition extends Definition {
       WORKFLOWS_BLOCK: /^(\s*)workflows:\s*$/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
       TASK_BLOCK: /^(\s*)tasks:\s*$/,
+      TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
+      TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
       SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
       ERROR_BLOCK: /^(\s*)on-error:\s*$/,
       COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
@@ -40,16 +42,22 @@ export default class MistralDefinition extends Definition {
 
   get template() {
     return _.assign(super.template, {
-      task: (starter, indent) => _.template(starter + '${name}:\n' + indent + 'action: ${ref}\n'),
+      task: (starter, indent) => _.template(
+        starter + '${name}:\n' +
+        indent + '# [${x}, ${y}]\n' +
+        indent + 'action: ${ref}\n'
+      ),
       block: {
         base: () => _.template(`---\nversion: '2.0'\n\nworkflows:\n`),
         workflow: (external, internal) =>
           _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
         tasks: (indent) => _.template(indent + 'tasks:\n'),
+        coord: (indent) => _.template(indent + '# [${coord}]\n'),
         success: (indent) => _.template(indent + 'on-success:\n'),
         error: (indent) => _.template(indent + 'on-error:\n'),
         complete: (indent) => _.template(indent + 'on-complete:\n')
       },
+      coord: () => _.template('${x}, ${y}'),
       transition: (starter) => _.template(starter + '${name}\n')
     });
   }
@@ -170,21 +178,21 @@ export default class MistralDefinition extends Definition {
           , match
           ;
 
+        handler = this.handler('coord', this.spec.TASK_COORD, (e) => {
+          const [x, y] = _.map(e.split(','), _.parseInt);
+          return { x, y };
+        });
+        if (handler(line, lineNum, state)) {
+          return;
+        }
+
         handler = this.handler('ref', this.spec.TASK_ACTION);
-        match = handler(line, lineNum, state.currentTask);
-        if (match) {
-          let [,_prefix] = match;
+        if (handler(line, lineNum, state)) {
+          return;
+        }
 
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = state.unit.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
-
+        handler = this.handler('workflow', this.spec.TASK_WORKFLOW);
+        if (handler(line, lineNum, state)) {
           return;
         }
 
@@ -318,6 +326,7 @@ export default class MistralDefinition extends Definition {
       if (match) {
         const [,starter,name] = match
             , coords = [lineNum, starter.length, lineNum, (starter+name).length]
+            , nextLine = [lineNum+1, 0, lineNum+1, 0]
             ;
 
         if (!state.currentTask || starter.length === state.currentTask.starter.length) {
@@ -327,11 +336,13 @@ export default class MistralDefinition extends Definition {
 
           const taskSector = new Sector(lineNum, 0).setType('task')
               , nameSector = new Sector(...coords).setType('name')
+              , coordSector = new Sector(...nextLine).setType('coord')
               ;
 
           state.currentTask = this.model.task(name, {})
             .setSector('task', taskSector)
             .setSector('name', nameSector)
+            .setSector('coord', coordSector)
             ;
 
           taskSector.task = state.currentTask;
