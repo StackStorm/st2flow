@@ -8,6 +8,7 @@ in development
 * Load icons from st2 (new-feature)
 * Enable undo for positional changes (new-feature)
 * Make packs collapsible (new-feature)
+* Fix webserver binding to localhost (bug-fix)
 
 0.2.1 - August 24th, 2015 (alpha-2)
 -----------------------------------

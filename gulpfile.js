@@ -131,6 +131,7 @@ gulp.task('static', function () {
 gulp.task('serve', ['build'], function() {
   gulp.src('dist')
     .pipe(webserver({
+      host: '0.0.0.0',
       port: 4000
     }));
 });
