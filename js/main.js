@@ -473,6 +473,8 @@ class Main extends React.Component {
   }
 
   create(action, x, y) {
+    this.embedCoords();
+
     const indices = _.map(this.model.tasks, task => {
             const name = task.getProperty('name')
                 , expr = /task(\d+)/
