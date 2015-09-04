@@ -30,6 +30,7 @@ export default class MistralDefinition extends Definition {
       WORKFLOWS_BLOCK: /^(\s*)workflows:\s*$/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
       TASK_BLOCK: /^(\s*)tasks:\s*$/,
+      TASK_NAME: /^(\s*)([\w.-]+):\s*$/,
       TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
@@ -350,7 +351,7 @@ export default class MistralDefinition extends Definition {
 
       let match;
 
-      match = this.spec.WORKFLOW_NAME.exec(line);
+      match = this.spec.TASK_NAME.exec(line);
       if (match) {
         const [,starter,name] = match
             , coords = [lineNum, starter.length, lineNum, (starter+name).length]
@@ -366,6 +367,26 @@ export default class MistralDefinition extends Definition {
               , nameSector = new Sector(...coords).setType('name')
               , coordSector = new Sector(...nextLine).setType('coord')
               ;
+
+          if (_.includes(state.touched, name)) {
+            const sector = this.model.task(name).getSector('name');
+
+            let message = {
+              type: 'error',
+              row: sector.start.row,
+              column: sector.start.column,
+              text: `Task '${name}' is overriden by another task`
+            };
+            this.model.messages.add(message);
+
+            message = {
+              type: 'warning',
+              row: lineNum,
+              column: starter.length,
+              text: `Task '${name}' overrides another task`
+            };
+            this.model.messages.add(message);
+          }
 
           state.currentTask = this.model.task(name, {})
             .setSector('task', taskSector)
@@ -396,6 +417,7 @@ export default class MistralDefinition extends Definition {
           });
 
           _.remove(state.untouchedTasks, (e) => e === name);
+          state.touched.push(name);
         }
       }
 
