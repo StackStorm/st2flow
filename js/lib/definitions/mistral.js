@@ -112,6 +112,11 @@ export default class MistralDefinition extends Definition {
             state.currentWorkflow.endSector('workflow', lineNum, 0);
           }
 
+          if (state.currentTask) {
+            state.currentTask.endSector('task', lineNum, 0);
+            delete state.currentTask;
+          }
+
           const workflowSector = new Sector(lineNum, 0).setType('workflow')
               , nameSector = new Sector(...coords).setType('name')
               , taskBlockSector = new Sector()
