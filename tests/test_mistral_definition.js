@@ -23,7 +23,9 @@ describe('Mistral definition', () => {
     it('should properly output task fragment even before the parse', () => {
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
@@ -35,6 +37,7 @@ describe('Mistral definition', () => {
         `    type: direct`,
         `    tasks:`,
         `      some:`,
+        `        # [0, 0]`,
         `        action: thing`,
         ``
       ].join('\n'));
@@ -55,7 +58,9 @@ describe('Mistral definition', () => {
 
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
@@ -67,6 +72,7 @@ describe('Mistral definition', () => {
         `    type: direct`,
         `    tasks:`,
         `      some:`,
+        `        # [0, 0]`,
         `        action: thing`,
         ``
       ].join('\n'));
@@ -99,12 +105,15 @@ describe('Mistral definition', () => {
 
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
         '    tasks:',
         '      some:',
+        '        # [0, 0]',
         '        action: thing',
         ''
       ].join('\n'));
@@ -131,12 +140,18 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector(21,0,23,0).setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(16, 0, 16, 0).setType('coord'))
+        .setSector('input', new Sector(17, 0, 23, 0).setType('input'))
         .setSector('ref', new Sector(16,16,16,26).setType('ref'))
+        .setSector('yaql', [
+          new Sector(18,25,18,28).setType('yaql')._setSpecial({value: 'asg'})
+        ])
         ;
 
       task1.starter = '      ';
       task1.indent = '        ';
       task1.getSector('task').setTask(task1);
+      task1.getSector('input').setTask(task1);
 
       const task2 = new Task()
         .setProperty('name', 'get_chatops_channel')
@@ -149,12 +164,19 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector(29,0,31,0).setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(24, 0, 24, 0).setType('coord'))
+        .setSector('input', new Sector(25, 0, 27, 0).setType('input'))
         .setSector('ref', new Sector(24,16,24,26).setType('ref'))
+        .setSector('yaql', [
+          new Sector(26,25,26,28).setType('yaql')._setSpecial({value: 'asg'}),
+          new Sector(28,24,28,43).setType('yaql')._setSpecial({value: 'get_chatops_channel'})
+        ])
         ;
 
       task2.starter = '      ';
       task2.indent = '        ';
       task2.getSector('task').setTask(task2);
+      task2.getSector('input').setTask(task2);
 
       const task3 = new Task()
         .setProperty('name', 'notify_start_wf')
@@ -167,12 +189,19 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector(36,0,38,0).setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(32, 0, 32, 0).setType('coord'))
+        .setSector('input', new Sector(33, 0, 38, 0).setType('input'))
         .setSector('ref', new Sector(32,16,32,34).setType('ref'))
+        .setSector('yaql', [
+          new Sector(34,32,34,35).setType('yaql')._setSpecial({value: 'asg'}),
+          new Sector(35,24,35,31).setType('yaql')._setSpecial({value: 'channel'})
+        ])
         ;
 
       task3.starter = '      ';
       task3.indent = '        ';
       task3.getSector('task').setTask(task3);
+      task3.getSector('input').setTask(task3);
 
       const task4 = new Task()
         .setProperty('name', 'get_current_epoch')
@@ -185,12 +214,18 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(39, 0, 39, 0).setType('coord'))
+        .setSector('input', new Sector().setType('input'))
         .setSector('ref', new Sector(39,16,39,31).setType('ref'))
+        .setSector('yaql', [
+          new Sector(41,30,41,47).setType('yaql')._setSpecial({value: 'get_current_epoch'})
+        ])
         ;
 
       task4.starter = '      ';
       task4.indent = '        ';
       task4.getSector('task').setTask(task4);
+      task4.getSector('input').setTask(task4);
 
       const tasks = [task1, task2, task3, task4];
       const workflows = [
@@ -214,11 +249,14 @@ describe('Mistral definition', () => {
 
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
         '      some:',
+        '        # [0, 0]',
         '        action: thing',
         ''
       ].join('\n'));
@@ -253,12 +291,18 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector(21,0,23,0).setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(16, 0, 16, 0).setType('coord'))
+        .setSector('input', new Sector(17, 0).setType('input'))
         .setSector('ref', new Sector(16,24,16,34).setType('ref'))
+        .setSector('yaql', [
+          new Sector(18,35,18,38).setType('yaql')._setSpecial({value: 'asg'})
+        ])
         ;
 
       task1.starter = '            ';
       task1.indent = '                ';
       task1.getSector('task').setTask(task1);
+      task1.getSector('input').setTask(task1);
 
       expect(model).to.have.property('tasks').deep.equal([task1]);
 
@@ -266,11 +310,14 @@ describe('Mistral definition', () => {
 
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
         '            some:',
+        '                # [0, 0]',
         '                action: thing',
         ''
       ].join('\n'));
@@ -305,12 +352,20 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(11, 0, 11, 0).setType('coord'))
+        .setSector('input', new Sector().setType('input'))
         .setSector('ref', new Sector(11,20,11,30).setType('ref'))
+        .setSector('yaql', [
+          new Sector(11,40,11,43).setType('yaql')._setSpecial({value: 'cmd'}),
+          new Sector(13,29,13,34).setType('yaql')._setSpecial({value: 'task1'}),
+          new Sector(14,29,14,34).setType('yaql')._setSpecial({value: 'task1'})
+        ])
         ;
 
       task1.starter = '        ';
       task1.indent = '            ';
       task1.getSector('task').setTask(task1);
+      task1.getSector('input').setTask(task1);
 
       expect(model).to.have.property('tasks').deep.equal([task1]);
 
@@ -318,11 +373,14 @@ describe('Mistral definition', () => {
 
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
         '        some:',
+        '            # [0, 0]',
         '            action: thing',
         ''
       ].join('\n'));
@@ -357,12 +415,20 @@ describe('Mistral definition', () => {
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
+        .setSector('coord', new Sector(11, 0, 11, 0).setType('coord'))
+        .setSector('input', new Sector().setType('input'))
         .setSector('ref', new Sector(11,12,11,22).setType('ref'))
+        .setSector('yaql', [
+          new Sector(11,32,11,35).setType('yaql')._setSpecial({value: 'cmd'}),
+          new Sector(13,18,13,23).setType('yaql')._setSpecial({value: 'task1'}),
+          new Sector(14,18,14,23).setType('yaql')._setSpecial({value: 'task1'})
+        ])
         ;
 
       task1.starter = '			';
       task1.indent = '				';
       task1.getSector('task').setTask(task1);
+      task1.getSector('input').setTask(task1);
 
       expect(model).to.have.property('tasks').deep.equal([task1]);
 
@@ -370,11 +436,14 @@ describe('Mistral definition', () => {
 
       const taskStrings = model.fragments.task({
         name: 'some',
-        ref: 'thing'
+        ref: 'thing',
+        x: 0,
+        y: 0
       });
 
       expect(taskStrings).to.deep.equal([
         '			some:',
+        '				# [0, 0]',
         '				action: thing',
         ''
       ].join('\n'));

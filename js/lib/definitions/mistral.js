@@ -353,7 +353,6 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('input');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isCompleteBlock - 1);
           return;
         }
 
