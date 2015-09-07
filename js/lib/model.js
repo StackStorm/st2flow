@@ -182,7 +182,13 @@ export default class Model extends EventEmitter {
       type = [].concat(type);
     }
     return _.filter(this.sectors, (sector) => {
-      return (!type || _.includes(type, sector.type)) && sector.intersects(range);
+      if (type && !_.includes(type, sector.type)) {
+        return false;
+      }
+      if (sector.isStart() && sector.isEnd()) {
+        return false;
+      }
+      return sector.intersects(range);
     });
   }
 }

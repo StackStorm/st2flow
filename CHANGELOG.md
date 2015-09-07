@@ -11,6 +11,7 @@ in development
 * Fix webserver binding to localhost (bug-fix)
 * Rename YAQL variables along with the tasks they refer to (new-feature)
 * Add syntax validation (new-feature)
+* Add autocomplete for input parameters (new-feature)
 
 0.2.1 - August 24th, 2015 (alpha-2)
 -----------------------------------
