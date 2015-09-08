@@ -27,17 +27,17 @@ export default class MistralDefinition extends Definition {
 
   get spec() {
     return _.assign(super.spec, {
-      WORKFLOWS_BLOCK: /^(\s*)workflows:\s*$/,
-      WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
-      TASK_BLOCK: /^(\s*)tasks:\s*$/,
-      TASK_NAME: /^(\s*)([\w.-]+):\s*$/,
+      WORKFLOWS_BLOCK: /^(\s*)workflows:/,
+      WORKFLOW_NAME: /^(\s*)([\w.-]+):/,
+      TASK_BLOCK: /^(\s*)tasks:/,
+      TASK_NAME: /^(\s*)([\w.-]+):/,
       TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
-      SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
-      ERROR_BLOCK: /^(\s*)on-error:\s*$/,
-      COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
-      INPUT_BLOCK: /^(\s*)input:\s*$/,
+      SUCCESS_BLOCK: /^(\s*)on-success:/,
+      ERROR_BLOCK: /^(\s*)on-error:/,
+      COMPLETE_BLOCK: /^(\s*)on-complete:/,
+      INPUT_BLOCK: /^(\s*)input:/,
       YAQL_VARIABLE: /(.*\$\.)(\w+)/,
       TRANSITION: /^(\s*-\s*)(\w+)/
     });
