@@ -16,11 +16,11 @@ export default class MistralDefinition extends Definition {
     return {
       indents: {
         base: '',
-        workflow: unit.repeat(1),
-        tasks: unit.repeat(2),
-        task: unit.repeat(3),
-        property: unit.repeat(4),
-        transition: unit.repeat(5)
+        workflow: _.repeat(unit, 1),
+        tasks: _.repeat(unit, 2),
+        task: _.repeat(unit, 3),
+        property: _.repeat(unit, 4),
+        transition: _.repeat(unit, 5)
       }
     };
   }
@@ -168,7 +168,7 @@ export default class MistralDefinition extends Definition {
         const sector = state.currentWorkflow.getSector('taskBlock');
         sector.setStart(lineNum, 0);
         sector.setEnd(lineNum + 1, 0);
-        sector.indent = state.unit.repeat(state.isTaskBlock - 1);
+        sector.indent = _.repeat(state.unit, state.isTaskBlock - 1);
         return;
       }
 
@@ -233,7 +233,7 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('success');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isSuccessBlock - 1);
+          sector.indent = _.repeat(state.unit, state.isSuccessBlock - 1);
           return;
         }
 
@@ -273,7 +273,7 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('error');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isErrorBlock - 1);
+          sector.indent = _.repeat(state.unit, state.isErrorBlock - 1);
           return;
         }
 
@@ -313,7 +313,7 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('complete');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isCompleteBlock - 1);
+          sector.indent = _.repeat(state.unit, state.isCompleteBlock - 1);
           return;
         }
 
@@ -426,7 +426,7 @@ export default class MistralDefinition extends Definition {
           _.each(TYPES, (type) => {
             const sector = new Sector().setType(type)
                 , outdent = state.taskBlock.indent
-                , unit = state.unit.repeat(starter.length - outdent.length)
+                , unit = _.repeat(state.unit, starter.length - outdent.length)
                 ;
 
             sector.indent = starter + unit;

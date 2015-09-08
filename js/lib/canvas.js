@@ -16,7 +16,7 @@ const st2Class = bem('viewer')
 let nodeTmpl = (node) =>
 `
   <div class="${st2Class('node-icon')}">
-    <img src="${icons.icons[node.pack]}" width="32" height="32" />
+    <img src="${icons.icons[node.pack] || ''}" width="32" height="32" />
   </div>
   <div class="${st2Class('node-content')}">
     <form class="${st2Class('node-name-form')}">
@@ -227,7 +227,7 @@ export default class Canvas extends EventEmitter {
 
               target
                 .select(st2Class('node-icon', true) + ' img')
-                .attr('src', icons.icons[node.pack])
+                .attr('src', icons.icons[node.pack] || '')
                 ;
             }
           });
@@ -319,13 +319,16 @@ export default class Canvas extends EventEmitter {
   }
 
   positionNodes(selection, g) {
-    selection.style('transform', (v) => {
+    const transformer = (v) => {
       let {x, y} = g.node(v);
 
       [x, y] = this.fromInner(x, y);
 
       return `translate(${x}px,${y}px)`;
-    });
+    };
+
+    selection.style('transform', transformer);
+    selection.style('-webkit-transform', transformer);
   }
 
   createEdgePaths(selection, g) {
@@ -411,20 +414,23 @@ export default class Canvas extends EventEmitter {
       .remove()
       ;
 
-    labels
-      .style('transform', (e) => {
-        const head = g.node(e.v)
-            , tail = g.node(e.w)
-            , [A, B] = [head.intersect(tail), tail.intersect(head)]
-            // find mid point on the line excluding arrow
-            , AB = B.subtract(A)
-            , length = AB.length() - Arrow.size.x
-            , C = AB.unit().multiply(length/2).add(A)
-            , [x, y] = this.fromInner(C.x, C.y)
-            ;
+    const transformer = (e) => {
+      const head = g.node(e.v)
+          , tail = g.node(e.w)
+          , [A, B] = [head.intersect(tail), tail.intersect(head)]
+          // find mid point on the line excluding arrow
+          , AB = B.subtract(A)
+          , length = AB.length() - Arrow.size.x
+          , C = AB.unit().multiply(length/2).add(A)
+          , [x, y] = this.fromInner(C.x, C.y)
+          ;
 
-        return `translate(${x}px,${y}px)`;
-      })
+      return `translate(${x}px,${y}px)`;
+    };
+
+    labels
+      .style('transform', transformer)
+      .style('-webkit-transform', transformer)
       ;
   }
 
@@ -436,7 +442,9 @@ export default class Canvas extends EventEmitter {
       let xCenterOffset = (canvasBounds.width - elementBounds.width) / 2;
       let yCenterOffset = (canvasBounds.height - elementBounds.height) / 2;
 
-      this.element.attr('transform', 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')');
+      const transformer = 'translate(' + xCenterOffset + ', ' + yCenterOffset + ')';
+
+      this.element.attr('transform', transformer);
     }
   }
 
@@ -529,7 +537,7 @@ export default class Canvas extends EventEmitter {
   dragOverOverlay(element, event) {
     let dt = event.dataTransfer;
 
-    if (dt.effectAllowed === 'move' || dt.effectAllowed === 'copy') {
+    if (_.includes(['move', 'copy', 'all'], dt.effectAllowed)) {
       event.preventDefault();
     }
   }
@@ -579,7 +587,7 @@ export default class Canvas extends EventEmitter {
   dragOverNode(element, event) {
     let dt = event.dataTransfer;
 
-    if (dt.effectAllowed === 'link') {
+    if (_.includes(['link', 'all'], dt.effectAllowed)) {
       event.preventDefault();
     }
   }
@@ -603,7 +611,20 @@ export default class Canvas extends EventEmitter {
       , [offsetX, offsetY] = this.toInner(x - node.x, y - node.y)// [x - node.x, y - node.y]
       ;
 
-    dt.setDragImage(node.elem, offsetX, offsetY);
+    const crt = node.elem.cloneNode(true);
+    crt.style.removeProperty('transform');
+    crt.style.removeProperty('-webkit-transform');
+    crt.style.setProperty('z-index', 0);
+
+    if (this._hiddenNode) {
+      this._hiddenNode.parentNode.replaceChild(crt, this._hiddenNode);
+    } else {
+      document.body.appendChild(crt);
+    }
+
+    this._hiddenNode = crt;
+
+    dt.setDragImage(crt, offsetX, offsetY);
     dt.setData('nodePack', pack({ name, offsetX, offsetY }));
     dt.effectAllowed = 'move';
   }

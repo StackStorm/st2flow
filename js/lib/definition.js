@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 import Sector from './models/sector';
 
 export default class Definition {
@@ -26,7 +28,7 @@ export default class Definition {
 
         if (task.isEmpty()) {
           if (task.starter === _prefix) {
-            task.indent = state.unit.repeat(_prefix.length);
+            task.indent = _.repeat(state.unit, _prefix.length);
           } else {
             task.starter += _prefix;
           }
