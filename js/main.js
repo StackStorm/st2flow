@@ -4,6 +4,9 @@ import React from 'react';
 import { Router } from 'director';
 import st2client from 'st2client';
 
+import 'brace/ext/language_tools';
+
+import ACTIONS from './lib/util/default-actions';
 import api from './lib/api';
 import Range from './lib/util/range';
 import Palette from './lib/palette';
@@ -37,6 +40,25 @@ class Main extends React.Component {
     this.initRouter();
 
     api.connect(this.state.source);
+
+    api.on('connect', (client) => {
+      this.setState({ error: undefined, actions: undefined, suggestions: undefined });
+
+      return client.actionOverview.list()
+        .then((actions) => {
+          const keys = _.pluck(actions, 'ref')
+              , values = _.map(actions, (action) => {
+                  return _.map(action.parameters, (prop, name) => {
+                    return _.assign({}, prop, {name});
+                  });
+                })
+              , suggestions = _.zipObject(keys, values)
+              ;
+          this.setState({ actions, suggestions });
+        })
+        .catch((error) => this.setState({ error, actions: ACTIONS }))
+        ;
+    });
   }
 
   componentDidUpdate(props, state) {
@@ -46,6 +68,31 @@ class Main extends React.Component {
   }
 
   initEditor() {
+    const langTools = ace.acequire('ace/ext/language_tools');
+
+    var paramCompleter = {
+      getCompletions: (editor, session, pos, prefix, callback) => {
+        const sector = this.model.search(Range.fromPoints(pos, pos), 'input')[0];
+
+        if (!sector) {
+          return;
+        }
+
+        const suggestions = this.state.suggestions || {}
+            , action = sector.task.getProperty('ref');
+
+        callback(null, _.map(suggestions[action], (parameter) => {
+          return {
+            name: parameter.name,
+            value: parameter.name,
+            score: 1,
+            meta: 'parameters'
+          };
+        }));
+      }
+    };
+    langTools.setCompleters([paramCompleter]);
+
     const editor = ace.edit(this.refs.editor.getDOMNode());
 
     require('brace/mode/yaml');
@@ -53,6 +100,10 @@ class Main extends React.Component {
 
     editor.setTheme({
       cssClass: 'ace-st2'
+    });
+
+    editor.setOptions({
+      enableLiveAutocompletion: true
     });
 
     editor.setHighlightActiveLine(false);
@@ -234,6 +285,8 @@ class Main extends React.Component {
     return <main {...props} >
       <Palette ref="palette"
         source={this.state.source}
+        actions={this.state.actions}
+        error={this.state.error}
         onSourceChange={this.handleSourceChange.bind(this)}
         onToggle={this.resizeCanvas.bind(this)} />
 

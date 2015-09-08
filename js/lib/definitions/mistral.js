@@ -37,6 +37,7 @@ export default class MistralDefinition extends Definition {
       SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
       ERROR_BLOCK: /^(\s*)on-error:\s*$/,
       COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
+      INPUT_BLOCK: /^(\s*)input:\s*$/,
       YAQL_VARIABLE: /(.*\$\.)(\w+)/,
       TRANSITION: /^(\s*-\s*)(\w+)/
     });
@@ -347,6 +348,24 @@ export default class MistralDefinition extends Definition {
           }
         }
 
+        block = this.block('isInputBlock', this.spec.INPUT_BLOCK);
+
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('input');
+          sector.setStart(lineNum, 0);
+          return;
+        }
+
+        if (block.exit(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('input');
+          sector.setEnd(lineNum, 0);
+        }
+
+        if (state.isCompleteBlock) {
+          const sector = state.currentTask.getSector('input');
+          sector.setEnd(lineNum + 1, 0);
+        }
+
       }
 
       let match;
@@ -366,6 +385,7 @@ export default class MistralDefinition extends Definition {
           const taskSector = new Sector(lineNum, 0).setType('task')
               , nameSector = new Sector(...coords).setType('name')
               , coordSector = new Sector(...nextLine).setType('coord')
+              , inputSector = new Sector().setType('input')
               ;
 
           if (_.includes(state.touched, name)) {
@@ -393,9 +413,11 @@ export default class MistralDefinition extends Definition {
             .setSector('name', nameSector)
             .setSector('coord', coordSector)
             .setSector('yaql', [])
+            .setSector('input', inputSector)
             ;
 
           taskSector.task = state.currentTask;
+          inputSector.setTask(state.currentTask);
 
           state.currentTask.starter = starter;
 

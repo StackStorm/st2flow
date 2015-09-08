@@ -1,11 +1,9 @@
 import _ from 'lodash';
 import React from 'react';
 
-import api from './api';
 import bem from './util/bem';
 import { pack } from './util/packer';
 import forms from './util/forms';
-import ACTIONS from './util/default-actions';
 
 import icons from './util/icon';
 
@@ -122,7 +120,9 @@ export default class Palette extends React.Component {
       })
     }),
     onSourceChange: React.PropTypes.func,
-    onToggle: React.PropTypes.func
+    onToggle: React.PropTypes.func,
+    actions: React.PropTypes.array,
+    error: React.PropTypes.object
   }
 
   state = {
@@ -139,15 +139,6 @@ export default class Palette extends React.Component {
     this.setState({ filter });
   }
 
-  load(client) {
-    this.setState({ error: undefined, actions: undefined });
-
-    return client.actions.list()
-      .then((actions) => { this.setState({ actions }); })
-      .catch((error) => this.setState({ error, actions: ACTIONS }))
-      ;
-  }
-
   toggleSettings(state) {
     this.setState({ showSettings: state });
   }
@@ -158,7 +149,6 @@ export default class Palette extends React.Component {
   }
 
   componentDidMount() {
-    api.on('connect', (client) => this.load(client));
     icons.on('loaded', (icons) => this.setState({ icons }));
   }
 
@@ -169,7 +159,7 @@ export default class Palette extends React.Component {
   }
 
   render() {
-    const packs = _(this.state.actions)
+    const packs = _(this.props.actions)
             .filter((action) => ~action.ref.indexOf(this.state.filter)) // eslint-disable-line no-bitwise
             .groupBy('pack')
             .value()
@@ -188,13 +178,13 @@ export default class Palette extends React.Component {
           defaultValue={this.props.source}
           onChange={this.handleSettingsChange.bind(this)} />
       {
-        !this.state.actions && !this.state.error &&
+        !this.props.actions && !this.props.error &&
           <div className={st2Class('loader')}>Loading...</div>
       }
       {
-        this.state.error && <div className={st2Class('error')}>
+        this.props.error && <div className={st2Class('error')}>
           <p>Error loading actions from {this.props.source.host}:</p>
-          <code>{this.state.error.message.faultstring || this.state.error.message}</code>
+          <code>{this.props.error.message.faultstring || this.props.error.message}</code>
           <p>Check your config by clicking <i className={st2Icon('cog')}></i> button on the right.</p>
           <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
         </div>
