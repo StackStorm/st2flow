@@ -130,9 +130,8 @@ export default class Model extends EventEmitter {
     this.emit('parse', this.tasks);
   }
 
-  update(delta, str) {
+  update(delta) {
     this.emit('update', this.search(delta.data.range));
-    this.parse(str);
   }
 
   task(name, pending) {
