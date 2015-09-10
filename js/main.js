@@ -130,9 +130,12 @@ class Main extends React.Component {
     const editor = this.editor;
 
     editor.on('change', (delta) => {
-      let str = this.editor.env.document.doc.getAllLines();
+      if (this._bulk) {
+        return;
+      }
 
-      this.model.update(delta, str.join('\n'));
+      this.model.update(delta);
+      this.parse();
     });
 
     editor.selection.on('changeCursor', () => {
@@ -632,17 +635,43 @@ class Main extends React.Component {
   }
 
   embedCoords() {
-    _.each(this.graph.nodes(), name => {
-      const { x, y } = this.graph.node(name);
+    // FIX: Quick and dirty implementation for bulk updates missing in current
+    // version of brace. We'll need a better solution sooner rather than later.
+    this._bulk = true;
+    const nodes = this.graph.nodes();
+    _(nodes)
+      .map(name => {
+        return this.model.task(name);
+      })
+      .sortBy(task => {
+        return task.getSector('coord').start.row;
+      })
+      .each((task, i) => {
+        const name = task.getProperty('name')
+            , { x, y } = this.graph.node(name);
 
-      const task = this.model.task(name);
+        const sector = task.getSector('coord')
+            , fragment = this.model.fragments.coord(task, x, y)
+            ;
 
-      const sector = task.getSector('coord')
-          , fragment = this.model.fragments.coord(task, x, y)
-          ;
+        // Each replace would create a new line, so each sector should be
+        // shifted one more line below to preserve the intended position.
+        if (sector.isEmpty()) {
+          sector.moveBy(i, 0);
+        }
 
-      this.editor.env.document.replace(sector, fragment);
-    });
+        this.editor.env.document.replace(sector, fragment);
+      })
+      .value();
+    this._bulk = false;
+
+    this.parse();
+  }
+
+  parse() {
+    const str = this.editor.env.document.doc.getAllLines();
+
+    this.model.parse(str.join('\n'));
   }
 
   // Debug helpers
