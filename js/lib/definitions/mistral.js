@@ -85,6 +85,17 @@ export default class MistralDefinition extends Definition {
       return;
     }
 
+    const indent = line.match(this.spec.WS_INDENT)[0];
+
+    if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
+      const name = state.potentialWorkflow.getProperty('name');
+      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
+      state.taskBlock = state.currentWorkflow.getSector('taskBlock');
+      state.indent = indent;
+    }
+
+    state.potentialWorkflow = null;
+
     let block = this.block('isWorkflowBlock', this.spec.WORKFLOWS_BLOCK);
 
     if (block.enter(line, lineNum, state)) {
@@ -148,17 +159,6 @@ export default class MistralDefinition extends Definition {
         }
       }
     }
-
-    const indent = line.match(this.spec.WS_INDENT)[0];
-
-    if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
-      const name = state.potentialWorkflow.getProperty('name');
-      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
-      state.taskBlock = state.currentWorkflow.getSector('taskBlock');
-      state.indent = indent;
-    }
-
-    state.potentialWorkflow = null;
 
     if (state.currentWorkflow) {
       state.currentWorkflow.endSector('workflow', lineNum, 0);
