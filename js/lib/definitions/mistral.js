@@ -30,16 +30,17 @@ export default class MistralDefinition extends Definition {
       WORKFLOWS_BLOCK: /^(\s*)workflows:/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):/,
       TASK_BLOCK: /^(\s*)tasks:/,
-      TASK_NAME: /^(\s*)([\w.-]+):/,
+      TASK_NAME: /^(\s*)(.+):/,
+      TASK_NAME_VALIDATION: /^\w[\w.-]*$/,
       TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
-      TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
+      TASK_ACTION: /(.*)(action:\s+['"]*)([\w.-]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
       SUCCESS_BLOCK: /^(\s*)on-success:/,
       ERROR_BLOCK: /^(\s*)on-error:/,
       COMPLETE_BLOCK: /^(\s*)on-complete:/,
       INPUT_BLOCK: /^(\s*)input:/,
       YAQL_VARIABLE: /(.*\$\.)(\w+)/,
-      TRANSITION: /^(\s*-\s*)(\w+)/
+      TRANSITION: /^(\s*-\s*)(.+)/
     });
   }
 
@@ -253,6 +254,16 @@ export default class MistralDefinition extends Definition {
             const [,starter,value] = match
               ;
 
+            if (!value.match(this.spec.TASK_NAME_VALIDATION)) {
+              let message = {
+                type: 'error',
+                row: lineNum,
+                column: starter.length,
+                text: `Task name should only contain letters, dots and hyphens`
+              };
+              this.model.messages.add(message);
+            }
+
             sector.childStarter = starter;
 
             const type = 'success'
@@ -293,6 +304,16 @@ export default class MistralDefinition extends Definition {
             const [,starter,value] = match
               ;
 
+            if (!value.match(this.spec.TASK_NAME_VALIDATION)) {
+              let message = {
+                type: 'error',
+                row: lineNum,
+                column: starter.length,
+                text: `Task name should only contain letters, dots and hyphens`
+              };
+              this.model.messages.add(message);
+            }
+
             sector.childStarter = starter;
 
             const type = 'error'
@@ -332,6 +353,16 @@ export default class MistralDefinition extends Definition {
           if (match) {
             const [,starter,value] = match
               ;
+
+            if (!value.match(this.spec.TASK_NAME_VALIDATION)) {
+              let message = {
+                type: 'error',
+                row: lineNum,
+                column: starter.length,
+                text: `Task name should only contain letters, dots and hyphens`
+              };
+              this.model.messages.add(message);
+            }
 
             sector.childStarter = starter;
 
@@ -387,6 +418,16 @@ export default class MistralDefinition extends Definition {
               , coordSector = new Sector(...nextLine).setType('coord')
               , inputSector = new Sector().setType('input')
               ;
+
+          if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
+            let message = {
+              type: 'error',
+              row: lineNum,
+              column: starter.length,
+              text: `Task name should only contain letters, dots and hyphens`
+            };
+            this.model.messages.add(message);
+          }
 
           if (_.includes(state.touched, name)) {
             const sector = this.model.task(name).getSector('name');
