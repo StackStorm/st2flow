@@ -235,12 +235,8 @@ export default class MistralDefinition extends Definition {
           const sector = state.currentTask.getSector('success');
           sector.setStart(lineNum, 0);
           sector.indent = _.repeat(state.unit, state.isSuccessBlock - 1);
-          return;
-        }
-
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('success');
-          sector.setEnd(lineNum, 0);
+        } else {
+          block.exit(line, lineNum, state);
         }
 
         if (state.isSuccessBlock) {
@@ -285,12 +281,8 @@ export default class MistralDefinition extends Definition {
           const sector = state.currentTask.getSector('error');
           sector.setStart(lineNum, 0);
           sector.indent = _.repeat(state.unit, state.isErrorBlock - 1);
-          return;
-        }
-
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('error');
-          sector.setEnd(lineNum, 0);
+        } else {
+          block.exit(line, lineNum, state);
         }
 
         if (state.isErrorBlock) {
@@ -335,12 +327,8 @@ export default class MistralDefinition extends Definition {
           const sector = state.currentTask.getSector('complete');
           sector.setStart(lineNum, 0);
           sector.indent = _.repeat(state.unit, state.isCompleteBlock - 1);
-          return;
-        }
-
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('complete');
-          sector.setEnd(lineNum, 0);
+        } else {
+          block.exit(line, lineNum, state);
         }
 
         if (state.isCompleteBlock) {
@@ -384,15 +372,11 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('input');
           sector.setStart(lineNum, 0);
-          return;
+        } else {
+          block.exit(line, lineNum, state);
         }
 
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('input');
-          sector.setEnd(lineNum, 0);
-        }
-
-        if (state.isCompleteBlock) {
+        if (state.isInputBlock) {
           const sector = state.currentTask.getSector('input');
           sector.setEnd(lineNum + 1, 0);
         }
