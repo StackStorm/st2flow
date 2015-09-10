@@ -12,6 +12,7 @@ in development
 * Rename YAQL variables along with the tasks they refer to (new-feature)
 * Add syntax validation (new-feature)
 * Add autocomplete for input parameters (new-feature)
+* Fix compatibility with latest stable Firefox and Safari (bug-fix)
 
 0.2.1 - August 24th, 2015 (alpha-2)
 -----------------------------------

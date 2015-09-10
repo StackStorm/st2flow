@@ -371,6 +371,8 @@ main {
     padding: 5px;
     z-index: 1;
 
+    -webkit-user-drag: element;
+
     display: flex;
 
     & > * {
@@ -394,7 +396,7 @@ main {
         border-radius: 3px;
       }
 
-      img:not([src]) {
+      img[src=''] {
         display: none;
       }
     }
