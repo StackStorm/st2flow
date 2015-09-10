@@ -628,8 +628,15 @@ class Main extends React.Component {
       this.editor.session.removeMarker(this.selectMarker);
     }
 
+    const { row, column } = this.editor.selection.getCursor();
+
+    if (!sector.compare(row, column)) {
+      this.editor.renderer.scrollCursorIntoView({ row, column }, 0.5);
+    } else {
+      this.editor.renderer.scrollSelectionIntoView(sector.start, sector.end, 0.5);
+    }
+
     this.selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
-    this.editor.renderer.scrollSelectionIntoView(range.start, range.end, 0.5);
 
     this.canvas.show(name);
   }
