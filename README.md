@@ -1,4 +1,4 @@
-StackStorm Flow
+StackStorm Flow [![Build Status][travis-image]][travis-url]
 ===============
 
 Quick start
@@ -31,3 +31,5 @@ Copyright, License, and Contributors Agreement
 
 Copyright 2015 StackStorm, Inc.
 
+[travis-url]: https://magnum.travis-ci.com/StackStorm/st2flow
+[travis-image]: https://magnum.travis-ci.com/StackStorm/st2flow.svg?token=9VSoAP6mbfNshpDaAKvx&branch=dev/master
