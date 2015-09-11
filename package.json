@@ -4,7 +4,7 @@
   "description": "StackStorm Workflow Editor",
   "private": true,
   "scripts": {
-    "test": "node_modules/gulp-mocha/node_modules/mocha/bin/mocha --compilers js:babelify/node_modules/babel-core/register tests/*"
+    "test": "node_modules/gulp-mocha/node_modules/mocha/bin/mocha --compilers js:./test_compiler tests/*"
   },
   "repository": {
     "type": "git",
