@@ -26,6 +26,7 @@ var customOpts = {
 var opts = _.assign({}, watchify.args, customOpts);
 var b = watchify(browserify(opts))
   .transform(babelify.configure({
+    // Make sure to change in test_compiler.js too
     optional: ['es7.classProperties']
   }))
   .on('update', bundle)
@@ -111,9 +112,7 @@ gulp.task('test', function () {
     .pipe(mocha({
       reporter: 'dot',
       compilers: {
-        js: require('babelify/node_modules/babel-core/register')({
-          optional: ['es7.classProperties']
-        })
+        js: require('./test_compiler')
       }
     }));
 });
