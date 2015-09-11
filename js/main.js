@@ -471,6 +471,8 @@ class Main extends React.Component {
       throw new Error('no such task:', source);
     }
 
+    this.embedCoords();
+
     const params = _.map(transitions, (name) => ({ name }));
 
     let block = this.model.fragments.transitions(task, params, type);
