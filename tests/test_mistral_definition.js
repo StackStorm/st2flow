@@ -141,7 +141,7 @@ describe('Mistral definition', () => {
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('coord', new Sector(16, 0, 16, 0).setType('coord'))
-        .setSector('input', new Sector(17, 0, 23, 0).setType('input'))
+        .setSector('input', new Sector(17, 0, 21, 0).setType('input'))
         .setSector('ref', new Sector(16,16,16,26).setType('ref'))
         .setSector('yaql', [
           new Sector(18,25,18,28).setType('yaql')._setSpecial({value: 'asg'})
@@ -190,7 +190,7 @@ describe('Mistral definition', () => {
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('coord', new Sector(32, 0, 32, 0).setType('coord'))
-        .setSector('input', new Sector(33, 0, 38, 0).setType('input'))
+        .setSector('input', new Sector(33, 0, 36, 0).setType('input'))
         .setSector('ref', new Sector(32,16,32,34).setType('ref'))
         .setSector('yaql', [
           new Sector(34,32,34,35).setType('yaql')._setSpecial({value: 'asg'}),
@@ -292,7 +292,7 @@ describe('Mistral definition', () => {
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
         .setSector('coord', new Sector(16, 0, 16, 0).setType('coord'))
-        .setSector('input', new Sector(17, 0).setType('input'))
+        .setSector('input', new Sector(17,0,21,0).setType('input'))
         .setSector('ref', new Sector(16,24,16,34).setType('ref'))
         .setSector('yaql', [
           new Sector(18,35,18,38).setType('yaql')._setSpecial({value: 'asg'})
