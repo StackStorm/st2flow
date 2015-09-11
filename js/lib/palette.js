@@ -94,6 +94,20 @@ class SearchField extends React.Component {
   }
 
   render() {
+    const resetProps = {
+      className: st2Class('search-reset'),
+      onClick: () => {
+        this.props.onChange('');
+        this.refs.filter.getDOMNode().focus();
+      }
+    };
+
+    if (this.props.filter) {
+      resetProps.className += ' ' + st2Icon('reset');
+    } else {
+      resetProps.className += ' ' + st2Icon('search');
+    }
+
     return <form className={st2Class('search')}>
       <input type="search"
         className={st2Class('search-field')}
@@ -101,6 +115,7 @@ class SearchField extends React.Component {
         ref="filter"
         value={this.props.filter}
         onChange={this.handleChange.bind(this)} />
+      <span {...resetProps} ></span>
     </form>;
   }
 }

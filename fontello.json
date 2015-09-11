@@ -13,6 +13,12 @@
       "src": "fontawesome"
     },
     {
+      "uid": "7222571caa5c15f83dcfd447c58d68d9",
+      "css": "search",
+      "code": 59416,
+      "src": "entypo"
+    },
+    {
       "uid": "bbd66ef66bb8fa9edde54d9a90b89150",
       "css": "user",
       "code": 59411,
@@ -28,6 +34,12 @@
       "uid": "c709da589c923ba3c2ad48d9fc563e93",
       "css": "error",
       "code": 59396,
+      "src": "entypo"
+    },
+    {
+      "uid": "c759418c008e9562944080fee617fc76",
+      "css": "reset",
+      "code": 59415,
       "src": "entypo"
     },
     {
