@@ -165,9 +165,35 @@ main {
       background-color: #fff;
       image-rendering: pixelated;
       border-radius: 5px;
+      overflow: hidden;
 
       img:not([src]) {
         display: none;
+      }
+
+      &::after {
+        content: '\e816';
+        color: #222;
+
+        font-family: "st2flow";
+        font-style: normal;
+        font-weight: normal;
+        speak: none;
+
+        display: inline-block;
+        text-decoration: inherit;
+        width: 34px;
+        text-align: center;
+
+        font-variant: normal;
+        text-transform: none;
+
+        line-height: 32px;
+        font-size: 32px;
+
+        /* Font smoothing. That was taken from TWBS */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
     }
 
@@ -391,6 +417,7 @@ main {
       background-color: #fff;
       image-rendering: pixelated;
       border-radius: 3px;
+      overflow: hidden;
 
       img {
         border-radius: 3px;
@@ -398,6 +425,31 @@ main {
 
       img[src=''] {
         display: none;
+      }
+
+      &::after {
+        content: '\e816';
+        color: #222;
+
+        font-family: "st2flow";
+        font-style: normal;
+        font-weight: normal;
+        speak: none;
+
+        display: inline-block;
+        text-decoration: inherit;
+        width: 34px;
+        text-align: center;
+
+        font-variant: normal;
+        text-transform: none;
+
+        line-height: 32px;
+        font-size: 32px;
+
+        /* Font smoothing. That was taken from TWBS */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
     }
 
