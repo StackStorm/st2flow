@@ -120,10 +120,24 @@ class Main extends React.Component {
     const routes = {
       '/action/:ref': (ref) => {
         this.load(ref);
+      },
+      '/import/:bundle': {
+        on: (bundle64) => {
+          this.auth(bundle64).then(() => {
+            router.setRoute('');
+          });
+        },
+        '/:ref': {
+          on: (bundle64, ref) => {
+            this.auth(bundle64).then(() => {
+              router.setRoute(`/action/${ref}`);
+            });
+          }
+        }
       }
     };
 
-    const router = Router(routes);
+    const router = Router(routes).configure({ strict: false });
 
     router.init();
   }
@@ -290,8 +304,10 @@ class Main extends React.Component {
       .set('sources', sources)
       .save();
 
-    this.setState({ source, sources });
-    this.refs.settingsButton.setValue(false);
+    return new Promise((resolve) => {
+      this.setState({ source, sources }, resolve);
+      this.refs.settingsButton.setValue(false);
+    });
   }
 
   render() {
@@ -396,28 +412,34 @@ class Main extends React.Component {
     this.setState({ meta: false });
   }
 
-  load(ref) {
-    const client = st2client(this.state.source);
+  auth(bundle64) {
+    let source;
 
+    try {
+      source = JSON.parse(atob(bundle64));
+    } catch (e) {
+      return new Promise((resolve, reject) => {
+        reject(`Bundle is malformed: ${e}`);
+      });
+    }
+
+    return this.handleSourceChange(source);
+  }
+
+  load(ref) {
     this.setState({ loading: true });
 
-    return client.actions.get(ref)
-      .then((action) => {
+    return api.connect(this.state.source).then((client) => {
+      return client.actions.get(ref).then((action) => {
         if (action.runner_type !== 'mistral-v2') {
           throw Error(`Runner type ${action.runner_type} is not supported`);
         }
 
         this.setState({ action });
 
-        return Promise.all([
-          client.packFile.get(`${action.pack}/actions/${action.entry_point}`),
-          client.packFile.get(`${action.pack}/actions/maps/${action.name}.map`)
-            .catch(() => ({}))
-        ]);
+        return client.packFile.get(`${action.pack}/actions/${action.entry_point}`);
       })
-      .then((files) => {
-        const [workflow] = files;
-
+      .then((workflow) => {
         this.graph.reset();
         this.editor.setValue(workflow);
       })
@@ -425,8 +447,10 @@ class Main extends React.Component {
         this.setState({ loading: false });
       })
       .catch((err)=> {
+        this.setState({ loading: false });
         console.error(err);
       });
+    });
   }
 
   save() {
