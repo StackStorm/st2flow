@@ -103,6 +103,7 @@ class Main extends React.Component {
     });
 
     editor.setOptions({
+      enableBasicAutocompletion: true,
       enableLiveAutocompletion: true
     });
 
