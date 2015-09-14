@@ -308,8 +308,7 @@ class Main extends React.Component {
             <Control icon="undo" onClick={this.undo.bind(this)} />
             <Control icon="redo" onClick={this.redo.bind(this)} />
             <Control icon="layout" onClick={this.layout.bind(this)} />
-            <Control icon="tools" type="toggle" ref="toolsButton"
-              onClick={this.showMeta.bind(this)} />
+            <Control icon="tools" onClick={this.showMeta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
@@ -326,10 +325,11 @@ class Main extends React.Component {
       </div>
       <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} >
         <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
-        <Meta ref="meta" hide={this.state.panel === 'meta'}
-            meta={this.state.action}
-            onSubmit={this.handleMetaSubmit.bind(this)}/>
       </Panel>
+
+      <Meta ref="meta" ref="metaPopup"
+        meta={this.state.action}
+        onSubmit={this.handleMetaSubmit.bind(this)}/>
     </main>;
   }
 
@@ -370,18 +370,13 @@ class Main extends React.Component {
     }
   }
 
-  showMeta(state) {
-    if (state) {
-      this.setState({ panel: 'meta' });
-    } else {
-      this.setState({ panel: 'editor' });
-    }
+  showMeta() {
+    this.refs.metaPopup.show();
   }
 
   handleMetaSubmit(action) {
     this.setState({ action });
-    this.showMeta(false);
-    this.refs.toolsButton.setValue(false);
+    this.setState({ meta: false });
   }
 
   load(ref) {
