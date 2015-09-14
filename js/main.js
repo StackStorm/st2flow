@@ -146,7 +146,7 @@ class Main extends React.Component {
         , sector = _.first(sectors)
         ;
 
-      if (sector && sector.task) {
+      if (!this._bulk && sector && sector.task) {
         this.graph.select(sector.task.getProperty('name'));
       }
     });
@@ -210,7 +210,8 @@ class Main extends React.Component {
           this.rename(name);
           break;
         default:
-          this.graph.select(name);
+          const { row, column } = this.model.task(name).getSector('name').start;
+          this.editor.selection.moveTo(row, column);
       }
     });
 
