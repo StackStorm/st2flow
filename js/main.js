@@ -294,7 +294,7 @@ class Main extends React.Component {
     let sources = this.state.sources;
 
     if (!_.find(sources, (e) => e.api === source.api)) {
-      sources.push({
+      sources = (sources || []).concat({
         api: source.api,
         auth: source.auth
       });
