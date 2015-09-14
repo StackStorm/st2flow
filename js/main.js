@@ -184,6 +184,7 @@ class Main extends React.Component {
 
         if (!_.any(nodes, hasCoords)) {
           this.graph.layout();
+          this.canvas.reposition();
         }
       }
 
@@ -442,6 +443,7 @@ class Main extends React.Component {
       .then((workflow) => {
         this.graph.reset();
         this.editor.setValue(workflow);
+        this.canvas.reposition();
       })
       .then(() => {
         this.setState({ loading: false });
