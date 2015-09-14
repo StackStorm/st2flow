@@ -59,11 +59,14 @@ main {
 
   background-color: #23282d;
 
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
 
   position: relative;
 
   font-size: 12px;
+
+  padding-top: 40px;
 
   &::-webkit-scrollbar {
     width: 0.5em;
@@ -87,7 +90,15 @@ main {
   }
 
   &__search {
-    margin: 10px;
+    position: fixed;
+    top: 0;
+
+    width: 240px;
+
+    padding: 10px;
+    box-sizing: border-box;
+
+    background: linear-gradient(to bottom, #23282d 0%, #23282d calc(100% - 5px), color(#23282d a(0)));
 
     &-field[type="search"] {
       width: 100%;
@@ -109,6 +120,25 @@ main {
       &::placeholder {
         color: #23282d;
       }
+    }
+
+    &-reset {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+
+      display: block;
+
+      box-sizing: border-box;
+
+      padding: 10px;
+
+      font-size: 18px;
+
+      cursor: pointer;
+
+      color: #eee;
     }
   }
 
