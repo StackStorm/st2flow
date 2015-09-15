@@ -19,21 +19,35 @@ var _ = require('lodash')
   , watchify = require('watchify')
   ;
 
+var watch;
 var customOpts = {
   entries: ['js/main.js'],
   debug: true
 };
 var opts = _.assign({}, watchify.args, customOpts);
-var b = watchify(browserify(opts))
-  .transform(babelify.configure({
-    // Make sure to change in test_compiler.js too
-    optional: ['es7.classProperties']
-  }))
-  .on('update', bundle)
-  .on('log', gutil.log)
-  ;
 
-function bundle() {
+function Browserify() {
+  var b = browserify(opts);
+
+  if (watch) {
+    b = watchify(b)
+      .on('update', function () {
+        bundle(b);
+      });
+  }
+
+  b
+    .transform(babelify.configure({
+      // Make sure to change in test_compiler.js too
+      optional: ['es7.classProperties']
+    }))
+    .on('log', gutil.log)
+    ;
+
+  return bundle(b);
+}
+
+function bundle(b) {
   return b.bundle()
     .on('error', function (error) {
       gutil.log(
@@ -105,7 +119,15 @@ gulp.task('css', ['font'], function () {
     }));
 });
 
-gulp.task('browserify', ['lint'], bundle);
+gulp.task('browserify', ['lint'], function () {
+  watch = false;
+  return Browserify();
+});
+
+gulp.task('watchify', ['lint'], function () {
+  watch = true;
+  return Browserify();
+});
 
 gulp.task('test', function () {
   return gulp.src('tests/**/*.js', {read: false})
@@ -137,7 +159,7 @@ gulp.task('serve', ['build'], function() {
 
 gulp.task('build', ['css', 'browserify', 'static']);
 
-gulp.task('watch', function() {
+gulp.task('watch', ['css', 'watchify', 'static'], function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
   gulp.watch(['js/**/*.js'], ['lint']);
@@ -158,4 +180,4 @@ gulp.task('watch', function() {
   });
 });
 
-gulp.task('default', ['lint', 'build', 'watch', 'serve']);
+gulp.task('default', ['watch', 'serve']);
