@@ -52,9 +52,11 @@
     "director": "^1.2.8",
     "lodash": "^3.9.3",
     "mixin": "^0.2.0",
+    "moment": "^2.10.6",
     "normalize.css": "^3.0.3",
     "object.observe": "^0.2.4",
     "react": "^0.13.3",
+    "react-time": "^4.0.0",
     "revalidator": "^0.3.1",
     "st2client": "^0.3.7"
   }

@@ -12,6 +12,7 @@ import Range from './lib/util/range';
 import Palette from './lib/palette';
 import Control from './lib/control';
 import ControlGroup from './lib/controlgroup';
+import ExecutionControl from './lib/executioncontrol';
 import Panel from './lib/panel';
 import Meta from './lib/panels/meta';
 import Model from './lib/model';
@@ -344,6 +345,9 @@ class Main extends React.Component {
             <Control icon="layout" onClick={this.layout.bind(this)} />
             <Control icon="tools" onClick={this.showMeta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
+            <ExecutionControl ref="executionControl"
+              action={this.state.action.name}
+              onClick={this.run.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
             <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
@@ -361,7 +365,7 @@ class Main extends React.Component {
         <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
       </Panel>
 
-      <Meta ref="meta" ref="metaPopup"
+      <Meta ref="metaPopup"
         meta={this.state.action}
         onSubmit={this.handleMetaSubmit.bind(this)}/>
     </main>;
@@ -472,6 +476,10 @@ class Main extends React.Component {
       .catch((err)=> {
         console.error(err);
       });
+  }
+
+  run() {
+    console.log(this.state.action);
   }
 
   connect(source, target, type='success') {
