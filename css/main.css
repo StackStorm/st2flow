@@ -356,9 +356,9 @@ main {
   &__tooltip {
     position: absolute;
     top: 100%;
-    left: -50px;
+    left: -75px;
     background-color: #23282D;
-    width: 200px;
+    width: 250px;
     border-radius: 3px;
     box-sizing: border-box;
     display: none;
@@ -429,6 +429,9 @@ main {
       margin-left: 36px;
       overflow:hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+
+      display: none;
 
       font-family: Oswald;
       font-size: 14px;
@@ -915,6 +918,11 @@ main {
     hr {
       border: 0;
       border-bottom: 1px solid #6b8ca3;
+    }
+    &-description {
+      padding: 5px 10px 0;
+      font-size: 11px;
+      color: #d1eeff;
     }
   }
 }

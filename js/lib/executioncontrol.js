@@ -33,6 +33,9 @@ export default class ExecutionControl extends React.Component {
   componentDidMount() {
     api.on('connect', () => {
       api.client.stream.listen().then((source) => {
+        source.removeEventListener('st2.execution__create', this._createListener);
+        source.removeEventListener('st2.execution__update', this._updateListener);
+
         this._createListener = this._createListener.bind(this);
         this._updateListener = this._updateListener.bind(this);
 

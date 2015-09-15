@@ -1,3 +1,4 @@
+import moment from 'moment';
 import React from 'react';
 import Time from 'react-time';
 
@@ -32,13 +33,16 @@ export default class TooltipItem extends React.Component {
         st2Class('execution-status', this.props.execution.status);
     }
 
+    const time = this.props.execution.start_timestamp;
+
     return <div {...props} >
       <div {...statusProps} />
       <div className={st2Class('execution-ref')} >
         {this.props.execution.action.ref}
       </div>
       <div className={st2Class('execution-timestamp')} >
-        <Time value={this.props.execution.start_timestamp} format="LTS" />
+        <Time value={moment(time).utcOffset(time)}
+          format="ddd, DD MMM YYYY HH:mm:ss UTC" />
       </div>
     </div>;
   }

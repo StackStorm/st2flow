@@ -15,6 +15,7 @@ import ControlGroup from './lib/controlgroup';
 import ExecutionControl from './lib/executioncontrol';
 import Panel from './lib/panel';
 import Meta from './lib/panels/meta';
+import Run from './lib/panels/run';
 import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
@@ -346,8 +347,8 @@ class Main extends React.Component {
             <Control icon="tools" onClick={this.showMeta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
             <ExecutionControl ref="executionControl"
-              action={this.state.action.name}
-              onClick={this.run.bind(this)} />
+              action={this.state.action.ref}
+              onClick={this.showRun.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
             <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
@@ -368,6 +369,10 @@ class Main extends React.Component {
       <Meta ref="metaPopup"
         meta={this.state.action}
         onSubmit={this.handleMetaSubmit.bind(this)}/>
+
+      <Run ref="runPopup"
+        action={this.state.action}
+        onSubmit={this.run.bind(this)}/>
     </main>;
   }
 
@@ -412,6 +417,10 @@ class Main extends React.Component {
     this.refs.metaPopup.show();
   }
 
+  showRun() {
+    this.refs.runPopup.show();
+  }
+
   handleMetaSubmit(action) {
     this.setState({ action });
     this.setState({ meta: false });
@@ -435,7 +444,7 @@ class Main extends React.Component {
     this.setState({ loading: true });
 
     return api.connect(this.state.source).then((client) => {
-      return client.actions.get(ref).then((action) => {
+      return client.actionOverview.get(ref).then((action) => {
         if (action.runner_type !== 'mistral-v2') {
           throw Error(`Runner type ${action.runner_type} is not supported`);
         }
@@ -478,8 +487,17 @@ class Main extends React.Component {
       });
   }
 
-  run() {
-    console.log(this.state.action);
+  run(action, parameters) {
+    console.log(action, parameters);
+
+    return api.client.executions.create({
+      action: action.ref,
+      parameters
+    }).then((result) => {
+      console.log(result);
+    }).catch((err) => {
+      console.error(err);
+    });
   }
 
   connect(source, target, type='success') {
