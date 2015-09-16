@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
 
+import api from '../api';
 import bem from '../util/bem';
 import templates from '../util/forms';
 
@@ -54,6 +55,15 @@ export default class Meta extends React.Component {
     });
   }
 
+  componentDidMount() {
+    api.on('connect', (client) => {
+      client.packs.list()
+        .then((packs) => {
+          this.setState({ packs });
+        });
+    });
+  }
+
   changeValue(name, value) {
     const o = this.state.doc;
     o[name] = value;
@@ -72,7 +82,7 @@ export default class Meta extends React.Component {
           this.changeValue('ref', [doc.pack, doc.name].join('.'));
         }
       },
-      options: ['examples', 'default']
+      options: _.pluck(this.state.packs, 'name')
     }, {
       name: 'Name',
       type: 'text',
