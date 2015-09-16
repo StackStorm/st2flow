@@ -9,7 +9,6 @@ const st2Class = bem('popup')
 
 export default class Meta extends React.Component {
   static propTypes = {
-    show: React.PropTypes.bool,
     meta: React.PropTypes.shape({
       name: React.PropTypes.string,
       description: React.PropTypes.string,
@@ -49,8 +48,7 @@ export default class Meta extends React.Component {
 
   componentWillReceiveProps(props) {
     this.setState({
-      doc: props.meta,
-      show: props.show
+      doc: props.meta
     });
   }
 
