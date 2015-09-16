@@ -42,8 +42,6 @@ class Main extends React.Component {
 
     this.initRouter();
 
-    api.connect(this.state.source);
-
     api.on('connect', (client) => {
       this.setState({ error: undefined, actions: undefined, suggestions: undefined });
 
@@ -139,9 +137,12 @@ class Main extends React.Component {
       }
     };
 
-    const router = Router(routes).configure({ strict: false });
+    const router = Router(routes).configure({
+      strict: false,
+      notfound: () => api.connect(this.state.source)
+    });
 
-    router.init();
+    router.init('/');
   }
 
   initPanel() {
