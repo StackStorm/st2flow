@@ -34,7 +34,7 @@ export default class Meta extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    this.props.onSubmit(this.state);
+    this.props.onSubmit(this.state.doc);
   }
 
   handleCancel(event) {
@@ -54,27 +54,48 @@ export default class Meta extends React.Component {
     });
   }
 
+  changeValue(name, value) {
+    const o = this.state.doc;
+    o[name] = value;
+    this.setState(o);
+  }
+
   render() {
+    const doc = this.state.doc;
     const fields = [{
+      name: 'Pack',
+      type: 'select',
+      props: {
+        value: this.state.doc.pack,
+        onChange: (event) => {
+          this.changeValue('pack', event.target.value);
+          this.changeValue('ref', [doc.pack, doc.name].join('.'));
+        }
+      },
+      options: ['examples', 'default']
+    }, {
       name: 'Name',
       type: 'text',
       props: {
-        value: this.state.name,
-        onChange: (event) => this.setState({ name: event.target.value })
+        value: this.state.doc.name,
+        onChange: (event) => {
+          this.changeValue('name', event.target.value);
+          this.changeValue('ref', [doc.pack, doc.name].join('.'));
+        }
       }
     }, {
       name: 'Description',
       type: 'textarea',
       props: {
-        value: this.state.description,
-        onChange: (event) => this.setState({ description: event.target.value })
+        value: this.state.doc.description,
+        onChange: (event) => this.changeValue('description', event.target.value)
       }
     }, {
       name: 'Runner Type',
       type: 'select',
       props: {
-        value: this.state.runner_type,
-        onChange: (event) => this.setState({ runner_type: event.target.value })
+        value: this.state.doc.runner_type,
+        onChange: (event) => this.changeValue('runner_type', event.target.value)
       },
       options: [{
         name: 'Mistral v2',
@@ -87,15 +108,15 @@ export default class Meta extends React.Component {
       name: 'Entry Point',
       type: 'text',
       props: {
-        value: this.state.entry_point,
-        onChange: (event) => this.setState({ entry_point: event.target.value })
+        value: this.state.doc.entry_point,
+        onChange: (event) => this.changeValue('entry_point', event.target.value)
       }
     }, {
       name: 'Enabled',
       type: 'checkbox',
       props: {
-        checked: this.state.enabled,
-        onChange: (event) => this.setState({ enabled: event.target.checked })
+        checked: this.state.doc.enabled,
+        onChange: (event) => this.changeValue('enabled', event.target.checked)
       }
     }];
 
@@ -125,7 +146,7 @@ export default class Meta extends React.Component {
             }
             <input type="submit"
                 className="st2-panel__field-input"
-                value="Save" />
+                value="Update meta" />
           </form>
         </div>
       </div>

@@ -476,9 +476,7 @@ class Main extends React.Component {
       }]
     });
 
-    const client = st2client(this.state.source);
-
-    return client.actions.edit(result)
+    return api.client.actions.edit(result)
       .then((res) => {
         console.log(res);
       })
@@ -488,15 +486,21 @@ class Main extends React.Component {
   }
 
   run(action, parameters) {
-    console.log(action, parameters);
+    const ok = window.confirm('Workflow needs to be saved before running. Proceed?'); // eslint-disable-line no-alert
 
-    return api.client.executions.create({
-      action: action.ref,
-      parameters
-    }).then((result) => {
-      console.log(result);
-    }).catch((err) => {
-      console.error(err);
+    if (!ok) {
+      return;
+    }
+
+    return this.save().then(() => {
+      return api.client.executions.create({
+        action: action.ref,
+        parameters
+      }).then((result) => {
+        console.log(result);
+      }).catch((err) => {
+        console.error(err);
+      });
     });
   }
 

@@ -51,7 +51,7 @@ export default class Run extends React.Component {
   render() {
     const fields = _(this.props.action.parameters)
       .chain()
-      .clone()
+      .cloneDeep()
       .each((spec, name) => {
         spec.name = name;
       })
