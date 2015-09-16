@@ -13,6 +13,8 @@ in development
 * Add syntax validation (new-feature)
 * Add autocomplete for input parameters (new-feature)
 * Fix compatibility with latest stable Firefox and Safari (bug-fix)
+* Integration with st2web (new-feature)
+* Allow running and saving workflows (new-feature)
 
 0.2.1 - August 24th, 2015 (alpha-2)
 -----------------------------------
