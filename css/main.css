@@ -2,15 +2,6 @@
 @import '../dist/font/st2flow-embedded.css';
 @import 'https://fonts.googleapis.com/css?family=Oswald:400,300,700';
 
-@keyframes breathe {
-  0% {
-    background-color: #777;
-  }
-  100% {
-    background-color: #bbb;
-  }
-}
-
 html, body, main {
   height: 100%;
   overflow: hidden;
@@ -423,6 +414,15 @@ main {
 
       &--running {
         animation: breathe 1s ease-in-out infinite alternate;
+
+        @keyframes breathe {
+          0% {
+            background-color: #777;
+          }
+          100% {
+            background-color: #bbb;
+          }
+        }
       }
     }
     &-ref {
@@ -457,6 +457,38 @@ main {
 
     &--active {
       color: #90d5fc;
+    }
+
+    &--succeeded {
+      animation: ok .2s linear 3s forwards;
+      background-color: #5cb85c;
+
+      @keyframes ok {
+        0% {
+          background-color: #5cb85c;
+        }
+        100% {
+          background-color: #596a78;
+        }
+      }
+    }
+
+    &--failed {
+      animation: fail .2s linear 3s forwards;
+      background-color: #d9534f;
+
+      @keyframes fail {
+        0% {
+          background-color: #d9534f;
+        }
+        100% {
+          background-color: #596a78;
+        }
+      }
+    }
+
+    &--running {
+      animation: breathe 1s ease-in-out infinite alternate;
     }
   }
 

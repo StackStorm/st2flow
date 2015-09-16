@@ -2,7 +2,6 @@ import _ from 'lodash';
 import ace from 'brace';
 import React from 'react';
 import { Router } from 'director';
-import st2client from 'st2client';
 
 import 'brace/ext/language_tools';
 
@@ -348,7 +347,7 @@ class Main extends React.Component {
             <Control icon="tools" onClick={this.showMeta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
             <ExecutionControl ref="executionControl"
-              action={this.state.action.ref}
+              action={this.state.action}
               onClick={this.showRun.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
@@ -478,11 +477,9 @@ class Main extends React.Component {
     });
 
     return api.client.actions.edit(result)
-      .then((res) => {
-        console.log(res);
-      })
       .catch((err)=> {
         console.error(err);
+        throw err;
       });
   }
 
@@ -497,11 +494,10 @@ class Main extends React.Component {
       return api.client.executions.create({
         action: action.ref,
         parameters
-      }).then((result) => {
-        console.log(result);
-      }).catch((err) => {
-        console.error(err);
       });
+    }).catch((err) => {
+      this.refs.executionControl.setStatus('failed');
+      console.error(err);
     });
   }
 

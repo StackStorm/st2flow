@@ -24,6 +24,10 @@ export default class Run extends React.Component {
     this.props.onSubmit(this.props.action, this.state.parameters)
       .then(() => {
         this.setState({ show: false });
+      })
+      .catch((err) => {
+        this.setState({ show: false });
+        throw err;
       });
   }
 

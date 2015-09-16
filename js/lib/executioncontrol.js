@@ -11,7 +11,7 @@ const st2Class = bem('controls')
 
 export default class ExecutionControl extends React.Component {
   static propTypes = {
-    action: React.PropTypes.string,
+    action: React.PropTypes.object,
     onClick: React.PropTypes.func.isRequired
   }
 
@@ -43,8 +43,8 @@ export default class ExecutionControl extends React.Component {
         source.addEventListener('st2.execution__update', this._updateListener);
       });
 
-      if (this.props.action) {
-        this.load(this.props.action);
+      if (this.props.action && this.props.action.ref) {
+        this.load(this.props.action.ref);
       }
     });
   }
@@ -61,12 +61,13 @@ export default class ExecutionControl extends React.Component {
     }).then((executions) => {
       const total = api.client.executions.total;
       this.setState({ executions, total });
+      this.setStatus();
     });
   }
 
   shouldComponentUpdate(props) {
-    if (this.props.action !== props.action) {
-      this.load(props.action);
+    if (this.props.action.ref !== props.action.ref) {
+      this.load(props.action.ref);
       return false;
     }
 
@@ -87,8 +88,12 @@ export default class ExecutionControl extends React.Component {
 
     const record = JSON.parse(e.data);
 
-    if (record.parent || record.action.ref !== this.props.action) {
+    if (record.parent || record.action.ref !== this.props.action.ref) {
       return;
+    }
+
+    if (this.props.action.id === record.action.id) {
+      this.setStatus(record.status);
     }
 
     const total = !_.isUndefined(this.state.total) ? this.state.total + 1 : 1;
@@ -104,8 +109,12 @@ export default class ExecutionControl extends React.Component {
 
     const record = JSON.parse(e.data);
 
-    if (record.parent || record.action.ref !== this.props.action) {
+    if (record.parent || record.action.ref !== this.props.action.ref) {
       return;
+    }
+
+    if (this.props.action.id === record.action.id) {
+      this.setStatus(record.status);
     }
 
     const executions = this.state.executions;
@@ -116,6 +125,10 @@ export default class ExecutionControl extends React.Component {
     }
 
     this.setState({ executions });
+  }
+
+  setStatus(status) {
+    this.refs.button.setStatus(status);
   }
 
   render() {
@@ -141,7 +154,7 @@ export default class ExecutionControl extends React.Component {
     }
 
     return <div {...props} >
-      <Control icon='play' onClick={this.handleRun.bind(this)} />
+      <Control icon='play' onClick={this.handleRun.bind(this)} ref="button"/>
       <div {...execProps} >
         {this.state.total}
       </div>
