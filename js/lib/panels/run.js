@@ -148,7 +148,7 @@ export default class Run extends React.Component {
               Run workflow
             </div>
             {
-              _.map(fields, (field) => templates[field.type](field))
+              _.map(fields, (field) => templates[field.type] && templates[field.type](field))
             }
             <input type="submit"
                 className="st2-panel__field-input"

@@ -462,8 +462,8 @@ class Main extends React.Component {
         this.setState({ loading: false });
       })
       .catch((err)=> {
-        this.setState({ loading: false });
         console.error(err);
+        this.setState({ loading: false });
       });
     });
   }
