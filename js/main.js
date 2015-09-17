@@ -139,7 +139,7 @@ class Main extends React.Component {
 
     const router = Router(routes).configure({
       strict: false,
-      notfound: () => api.connect(this.state.source)
+      notfound: () => this.state.source && api.connect(this.state.source)
     });
 
     router.init('/');
@@ -446,6 +446,10 @@ class Main extends React.Component {
   }
 
   load(ref) {
+    if (!this.state.source) {
+      return;
+    }
+
     this.setState({ loading: true });
 
     return api.connect(this.state.source).then((client) => {
