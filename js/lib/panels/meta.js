@@ -21,7 +21,7 @@ export default class Meta extends React.Component {
   }
 
   state = {
-    doc: {
+    meta: {
       name: '',
       description: '',
       runner_type: 'mistral-v2',
@@ -34,13 +34,14 @@ export default class Meta extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    this.props.onSubmit(this.state.doc);
+    this.props.onSubmit(this.state.meta);
+    this.setState({ show: false });
   }
 
   handleCancel(event) {
     event.preventDefault();
 
-    this.setState({ show: !this.state.show });
+    this.setState({ show: false });
   }
 
   show() {
@@ -48,9 +49,11 @@ export default class Meta extends React.Component {
   }
 
   componentWillReceiveProps(props) {
-    this.setState({
-      doc: props.meta
-    });
+    const { meta } = props;
+
+    if (!_.isEmpty(meta)) {
+      this.setState({ meta });
+    }
   }
 
   componentDidMount() {
@@ -63,21 +66,21 @@ export default class Meta extends React.Component {
   }
 
   changeValue(name, value) {
-    const o = this.state.doc;
+    const o = this.state.meta;
     o[name] = value;
     this.setState(o);
   }
 
   render() {
-    const doc = this.state.doc;
+    const meta = this.state.meta;
     const fields = [{
       name: 'Pack',
       type: 'select',
       props: {
-        value: this.state.doc.pack,
+        value: this.state.meta.pack,
         onChange: (event) => {
           this.changeValue('pack', event.target.value);
-          this.changeValue('ref', [doc.pack, doc.name].join('.'));
+          this.changeValue('ref', [meta.pack, meta.name].join('.'));
         }
       },
       options: _.pluck(this.state.packs, 'name')
@@ -85,45 +88,45 @@ export default class Meta extends React.Component {
       name: 'Name',
       type: 'text',
       props: {
-        value: this.state.doc.name,
+        value: this.state.meta.name,
         onChange: (event) => {
           this.changeValue('name', event.target.value);
-          this.changeValue('ref', [doc.pack, doc.name].join('.'));
+          this.changeValue('ref', [meta.pack, meta.name].join('.'));
         }
       }
     }, {
       name: 'Description',
       type: 'textarea',
       props: {
-        value: this.state.doc.description,
+        value: this.state.meta.description,
         onChange: (event) => this.changeValue('description', event.target.value)
       }
     }, {
-      name: 'Runner Type',
-      type: 'select',
-      props: {
-        value: this.state.doc.runner_type,
-        onChange: (event) => this.changeValue('runner_type', event.target.value)
-      },
-      options: [{
-        name: 'Mistral v2',
-        value: 'mistral-v2'
-      }, {
-        name: 'Action Chain',
-        value: 'action-chain'
-      }]
-    }, {
+    //   name: 'Runner Type',
+    //   type: 'select',
+    //   props: {
+    //     value: this.state.meta.runner_type,
+    //     onChange: (event) => this.changeValue('runner_type', event.target.value)
+    //   },
+    //   options: [{
+    //     name: 'Mistral v2',
+    //     value: 'mistral-v2'
+    //   }, {
+    //     name: 'Action Chain',
+    //     value: 'action-chain'
+    //   }]
+    // }, {
       name: 'Entry Point',
       type: 'text',
       props: {
-        value: this.state.doc.entry_point,
+        value: this.state.meta.entry_point,
         onChange: (event) => this.changeValue('entry_point', event.target.value)
       }
     }, {
       name: 'Enabled',
       type: 'checkbox',
       props: {
-        checked: this.state.doc.enabled,
+        checked: this.state.meta.enabled,
         onChange: (event) => this.changeValue('enabled', event.target.checked)
       }
     }];

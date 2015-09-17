@@ -485,11 +485,23 @@ class Main extends React.Component {
       }]
     });
 
-    return api.client.actions.edit(result)
-      .catch((err)=> {
-        console.error(err);
-        throw err;
-      });
+    if (result.id) {
+      return api.client.actions.edit(result)
+        .catch((err)=> {
+          console.error(err);
+          throw err;
+        });
+    } else {
+      return api.client.actions.create(result)
+        .then((action) => {
+          this.setState({ action });
+        })
+        .catch((err)=> {
+          console.error(err);
+          throw err;
+        });
+    }
+
   }
 
   run(action, parameters) {

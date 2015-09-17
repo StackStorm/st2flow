@@ -9,6 +9,10 @@ export class API extends EventEmitter {
         , auth = source.auth && new URI.parse(source.auth)
         ;
 
+    if (api.port && !api.hostname) {
+      api.hostname = window.location.hostname;
+    }
+
     this.server = {
       protocol: api.protocol,
       host: api.hostname,
@@ -16,6 +20,10 @@ export class API extends EventEmitter {
     };
 
     if (auth) {
+      if (auth.port && !auth.hostname) {
+        auth.hostname = window.location.hostname;
+      }
+
       this.server.auth = {
         protocol: auth.protocol,
         host: auth.hostname,
