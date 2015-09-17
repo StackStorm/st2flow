@@ -244,13 +244,16 @@ main {
     color: #fff;
     display: none;
     padding: 10px;
-    position: absolute;
+
+    position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
-    right: 0;
 
-    background-color: #191f23;
+    width: 240px;
+    box-sizing: border-box;
+
+    background-color: #23282d;
 
     &--visible {
       display: block;
