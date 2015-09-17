@@ -493,12 +493,6 @@ class Main extends React.Component {
   }
 
   run(action, parameters) {
-    const ok = window.confirm('Workflow needs to be saved before running. Proceed?'); // eslint-disable-line no-alert
-
-    if (!ok) {
-      return;
-    }
-
     return this.save().then(() => {
       return api.client.executions.create({
         action: action.ref,
