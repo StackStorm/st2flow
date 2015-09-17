@@ -33,19 +33,21 @@ const templates = {
   select: (field) =>
     <label className="st2-panel__field" key={ field.name }>
       <div className="st2-panel__field-name">{ field.name }{ field.required && ' *'}</div>
-      <select className="st2-panel__field-input" {...field.props} >
-        {
-          _.map(field.options, (option) => {
-            if (!_.isPlainObject(option)) {
-              option = {
-                name: option,
-                value: option
-              };
-            }
-            return <option key={option.value} value={option.value}>{option.name}</option>;
-          })
-        }
-      </select>
+      <div className="st2-panel__field-select">
+        <select className="st2-panel__field-input" {...field.props} >
+          {
+            _.map(field.options, (option) => {
+              if (!_.isPlainObject(option)) {
+                option = {
+                  name: option,
+                  value: option
+                };
+              }
+              return <option key={option.value} value={option.value}>{option.name}</option>;
+            })
+          }
+        </select>
+      </div>
     </label>,
 
   checkbox: (field) =>

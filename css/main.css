@@ -956,6 +956,35 @@ main {
       font-size: 11px;
       color: #d1eeff;
     }
+    &-select {
+      position: relative;
+
+      &:after {
+        content: '\e80f';
+
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+
+        font-family: "st2flow";
+        font-style: normal;
+        font-weight: normal;
+        speak: none;
+
+        display: inline-block;
+        text-decoration: inherit;
+        width: 34px;
+        text-align: center;
+
+        font-variant: normal;
+        text-transform: none;
+
+        line-height: 36px;
+
+        pointer-events: none;
+      }
+    }
   }
 }
 
