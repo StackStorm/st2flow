@@ -163,6 +163,12 @@ export default class Palette extends React.Component {
     }
   }
 
+  componentWillReceiveProps(props) {
+    if (this.props.source !== props.source) {
+      this.setState({ showSettings: !props.source });
+    }
+  }
+
   render() {
     const packs = _(this.props.actions)
             .filter((action) => ~action.ref.indexOf(this.state.filter)) // eslint-disable-line no-bitwise
