@@ -2,6 +2,7 @@ import _ from 'lodash';
 import ace from 'brace';
 import React from 'react';
 import { Router } from 'director';
+import URI from 'URIjs';
 
 import 'brace/ext/language_tools';
 
@@ -435,6 +436,10 @@ class Main extends React.Component {
       return new Promise((resolve, reject) => {
         reject(`Bundle is malformed: ${e}`);
       });
+    }
+
+    if (source.auth === true) {
+      source.auth = new URI(source.api).port(9100).toString();
     }
 
     return this.handleSourceChange(source);
