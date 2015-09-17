@@ -94,6 +94,7 @@ gulp.task('css', ['font'], function () {
     require('autoprefixer-core')({browsers: ['last 2 version']}),
     require('postcss-import')(),
     require('postcss-nested')(),
+    require('postcss-mq-keyframes'),
     require('postcss-color-function')()
   ];
   return gulp.src('css/*.css')

@@ -2,7 +2,7 @@ import _ from 'lodash';
 import ace from 'brace';
 import React from 'react';
 import { Router } from 'director';
-import st2client from 'st2client';
+import URI from 'URIjs';
 
 import 'brace/ext/language_tools';
 
@@ -12,8 +12,10 @@ import Range from './lib/util/range';
 import Palette from './lib/palette';
 import Control from './lib/control';
 import ControlGroup from './lib/controlgroup';
+import ExecutionControl from './lib/executioncontrol';
 import Panel from './lib/panel';
 import Meta from './lib/panels/meta';
+import Run from './lib/panels/run';
 import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
@@ -39,8 +41,6 @@ class Main extends React.Component {
     this.initPanel();
 
     this.initRouter();
-
-    api.connect(this.state.source);
 
     api.on('connect', (client) => {
       this.setState({ error: undefined, actions: undefined, suggestions: undefined });
@@ -137,9 +137,12 @@ class Main extends React.Component {
       }
     };
 
-    const router = Router(routes).configure({ strict: false });
+    const router = Router(routes).configure({
+      strict: false,
+      notfound: () => this.state.source && api.connect(this.state.source)
+    });
 
-    router.init();
+    router.init('/');
   }
 
   initPanel() {
@@ -344,6 +347,9 @@ class Main extends React.Component {
             <Control icon="layout" onClick={this.layout.bind(this)} />
             <Control icon="tools" onClick={this.showMeta.bind(this)} />
             <Control icon="floppy" onClick={this.save.bind(this)} />
+            <ExecutionControl ref="executionControl"
+              action={this.state.action}
+              onClick={this.showRun.bind(this)} />
           </ControlGroup>
           <ControlGroup position='right'>
             <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
@@ -361,9 +367,13 @@ class Main extends React.Component {
         <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
       </Panel>
 
-      <Meta ref="meta" ref="metaPopup"
+      <Meta ref="metaPopup"
         meta={this.state.action}
         onSubmit={this.handleMetaSubmit.bind(this)}/>
+
+      <Run ref="runPopup"
+        action={this.state.action}
+        onSubmit={this.run.bind(this)}/>
     </main>;
   }
 
@@ -408,6 +418,10 @@ class Main extends React.Component {
     this.refs.metaPopup.show();
   }
 
+  showRun() {
+    this.refs.runPopup.show();
+  }
+
   handleMetaSubmit(action) {
     this.setState({ action });
     this.setState({ meta: false });
@@ -424,14 +438,22 @@ class Main extends React.Component {
       });
     }
 
+    if (source.auth === true) {
+      source.auth = new URI(source.api).port(9100).toString();
+    }
+
     return this.handleSourceChange(source);
   }
 
   load(ref) {
+    if (!this.state.source) {
+      return;
+    }
+
     this.setState({ loading: true });
 
     return api.connect(this.state.source).then((client) => {
-      return client.actions.get(ref).then((action) => {
+      return client.actionOverview.get(ref).then((action) => {
         if (action.runner_type !== 'mistral-v2') {
           throw Error(`Runner type ${action.runner_type} is not supported`);
         }
@@ -449,8 +471,8 @@ class Main extends React.Component {
         this.setState({ loading: false });
       })
       .catch((err)=> {
-        this.setState({ loading: false });
         console.error(err);
+        this.setState({ loading: false });
       });
     });
   }
@@ -463,15 +485,23 @@ class Main extends React.Component {
       }]
     });
 
-    const client = st2client(this.state.source);
-
-    return client.actions.edit(result)
-      .then((res) => {
-        console.log(res);
-      })
+    return api.client.actions.edit(result)
       .catch((err)=> {
         console.error(err);
+        throw err;
       });
+  }
+
+  run(action, parameters) {
+    return this.save().then(() => {
+      return api.client.executions.create({
+        action: action.ref,
+        parameters
+      });
+    }).catch((err) => {
+      this.refs.executionControl.setStatus('failed');
+      console.error(err);
+    });
   }
 
   connect(source, target, type='success') {

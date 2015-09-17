@@ -20,6 +20,10 @@ export default class Controls extends React.Component {
   }
 
   handleClick() {
+    let promise;
+
+    this.setState({ status: undefined });
+
     switch(this.props.type) {
       case 'toggle':
         const state = {
@@ -27,13 +31,26 @@ export default class Controls extends React.Component {
         };
         this.setState(state);
 
-        this.props.onClick(state.value);
+        promise = this.props.onClick(state.value);
         break;
       case 'momentary':
       default:
-        this.props.onClick();
+        promise = this.props.onClick();
         break;
     }
+
+    if (promise && promise.then) {
+      this.setState({ status: 'running' });
+      promise.then(() => {
+        this.setState({ status: 'succeeded' });
+      }).catch(() => {
+        this.setState({ status: 'failed' });
+      });
+    }
+  }
+
+  setStatus(status) {
+    this.setState({ status });
   }
 
   setValue(value) {
@@ -54,6 +71,10 @@ export default class Controls extends React.Component {
 
     if (this.state.value) {
       props.className += ' ' + st2Class('button', 'active');
+    }
+
+    if (this.state.status) {
+      props.className += ' ' + st2Class('button', this.state.status);
     }
 
     return <div {...props} />;
