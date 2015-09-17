@@ -15,7 +15,9 @@ export default class ExecutionControl extends React.Component {
     onClick: React.PropTypes.func.isRequired
   }
 
-  state = {}
+  state = {
+    executions: []
+  }
 
   handleRun() {
     this.props.onClick();
@@ -82,10 +84,6 @@ export default class ExecutionControl extends React.Component {
   }
 
   _createListener(e) {
-    if (!this.state.executions) {
-      return;
-    }
-
     const record = JSON.parse(e.data);
 
     if (record.parent || record.action.ref !== this.props.action.ref) {
@@ -103,10 +101,6 @@ export default class ExecutionControl extends React.Component {
   }
 
   _updateListener(e) {
-    if (!this.state.executions) {
-      return;
-    }
-
     const record = JSON.parse(e.data);
 
     if (record.parent || record.action.ref !== this.props.action.ref) {
