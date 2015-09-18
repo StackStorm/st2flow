@@ -371,6 +371,10 @@ main {
       margin-left: -5px;
     }
 
+    &--active {
+      display: block;
+    }
+
     &-message {
       color: #eee;
       text-align: center;
@@ -379,8 +383,12 @@ main {
     }
 
     &-item {
+      display: block;
+
       margin: 5px;
       padding: 5px;
+
+      text-decoration: none;
 
       color: #eee;
       background-color: #363D45;
@@ -388,8 +396,16 @@ main {
       border-radius: 3px;
     }
 
-    &--active {
+    &-button {
       display: block;
+      margin: 5px;
+      padding: 5px;
+      text-align: center;
+      text-decoration: none;
+      font-family: Oswald;
+      font-size: 14px;
+      background-color: #F28037;
+      color: white;
     }
   }
 
