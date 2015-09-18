@@ -525,7 +525,7 @@ class Main extends React.Component {
 
     const transitions = task.getProperty(type) || [];
 
-    transitions.push(target);
+    transitions.push({ name: target });
 
     this.setTransitions(source, transitions, type);
   }
@@ -540,7 +540,7 @@ class Main extends React.Component {
     _.each([].concat(type), (type) => {
       const transitions = task.getProperty(type) || [];
 
-      _.remove(transitions, (transition) => transition === destination);
+      _.remove(transitions, (transition) => transition.name === destination);
 
       this.setTransitions(source, transitions, type);
     });
@@ -555,7 +555,7 @@ class Main extends React.Component {
 
     this.embedCoords();
 
-    const params = _.map(transitions, (name) => ({ name }));
+    const params = _.map(transitions, (value) => ({ value }));
 
     let block = this.model.fragments.transitions(task, params, type);
 
@@ -595,13 +595,15 @@ class Main extends React.Component {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
-        const transitions = t.getProperty(type)
-            , index = transitions.indexOf(target)
-            ;
-        if (~index) { // eslint-disable-line no-bitwise
-          transitions[index] = name;
-          this.setTransitions(tName, transitions, type);
-        }
+        const transitions = _.map(t.getProperty(type), (transition) => {
+            if (transition.name === target) {
+              transition.name = name;
+            }
+            return transition;
+          })
+          ;
+
+        this.setTransitions(tName, transitions, type);
       });
     });
 
@@ -683,13 +685,19 @@ class Main extends React.Component {
       const tName = t.getProperty('name');
 
       _.each(['success', 'error', 'complete'], (type) => {
-        const transitions = t.getProperty(type) || []
-            , index = transitions.indexOf(name)
-            ;
-        if (~index) { // eslint-disable-line no-bitwise
-          transitions.splice(index, 1);
-          this.setTransitions(tName, transitions, type);
-        }
+        // const transitions = t.getProperty(type) || []
+        //     , index = transitions.indexOf(name)
+        //     ;
+        // if (~index) { // eslint-disable-line no-bitwise
+        //   transitions.splice(index, 1);
+        //   this.setTransitions(tName, transitions, type);
+        // }
+        const transitions = _.clone(t.getProperty(type) || [])
+          ;
+
+        _.remove(transitions, { name });
+
+        this.setTransitions(tName, transitions, type);
       });
     });
 
