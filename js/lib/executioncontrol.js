@@ -162,6 +162,13 @@ export default class ExecutionControl extends React.Component {
             .value()
         }
         {
+          !_.isEmpty(this.state.executions) &&
+            <a className={st2Class('tooltip-button')}
+                href={'/#/history?action=' + this.props.action.ref} >
+              Show all
+            </a>
+        }
+        {
           _.isEmpty(this.state.executions) &&
             <div className={st2Class('tooltip-message')}>
               No executions to show

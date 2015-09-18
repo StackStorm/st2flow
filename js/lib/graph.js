@@ -80,7 +80,7 @@ export default class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
     });
 
     _.each(targets, target => {
-      this.setEdge(source, target, { type });
+      this.setEdge(source, target.name, { type });
     });
   }
 

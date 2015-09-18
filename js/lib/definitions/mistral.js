@@ -35,12 +35,13 @@ export default class MistralDefinition extends Definition {
       TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.-]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
+      TASK_PUBLISH: /^(\s*)publish:/,
       SUCCESS_BLOCK: /^(\s*)on-success:/,
       ERROR_BLOCK: /^(\s*)on-error:/,
       COMPLETE_BLOCK: /^(\s*)on-complete:/,
       INPUT_BLOCK: /^(\s*)input:/,
       YAQL_VARIABLE: /(.*\$\.)(\w+)/,
-      TRANSITION: /^(\s*-\s*)(.+)/
+      TRANSITION: /^(\s*-\s*)(\w[\w.-]*)(.*)?$/
     });
   }
 
@@ -62,7 +63,7 @@ export default class MistralDefinition extends Definition {
         complete: (indent) => _.template(indent + 'on-complete:\n')
       },
       coord: () => _.template('${x}, ${y}'),
-      transition: (starter) => _.template(starter + '${name}\n')
+      transition: (starter) => _.template(starter + '${value.name}${value.rest}\n')
     });
   }
 
@@ -227,6 +228,9 @@ export default class MistralDefinition extends Definition {
           return;
         }
 
+        handler = this.handler('publish', this.spec.TASK_PUBLISH, () => '');
+        handler(line, lineNum, state);
+
         let block;
 
         block = this.block('isSuccessBlock', this.spec.SUCCESS_BLOCK);
@@ -247,10 +251,10 @@ export default class MistralDefinition extends Definition {
 
           match = this.spec.TRANSITION.exec(line);
           if (match) {
-            const [,starter,value] = match
+            const [,starter,name,rest] = match
               ;
 
-            if (!value.match(this.spec.TASK_NAME_VALIDATION)) {
+            if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
               let message = {
                 type: 'error',
                 row: lineNum,
@@ -266,6 +270,8 @@ export default class MistralDefinition extends Definition {
               , task = state.currentTask
               , values = task.getProperty(type)
               ;
+
+            const value = rest ? { name, rest } : { name };
 
             values.push(value);
 
@@ -293,10 +299,10 @@ export default class MistralDefinition extends Definition {
 
           match = this.spec.TRANSITION.exec(line);
           if (match) {
-            const [,starter,value] = match
+            const [,starter,name,rest] = match
               ;
 
-            if (!value.match(this.spec.TASK_NAME_VALIDATION)) {
+            if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
               let message = {
                 type: 'error',
                 row: lineNum,
@@ -312,6 +318,8 @@ export default class MistralDefinition extends Definition {
               , task = state.currentTask
               , values = task.getProperty(type)
               ;
+
+            const value = rest ? { name, rest } : { name };
 
             values.push(value);
 
@@ -339,10 +347,10 @@ export default class MistralDefinition extends Definition {
 
           match = this.spec.TRANSITION.exec(line);
           if (match) {
-            const [,starter,value] = match
+            const [,starter,name,rest] = match
               ;
 
-            if (!value.match(this.spec.TASK_NAME_VALIDATION)) {
+            if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
               let message = {
                 type: 'error',
                 row: lineNum,
@@ -358,6 +366,8 @@ export default class MistralDefinition extends Definition {
               , task = state.currentTask
               , values = task.getProperty(type)
               ;
+
+            const value = rest ? { name, rest } : { name };
 
             values.push(value);
 

@@ -131,7 +131,9 @@ describe('Mistral definition', () => {
 
       const task1 = new Task()
         .setProperty('name', 'update_group_start_status')
-        .setProperty('success', ['get_chatops_channel'])
+        .setProperty('success', [{
+          name: 'get_chatops_channel'
+        }])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'st2.kv.set')
@@ -155,12 +157,16 @@ describe('Mistral definition', () => {
 
       const task2 = new Task()
         .setProperty('name', 'get_chatops_channel')
-        .setProperty('success', ['notify_start_wf'])
+        .setProperty('publish', '')
+        .setProperty('success', [{
+          name: 'notify_start_wf'
+        }])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'st2.kv.get')
         .setSector('task', new Sector(23,0,31,0).setType('task'))
         .setSector('name', new Sector(23,6,23,25).setType('name'))
+        .setSector('publish', new Sector(27,17,27,26).setType('publish'))
         .setSector('success', new Sector(29,0,31,0).setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
@@ -180,7 +186,9 @@ describe('Mistral definition', () => {
 
       const task3 = new Task()
         .setProperty('name', 'notify_start_wf')
-        .setProperty('success', ['get_current_epoch'])
+        .setProperty('success', [{
+          name: 'get_current_epoch'
+        }])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'slack.post_message')
@@ -205,12 +213,14 @@ describe('Mistral definition', () => {
 
       const task4 = new Task()
         .setProperty('name', 'get_current_epoch')
+        .setProperty('publish', '')
         .setProperty('success', [])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'autoscale.epoch')
         .setSector('task', new Sector(38,0,42,0).setType('task'))
         .setSector('name', new Sector(38,6,38,23).setType('name'))
+        .setSector('publish', new Sector(40,17,40,26).setType('publish'))
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
@@ -261,11 +271,11 @@ describe('Mistral definition', () => {
         ''
       ].join('\n'));
 
-      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+      const transitionString = model.fragments.transitions(task1, [{value: { name: 'some', rest: ': thing' }}], 'success');
 
       expect(transitionString).to.deep.equal([
         '        on-success:',
-        '          - some',
+        '          - some: thing',
         ''
       ].join('\n'));
     });
@@ -282,7 +292,9 @@ describe('Mistral definition', () => {
 
       const task1 = new Task()
         .setProperty('name', 'update_group_start_status')
-        .setProperty('success', ['get_chatops_channel'])
+        .setProperty('success', [{
+          name: 'get_chatops_channel'
+        }])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'st2.kv.set')
@@ -322,7 +334,7 @@ describe('Mistral definition', () => {
         ''
       ].join('\n'));
 
-      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+      const transitionString = model.fragments.transitions(task1, [{value: { name: 'some' }}], 'success');
 
       expect(transitionString).to.deep.equal([
         '                on-success:',
@@ -343,12 +355,14 @@ describe('Mistral definition', () => {
 
       const task1 = new Task()
         .setProperty('name', 'task1')
+        .setProperty('publish', '')
         .setProperty('success', [])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'core.local')
         .setSector('task', new Sector(10,0,15,0).setType('task'))
         .setSector('name', new Sector(10,8,10,13).setType('name'))
+        .setSector('publish', new Sector(12,21,12,30).setType('publish'))
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
@@ -385,7 +399,7 @@ describe('Mistral definition', () => {
         ''
       ].join('\n'));
 
-      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+      const transitionString = model.fragments.transitions(task1, [{value: { name: 'some' }}], 'success');
 
       expect(transitionString).to.deep.equal([
         '            on-success:',
@@ -406,12 +420,14 @@ describe('Mistral definition', () => {
 
       const task1 = new Task()
         .setProperty('name', 'task1')
+        .setProperty('publish', '')
         .setProperty('success', [])
         .setProperty('error', [])
         .setProperty('complete', [])
         .setProperty('ref', 'core.local')
         .setSector('task', new Sector(10,0,15,0).setType('task'))
         .setSector('name', new Sector(10,3,10,8).setType('name'))
+        .setSector('publish', new Sector(12,13,12,22).setType('publish'))
         .setSector('success', new Sector().setType('success')._setSpecial(specials))
         .setSector('error', new Sector().setType('error')._setSpecial(specials))
         .setSector('complete', new Sector().setType('complete')._setSpecial(specials))
@@ -448,7 +464,7 @@ describe('Mistral definition', () => {
         ''
       ].join('\n'));
 
-      const transitionString = model.fragments.transitions(task1, [{ name: 'some' }], 'success');
+      const transitionString = model.fragments.transitions(task1, [{value: { name: 'some' }}], 'success');
 
       expect(transitionString).to.deep.equal([
         '				on-success:',

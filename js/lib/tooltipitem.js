@@ -21,7 +21,8 @@ export default class TooltipItem extends React.Component {
 
   render() {
     const props = {
-      className: st2Class('tooltip-item') + ' ' + st2Class('execution')
+      className: st2Class('tooltip-item') + ' ' + st2Class('execution'),
+      href: `/#/history/${this.props.execution.id}/general?action=${this.props.execution.action.ref}`
     };
 
     const statusProps = {
@@ -35,7 +36,7 @@ export default class TooltipItem extends React.Component {
 
     const time = this.props.execution.start_timestamp;
 
-    return <div {...props} >
+    return <a {...props} >
       <div {...statusProps} />
       <div className={st2Class('execution-ref')} >
         {this.props.execution.action.ref}
@@ -44,6 +45,6 @@ export default class TooltipItem extends React.Component {
         <Time value={moment(time).utcOffset(time)}
           format="ddd, DD MMM YYYY HH:mm:ss UTC" />
       </div>
-    </div>;
+    </a>;
   }
 }
