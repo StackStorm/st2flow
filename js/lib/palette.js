@@ -63,7 +63,7 @@ class Action extends React.Component {
   static propTypes = {
     action: React.PropTypes.shape({
       ref: React.PropTypes.string.isRequired,
-      description: React.PropTypes.string.isRequired
+      description: React.PropTypes.string
     })
   }
 
