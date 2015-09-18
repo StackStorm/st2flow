@@ -17,7 +17,18 @@ var _ = require('lodash')
   , fontello = require('gulp-fontello')
   , cached = require('gulp-cached')
   , watchify = require('watchify')
+  , header = require('gulp-header')
+  , git = require('git-rev-sync')
+  , pkg = require('./package.json')
   ;
+
+function buildHeader() {
+  var host = 'https://github.com/'
+    , commitURL = host + pkg.repository + '/commit/' + git.long()
+    ;
+
+  return 'Built ' + new Date().toISOString() + ' from ' + commitURL;
+}
 
 var watch;
 var customOpts = {
@@ -57,6 +68,7 @@ function bundle(b) {
       this.emit('end');
     })
     .pipe(source('main.js'))
+    .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(buffer())
     .pipe(sourcemaps.init({ loadMaps: true }))
     .pipe(sourcemaps.write('./'))
