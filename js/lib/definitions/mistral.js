@@ -35,6 +35,7 @@ export default class MistralDefinition extends Definition {
       TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.-]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
+      TASK_PUBLISH: /^(\s*)publish:/,
       SUCCESS_BLOCK: /^(\s*)on-success:/,
       ERROR_BLOCK: /^(\s*)on-error:/,
       COMPLETE_BLOCK: /^(\s*)on-complete:/,
@@ -223,6 +224,11 @@ export default class MistralDefinition extends Definition {
         }
 
         handler = this.handler('workflow', this.spec.TASK_WORKFLOW);
+        if (handler(line, lineNum, state)) {
+          return;
+        }
+
+        handler = this.handler('publish', this.spec.TASK_PUBLISH);
         if (handler(line, lineNum, state)) {
           return;
         }
