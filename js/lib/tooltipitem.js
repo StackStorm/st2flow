@@ -2,6 +2,7 @@ import moment from 'moment';
 import React from 'react';
 import Time from 'react-time';
 
+import api from './api';
 import bem from './util/bem';
 
 const st2Class = bem('controls')
@@ -22,6 +23,7 @@ export default class TooltipItem extends React.Component {
   render() {
     const props = {
       className: st2Class('tooltip-item') + ' ' + st2Class('execution'),
+      target: `st2web+${api.client.index.url}`,
       href: `/#/history/${this.props.execution.id}/general?action=${this.props.execution.action.ref}`
     };
 

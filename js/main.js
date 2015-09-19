@@ -43,6 +43,8 @@ class Main extends React.Component {
     this.initRouter();
 
     api.on('connect', (client) => {
+      window.name = `st2flow+${client.index.url}`;
+
       this.setState({ error: undefined, actions: undefined, suggestions: undefined });
 
       return client.actionOverview.list()
