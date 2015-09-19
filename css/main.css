@@ -305,6 +305,8 @@ main {
   right: 0;
   z-index: 2;
 
+  user-select: none;
+
   &__button {
     &-complex {
       display: inline-block;
@@ -373,6 +375,20 @@ main {
 
     &--active {
       display: block;
+    }
+
+    &-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+
+      cursor: pointer;
+
+      &--active {
+        position: fixed;
+      }
     }
 
     &-message {

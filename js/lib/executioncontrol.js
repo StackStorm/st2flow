@@ -140,11 +140,17 @@ export default class ExecutionControl extends React.Component {
     }
 
     const tooltipProps = {
-      className: `${st2Class('tooltip')}`
+      className: st2Class('tooltip')
+    };
+
+    const tooltipOverlayProps = {
+      className: st2Class('tooltip-overlay'),
+      onClick: () => this.showExecutions()
     };
 
     if (this.state.showExecutions) {
       tooltipProps.className += ' ' + st2Class('tooltip', 'active');
+      tooltipOverlayProps.className += ' ' + st2Class('tooltip-overlay', 'active');
     }
 
     return <div {...props} >
@@ -152,6 +158,7 @@ export default class ExecutionControl extends React.Component {
       <div {...execProps} >
         {this.state.total}
       </div>
+      <div {...tooltipOverlayProps} />
       <div {...tooltipProps} >
         {
           _(this.state.executions)
