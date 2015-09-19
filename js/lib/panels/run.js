@@ -14,6 +14,7 @@ export default class Run extends React.Component {
   }
 
   state = {
+    action: {},
     parameters: {},
     show: false
   }
@@ -21,7 +22,7 @@ export default class Run extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    this.props.onSubmit(this.props.action, this.state.parameters)
+    this.props.onSubmit(this.state.action, this.state.parameters)
       .then(() => {
         this.setState({ show: false });
       })
@@ -41,8 +42,7 @@ export default class Run extends React.Component {
 
   show() {
     this.setState({
-      show: true,
-      parameters: {} // because if spec have changed, we're going to stuck with old value and no way to remove it
+      show: true
     });
   }
 
@@ -52,8 +52,18 @@ export default class Run extends React.Component {
     this.setState(o);
   }
 
+  componentWillReceiveProps(props) {
+    const action = _.cloneDeep(props.action);
+
+    if (!_.isEqual(this.state.action.parameters, action.parameters)) {
+      this.setState({ parameters: {} });
+    }
+
+    this.setState({ action });
+  }
+
   render() {
-    const fields = _(this.props.action.parameters)
+    const fields = _(this.state.action.parameters)
       .chain()
       .cloneDeep()
       .each((spec, name) => {
