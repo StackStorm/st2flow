@@ -442,6 +442,10 @@ class Main extends React.Component {
       source.auth = new URI(source.api).port(9100).toString();
     }
 
+    if (source.auth === false) {
+      delete source.auth;
+    }
+
     return this.handleSourceChange(source);
   }
 
