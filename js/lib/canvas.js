@@ -614,7 +614,7 @@ export default class Canvas extends EventEmitter {
     const crt = node.elem.cloneNode(true);
     crt.style.removeProperty('transform');
     crt.style.removeProperty('-webkit-transform');
-    crt.style.setProperty('z-index', 0);
+    crt.style.setProperty('z-index', -1);
 
     if (this._hiddenNode) {
       this._hiddenNode.parentNode.replaceChild(crt, this._hiddenNode);
