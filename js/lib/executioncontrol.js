@@ -171,6 +171,7 @@ export default class ExecutionControl extends React.Component {
         {
           !_.isEmpty(this.state.executions) &&
             <a className={st2Class('tooltip-button')}
+                target={`st2web+${api.client.index.url}`}
                 href={'/#/history?action=' + this.props.action.ref} >
               Show all
             </a>
