@@ -137,7 +137,7 @@ export default class Canvas extends EventEmitter {
     return [x, y];
   }
 
-  fromInner(x, y) {
+  fromInner(x=0, y=0) {
     x += this.paddings.left;
     y += this.paddings.top;
 

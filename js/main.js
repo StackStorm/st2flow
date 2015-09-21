@@ -737,6 +737,7 @@ class Main extends React.Component {
     // FIX: Quick and dirty implementation for bulk updates missing in current
     // version of brace. We'll need a better solution sooner rather than later.
     this._bulk = true;
+    let shift = 0;
     const nodes = this.graph.nodes();
     _(nodes)
       .map(name => {
@@ -745,7 +746,7 @@ class Main extends React.Component {
       .sortBy(task => {
         return task.getSector('coord').start.row;
       })
-      .each((task, i) => {
+      .each((task) => {
         const name = task.getProperty('name')
             , { x, y } = this.graph.node(name);
 
@@ -753,10 +754,12 @@ class Main extends React.Component {
             , fragment = this.model.fragments.coord(task, x, y)
             ;
 
-        // Each replace would create a new line, so each sector should be
+        // Some replaces would create a new line, so each sector should be
         // shifted one more line below to preserve the intended position.
+        sector.moveBy(shift, 0);
+
         if (sector.isEmpty()) {
-          sector.moveBy(i, 0);
+          shift++;
         }
 
         this.editor.env.document.replace(sector, fragment);
