@@ -425,6 +425,7 @@ class Main extends React.Component {
   }
 
   handleMetaSubmit(action) {
+    window.name = `st2flow+${api.client.index.url}+${action.ref}`;
     this.setState({ action });
     this.setState({ meta: false });
   }
@@ -460,6 +461,8 @@ class Main extends React.Component {
 
     return api.connect(this.state.source).then((client) => {
       return client.actionOverview.get(ref).then((action) => {
+        window.name = `st2flow+${client.index.url}+${ref}`;
+
         if (action.runner_type !== 'mistral-v2') {
           throw Error(`Runner type ${action.runner_type} is not supported`);
         }
