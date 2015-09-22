@@ -48,7 +48,11 @@ export default class Run extends React.Component {
 
   changeValue(name, value) {
     const o = this.state.parameters;
-    o[name] = value;
+    if (_.isUndefined(value)) {
+      delete o[name];
+    } else {
+      o[name] = value;
+    }
     this.setState(o);
   }
 
@@ -74,63 +78,88 @@ export default class Run extends React.Component {
         const field = {
           name: spec.name,
           description: spec.description,
-          required: spec.required,
-          props: {}
+          props: {
+            required: spec.required,
+            placeholder: spec.default
+          }
         };
 
+        let type = spec.type;
+
+        if (spec.enum) {
+          type = 'select';
+        }
+
         const types = {
-          'string': {
+          'string': () => ({
             type: 'text',
             props: {
               value: this.state.parameters[field.name],
               onChange: (event) =>
                 this.changeValue(field.name, event.target.value)
             }
-          },
-          'integer': {
+          }),
+          'integer': () => ({
             type: 'number',
             props: {
               value: this.state.parameters[field.name],
               onChange: (event) =>
-                this.changeValue(field.name, event.target.value)
+                this.changeValue(field.name, parseInt(event.target.value))
             }
-          },
-          'number': {
+          }),
+          'number': () => ({
             type: 'number',
             props: {
               value: this.state.parameters[field.name],
               onChange: (event) =>
-                this.changeValue(field.name, event.target.value)
+                this.changeValue(field.name, parseInt(event.target.value))
             }
-          },
-          'boolean': {
+          }),
+          'boolean': () => ({
             type: 'checkbox',
             props: {
               checked: this.state.parameters[field.name],
               onChange: (event) =>
                 this.changeValue(field.name, event.target.checked)
             }
-          },
-          'select': {
+          }),
+          'select': () => ({
             type: 'select',
+            options: [{
+              name: '- none -',
+              value: '\u2205'
+            }].concat(spec.enum),
             props: {
               value: this.state.parameters[field.name],
-              onChange: (event) =>
-                this.changeValue(field.name, event.target.value)
+              onChange: (event) => {
+                let value = event.target.value;
+
+                if (value === '\u2205') {
+                  value = undefined;
+                }
+
+                return this.changeValue(field.name, value);
+              }
             }
-          },
-          'array': {
+          }),
+          'array': () => ({
             type: 'text',
             props: {
-              value: this.state.parameters[field.name],
-              onChange: (event) =>
-                this.changeValue(field.name, event.target.value)
+              value: (this.state.parameters[field.name] || []).join(', '),
+              onChange: (event) => {
+                const value = event.target.value
+                  .split(',')
+                  .map(_.trim)
+                  ;
+
+                this.changeValue(field.name, value);
+              }
             }
-          },
+          }),
           'object': null
         };
 
-        _.assign(field, types[spec.type || 'string']);
+        _.merge(field, types[type || 'string']());
 
         return field;
       })
