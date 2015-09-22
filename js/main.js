@@ -760,7 +760,7 @@ class Main extends React.Component {
             , { x, y } = this.graph.node(name);
 
         const sector = task.getSector('coord')
-            , fragment = this.model.fragments.coord(task, x, y)
+            , fragment = this.model.fragments.coord(task, Math.round(x), Math.round(y))
             ;
 
         // Some replaces would create a new line, so each sector should be
