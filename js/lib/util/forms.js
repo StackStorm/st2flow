@@ -4,7 +4,7 @@ import React from 'react'; // eslint-disable-line no-unused-vars
 const templates = {
   text: (field) =>
     <label className="st2-panel__field" key={ field.name }>
-      <div className="st2-panel__field-name">{ field.name }{ field.required && ' *'}</div>
+      <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
       <input className="st2-panel__field-input" type="text" {...field.props} />
       {
         field.description &&
@@ -14,25 +14,25 @@ const templates = {
 
   number: (field) =>
     <label className="st2-panel__field" key={ field.name }>
-      <div className="st2-panel__field-name">{ field.name }{ field.required && ' *'}</div>
+      <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
       <input className="st2-panel__field-input" type="number" {...field.props} />
     </label>,
 
   textarea: (field) =>
     <label className="st2-panel__field" key={ field.name }>
-      <div className="st2-panel__field-name">{ field.name }{ field.required && ' *'}</div>
+      <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
       <textarea className="st2-panel__field-input" {...field.props} ></textarea>
     </label>,
 
   password: (field) =>
     <label className="st2-panel__field" key={ field.name }>
-      <div className="st2-panel__field-name">{ field.name }{ field.required && ' *'}</div>
+      <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
       <input className="st2-panel__field-input" type="password" {...field.props} />
     </label>,
 
   select: (field) =>
     <label className="st2-panel__field" key={ field.name }>
-      <div className="st2-panel__field-name">{ field.name }{ field.required && ' *'}</div>
+      <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
       <div className="st2-panel__field-select">
         <select className="st2-panel__field-input" {...field.props} >
           {
