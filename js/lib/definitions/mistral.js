@@ -16,41 +16,54 @@ export default class MistralDefinition extends Definition {
     return {
       indents: {
         base: '',
-        workflow: unit.repeat(1),
-        tasks: unit.repeat(2),
-        task: unit.repeat(3),
-        property: unit.repeat(4),
-        transition: unit.repeat(5)
+        workflow: _.repeat(unit, 1),
+        tasks: _.repeat(unit, 2),
+        task: _.repeat(unit, 3),
+        property: _.repeat(unit, 4),
+        transition: _.repeat(unit, 5)
       }
     };
   }
 
   get spec() {
     return _.assign(super.spec, {
-      WORKFLOWS_BLOCK: /^(\s*)workflows:\s*$/,
-      WORKFLOW_NAME: /^(\s*)([\w.-]+):\s*$/,
-      TASK_BLOCK: /^(\s*)tasks:\s*$/,
-      TASK_ACTION: /(.*)(action:\s+['"]*)([\w.]+)/,
-      SUCCESS_BLOCK: /^(\s*)on-success:\s*$/,
-      ERROR_BLOCK: /^(\s*)on-error:\s*$/,
-      COMPLETE_BLOCK: /^(\s*)on-complete:\s*$/,
-      TRANSITION: /^(\s*-\s*)(\w+)/
+      WORKFLOWS_BLOCK: /^(\s*)workflows:/,
+      WORKFLOW_NAME: /^(\s*)([\w.-]+):/,
+      TASK_BLOCK: /^(\s*)tasks:/,
+      TASK_NAME: /^(\s*)(.+):/,
+      TASK_NAME_VALIDATION: /^\w[\w.-]*$/,
+      TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
+      TASK_ACTION: /(.*)(action:\s+['"]*)([\w.-]+)/,
+      TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
+      TASK_PUBLISH: /^(\s*)publish:/,
+      SUCCESS_BLOCK: /^(\s*)on-success:/,
+      ERROR_BLOCK: /^(\s*)on-error:/,
+      COMPLETE_BLOCK: /^(\s*)on-complete:/,
+      INPUT_BLOCK: /^(\s*)input:/,
+      YAQL_VARIABLE: /(.*\$\.)(\w+)/,
+      TRANSITION: /^(\s*-\s*)(\w[\w.-]*)(.*)?$/
     });
   }
 
   get template() {
     return _.assign(super.template, {
-      task: (starter, indent) => _.template(starter + '${name}:\n' + indent + 'action: ${ref}\n'),
+      task: (starter, indent) => _.template(
+        starter + '${name}:\n' +
+        indent + '# [${x}, ${y}]\n' +
+        indent + 'action: ${ref}\n'
+      ),
       block: {
         base: () => _.template(`---\nversion: '2.0'\n\nworkflows:\n`),
         workflow: (external, internal) =>
           _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
         tasks: (indent) => _.template(indent + 'tasks:\n'),
+        coord: (indent) => _.template(indent + '# [${coord}]\n'),
         success: (indent) => _.template(indent + 'on-success:\n'),
         error: (indent) => _.template(indent + 'on-error:\n'),
         complete: (indent) => _.template(indent + 'on-complete:\n')
       },
-      transition: (starter) => _.template(starter + '${name}\n')
+      coord: () => _.template('${x}, ${y}'),
+      transition: (starter) => _.template(starter + '${value.name}${value.rest}\n')
     });
   }
 
@@ -72,6 +85,17 @@ export default class MistralDefinition extends Definition {
     if (this.spec.EMPTY_LINE.test(line)) {
       return;
     }
+
+    const indent = line.match(this.spec.WS_INDENT)[0];
+
+    if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
+      const name = state.potentialWorkflow.getProperty('name');
+      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
+      state.taskBlock = state.currentWorkflow.getSector('taskBlock');
+      state.indent = indent;
+    }
+
+    state.potentialWorkflow = null;
 
     let block = this.block('isWorkflowBlock', this.spec.WORKFLOWS_BLOCK);
 
@@ -104,6 +128,11 @@ export default class MistralDefinition extends Definition {
             state.currentWorkflow.endSector('workflow', lineNum, 0);
           }
 
+          if (state.currentTask) {
+            state.currentTask.endSector('task', lineNum, 0);
+            delete state.currentTask;
+          }
+
           const workflowSector = new Sector(lineNum, 0).setType('workflow')
               , nameSector = new Sector(...coords).setType('name')
               , taskBlockSector = new Sector()
@@ -132,17 +161,6 @@ export default class MistralDefinition extends Definition {
       }
     }
 
-    const indent = line.match(this.spec.WS_INDENT)[0];
-
-    if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
-      const name = state.potentialWorkflow.getProperty('name');
-      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
-      state.taskBlock = state.currentWorkflow.getSector('taskBlock');
-      state.indent = indent;
-    }
-
-    state.potentialWorkflow = null;
-
     if (state.currentWorkflow) {
       state.currentWorkflow.endSector('workflow', lineNum, 0);
 
@@ -152,7 +170,7 @@ export default class MistralDefinition extends Definition {
         const sector = state.currentWorkflow.getSector('taskBlock');
         sector.setStart(lineNum, 0);
         sector.setEnd(lineNum + 1, 0);
-        sector.indent = state.unit.repeat(state.isTaskBlock - 1);
+        sector.indent = _.repeat(state.unit, state.isTaskBlock - 1);
         return;
       }
 
@@ -170,23 +188,48 @@ export default class MistralDefinition extends Definition {
           , match
           ;
 
-        handler = this.handler('ref', this.spec.TASK_ACTION);
-        match = handler(line, lineNum, state.currentTask);
-        if (match) {
-          let [,_prefix] = match;
+        // Will also match comments and text fields, which in some cases may not
+        // be what you would expect, but the proper implementation requires full
+        // blown AST parser
+        let subline = line;
+        while (match = this.spec.YAQL_VARIABLE.exec(subline)) { // eslint-disable-line no-cond-assign
+          const [,starter,name] = match
+              , coords = [lineNum, starter.length, lineNum, (starter+name).length]
+              ;
 
-          if (state.currentTask.isEmpty()) {
-            if (state.currentTask.starter === _prefix) {
-              state.currentTask.indent = state.unit.repeat(_prefix.length);
-            } else {
-              state.currentTask.starter += _prefix;
-            }
-          } else {
-            state.currentTask.indent = _prefix;
-          }
+          const yaqlSector = new Sector(...coords).setType('yaql');
 
+          // we don't usually set value for the sector, but this time, lets try
+          yaqlSector.value = name;
+
+          const sectors = state.currentTask.getSector('yaql');
+          sectors.push(yaqlSector);
+
+          state.currentTask.setSector('yaql', sectors);
+
+          subline = starter;
+        }
+
+        handler = this.handler('coord', this.spec.TASK_COORD, (e) => {
+          const [x, y] = _.map(e.split(','), _.parseInt);
+          return { x, y };
+        });
+        if (handler(line, lineNum, state)) {
           return;
         }
+
+        handler = this.handler('ref', this.spec.TASK_ACTION);
+        if (handler(line, lineNum, state)) {
+          return;
+        }
+
+        handler = this.handler('workflow', this.spec.TASK_WORKFLOW);
+        if (handler(line, lineNum, state)) {
+          return;
+        }
+
+        handler = this.handler('publish', this.spec.TASK_PUBLISH, () => '');
+        handler(line, lineNum, state);
 
         let block;
 
@@ -195,13 +238,9 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('success');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isSuccessBlock - 1);
-          return;
-        }
-
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('success');
-          sector.setEnd(lineNum, 0);
+          sector.indent = _.repeat(state.unit, state.isSuccessBlock - 1);
+        } else {
+          block.exit(line, lineNum, state);
         }
 
         if (state.isSuccessBlock) {
@@ -212,8 +251,18 @@ export default class MistralDefinition extends Definition {
 
           match = this.spec.TRANSITION.exec(line);
           if (match) {
-            const [,starter,value] = match
+            const [,starter,name,rest] = match
               ;
+
+            if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
+              let message = {
+                type: 'error',
+                row: lineNum,
+                column: starter.length,
+                text: `Task name should only contain letters, dots and hyphens`
+              };
+              this.model.messages.add(message);
+            }
 
             sector.childStarter = starter;
 
@@ -221,6 +270,8 @@ export default class MistralDefinition extends Definition {
               , task = state.currentTask
               , values = task.getProperty(type)
               ;
+
+            const value = rest ? { name, rest } : { name };
 
             values.push(value);
 
@@ -235,13 +286,9 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('error');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isErrorBlock - 1);
-          return;
-        }
-
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('error');
-          sector.setEnd(lineNum, 0);
+          sector.indent = _.repeat(state.unit, state.isErrorBlock - 1);
+        } else {
+          block.exit(line, lineNum, state);
         }
 
         if (state.isErrorBlock) {
@@ -252,8 +299,18 @@ export default class MistralDefinition extends Definition {
 
           match = this.spec.TRANSITION.exec(line);
           if (match) {
-            const [,starter,value] = match
+            const [,starter,name,rest] = match
               ;
+
+            if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
+              let message = {
+                type: 'error',
+                row: lineNum,
+                column: starter.length,
+                text: `Task name should only contain letters, dots and hyphens`
+              };
+              this.model.messages.add(message);
+            }
 
             sector.childStarter = starter;
 
@@ -261,6 +318,8 @@ export default class MistralDefinition extends Definition {
               , task = state.currentTask
               , values = task.getProperty(type)
               ;
+
+            const value = rest ? { name, rest } : { name };
 
             values.push(value);
 
@@ -275,13 +334,9 @@ export default class MistralDefinition extends Definition {
         if (block.enter(line, lineNum, state)) {
           const sector = state.currentTask.getSector('complete');
           sector.setStart(lineNum, 0);
-          sector.indent = state.unit.repeat(state.isCompleteBlock - 1);
-          return;
-        }
-
-        if (block.exit(line, lineNum, state)) {
-          const sector = state.currentTask.getSector('complete');
-          sector.setEnd(lineNum, 0);
+          sector.indent = _.repeat(state.unit, state.isCompleteBlock - 1);
+        } else {
+          block.exit(line, lineNum, state);
         }
 
         if (state.isCompleteBlock) {
@@ -292,8 +347,18 @@ export default class MistralDefinition extends Definition {
 
           match = this.spec.TRANSITION.exec(line);
           if (match) {
-            const [,starter,value] = match
+            const [,starter,name,rest] = match
               ;
+
+            if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
+              let message = {
+                type: 'error',
+                row: lineNum,
+                column: starter.length,
+                text: `Task name should only contain letters, dots and hyphens`
+              };
+              this.model.messages.add(message);
+            }
 
             sector.childStarter = starter;
 
@@ -301,6 +366,8 @@ export default class MistralDefinition extends Definition {
               , task = state.currentTask
               , values = task.getProperty(type)
               ;
+
+            const value = rest ? { name, rest } : { name };
 
             values.push(value);
 
@@ -310,14 +377,29 @@ export default class MistralDefinition extends Definition {
           }
         }
 
+        block = this.block('isInputBlock', this.spec.INPUT_BLOCK);
+
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('input');
+          sector.setStart(lineNum, 0);
+        } else {
+          block.exit(line, lineNum, state);
+        }
+
+        if (state.isInputBlock) {
+          const sector = state.currentTask.getSector('input');
+          sector.setEnd(lineNum + 1, 0);
+        }
+
       }
 
       let match;
 
-      match = this.spec.WORKFLOW_NAME.exec(line);
+      match = this.spec.TASK_NAME.exec(line);
       if (match) {
         const [,starter,name] = match
             , coords = [lineNum, starter.length, lineNum, (starter+name).length]
+            , nextLine = [lineNum+1, 0, lineNum+1, 0]
             ;
 
         if (!state.currentTask || starter.length === state.currentTask.starter.length) {
@@ -327,14 +409,50 @@ export default class MistralDefinition extends Definition {
 
           const taskSector = new Sector(lineNum, 0).setType('task')
               , nameSector = new Sector(...coords).setType('name')
+              , coordSector = new Sector(...nextLine).setType('coord')
+              , inputSector = new Sector().setType('input')
               ;
+
+          if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
+            let message = {
+              type: 'error',
+              row: lineNum,
+              column: starter.length,
+              text: `Task name should only contain letters, dots and hyphens`
+            };
+            this.model.messages.add(message);
+          }
+
+          if (_.includes(state.touched, name)) {
+            const sector = this.model.task(name).getSector('name');
+
+            let message = {
+              type: 'error',
+              row: sector.start.row,
+              column: sector.start.column,
+              text: `Task '${name}' is overriden by another task`
+            };
+            this.model.messages.add(message);
+
+            message = {
+              type: 'warning',
+              row: lineNum,
+              column: starter.length,
+              text: `Task '${name}' overrides another task`
+            };
+            this.model.messages.add(message);
+          }
 
           state.currentTask = this.model.task(name, {})
             .setSector('task', taskSector)
             .setSector('name', nameSector)
+            .setSector('coord', coordSector)
+            .setSector('yaql', [])
+            .setSector('input', inputSector)
             ;
 
           taskSector.task = state.currentTask;
+          inputSector.setTask(state.currentTask);
 
           state.currentTask.starter = starter;
 
@@ -343,7 +461,7 @@ export default class MistralDefinition extends Definition {
           _.each(TYPES, (type) => {
             const sector = new Sector().setType(type)
                 , outdent = state.taskBlock.indent
-                , unit = state.unit.repeat(starter.length - outdent.length)
+                , unit = _.repeat(state.unit, starter.length - outdent.length)
                 ;
 
             sector.indent = starter + unit;
@@ -356,6 +474,7 @@ export default class MistralDefinition extends Definition {
           });
 
           _.remove(state.untouchedTasks, (e) => e === name);
+          state.touched.push(name);
         }
       }
 

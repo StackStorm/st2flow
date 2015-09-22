@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import 'object.observe';
 
 import intersectRect from '../util/intersect-rect';
 

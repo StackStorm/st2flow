@@ -50,6 +50,68 @@ export class Settings {
       }
     },
     additionalProperties: false
+  }, {
+    id: 'pre-2',
+    schema: {
+      _rev: {
+        type: 'string'
+      },
+      sources: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            api: {
+              type: 'string',
+              format: 'uri'
+            },
+            auth: {
+              type: 'string',
+              format: 'uri'
+            }
+          }
+        }
+      },
+      selected: {
+        type: 'object',
+        properties: {
+          api: {
+            type: 'string',
+            format: 'uri'
+          },
+          auth: {
+            type: 'string',
+            format: 'uri'
+          },
+          token: {
+            type: 'object'
+          }
+        }
+      }
+    },
+    additionalProperties: false,
+    migration: (settings) => {
+      const result = {
+        _rev: 'pre-2',
+        sources: []
+      };
+
+      const source = settings.source;
+
+      const existing = {
+        api: `${source.protocol}://${source.host}:${source.port}/`
+      };
+
+      if (source.auth) {
+        const auth = source.auth;
+        existing.auth = `${auth.protocol}://${auth.host}:${auth.port}/`;
+      }
+
+      result.sources.push(existing);
+      result.selected = existing;
+
+      return result;
+    }
   }];
 
   constructor() {
