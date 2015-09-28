@@ -6,6 +6,7 @@ import bem from '../util/bem';
 import templates from '../util/forms';
 
 const st2Class = bem('popup')
+    , st2Panel = bem('panel')
     ;
 
 export default class Meta extends React.Component {
@@ -74,32 +75,50 @@ export default class Meta extends React.Component {
   render() {
     const meta = this.state.meta;
     const fields = [{
-      name: 'Pack',
-      type: 'select',
-      props: {
-        value: this.state.meta.pack,
-        onChange: (event) => {
-          this.changeValue('pack', event.target.value);
-          this.changeValue('ref', [meta.pack, meta.name].join('.'));
+      name: 'ref',
+      type: 'group',
+      children: [{
+        name: 'Pack',
+        type: 'select',
+        className: st2Panel('field-group-ref'),
+        props: {
+          value: this.state.meta.pack,
+          onChange: (event) => {
+            this.changeValue('pack', event.target.value);
+            this.changeValue('ref', [meta.pack, meta.name].join('.'));
+          }
+        },
+        options: _.pluck(this.state.packs, 'name')
+      }, {
+        name: 'dot',
+        type: 'comment',
+        className: st2Panel('field-group-dot'),
+        content: '.'
+      }, {
+        name: 'Name',
+        type: 'text',
+        className: st2Panel('field-group-ref'),
+        props: {
+          value: this.state.meta.name,
+          onChange: (event) => {
+            this.changeValue('name', event.target.value);
+            this.changeValue('ref', [meta.pack, meta.name].join('.'));
+          }
         }
-      },
-      options: _.pluck(this.state.packs, 'name')
-    }, {
-      name: 'Name',
-      type: 'text',
-      props: {
-        value: this.state.meta.name,
-        onChange: (event) => {
-          this.changeValue('name', event.target.value);
-          this.changeValue('ref', [meta.pack, meta.name].join('.'));
-        }
-      }
+      }]
     }, {
       name: 'Description',
       type: 'textarea',
       props: {
         value: this.state.meta.description,
         onChange: (event) => this.changeValue('description', event.target.value)
+      }
+    }, {
+      name: 'Enabled',
+      type: 'checkbox',
+      props: {
+        checked: this.state.meta.enabled,
+        onChange: (event) => this.changeValue('enabled', event.target.checked)
       }
     }, {
     //   name: 'Runner Type',
@@ -121,13 +140,6 @@ export default class Meta extends React.Component {
       props: {
         value: this.state.meta.entry_point,
         onChange: (event) => this.changeValue('entry_point', event.target.value)
-      }
-    }, {
-      name: 'Enabled',
-      type: 'checkbox',
-      props: {
-        checked: this.state.meta.enabled,
-        onChange: (event) => this.changeValue('enabled', event.target.checked)
       }
     }];
 
