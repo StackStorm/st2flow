@@ -182,7 +182,8 @@ export default class Run extends React.Component {
     return (
       <div {...props} >
         <div {...contentProps} >
-          <form onSubmit={this.handleSubmit.bind(this)}>
+          <form className={ st2Class('column') + ' ' + st2Class('form') }
+              onSubmit={this.handleSubmit.bind(this)}>
             <div className="st2-panel__header">
               Run workflow
             </div>

@@ -24,9 +24,8 @@ export default class Meta extends React.Component {
   state = {
     meta: {
       name: '',
-      description: '',
+      pack: 'default',
       runner_type: 'mistral-v2',
-      entry_point: '',
       enabled: true
     },
     show: false
@@ -85,7 +84,11 @@ export default class Meta extends React.Component {
           value: this.state.meta.pack,
           onChange: (event) => {
             this.changeValue('pack', event.target.value);
-            this.changeValue('ref', [meta.pack, meta.name].join('.'));
+            if (meta.pack && meta.name) {
+              this.changeValue('ref', [meta.pack, meta.name].join('.'));
+            } else {
+              this.changeValue('ref', undefined);
+            }
           }
         },
         options: _.pluck(this.state.packs, 'name')
@@ -102,7 +105,11 @@ export default class Meta extends React.Component {
           value: this.state.meta.name,
           onChange: (event) => {
             this.changeValue('name', event.target.value);
-            this.changeValue('ref', [meta.pack, meta.name].join('.'));
+            if (meta.pack && meta.name) {
+              this.changeValue('ref', [meta.pack, meta.name].join('.'));
+            } else {
+              this.changeValue('ref', undefined);
+            }
           }
         }
       }]
@@ -111,14 +118,14 @@ export default class Meta extends React.Component {
       type: 'textarea',
       props: {
         value: this.state.meta.description,
-        onChange: (event) => this.changeValue('description', event.target.value)
+        onChange: (event) => this.changeValue('description', event.target.value || undefined)
       }
     }, {
       name: 'Enabled',
       type: 'checkbox',
       props: {
         checked: this.state.meta.enabled,
-        onChange: (event) => this.changeValue('enabled', event.target.checked)
+        onChange: (event) => this.changeValue('enabled', event.target.checked || undefined)
       }
     }, {
     //   name: 'Runner Type',
@@ -139,7 +146,7 @@ export default class Meta extends React.Component {
       type: 'text',
       props: {
         value: this.state.meta.entry_point,
-        onChange: (event) => this.changeValue('entry_point', event.target.value)
+        onChange: (event) => this.changeValue('entry_point', event.target.value || undefined)
       }
     }];
 
@@ -160,7 +167,8 @@ export default class Meta extends React.Component {
     return (
       <div {...props} >
         <div {...contentProps} >
-          <form onSubmit={this.handleSubmit.bind(this)}>
+          <form className={ st2Class('column') + ' ' + st2Class('form') }
+              onSubmit={this.handleSubmit.bind(this)}>
             <div className="st2-panel__header">
               Metadata
             </div>
@@ -171,6 +179,9 @@ export default class Meta extends React.Component {
                 className="st2-panel__field-input"
                 value="Update meta" />
           </form>
+          <code className={ st2Class('column') + ' ' + st2Class('code') }>
+            { JSON.stringify(this.state.meta, null, 2) }
+          </code>
         </div>
       </div>
     );

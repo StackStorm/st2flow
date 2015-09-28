@@ -1100,17 +1100,25 @@ main {
   justify-content: center;
 
   &__content {
-    padding: 10px 20px 20px;
-
     background-color: #23282d;
     color: #F8F8F2;
 
-    width: 320px;
+    display: flex;
+
+    width: 640px;
     max-height: 100%;
 
-    overflow-y: auto;
-
     border-radius: 5px;
+  }
+
+  &--active {
+    display: flex;
+  }
+
+  &__column {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
 
     &::-webkit-scrollbar {
       width: 0.5em;
@@ -1130,8 +1138,15 @@ main {
     }
   }
 
-  &--active {
-    display: flex;
+  &__form {
+    padding-top: 10px;
+  }
+
+  &__code {
+    white-space: pre;
+    background-color: #363d45;
+    font: 12px/normal 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    border-radius: 0 5px 5px 0;
   }
 }
 
