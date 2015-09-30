@@ -921,7 +921,7 @@ main {
   }
 
   &__header {
-    margin: 10px;
+    margin: 10px 0;
     font-size: 20px;
   }
 
@@ -931,8 +931,10 @@ main {
     margin: 15px 0;
 
     &-name {
-      padding: 0 10px;
-      color: #bbb;
+      font-size: 12px;
+      font-weight: bold;
+      margin: 0 0 5px;
+      color: #BBE7FE;
     }
 
     &-input {
@@ -940,7 +942,7 @@ main {
       width: 100%;
       padding: 10px;
       background-color: #30373E;
-      color: #eee;
+      color: #90d5fc;
       border: 0;
       outline: 0;
       font-size: 12px;
@@ -965,6 +967,19 @@ main {
 
       &::placeholder {
         color: #23282d;
+      }
+
+      &--inline {
+        display: inline-block;
+        width: auto;
+
+        & + & {
+          margin-left: 10px;
+        }
+      }
+
+      &--cancel {
+        background-color: #333;
       }
     }
     input[type=checkbox]&-input ~ &-toggle {
@@ -1007,6 +1022,15 @@ main {
         left: 50%;
       }
     }
+    input[type=checkbox]&-input ~ &-token {
+      /* Token, not toggle */
+      cursor: pointer;
+      user-select: none;
+    }
+    input[type=checkbox]&-input:checked ~ &-token {
+      background-color: #90d5fc;
+      color: #2C3339;
+    }
     textarea&-input {
       &::-webkit-scrollbar {
         width: 0.5em;
@@ -1027,13 +1051,14 @@ main {
     }
     input[type=submit]&-input {
       background-color: #F28037;
+      color: #eee;
     }
     hr {
       border: 0;
       border-bottom: 1px solid #30373E;
     }
     &-description {
-      padding: 5px 10px 0;
+      padding: 5px 0 0;
       font-size: 11px;
       color: #d1eeff;
     }
@@ -1072,14 +1097,74 @@ main {
 
       &-ref {
         flex: 1;
-        margin: 0;
       }
 
       &-dot {
-        margin: 0;
         padding: 36px 10px 0;
       }
     }
+    &-group & {
+      margin: 0;
+    }
+  }
+
+  &__parameter {
+    margin-bottom: 10px;
+    position: relative;
+
+    &-form {
+      padding: 0.1px 10px 10px;
+      margin: 10px -10px;
+      background-color: #374047;
+    }
+
+    &-button {
+      cursor: pointer;
+      color: #BBE7FE;
+
+      &s {
+        position: absolute;
+        top: 0;
+        right: 0;
+
+        font-size: 12px;
+      }
+    }
+
+    &-name {
+      font-size: 12px;
+      font-weight: bold;
+      margin: 5px 0;
+      color: #BBE7FE;
+    }
+
+    &-description {
+      font-size: 12px;
+      margin: 5px 0;
+      color: #d1eeff;
+    }
+
+    &-token {
+      display: inline-block;
+      margin-right: 5px;
+      padding: 3px;
+
+      font-size: 11px;
+
+      background-color: #2C3339;
+      color: #90d5fc;
+
+      border: 1px solid #404C54;
+      border-radius: 3px;
+
+      &s {
+        margin: 5px 0;
+      }
+    }
+  }
+
+  &__parameter-form &__field-input {
+    background-color: #23282d;
   }
 }
 
@@ -1105,7 +1190,7 @@ main {
 
     display: flex;
 
-    width: 640px;
+    width: 960px;
     max-height: 100%;
 
     border-radius: 5px;

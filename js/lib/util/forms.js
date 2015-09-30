@@ -60,6 +60,12 @@ const templates = {
       </div>
     </label>,
 
+  token: (field) =>
+    <label className={ 'st2-panel__field ' + (field.className || '') } key={ field.name }>
+      <input className="st2-panel__field-input" type="checkbox" {...field.props} />
+      <div className="st2-panel__parameter-token st2-panel__field-token">{ field.name }{ field.required && ' *'}</div>
+    </label>,
+
   separator: (field) =>
     <label className={ 'st2-panel__field ' + (field.className || '') } key={ field.name }>
       <hr />
