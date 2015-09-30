@@ -223,24 +223,32 @@ export default class Meta extends React.Component {
     this.setState({ show: false });
   }
 
-  handleParameterCreate() {
-    const { name, ...parameter } = this.state.parameter;
+  handleParameterCreate(bundle) {
+    const { name, ...parameter } = bundle
+        , parameters = this.state.meta.parameters;
 
-    console.log('add', name, parameter);
+    parameters[name] = parameter;
+
+    this.changeValue('parameters', parameters);
   }
 
   handleParameterUpdate(oldName, bundle) {
-    const { name, ...parameter } = bundle;
+    const { name, ...parameter } = bundle
+        , parameters = this.state.meta.parameters;
 
-    if (name === oldName) {
-      console.log('upd', name, parameter);
-    } else {
-      console.log('ren', oldName, '=>', name, parameter);
+    if (name !== oldName) {
+      delete parameters[oldName];
     }
+
+    parameters[name] = parameter;
+
+    this.changeValue('parameters', parameters);
   }
 
   handleParameterDelete(name) {
-    console.log('del', name);
+    const parameters = this.state.meta.parameters;
+
+    this.changeValue('parameters', _.omit(parameters, (value, key) => name === key));
   }
 
   show() {
