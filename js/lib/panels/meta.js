@@ -94,6 +94,11 @@ export class ParameterEditor extends React.Component {
     event.preventDefault();
 
     this.props.onSubmit(this.state.parameter);
+    this.setState({
+      parameter: {
+        type: 'string'
+      }
+    });
   }
 
   handleCancel(event) {
@@ -127,6 +132,7 @@ export class ParameterEditor extends React.Component {
       name: 'Name',
       type: 'text',
       props: {
+        required: true,
         value: this.state.parameter.name,
         onChange: (event) => this.changeValue('name', event.target.value || undefined)
       }
@@ -134,6 +140,7 @@ export class ParameterEditor extends React.Component {
       name: 'Type',
       type: 'select',
       props: {
+        required: true,
         value: this.state.parameter.type,
         onChange: (event) => this.changeValue('type', event.target.value)
       },
@@ -170,14 +177,14 @@ export class ParameterEditor extends React.Component {
     return <form className={ st2Panel('parameter-form') }
         onSubmit={this.handleSubmit.bind(this)}>
       <div className="st2-panel__header">
-        { this.state.parameter.name ? 'Edit parameter' : 'New parameter' }
+        { this.props.name ? 'Edit parameter' : 'New parameter' }
       </div>
       {
         _.map(parameterFields, (field) => templates[field.type](field))
       }
       <input type="submit"
           className="st2-panel__field-input st2-panel__field-input--inline"
-          value={ this.state.parameter.name ? 'Update' : 'Add' } />
+          value={ this.props.name ? 'Update' : 'Add' } />
       {
         this.props.onCancel && <input type="button"
           className="st2-panel__field-input st2-panel__field-input--inline st2-panel__field-input--cancel"
@@ -288,6 +295,7 @@ export default class Meta extends React.Component {
         type: 'select',
         className: st2Panel('field-group-ref'),
         props: {
+          required: true,
           value: this.state.meta.pack,
           onChange: (event) => {
             this.changeValue('pack', event.target.value);
@@ -309,6 +317,7 @@ export default class Meta extends React.Component {
         type: 'text',
         className: st2Panel('field-group-ref'),
         props: {
+          required: true,
           value: this.state.meta.name,
           onChange: (event) => {
             this.changeValue('name', event.target.value);
@@ -352,6 +361,7 @@ export default class Meta extends React.Component {
       name: 'Entry Point',
       type: 'text',
       props: {
+        required: true,
         value: this.state.meta.entry_point,
         onChange: (event) => this.changeValue('entry_point', event.target.value || undefined)
       }

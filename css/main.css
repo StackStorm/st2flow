@@ -1026,6 +1026,11 @@ main {
       /* Token, not toggle */
       cursor: pointer;
       user-select: none;
+
+      box-shadow:
+        0 0 0 2px #2C3339,
+        0 0 0 3px #404C54,
+        0 0 0 5px #2C3339;
     }
     input[type=checkbox]&-input:checked ~ &-token {
       background-color: #90d5fc;
@@ -1146,16 +1151,19 @@ main {
 
     &-token {
       display: inline-block;
-      margin-right: 5px;
-      padding: 3px;
+      margin: 0 8px 0 4px;
+      padding: 1px 3px;
 
       font-size: 11px;
 
       background-color: #2C3339;
       color: #90d5fc;
 
-      border: 1px solid #404C54;
-      border-radius: 3px;
+      border-radius: 1px;
+
+      box-shadow:
+        0 0 0 2px #2C3339,
+        0 0 0 3px #404C54;
 
       &s {
         margin: 5px 0;
