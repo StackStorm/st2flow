@@ -2,7 +2,7 @@ import _ from 'lodash';
 import React from 'react';
 
 import bem from '../util/bem';
-import { Field } from '../util/forms';
+import { SpecField } from '../util/forms';
 
 const st2Class = bem('popup')
     ;
@@ -67,104 +67,6 @@ export default class Run extends React.Component {
   }
 
   render() {
-    const fields = _(this.state.action.parameters)
-      .chain()
-      .cloneDeep()
-      .each((spec, name) => {
-        spec.name = name;
-      })
-      .reject({ immutable: true })
-      .map((spec) => {
-        const field = {
-          name: spec.name,
-          description: spec.description,
-          props: {
-            required: spec.required,
-            placeholder: spec.default
-          }
-        };
-
-        let type = spec.type;
-
-        if (spec.enum) {
-          type = 'select';
-        }
-
-        const types = {
-          'string': () => ({
-            type: 'text',
-            props: {
-              value: this.state.parameters[field.name],
-              onChange: (event) =>
-                this.changeValue(field.name, event.target.value)
-            }
-          }),
-          'integer': () => ({
-            type: 'number',
-            props: {
-              value: this.state.parameters[field.name],
-              onChange: (event) =>
-                this.changeValue(field.name, parseInt(event.target.value))
-            }
-          }),
-          'number': () => ({
-            type: 'number',
-            props: {
-              value: this.state.parameters[field.name],
-              onChange: (event) =>
-                this.changeValue(field.name, parseInt(event.target.value))
-            }
-          }),
-          'boolean': () => ({
-            type: 'checkbox',
-            props: {
-              checked: this.state.parameters[field.name],
-              onChange: (event) =>
-                this.changeValue(field.name, event.target.checked)
-            }
-          }),
-          'select': () => ({
-            type: 'select',
-            options: [{
-              name: '- none -',
-              value: '\u2205'
-            }].concat(spec.enum),
-            props: {
-              value: this.state.parameters[field.name],
-              onChange: (event) => {
-                let value = event.target.value;
-
-                if (value === '\u2205') {
-                  value = undefined;
-                }
-
-                return this.changeValue(field.name, value);
-              }
-            }
-          }),
-          'array': () => ({
-            type: 'text',
-            props: {
-              value: (this.state.parameters[field.name] || []).join(', '),
-              onChange: (event) => {
-                const value = event.target.value
-                  .split(',')
-                  .map(_.trim)
-                  ;
-
-                this.changeValue(field.name, value);
-              }
-            }
-          }),
-          'object': null
-        };
-
-        _.merge(field, types[type || 'string']());
-
-        return field;
-      })
-      .value();
-
     const props = {
       className: `${st2Class(null)}`,
       onClick: this.handleCancel.bind(this)
@@ -188,7 +90,14 @@ export default class Run extends React.Component {
               Run workflow
             </div>
             {
-              _.map(fields, (field) => <Field key={field.name} {...field} />)
+              _.map(this.state.action.parameters, (parameter, name) =>
+                <SpecField key={name}
+                  name={name}
+                  parameter={parameter}
+                  value={this.state.parameters[name]}
+                  onChange={this.changeValue.bind(this, name)}
+                />
+              )
             }
             <input type="submit"
                 className="st2-panel__field-input"

@@ -186,7 +186,7 @@ export class SpecField extends React.Component {
           }
         }
       }),
-      'object': null
+      'object': () => null
     };
 
     _.merge(field, types[type || 'string']());
@@ -210,7 +210,7 @@ export class Field extends React.Component {
   }
 
   render() {
-    return templates[this.props.type] && templates[this.props.type](this.props);
+    return !!templates[this.props.type] && templates[this.props.type](this.props);
   }
 }
 
