@@ -1198,7 +1198,6 @@ main {
 
     display: flex;
 
-    width: 960px;
     max-height: 100%;
 
     border-radius: 5px;
@@ -1209,7 +1208,6 @@ main {
   }
 
   &__column {
-    flex: 1;
     padding: 20px;
     overflow-y: auto;
 
@@ -1233,9 +1231,11 @@ main {
 
   &__form {
     padding-top: 10px;
+    width: 480px;
   }
 
   &__code {
+    width: 480px;
     white-space: pre;
     background-color: #363d45;
     font: 12px/normal 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
