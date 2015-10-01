@@ -341,7 +341,7 @@ export default class Meta extends React.Component {
       type: 'checkbox',
       props: {
         checked: this.state.meta.enabled,
-        onChange: (event) => this.changeValue('enabled', event.target.checked || undefined)
+        onChange: (event) => this.changeValue('enabled', event.target.checked)
       }
     }, {
     //   name: 'Runner Type',
