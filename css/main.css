@@ -966,7 +966,7 @@ main {
       }
 
       &::placeholder {
-        color: #23282d;
+        color: #aaa;
       }
 
       &--inline {

@@ -302,6 +302,7 @@ export default class Meta extends React.Component {
             this.changeValue('pack', event.target.value);
             if (meta.pack && meta.name) {
               this.changeValue('ref', [meta.pack, meta.name].join('.'));
+              this.changeValue('entry_point', `workflow/${ meta.name }.yaml`);
             } else {
               this.changeValue('ref', undefined);
             }
@@ -324,6 +325,7 @@ export default class Meta extends React.Component {
             this.changeValue('name', event.target.value);
             if (meta.pack && meta.name) {
               this.changeValue('ref', [meta.pack, meta.name].join('.'));
+              this.changeValue('entry_point', `workflow/${ meta.name }.yaml`);
             } else {
               this.changeValue('ref', undefined);
             }
