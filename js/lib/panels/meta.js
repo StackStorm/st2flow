@@ -3,14 +3,14 @@ import React from 'react';
 
 import api from '../api';
 import bem from '../util/bem';
-import templates from '../util/forms';
+import { Field, SpecField } from '../util/forms';
 
 const st2Class = bem('popup')
     , st2Panel = bem('panel')
     , st2Icon = bem('icon')
     ;
 
-const paramTypes = ['string', 'number', 'integer', 'array']
+const paramTypes = ['string', 'number', 'integer', 'array', 'boolean']
     , specialProperties = ['required', 'immutable'];
 
 export class Parameter extends React.Component {
@@ -152,14 +152,18 @@ export class ParameterEditor extends React.Component {
         value: this.state.parameter.description,
         onChange: (event) => this.changeValue('description', event.target.value || undefined)
       }
-    }, {
+    }];
+
+    const defaultField = {
       name: 'Default',
-      type: 'text',
-      props: {
-        value: this.state.parameter.default,
-        onChange: (event) => this.changeValue('default', event.target.value || undefined)
-      }
-    }, {
+      parameter: {
+        type: this.state.parameter.type
+      },
+      value: this.state.parameter.default,
+      onChange: (value) => this.changeValue('default', value)
+    };
+
+    const specialFields = [{
       name: 'special',
       type: 'group',
       children: _.map(specialProperties, (name) => {
@@ -180,7 +184,11 @@ export class ParameterEditor extends React.Component {
         { this.props.name ? 'Edit parameter' : 'New parameter' }
       </div>
       {
-        _.map(parameterFields, (field) => templates[field.type](field))
+        _.map(parameterFields, (field) => <Field key={field.name} {...field} />)
+      }
+      <SpecField {...defaultField} />
+      {
+        _.map(specialFields, (field) => <Field key={field.name} {...field} />)
       }
       <input type="submit"
           className="st2-panel__field-input st2-panel__field-input--inline"
@@ -393,7 +401,7 @@ export default class Meta extends React.Component {
                 Metadata
               </div>
               {
-                _.map(fields, (field) => templates[field.type](field))
+                _.map(fields, (field) => <Field key={field.name} {...field} />)
               }
             </form>
             <div className="st2-panel__header">

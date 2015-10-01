@@ -2,7 +2,7 @@ import _ from 'lodash';
 import React from 'react';
 
 import bem from '../util/bem';
-import templates from '../util/forms';
+import { Field } from '../util/forms';
 
 const st2Class = bem('popup')
     ;
@@ -188,7 +188,7 @@ export default class Run extends React.Component {
               Run workflow
             </div>
             {
-              _.map(fields, (field) => templates[field.type] && templates[field.type](field))
+              _.map(fields, (field) => <Field key={field.name} {...field} />)
             }
             <input type="submit"
                 className="st2-panel__field-input"
