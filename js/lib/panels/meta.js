@@ -154,6 +154,15 @@ export class ParameterEditor extends React.Component {
       }
     }];
 
+    const enumField = {
+      name: 'Enum',
+      parameter: {
+        type: 'array'
+      },
+      value: this.state.parameter.enum,
+      onChange: (value) => this.changeValue('enum', value)
+    };
+
     const defaultField = {
       name: 'Default',
       parameter: {
@@ -186,6 +195,7 @@ export class ParameterEditor extends React.Component {
       {
         _.map(parameterFields, (field) => <Field key={field.name} {...field} />)
       }
+      <SpecField {...enumField} />
       <SpecField {...defaultField} />
       {
         _.map(specialFields, (field) => <Field key={field.name} {...field} />)
