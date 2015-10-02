@@ -1197,10 +1197,13 @@ main {
     color: #F8F8F2;
 
     display: flex;
+    position: relative;
 
     max-height: 100%;
 
     border-radius: 5px;
+
+    padding-bottom: 54px;
   }
 
   &--active {
@@ -1240,6 +1243,22 @@ main {
     background-color: #363d45;
     font: 12px/normal 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
     border-radius: 0 5px 5px 0;
+  }
+
+  &__status {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    padding: 10px;
+
+    text-align: right;
+
+    &-cancel {
+      color: #eee;
+      background-color: #14181D;
+    }
   }
 }
 

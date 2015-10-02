@@ -246,7 +246,9 @@ export default class Meta extends React.Component {
   handleCancel(event) {
     event.preventDefault();
 
-    this.setState({ show: false });
+    if (confirm('Do you really want to cancel without saving?')) { // eslint-disable-line no-alert
+      this.setState({ show: false });
+    }
   }
 
   handleParameterCreate(bundle) {
@@ -278,6 +280,7 @@ export default class Meta extends React.Component {
   }
 
   show() {
+    this.componentWillReceiveProps(this.props);
     this.setState({ show: true });
   }
 
@@ -285,7 +288,7 @@ export default class Meta extends React.Component {
     const { meta } = props;
 
     if (!_.isEmpty(meta)) {
-      this.setState({ meta });
+      this.setState({ meta: _.cloneDeep(meta) });
     }
   }
 
@@ -426,14 +429,20 @@ export default class Meta extends React.Component {
             }
             <ParameterEditor
                 onSubmit={ this.handleParameterCreate.bind(this) }/>
-            <input type="submit"
-                form="metaform"
-                className="st2-panel__field-input"
-                value="Update meta" />
           </div>
           <code className={ st2Class('column') + ' ' + st2Class('code') }>
             { JSON.stringify(this.state.meta, null, 2) }
           </code>
+          <div className={ st2Class('status') }>
+            <input type="submit"
+                form="metaform"
+                className="st2-panel__field-input st2-panel__field-input--inline"
+                value="Update" />
+            <input type="button"
+                className={ 'st2-panel__field-input st2-panel__field-input--inline ' + st2Class('status-cancel')}
+                onClick={ this.handleCancel.bind(this) }
+                value="Cancel" />
+          </div>
         </div>
       </div>
     );

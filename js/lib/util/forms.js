@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import React from 'react'; // eslint-disable-line no-unused-vars
+import React from 'react';
 
 export const templates = {
   text: (field) =>
