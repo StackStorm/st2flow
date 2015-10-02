@@ -22,14 +22,16 @@ export default class Run extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    this.props.onSubmit(this.state.action, this.state.parameters)
-      .then(() => {
-        this.setState({ show: false });
-      })
-      .catch((err) => {
-        this.setState({ show: false });
-        throw err;
-      });
+    console.log(this.state.parameters);
+
+    // this.props.onSubmit(this.state.action, this.state.parameters)
+    //   .then(() => {
+    //     this.setState({ show: false });
+    //   })
+    //   .catch((err) => {
+    //     this.setState({ show: false });
+    //     throw err;
+    //   });
   }
 
   handleCancel(event) {

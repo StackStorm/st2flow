@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import React from 'react'; // eslint-disable-line no-unused-vars
 
-const templates = {
+export const templates = {
   text: (field) =>
     <label className={ 'st2-panel__field ' + (field.className || '') } key={ field.name }>
       <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
@@ -82,13 +82,115 @@ const templates = {
     <div className={ 'st2-panel__field ' + (field.className || '') } key={ field.name }>{ field.content }</div>
 };
 
-const paramTypes = ['string', 'number', 'integer', 'array', 'boolean'];
+export const specTypes = {
+  string: function () {
+    return {
+      type: 'text',
+      props: {
+        value: this.props.value,
+        onChange: (event) => this.handleChange(event.target.value)
+      }
+    };
+  },
+  integer: function () {
+    return {
+      type: 'number',
+      props: {
+        value: this.props.value,
+        onChange: (event) => this.handleChange(parseInt(event.target.value))
+      }
+    };
+  },
+  number: function () {
+    return {
+      type: 'number',
+      props: {
+        step: 'any',
+        value: this.props.value,
+        onChange: (event) => this.handleChange(parseFloat(event.target.value))
+      }
+    };
+  },
+  boolean: function () {
+    return {
+      type: 'checkbox',
+      props: {
+        checked: this.props.value,
+        onChange: (event) => this.handleChange(event.target.checked)
+      }
+    };
+  },
+  select: function (spec) {
+    return {
+      type: 'select',
+      options: [{
+        name: '- none -',
+        value: '\u2205'
+      }].concat(spec.enum),
+      props: {
+        value: this.props.value,
+        onChange: (event) => {
+          let value = event.target.value;
+
+          if (value === '\u2205') {
+            value = undefined;
+          }
+
+          return this.handleChange(value);
+        }
+      }
+    };
+  },
+  array: function () {
+    return {
+      type: 'text',
+      props: {
+        value: (this.props.value || []).join(', '),
+        onChange: (event) => {
+          const value = event.target.value
+            .split(',')
+            .map(_.trim)
+            ;
+
+          return this.handleChange(value);
+        }
+      }
+    };
+  },
+  object: function () {
+    return {
+      type: 'textarea',
+      props: {
+        ref: 'input',
+        placeholder: this.state.jsonSerializedDefault,
+        value: this.state.value || this.state.jsonSerializedValue,
+        onChange: (event) => {
+          let value;
+
+          this.setState({ value: event.target.value });
+
+          if (event.target.value) {
+            try {
+              value = JSON.parse(event.target.value);
+            } catch (e) {
+              return this.getRefNode('input').setCustomValidity(e);
+            }
+          }
+
+          this.getRefNode('input').setCustomValidity('');
+
+          return this.handleChange(value);
+        }
+      }
+    };
+  }
+};
 
 export class SpecField extends React.Component {
   static propTypes = {
     name: React.PropTypes.string,
     parameter: React.PropTypes.shape({
-      type: React.PropTypes.oneOf(paramTypes),
+      type: React.PropTypes.oneOf(_.keys(specTypes)),
       description: React.PropTypes.string
     }),
     value: React.PropTypes.any,
@@ -97,6 +199,19 @@ export class SpecField extends React.Component {
 
   handleChange(value) {
     this.props.onChange(value);
+  }
+
+  componentWillMount() {
+    this.componentWillReceiveProps(this.props);
+  }
+
+  componentWillReceiveProps(props) {
+    const { parameter, value } = props;
+
+    const jsonSerializedDefault = JSON.stringify(parameter.default, null, 2);
+    const jsonSerializedValue = JSON.stringify(value, null, 2);
+
+    this.setState({ jsonSerializedDefault, jsonSerializedValue });
   }
 
   render() {
@@ -123,75 +238,13 @@ export class SpecField extends React.Component {
       type = 'select';
     }
 
-    const types = {
-      'string': () => ({
-        type: 'text',
-        props: {
-          value: this.props.value,
-          onChange: (event) => this.handleChange(event.target.value)
-        }
-      }),
-      'integer': () => ({
-        type: 'number',
-        props: {
-          value: this.props.value,
-          onChange: (event) => this.handleChange(parseInt(event.target.value))
-        }
-      }),
-      'number': () => ({
-        type: 'number',
-        props: {
-          step: 'any',
-          value: this.props.value,
-          onChange: (event) => this.handleChange(parseFloat(event.target.value))
-        }
-      }),
-      'boolean': () => ({
-        type: 'checkbox',
-        props: {
-          checked: this.props.value,
-          onChange: (event) => this.handleChange(event.target.checked)
-        }
-      }),
-      'select': () => ({
-        type: 'select',
-        options: [{
-          name: '- none -',
-          value: '\u2205'
-        }].concat(spec.enum),
-        props: {
-          value: this.props.value,
-          onChange: (event) => {
-            let value = event.target.value;
+    _.merge(field, specTypes[type || 'string'].call(this, spec));
 
-            if (value === '\u2205') {
-              value = undefined;
-            }
+    return <Field key={field.name} ref="field" {...field} />;
+  }
 
-            return this.handleChange(value);
-          }
-        }
-      }),
-      'array': () => ({
-        type: 'text',
-        props: {
-          value: (this.props.value || []).join(', '),
-          onChange: (event) => {
-            const value = event.target.value
-              .split(',')
-              .map(_.trim)
-              ;
-
-            return this.handleChange(value);
-          }
-        }
-      }),
-      'object': () => null
-    };
-
-    _.merge(field, types[type || 'string']());
-
-    return <Field key={field.name} {...field} />;
+  getRefNode(ref) {
+    return this.refs.field.refs[ref].getDOMNode();
   }
 }
 

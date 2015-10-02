@@ -3,14 +3,14 @@ import React from 'react';
 
 import api from '../api';
 import bem from '../util/bem';
-import { Field, SpecField } from '../util/forms';
+import { Field, SpecField, specTypes } from '../util/forms';
 
 const st2Class = bem('popup')
     , st2Panel = bem('panel')
     , st2Icon = bem('icon')
     ;
 
-const paramTypes = ['string', 'number', 'integer', 'array', 'boolean']
+const paramTypes = _.keys(specTypes)
     , specialProperties = ['required', 'immutable'];
 
 export class Parameter extends React.Component {
