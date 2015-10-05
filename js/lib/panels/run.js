@@ -22,16 +22,18 @@ export default class Run extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
-    console.log(this.state.parameters);
+    this.setState({ pending: true });
 
-    // this.props.onSubmit(this.state.action, this.state.parameters)
-    //   .then(() => {
-    //     this.setState({ show: false });
-    //   })
-    //   .catch((err) => {
-    //     this.setState({ show: false });
-    //     throw err;
-    //   });
+    const params = this.state.parameters;
+
+    this.props.onSubmit(this.state.action, params)
+      .then(() => {
+        this.setState({ show: false, pending: false });
+      })
+      .catch((err) => {
+        this.setState({ err, pending: false });
+        throw err;
+      });
   }
 
   handleCancel(event) {
@@ -88,6 +90,9 @@ export default class Run extends React.Component {
         <div {...contentProps} >
           <form className={ st2Class('column') + ' ' + st2Class('form') }
               onSubmit={this.handleSubmit.bind(this)}>
+            <div className="st2-panel__error">
+              { this.state.err && this.state.err.message }
+            </div>
             <div className="st2-panel__header">
               Run workflow
             </div>
@@ -101,9 +106,12 @@ export default class Run extends React.Component {
                 />
               )
             }
-            <input type="submit"
-                className="st2-panel__field-input"
-                value="Run" />
+            <div className={ st2Class('status') }>
+              <input type="submit"
+                  className="st2-panel__field-input"
+                  disabled={ this.state.pending }
+                  value={ this.state.pending ? 'Pending...' : 'Run'} />
+            </div>
           </form>
         </div>
       </div>

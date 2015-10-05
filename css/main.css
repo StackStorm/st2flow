@@ -920,6 +920,18 @@ main {
     }
   }
 
+  &__error {
+    padding: 10px;
+
+    color: #ff4500;
+    border: 1px solid #ff4500;
+    border-radius: 4px;
+
+    &:empty {
+      display: none;
+    }
+  }
+
   &__header {
     margin: 10px 0;
     font-size: 20px;
@@ -1057,6 +1069,10 @@ main {
     input[type=submit]&-input {
       background-color: #F28037;
       color: #eee;
+
+      &:disabled {
+        background-color: #555;
+      }
     }
     hr {
       border: 0;
@@ -1211,7 +1227,7 @@ main {
   }
 
   &__column {
-    padding: 20px;
+    padding: 20px 20px 0;
     overflow-y: auto;
 
     &::-webkit-scrollbar {
@@ -1251,7 +1267,7 @@ main {
     left: 0;
     right: 0;
 
-    padding: 10px;
+    padding: 10px 20px;
 
     text-align: right;
 

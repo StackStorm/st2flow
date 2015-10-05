@@ -522,6 +522,7 @@ class Main extends React.Component {
     }).catch((err) => {
       this.refs.executionControl.setStatus('failed');
       console.error(err);
+      throw err;
     });
   }
 
