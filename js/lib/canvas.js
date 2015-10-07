@@ -451,8 +451,8 @@ export default class Canvas extends EventEmitter {
   resizeCanvas() {
     let element = this.viewer.node()
       , dimensions = {
-        width: element.clientWidth,
-        height: element.clientHeight
+        width: element.offsetWidth,
+        height: element.offsetHeight
       };
 
     if (this.graph) {
@@ -470,6 +470,10 @@ export default class Canvas extends EventEmitter {
         return acc;
       }, dimensions);
     }
+
+    element.style.setProperty('overflow', 'hidden');
+    element.offsetHeight; // trigger a recalc
+    element.style.setProperty('overflow', 'auto');
 
     this.svg.attr('width', dimensions.width);
     this.svg.attr('height', dimensions.height);
