@@ -82,7 +82,6 @@ main {
 
     &__content {
       display: flex;
-      flex: 1;
 
       height: 100%;
 
@@ -133,6 +132,7 @@ main {
     &--active {
       &::after {
         content: '';
+        -moz-transform: scale(.9999); /* Fixes antialiasing in Firefox on OS X */
 
         position: absolute;
         left: 50%;
