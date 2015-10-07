@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import React from 'react';
 
+import ACTIONS from './util/default-actions';
 import bem from './util/bem';
 import { pack } from './util/packer';
-import SourceForm from './panels/sourceform';
 
 
 import icons from './util/icon';
@@ -123,8 +123,7 @@ class SearchField extends React.Component {
 
 export default class Palette extends React.Component {
   static propTypes = {
-    source: SourceForm.propTypes.defaultValue,
-    onSourceChange: React.PropTypes.func,
+    source: React.PropTypes.object,
     onToggle: React.PropTypes.func,
     actions: React.PropTypes.array,
     error: React.PropTypes.object
@@ -170,7 +169,7 @@ export default class Palette extends React.Component {
   }
 
   render() {
-    const packs = _(this.props.actions)
+    const packs = _(this.props.actions || ACTIONS)
             .filter((action) => ~action.ref.indexOf(this.state.filter)) // eslint-disable-line no-bitwise
             .groupBy('pack')
             .value()
@@ -185,33 +184,40 @@ export default class Palette extends React.Component {
 
     return <div {...props} >
       <SearchField filter={this.state.filter} onChange={this.handleUserInput.bind(this)}/>
-      <SourceForm show={this.state.showSettings}
-          sources={this.props.sources}
-          defaultValue={this.props.source}
-          onChange={this.handleSettingsChange.bind(this)} />
-      {
-        !this.props.actions && !this.props.error &&
-          <div className={st2Class('loader')}>Loading...</div>
-      }
-      {
-        this.props.error && <div className={st2Class('error')}>
-          <p>Error loading actions from {this.props.source.host}:</p>
-          <code>{this.props.error.message.faultstring || this.props.error.message}</code>
-          <p>Check your config by clicking <i className={st2Icon('cog')}></i> button on the right.</p>
-          <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
-        </div>
-      }
-      {
-        _.map(packs, (actions, name) =>
-          <Pack key={name} name={name} icon={this.state.icons && this.state.icons[name]}>
-            {
-              _.map(actions, (action) =>
-                <Action key={action.ref} action={action} ></Action>
-              )
-            }
-          </Pack>
-        )
-      }
+      <div className={ st2Class('content') }>
+        {
+          !this.props.source
+          ? <div className={st2Class('error')}>
+              <p>No action source is set. Please fill in credentials by clicking
+              <i className={st2Icon('cog')}></i> button on the right.</p>
+              <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
+            </div>
+          : null
+        }
+        {
+          this.props.source && !this.props.actions && !this.props.error &&
+            <div className={st2Class('loader')}>Loading...</div>
+        }
+        {
+          this.props.error && <div className={st2Class('error')}>
+            <p>Error loading actions from {this.props.source.host}:</p>
+            <code>{this.props.error.message.faultstring || this.props.error.message}</code>
+            <p>Check your config by clicking <i className={st2Icon('cog')}></i> button on the right.</p>
+            <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
+          </div>
+        }
+        {
+          _.map(packs, (actions, name) =>
+            <Pack key={name} name={name} icon={this.state.icons && this.state.icons[name]}>
+              {
+                _.map(actions, (action) =>
+                  <Action key={action.ref} action={action} ></Action>
+                )
+              }
+            </Pack>
+          )
+        }
+      </div>
     </div>;
   }
 }

@@ -222,6 +222,7 @@ export default class Meta extends React.Component {
       entry_point: React.PropTypes.string,
       enabled: React.PropTypes.bool
     }),
+    onUpdate: React.PropTypes.func,
     onSubmit: React.PropTypes.func
   }
 
@@ -299,6 +300,10 @@ export default class Meta extends React.Component {
           this.setState({ packs });
         });
     });
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    this.props.onUpdate && this.props.onUpdate(prevProps, prevState, this.props, this.state);
   }
 
   changeValue(name, value) {
@@ -407,41 +412,43 @@ export default class Meta extends React.Component {
 
     return (
       <div {...props} >
-        <div {...contentProps} >
-          <div className={ st2Class('column') + ' ' + st2Class('form') }>
-            <form id="metaform" onSubmit={this.handleSubmit.bind(this)}>
+        <div className={st2Class('rubber')}>
+          <div {...contentProps} >
+            <div className={ st2Class('column') + ' ' + st2Class('form') }>
+              <form id="metaform" onSubmit={this.handleSubmit.bind(this)}>
+                <div className="st2-panel__header">
+                  Metadata
+                </div>
+                {
+                  _.map(fields, (field) => <Field key={field.name} {...field} />)
+                }
+              </form>
               <div className="st2-panel__header">
-                Metadata
+                Parameters
               </div>
               {
-                _.map(fields, (field) => <Field key={field.name} {...field} />)
+                _.map(this.state.meta.parameters, (parameter, name) =>
+                  <Parameter key={name} name={name} parameter={parameter}
+                      onUpdate={ this.handleParameterUpdate.bind(this, name) }
+                      onDelete={ this.handleParameterDelete.bind(this, name) }/>
+                )
               }
-            </form>
-            <div className="st2-panel__header">
-              Parameters
+              <ParameterEditor
+                  onSubmit={ this.handleParameterCreate.bind(this) }/>
             </div>
-            {
-              _.map(this.state.meta.parameters, (parameter, name) =>
-                <Parameter key={name} name={name} parameter={parameter}
-                    onUpdate={ this.handleParameterUpdate.bind(this, name) }
-                    onDelete={ this.handleParameterDelete.bind(this, name) }/>
-              )
-            }
-            <ParameterEditor
-                onSubmit={ this.handleParameterCreate.bind(this) }/>
-          </div>
-          <code className={ st2Class('column') + ' ' + st2Class('code') }>
-            { JSON.stringify(this.state.meta, null, 2) }
-          </code>
-          <div className={ st2Class('status') }>
-            <input type="submit"
-                form="metaform"
-                className="st2-panel__field-input st2-panel__field-input--inline"
-                value="Update" />
-            <input type="button"
-                className={ 'st2-panel__field-input st2-panel__field-input--inline ' + st2Class('status-cancel')}
-                onClick={ this.handleCancel.bind(this) }
-                value="Cancel" />
+            <code className={ st2Class('column') + ' ' + st2Class('code') }>
+              { JSON.stringify(this.state.meta, null, 2) }
+            </code>
+            <div className={ st2Class('status') }>
+              <input type="submit"
+                  form="metaform"
+                  className="st2-panel__field-input st2-panel__field-input--inline"
+                  value="Update" />
+              <input type="button"
+                  className={ 'st2-panel__field-input st2-panel__field-input--inline ' + st2Class('status-cancel')}
+                  onClick={ this.handleCancel.bind(this) }
+                  value="Cancel" />
+            </div>
           </div>
         </div>
       </div>

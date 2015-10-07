@@ -87,32 +87,34 @@ export default class Run extends React.Component {
 
     return (
       <div {...props} >
-        <div {...contentProps} >
-          <form className={ st2Class('column') + ' ' + st2Class('form') }
-              onSubmit={this.handleSubmit.bind(this)}>
-            <div className="st2-panel__error">
-              { this.state.err && this.state.err.message }
-            </div>
-            <div className="st2-panel__header">
-              Run workflow
-            </div>
-            {
-              _.map(this.state.action.parameters, (parameter, name) =>
-                <SpecField key={name}
-                  name={name}
-                  parameter={parameter}
-                  value={this.state.parameters[name]}
-                  onChange={this.changeValue.bind(this, name)}
-                />
-              )
-            }
-            <div className={ st2Class('status') }>
-              <input type="submit"
-                  className="st2-panel__field-input"
-                  disabled={ this.state.pending }
-                  value={ this.state.pending ? 'Pending...' : 'Run'} />
-            </div>
-          </form>
+        <div className={st2Class('center')}>
+          <div {...contentProps} >
+            <form className={ st2Class('column') + ' ' + st2Class('form') }
+                onSubmit={this.handleSubmit.bind(this)}>
+              <div className="st2-panel__error">
+                { this.state.err && this.state.err.message }
+              </div>
+              <div className="st2-panel__header">
+                Run workflow
+              </div>
+              {
+                _.map(this.state.action.parameters, (parameter, name) =>
+                  <SpecField key={name}
+                    name={name}
+                    parameter={parameter}
+                    value={this.state.parameters[name]}
+                    onChange={this.changeValue.bind(this, name)}
+                  />
+                )
+              }
+              <div className={ st2Class('status') }>
+                <input type="submit"
+                    className="st2-panel__field-input"
+                    disabled={ this.state.pending }
+                    value={ this.state.pending ? 'Pending...' : 'Run'} />
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     );

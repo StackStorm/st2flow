@@ -5,7 +5,7 @@ import { API } from '../api';
 import bem from '../util/bem';
 import forms from '../util/forms';
 
-const st2Class = bem('palette');
+const st2Class = bem('header');
 
 const sourceType = React.PropTypes.shape({
   api: React.PropTypes.string,
@@ -25,8 +25,11 @@ export default class SourceForm extends React.Component {
     const def = props.defaultValue || {};
 
     this.state = {
-      api: def.api,
-      auth: def.auth
+      model: {
+        api: def.api,
+        auth: def.auth,
+        login: def.token && def.token.user
+      }
     };
   }
 
@@ -34,35 +37,57 @@ export default class SourceForm extends React.Component {
     event.preventDefault();
 
     const result = {
-      api: this.state.api,
-      auth: this.state.auth
+      api: this.state.model.api,
+      auth: this.state.model.auth
     };
 
+    let promise;
+
     if (result.auth) {
-      new API().connect(result, this.state.login, this.state.password)
+      promise = new API().connect(result, this.state.model.login, this.state.model.password)
         .then((client) => {
           result.token = client.token;
-          this.props.onChange(result);
+          return this.props.onChange(result);
         })
         .catch((err) => {
           console.error(err);
         });
     } else {
-      this.props.onChange(result);
+      promise = this.props.onChange(result);
     }
 
+    promise.then(() => {
+      this.setState({ show: false });
+    });
+  }
+
+  handleCancel() {
+    this.setState({ show: false });
+  }
+
+  show() {
+    this.setState({ show: true });
   }
 
   fill(index) {
     if (~index) { // eslint-disable-line no-bitwise
       const { api, auth } = this.props.sources[index];
-      this.setState({ api, auth });
+      this.changeValue('api', api);
+      this.changeValue('auth', auth);
     } else {
-      this.setState({
-        api: undefined,
-        auth: undefined
-      });
+      this.changeValue('api');
+      this.changeValue('auth');
     }
+  }
+
+  changeValue(name, value) {
+    const model = this.state.model;
+    if (_.isUndefined(value)) {
+      delete model[name];
+    } else {
+      model[name] = value;
+    }
+    this.setState({ model });
   }
 
   render() {
@@ -77,7 +102,7 @@ export default class SourceForm extends React.Component {
     }));
 
     const index = _.findIndex(this.props.sources, (source) => {
-      return source.api === this.state.api;
+      return source.api === this.state.model.api;
     });
 
     let fields = [{
@@ -95,8 +120,8 @@ export default class SourceForm extends React.Component {
       name: 'API',
       type: 'text',
       props: {
-        value: this.state.api,
-        onChange: (event) => this.setState({api: event.target.value}),
+        value: this.state.model.api,
+        onChange: (event) => this.changeValue('api', event.target.value),
         placeholder: 'https://localhost:9101/',
         type: 'text',
         pattern: '(https?\\:)?//(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?',
@@ -106,8 +131,8 @@ export default class SourceForm extends React.Component {
       name: 'Auth',
       type: 'text',
       props: {
-        value: this.state.auth,
-        onChange: (event) => this.setState({auth: event.target.value}),
+        value: this.state.model.auth,
+        onChange: (event) => this.changeValue('auth', event.target.value),
         placeholder: 'https://localhost:9100/',
         type: 'text',
         pattern: '(https?\\:)?//(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?',
@@ -115,7 +140,7 @@ export default class SourceForm extends React.Component {
       }
     }];
 
-    if (this.state.auth) {
+    if (this.state.model.auth) {
       fields = fields.concat([{
         name: 'sep2',
         type: 'separator'
@@ -123,36 +148,34 @@ export default class SourceForm extends React.Component {
         name: 'Login',
         type: 'text',
         props: {
-          value: this.state.login,
-          onChange: (event) => this.setState({login: event.target.value}),
+          value: this.state.model.login,
+          onChange: (event) => this.changeValue('login', event.target.value),
           required: true
         }
       }, {
         name: 'Password',
         type: 'password',
         props: {
-          value: this.state.password,
-          onChange: (event) => this.setState({password: event.target.value}),
+          value: this.state.model.password,
+          onChange: (event) => this.changeValue('password', event.target.value),
           required: true
         }
       }]);
     }
 
     const props = {
-      className: st2Class('source-form')
+      className: st2Class('source')
     };
 
-    if (this.props.show) {
-      props.className += ' ' + st2Class('source-form', 'visible');
+    if (this.state.show) {
+      props.className += ' ' + st2Class('source', 'visible');
     }
 
     return <div {...props} >
-      {
-        !this.props.defaultValue
-        ? <div>No action source is set. Please enter credentials in the form below.</div>
-        : null
-      }
-      <form onSubmit={this.handleSubmit.bind(this)}>
+      <div className={ st2Class('source-back') }
+          onClick={ this.handleCancel.bind(this) } />
+      <form className={ st2Class('source-form') }
+          onSubmit={this.handleSubmit.bind(this)}>
         {
           _.map(fields, (field) => forms[field.type](field))
         }
