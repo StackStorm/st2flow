@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
 
+import ACTIONS from '../util/default-actions';
 import api from '../api';
 import bem from '../util/bem';
 import { Field, SpecField, specTypes } from '../util/forms';
@@ -302,6 +303,13 @@ export default class Meta extends React.Component {
   componentDidMount() {
     api.on('connect', (client) => {
       client.packs.list()
+        .catch(() => {
+          return _(ACTIONS).chain()
+            .map((action) => ({ name: action.pack }))
+            .push({ name: 'default' })
+            .uniq('name')
+            .value();
+        })
         .then((packs) => {
           this.setState({ packs });
         });
