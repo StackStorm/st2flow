@@ -287,6 +287,10 @@ export default class Meta extends React.Component {
     this.setState({ show: true });
   }
 
+  toggleAdd() {
+    this.setState({ add: !this.state.add });
+  }
+
   componentWillReceiveProps(props) {
     const { meta } = props;
 
@@ -435,8 +439,21 @@ export default class Meta extends React.Component {
                       onDelete={ this.handleParameterDelete.bind(this, name) }/>
                 )
               }
-              <ParameterEditor
-                  onSubmit={ this.handleParameterCreate.bind(this) }/>
+              {
+                !this.state.add &&
+                  <div className={ st2Panel('footer') } >
+                    <input type="button"
+                        className={ st2Panel('field-input').and('field-input', 'inline') }
+                        onClick={ this.toggleAdd.bind(this) }
+                        value="Add parameter" />
+                  </div>
+              }
+              {
+                this.state.add &&
+                  <ParameterEditor
+                      onCancel={ this.toggleAdd.bind(this) }
+                      onSubmit={ this.handleParameterCreate.bind(this) }/>
+              }
             </div>
             <code className={ st2Class('column').and('code') }>
               { JSON.stringify(this.state.meta, null, 2) }
