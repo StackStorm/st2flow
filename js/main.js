@@ -6,7 +6,6 @@ import URI from 'URIjs';
 
 import 'brace/ext/language_tools';
 
-import ACTIONS from './lib/util/default-actions';
 import api from './lib/api';
 import Range from './lib/util/range';
 import Palette from './lib/palette';
@@ -16,6 +15,8 @@ import ExecutionControl from './lib/executioncontrol';
 import Panel from './lib/panel';
 import Meta from './lib/panels/meta';
 import Run from './lib/panels/run';
+import SourceForm from './lib/panels/sourceform';
+import Login from './lib/panels/login';
 import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
@@ -26,6 +27,7 @@ class Main extends React.Component {
     sources: settings.get('sources'),
     source: settings.get('selected'),
     panel: 'editor',
+    header: true,
     action: {}
   }
 
@@ -59,7 +61,7 @@ class Main extends React.Component {
               ;
           this.setState({ actions, suggestions });
         })
-        .catch((error) => this.setState({ error, actions: ACTIONS }))
+        .catch((error) => this.setState({ error }))
         ;
     });
   }
@@ -312,7 +314,6 @@ class Main extends React.Component {
 
     return new Promise((resolve) => {
       this.setState({ source, sources }, resolve);
-      this.refs.settingsButton.setValue(false);
     });
   }
 
@@ -325,64 +326,95 @@ class Main extends React.Component {
       props.className += 'main--loading';
     }
 
+    if (!this.state.header) {
+      props.className += 'main--collapsed';
+    }
+
+    const workflowButtonProps = {
+      className: 'st2-header__workflow'
+    };
+
+    if (this.refs.metaPopup && this.refs.metaPopup.state.show) {
+      workflowButtonProps.className += ' st2-header__workflow--active';
+    }
+
     return <main {...props} >
-      <Palette ref="palette"
-        sources={this.state.sources}
-        source={this.state.source}
-        actions={this.state.actions}
-        error={this.state.error}
-        onSourceChange={this.handleSourceChange.bind(this)}
-        onToggle={this.resizeCanvas.bind(this)} />
-
-      <div className="st2-container">
-
-        <div className="st2-controls">
-          <ControlGroup position='left'>
-            <Control icon="right-open" activeIcon="left-open" type="toggle" initial={true}
-              onClick={this.collapsePalette.bind(this)} />
-          </ControlGroup>
-          <ControlGroup position='center'>
-            <Control icon="cog" type="toggle" initial={!this.state.source} ref="settingsButton"
-              onClick={this.showSourceSettings.bind(this)} />
-            <Control icon="undo" onClick={this.undo.bind(this)} />
-            <Control icon="redo" onClick={this.redo.bind(this)} />
-            <Control icon="layout" onClick={this.layout.bind(this)} />
-            <Control icon="tools" onClick={this.showMeta.bind(this)} />
-            <Control icon="floppy" onClick={this.save.bind(this)} />
-            <ExecutionControl ref="executionControl"
-              action={this.state.action}
-              onClick={this.showRun.bind(this)} />
-          </ControlGroup>
-          <ControlGroup position='right'>
-            <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
-              onClick={this.collapseEditor.bind(this)} />
-          </ControlGroup>
+      <div className="st2-header">
+        <div className="st2-header__logo"><img src="i/logo.svg" width="101" height="25" /></div>
+        <div {...workflowButtonProps} >
+          { this.state.action.ref || 'New worflow' }
         </div>
-
-        <div className="st2-viewer">
-          <svg className="st2-viewer__canvas">
-          </svg>
+        <div className="st2-header__edit" onClick={this.showMeta.bind(this)}>
+          <i className="st2-icon__tools" />
         </div>
-
+        <div className="st2-header__separator" />
+        <Login source={this.state.source} />
+        <div className="st2-header__settings" onClick={this.showSourceForm.bind(this)} >
+          <i className="st2-icon__cog" />
+        </div>
+        <SourceForm ref="sourceForm"
+            sources={this.state.sources}
+            defaultValue={this.state.source}
+            onChange={this.handleSourceChange.bind(this)} />
       </div>
-      <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} >
-        <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
-      </Panel>
+      <div className="main__collapse" onClick={ this.collapseHeader.bind(this) }>
+        <i className={ this.state.header ? 'st2-icon__up-open' : 'st2-icon__down-open'} />
+      </div>
+      <div className="main__content">
+        <Palette ref="palette"
+          source={this.state.source}
+          actions={this.state.actions}
+          error={this.state.error}
+          onToggle={this.resizeCanvas.bind(this)} />
 
-      <Meta ref="metaPopup"
-        meta={this.state.action}
-        onSubmit={this.handleMetaSubmit.bind(this)}/>
+        <div className="st2-container">
 
-      <Run ref="runPopup"
-        action={this.state.action}
-        onSubmit={this.run.bind(this)}/>
+          <div className="st2-controls">
+            <ControlGroup position='left'>
+              <Control icon="right-open" activeIcon="left-open" type="toggle" initial={true}
+                onClick={this.collapsePalette.bind(this)} />
+            </ControlGroup>
+            <ControlGroup position='center'>
+              <Control icon="undo" onClick={this.undo.bind(this)} />
+              <Control icon="redo" onClick={this.redo.bind(this)} />
+              <Control icon="layout" onClick={this.layout.bind(this)} />
+              <Control icon="floppy" onClick={this.save.bind(this)} />
+              <ExecutionControl ref="executionControl"
+                action={this.state.action}
+                onClick={this.showRun.bind(this)} />
+            </ControlGroup>
+            <ControlGroup position='right'>
+              <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
+                onClick={this.collapseEditor.bind(this)} />
+            </ControlGroup>
+          </div>
+
+          <div className="st2-viewer">
+            <svg className="st2-viewer__canvas">
+            </svg>
+          </div>
+
+        </div>
+        <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} >
+          <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
+        </Panel>
+
+        <Meta ref="metaPopup"
+          meta={this.state.action}
+          onUpdate={this.handleMetaUpdate.bind(this)}
+          onSubmit={this.handleMetaSubmit.bind(this)}/>
+
+        <Run ref="runPopup"
+          action={this.state.action}
+          onSubmit={this.run.bind(this)}/>
+      </div>
     </main>;
   }
 
   // Public methods
 
-  showSourceSettings(state) {
-    this.palette.toggleSettings(state);
+  collapseHeader() {
+    this.setState({ header: !this.state.header }, this.resizeCanvas.bind(this));
   }
 
   undo() {
@@ -422,6 +454,17 @@ class Main extends React.Component {
 
   showRun() {
     this.refs.runPopup.show();
+  }
+
+  showSourceForm() {
+    this.refs.sourceForm.show();
+  }
+
+  handleMetaUpdate(...args) {
+    const [,prevState,,state] = args;
+    if (prevState.show !== state.show) {
+      this.forceUpdate();
+    }
   }
 
   handleMetaSubmit(action) {
