@@ -12,6 +12,7 @@ import Palette from './lib/palette';
 import Control from './lib/control';
 import ControlGroup from './lib/controlgroup';
 import ExecutionControl from './lib/executioncontrol';
+import CatchControl from './lib/catchcontrol';
 import Panel from './lib/panel';
 import Meta from './lib/panels/meta';
 import Run from './lib/panels/run';
@@ -378,7 +379,7 @@ class Main extends React.Component {
               <Control icon="undo" onClick={this.undo.bind(this)} />
               <Control icon="redo" onClick={this.redo.bind(this)} />
               <Control icon="layout" onClick={this.layout.bind(this)} />
-              <Control icon="floppy" onClick={this.save.bind(this)} />
+              <CatchControl icon="floppy" onClick={this.save.bind(this)} />
               <ExecutionControl ref="executionControl"
                 action={this.state.action}
                 onClick={this.showRun.bind(this)} />
