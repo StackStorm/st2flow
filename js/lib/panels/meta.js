@@ -330,6 +330,7 @@ export default class Meta extends React.Component {
         props: {
           required: true,
           value: this.state.meta.pack,
+          disabled: !!this.props.meta.id,
           onChange: (event) => {
             this.changeValue('pack', event.target.value);
             if (meta.pack && meta.name) {
@@ -353,11 +354,12 @@ export default class Meta extends React.Component {
         props: {
           required: true,
           value: this.state.meta.name,
+          disabled: !!this.props.meta.id,
           onChange: (event) => {
             this.changeValue('name', event.target.value);
             if (meta.pack && meta.name) {
               this.changeValue('ref', [meta.pack, meta.name].join('.'));
-              this.changeValue('entry_point', `workflow/${ meta.name }.yaml`);
+              this.changeValue('entry_point', `workflows/${ meta.name }.yaml`);
             } else {
               this.changeValue('ref', undefined);
             }

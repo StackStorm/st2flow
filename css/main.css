@@ -1130,6 +1130,11 @@ main {
         box-shadow: inset 0 0 0 3px red;
       }
 
+      &:disabled {
+        background-color: rgba(0,0,0,0.2);
+        color: #888;
+      }
+
       select& {
         appearance: none;
         border-radius: 0;
