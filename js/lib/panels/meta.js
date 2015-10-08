@@ -189,7 +189,7 @@ export class ParameterEditor extends React.Component {
 
     return <form className={ st2Panel('parameter-form') }
         onSubmit={this.handleSubmit.bind(this)}>
-      <div className="st2-panel__header">
+      <div className={ st2Panel('header') }>
         { this.props.name ? 'Edit parameter' : 'New parameter' }
       </div>
       {
@@ -200,15 +200,17 @@ export class ParameterEditor extends React.Component {
       {
         _.map(specialFields, (field) => <Field key={field.name} {...field} />)
       }
-      <input type="submit"
-          className="st2-panel__field-input st2-panel__field-input--inline"
-          value={ this.props.name ? 'Update' : 'Add' } />
-      {
-        this.props.onCancel && <input type="button"
-          className="st2-panel__field-input st2-panel__field-input--inline st2-panel__field-input--cancel"
-          onClick={ this.handleCancel.bind(this) }
-          value="Cancel" />
-      }
+      <div className={ st2Panel('footer') }>
+        <input type="submit"
+            className={ st2Panel('field-input').and('field-input', 'inline') }
+            value={ this.props.name ? 'Update' : 'Add' } />
+        {
+          this.props.onCancel && <input type="button"
+            className={ st2Panel('field-input').and('field-input', 'inline').and('field-input', 'cancel') }
+            onClick={ this.handleCancel.bind(this) }
+            value="Cancel" />
+        }
+      </div>
     </form>;
   }
 }
@@ -328,7 +330,7 @@ export default class Meta extends React.Component {
             this.changeValue('pack', event.target.value);
             if (meta.pack && meta.name) {
               this.changeValue('ref', [meta.pack, meta.name].join('.'));
-              this.changeValue('entry_point', `workflow/${ meta.name }.yaml`);
+              this.changeValue('entry_point', `workflows/${ meta.name }.yaml`);
             } else {
               this.changeValue('ref', undefined);
             }
@@ -397,12 +399,12 @@ export default class Meta extends React.Component {
     }];
 
     const props = {
-      className: `${st2Class(null)}`,
+      className: st2Class(null),
       onClick: this.handleCancel.bind(this)
     };
 
     if (this.state.show) {
-      props.className += ' ' + st2Class(null, 'active');
+      props.className = props.className.and(null, 'active');
     }
 
     const contentProps = {
@@ -414,16 +416,16 @@ export default class Meta extends React.Component {
       <div {...props} >
         <div className={st2Class('rubber')}>
           <div {...contentProps} >
-            <div className={ st2Class('column') + ' ' + st2Class('form') }>
+            <div className={ st2Class('column').and('form') }>
               <form id="metaform" onSubmit={this.handleSubmit.bind(this)}>
-                <div className="st2-panel__header">
+                <div className={ st2Panel('header') }>
                   Metadata
                 </div>
                 {
                   _.map(fields, (field) => <Field key={field.name} {...field} />)
                 }
               </form>
-              <div className="st2-panel__header">
+              <div className={ st2Panel('header') }>
                 Parameters
               </div>
               {
@@ -436,16 +438,16 @@ export default class Meta extends React.Component {
               <ParameterEditor
                   onSubmit={ this.handleParameterCreate.bind(this) }/>
             </div>
-            <code className={ st2Class('column') + ' ' + st2Class('code') }>
+            <code className={ st2Class('column').and('code') }>
               { JSON.stringify(this.state.meta, null, 2) }
             </code>
             <div className={ st2Class('status') }>
               <input type="submit"
                   form="metaform"
-                  className="st2-panel__field-input st2-panel__field-input--inline"
+                  className={ st2Panel('field-input').and('field-input', 'inline') }
                   value="Update" />
               <input type="button"
-                  className={ 'st2-panel__field-input st2-panel__field-input--inline ' + st2Class('status-cancel')}
+                  className={ st2Panel('field-input').and('field-input', 'inline').and('field-input', 'cancel') }
                   onClick={ this.handleCancel.bind(this) }
                   value="Cancel" />
             </div>

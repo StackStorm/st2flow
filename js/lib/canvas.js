@@ -42,7 +42,7 @@ export default class Canvas extends EventEmitter {
     const self = this;
 
     this.viewer = d3
-      .select(st2Class(null, true))
+      .select(st2Class(null, true) + '')
       ;
 
     const drag = d3.behavior.drag();
@@ -75,7 +75,7 @@ export default class Canvas extends EventEmitter {
     });
 
     this.svg = this.viewer
-      .select(st2Class('canvas', true))
+      .select(st2Class('canvas', true) + '')
       .call(drag)
       .on('dragover', function () {
         if (d3.event.target === this) {
@@ -222,11 +222,11 @@ export default class Canvas extends EventEmitter {
               const target = d3.select(node.elem);
 
               target
-                .select(st2Class('node-ref', true))
+                .select(st2Class('node-ref', true) + '')
                 .text(refChanges.object.ref);
 
               target
-                .select(st2Class('node-icon', true) + ' img')
+                .select(st2Class('node-icon', true) + '' + ' img')
                 .attr('src', icons.icons[node.pack] || '')
                 ;
             }
@@ -273,7 +273,7 @@ export default class Canvas extends EventEmitter {
       })
       ;
 
-    enter.select(st2Class('node-name', true))
+    enter.select(st2Class('node-name', true) + '')
       .on('keyup', () => d3.event.stopPropagation())
       .on('keydown', () => d3.event.stopPropagation())
       .on('blur', function (name) {
@@ -288,12 +288,12 @@ export default class Canvas extends EventEmitter {
       })
       ;
 
-    enter.select(st2Class('node-name-form', true))
+    enter.select(st2Class('node-name-form', true) + '')
       .on('submit', function () {
         d3.event.preventDefault();
 
         d3.select(this)
-          .select(st2Class('node-name', true))
+          .select(st2Class('node-name', true) + '')
             .node().blur()
             ;
       })
@@ -377,7 +377,7 @@ export default class Canvas extends EventEmitter {
           .y((d) => d.y)
           ;
 
-        element.select(st2Class('edge-path', true))
+        element.select(st2Class('edge-path', true) + '')
           .attr('marker-end', () => `url(#${edge.arrowheadId})`)
           .style('fill', 'none')
           .attr('d', line(points))
@@ -485,7 +485,7 @@ export default class Canvas extends EventEmitter {
     const node = this.graph.node(name);
     d3.select(node.elem)
       .classed(st2Class('node', 'edited'), true)
-      .select(st2Class('node-name', true))
+      .select(st2Class('node-name', true) + '')
         .node().select() // This one is HTMLInputElement.select, not d3.select
         ;
   }

@@ -1096,6 +1096,10 @@ main {
     font-size: 20px;
   }
 
+  &__footer {
+    text-align: right;
+  }
+
   &__field {
     display: block;
 
