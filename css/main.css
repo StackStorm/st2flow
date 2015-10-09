@@ -505,29 +505,54 @@ main {
   &__tooltip {
     position: absolute;
     top: 100%;
-    left: -75px;
-    background-color: #23282D;
+    left: 50%;
     width: 250px;
-    border-radius: 3px;
     box-sizing: border-box;
     display: none;
 
-    &:before {
+    &-content {
       position: absolute;
-      bottom: 100%;
-      left: 50%;
-      content: '';
-      border: solid transparent;
-      height: 0;
-      width: 0;
-      border-color: transparent;
-      border-bottom-color: #23282D;
-      border-width: 5px;
-      margin-left: -5px;
+      top: 5px;
+      left: -50%;
+
+      width: 100%;
+
+      background-color: #23282D;
+      border-radius: 3px;
+
+      &:before {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        content: '';
+        border: solid transparent;
+        height: 0;
+        width: 0;
+        border-color: transparent;
+        border-bottom-color: #23282D;
+        border-width: 5px;
+        margin-left: -5px;
+      }
     }
 
     &--active {
       display: block;
+    }
+
+    &--flash {
+      display: block;
+      visibility: visible;
+
+      animation: flash .2s linear 3s forwards;
+
+      @keyframes flash {
+        0% {
+          visibility: visible;
+        }
+        100% {
+          visibility: hidden;
+        }
+      }
     }
 
     &-overlay {
@@ -1096,6 +1121,10 @@ main {
     font-size: 20px;
   }
 
+  &__footer {
+    text-align: right;
+  }
+
   &__field {
     display: block;
 
@@ -1124,6 +1153,11 @@ main {
 
       &:invalid {
         box-shadow: inset 0 0 0 3px red;
+      }
+
+      &:disabled {
+        background-color: rgba(0,0,0,0.2);
+        color: #888;
       }
 
       select& {
