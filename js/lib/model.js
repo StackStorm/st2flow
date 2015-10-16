@@ -99,7 +99,6 @@ export default class Model extends EventEmitter {
   }
 
   parse(code) {
-    this.messages.clear();
     let lines = code.split('\n');
 
     let state = {

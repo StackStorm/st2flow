@@ -825,7 +825,44 @@ class Main extends React.Component {
   }
 
   parse() {
+    this.model.messages.clear();
+
     const str = this.editor.env.document.doc.getAllLines();
+
+    const tabs = _(str)
+      .map((line, index) => {
+        const match = line.match(/^(\s+)\S/);
+        return match && {
+          index: index,
+          indent: match[1]
+        };
+      })
+      .filter()
+      .sortBy('indent')
+      .uniq(true, 'indent')
+      .value()
+      ;
+
+    const smallest = tabs && tabs[0];
+
+    const mixed = _.filter(tabs, (tab) => tab.indent.length % smallest.indent.length);
+
+    if (mixed.length) {
+      _.forEach(mixed, ({ index, indent }) => {
+        const message = {
+          type: 'warning',
+          row: index,
+          column: 0,
+          text: `Mixed indentation. This line has ${ indent.length } characters when the rest are of mod ${ smallest.indent.length }`
+        };
+        this.model.messages.add(message);
+      });
+    } else {
+      if (smallest) {
+        const indent = smallest.indent[0] === '\t' ? 4 : smallest.indent.length;
+        this.editor.session.setTabSize(indent);
+      }
+    }
 
     this.model.parse(str.join('\n'));
   }
