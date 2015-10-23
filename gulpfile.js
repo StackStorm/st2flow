@@ -17,22 +17,48 @@ var _ = require('lodash')
   , fontello = require('gulp-fontello')
   , cached = require('gulp-cached')
   , watchify = require('watchify')
+  , header = require('gulp-header')
+  , git = require('git-rev-sync')
+  , pkg = require('./package.json')
   ;
 
+function buildHeader() {
+  var host = 'https://github.com/'
+    , commitURL = host + pkg.repository + '/commit/' + git.long()
+    ;
+
+  return 'Built ' + new Date().toISOString() + ' from ' + commitURL;
+}
+
+var watch;
 var customOpts = {
   entries: ['js/main.js'],
   debug: true
 };
 var opts = _.assign({}, watchify.args, customOpts);
-var b = watchify(browserify(opts))
-  .transform(babelify.configure({
-    optional: ['es7.classProperties']
-  }))
-  .on('update', bundle)
-  .on('log', gutil.log)
-  ;
 
-function bundle() {
+function Browserify() {
+  var b = browserify(opts);
+
+  if (watch) {
+    b = watchify(b)
+      .on('update', function () {
+        bundle(b);
+      });
+  }
+
+  b
+    .transform(babelify.configure({
+      // Make sure to change in test_compiler.js too
+      optional: ['es7.classProperties']
+    }))
+    .on('log', gutil.log)
+    ;
+
+  return bundle(b);
+}
+
+function bundle(b) {
   return b.bundle()
     .on('error', function (error) {
       gutil.log(
@@ -42,6 +68,7 @@ function bundle() {
       this.emit('end');
     })
     .pipe(source('main.js'))
+    .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(buffer())
     .pipe(sourcemaps.init({ loadMaps: true }))
     .pipe(sourcemaps.write('./'))
@@ -79,6 +106,7 @@ gulp.task('css', ['font'], function () {
     require('autoprefixer-core')({browsers: ['last 2 version']}),
     require('postcss-import')(),
     require('postcss-nested')(),
+    require('postcss-mq-keyframes'),
     require('postcss-color-function')()
   ];
   return gulp.src('css/*.css')
@@ -104,16 +132,22 @@ gulp.task('css', ['font'], function () {
     }));
 });
 
-gulp.task('browserify', ['lint'], bundle);
+gulp.task('browserify', ['lint'], function () {
+  watch = false;
+  return Browserify();
+});
+
+gulp.task('watchify', ['lint'], function () {
+  watch = true;
+  return Browserify();
+});
 
 gulp.task('test', function () {
   return gulp.src('tests/**/*.js', {read: false})
     .pipe(mocha({
       reporter: 'dot',
       compilers: {
-        js: require('babelify/node_modules/babel-core/register')({
-          optional: ['es7.classProperties']
-        })
+        js: require('./test_compiler')
       }
     }));
 });
@@ -131,13 +165,14 @@ gulp.task('static', function () {
 gulp.task('serve', ['build'], function() {
   gulp.src('dist')
     .pipe(webserver({
+      host: '0.0.0.0',
       port: 4000
     }));
 });
 
 gulp.task('build', ['css', 'browserify', 'static']);
 
-gulp.task('watch', function() {
+gulp.task('watch', ['css', 'watchify', 'static'], function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
   gulp.watch(['js/**/*.js'], ['lint']);
@@ -158,4 +193,4 @@ gulp.task('watch', function() {
   });
 });
 
-gulp.task('default', ['lint', 'build', 'watch', 'serve']);
+gulp.task('default', ['watch', 'serve']);

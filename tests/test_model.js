@@ -77,7 +77,7 @@ describe('Model', () => {
       expect(result[2].type).to.be.equal('name');
     });
 
-    it('should filter only specific types of sectors when requested', () => {
+    it.skip('should filter only specific types of sectors when requested', () => {
       let coordinates = new Range(16, 6, 18, 18);
       // `······[··on-failure: setup_uninstall_pack_to_install_1
       // `····-
@@ -91,7 +91,7 @@ describe('Model', () => {
       expect(_.every(result, 'type', 'task')).to.be.true;
     });
 
-    it('should return undefined when cursor is outside all the ranges', () => {
+    it.skip('should return undefined when cursor is outside all the ranges', () => {
       let coordinates = new Range(1, 1, 1, 3);
       // `·[··]·····base_repo_url: "https://github.com/StackStorm"`
 
@@ -101,7 +101,7 @@ describe('Model', () => {
       expect(result).to.have.length(0);
     });
 
-    it('should support zero character ranges (cursor)', () => {
+    it.skip('should support zero character ranges (cursor)', () => {
       let coordinates = new Range(20, 5, 20, 5);
       // `·····|···ref: core.local`
 
