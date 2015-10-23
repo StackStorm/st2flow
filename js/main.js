@@ -29,7 +29,107 @@ class Main extends React.Component {
     source: settings.get('selected'),
     panel: 'editor',
     header: true,
+    actionParameters: {},
     action: {}
+  }
+
+  suggestions = {
+    task: (sector) => {
+      const keywords = [
+        {
+          name: 'type',
+          type: 'string'
+        }, {
+          name: 'action',
+          type: 'string'
+        }, {
+          name: 'workflow',
+          type: 'string'
+        }, {
+          name: 'input',
+          type: 'object'
+        }, {
+          name: 'with-items',
+          type: 'string'
+        }, {
+          name: 'publish',
+          type: 'object'
+        }, {
+          name: 'retry',
+          type: 'string'
+        }, {
+          name: 'wait-before',
+          type: 'string'
+        }, {
+          name: 'wait-after',
+          type: 'string'
+        }, {
+          name: 'timeout',
+          type: 'string'
+        }, {
+          name: 'pause-before',
+          type: 'string'
+        }, {
+          name: 'concurrency',
+          type: 'string'
+        }, {
+          name: 'target',
+          type: 'string'
+        }, {
+          name: 'keep-result',
+          type: 'string'
+        }, {
+          name: 'join',
+          type: 'string'
+        }, {
+          name: 'on-success',
+          type: 'array'
+        }, {
+          name: 'on-error',
+          type: 'array'
+        }, {
+          name: 'on-complete',
+          type: 'array'
+        }
+      ];
+
+      const properties = {
+        ref: 'action'
+      };
+
+      const present = _(sector.task.properties)
+        .keys()
+        .map((property) => {
+          return properties[property] || property;
+        }).value();
+
+      return _(keywords).filter((keyword) => {
+        return !_.includes(present, keyword.name);
+      }).map((keyword) => {
+        return {
+          caption: keyword.name,
+          value: keyword.name,
+          score: 1,
+          spec: keyword,
+          meta: 'task'
+        };
+      }).value();
+    },
+    input: (sector) => {
+      const action = sector.task.getProperty('ref');
+
+      return _.map(this.state.actionParameters[action], (parameter) => {
+        return {
+          caption: parameter.name,
+          value: parameter.name,
+          score: 1,
+          spec: {
+            type: 'string'
+          },
+          meta: 'parameters'
+        };
+      });
+    }
   }
 
   componentDidMount() {
@@ -48,19 +148,19 @@ class Main extends React.Component {
     api.on('connect', (client) => {
       window.name = `st2flow+${client.index.url}`;
 
-      this.setState({ error: undefined, actions: undefined, suggestions: undefined });
+      this.setState({ error: undefined, actions: undefined, actionParameters: {} });
 
       return client.actionOverview.list()
         .then((actions) => {
-          const keys = _.pluck(actions, 'ref')
-              , values = _.map(actions, (action) => {
-                  return _.map(action.parameters, (prop, name) => {
-                    return _.assign({}, prop, {name});
-                  });
-                })
-              , suggestions = _.zipObject(keys, values)
-              ;
-          this.setState({ actions, suggestions });
+          const keys = _.pluck(actions, 'ref');
+          const values = _.map(actions, (action) => {
+            return _.map(action.parameters, (prop, name) => {
+              return _.assign({}, prop, {name});
+            });
+          });
+          const actionParameters = _.zipObject(keys, values);
+
+          this.setState({ actions, actionParameters });
         })
         .catch((error) => this.setState({ error }))
         ;
@@ -78,23 +178,39 @@ class Main extends React.Component {
 
     var paramCompleter = {
       getCompletions: (editor, session, pos, prefix, callback) => {
-        const sector = this.model.search(Range.fromPoints(pos, pos), 'input')[0];
+        const position = Range.fromPoints({ row: pos.row, column: 0 }, pos);
+        const sectors = this.model.search(position);
 
-        if (!sector) {
+        if (!sectors.length) {
           return;
         }
 
-        const suggestions = this.state.suggestions || {}
-            , action = sector.task.getProperty('ref');
+        const results = _(sectors).filter((sector) => {
+          const type = sector.type;
+          return this.suggestions[type];
+        }).map((sector) => {
+          const type = sector.type;
+          const suggestions = this.suggestions[type](sector);
+          return _.map(suggestions, (suggestion) => {
+            if (suggestion.spec.type === 'string') {
+              suggestion.value += ': ';
+            }
 
-        callback(null, _.map(suggestions[action], (parameter) => {
-          return {
-            name: parameter.name,
-            value: parameter.name,
-            score: 1,
-            meta: 'parameters'
-          };
-        }));
+            if (suggestion.spec.type === 'object') {
+              const relativeIndent = sector.task.indent.replace(sector.task.starter, '');
+              suggestion.value += ':\n' + sector.task.indent + relativeIndent;
+            }
+
+            if (suggestion.spec.type === 'array') {
+              const relativeIndent = sector.task.indent.replace(sector.task.starter, '');
+              suggestion.value += ':\n' + sector.task.indent + relativeIndent + '- ';
+            }
+
+            return suggestion;
+          });
+        }).flatten().value();
+
+        callback(null, results);
       }
     };
     langTools.setCompleters([paramCompleter]);
@@ -825,7 +941,44 @@ class Main extends React.Component {
   }
 
   parse() {
+    this.model.messages.clear();
+
     const str = this.editor.env.document.doc.getAllLines();
+
+    const tabs = _(str)
+      .map((line, index) => {
+        const match = line.match(/^(\s+)\S/);
+        return match && {
+          index: index,
+          indent: match[1]
+        };
+      })
+      .filter()
+      .sortBy('indent')
+      .uniq(true, 'indent')
+      .value()
+      ;
+
+    const smallest = tabs && tabs[0];
+
+    const mixed = _.filter(tabs, (tab) => tab.indent.length % smallest.indent.length);
+
+    if (mixed.length) {
+      _.forEach(mixed, ({ index, indent }) => {
+        const message = {
+          type: 'warning',
+          row: index,
+          column: 0,
+          text: `Mixed indentation. This line has ${ indent.length } characters when the rest are of mod ${ smallest.indent.length }`
+        };
+        this.model.messages.add(message);
+      });
+    } else {
+      if (smallest) {
+        const indent = smallest.indent[0] === '\t' ? 4 : smallest.indent.length;
+        this.editor.session.setTabSize(indent);
+      }
+    }
 
     this.model.parse(str.join('\n'));
   }
