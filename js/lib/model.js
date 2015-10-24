@@ -95,6 +95,28 @@ export default class Model extends EventEmitter {
       }
 
       return result;
+    },
+    input: (workflow, inputs) => {
+      let result = '';
+
+      const defs = this.definition.defaults.indents;
+
+      const templates = this.definition.template
+          , outdent = workflow.getSector('taskBlock').indent
+          , childStarter = workflow.getSector('taskBlock').childStarter + '- '
+          , blockTemplate = templates.block.input(outdent || defs.tasks)
+          , transitionTemplate = templates.transition(childStarter)
+          ;
+
+      if (inputs.length) {
+        result += blockTemplate();
+      }
+
+      _.each(inputs, (name) => {
+        result += transitionTemplate({ value: { name } });
+      });
+
+      return result;
     }
   }
 

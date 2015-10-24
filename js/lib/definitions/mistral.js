@@ -11,6 +11,8 @@ export default class MistralDefinition extends Definition {
     this.model = model;
   }
 
+  runner_params = ['skip_notify', 'task', 'context', 'workflow']
+
   get defaults() {
     const unit = '  ';
     return {
@@ -56,6 +58,7 @@ export default class MistralDefinition extends Definition {
         base: () => _.template(`---\nversion: '2.0'\n\nworkflows:\n`),
         workflow: (external, internal) =>
           _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
+        input: (indent) => _.template(indent + 'input:\n'),
         tasks: (indent) => _.template(indent + 'tasks:\n'),
         coord: (indent) => _.template(indent + '# [${coord}]\n'),
         success: (indent) => _.template(indent + 'on-success:\n'),
@@ -135,6 +138,7 @@ export default class MistralDefinition extends Definition {
 
           const workflowSector = new Sector(lineNum, 0).setType('workflow')
               , nameSector = new Sector(...coords).setType('name')
+              , inputSector = new Sector().setType('input')
               , taskBlockSector = new Sector()
               ;
 
@@ -142,6 +146,7 @@ export default class MistralDefinition extends Definition {
             .setProperty('name', name)
             .setSector('workflow', workflowSector)
             .setSector('name', nameSector)
+            .setSector('input', inputSector)
             .setSector('taskBlock', taskBlockSector)
             ;
 
@@ -164,6 +169,22 @@ export default class MistralDefinition extends Definition {
     if (state.currentWorkflow) {
       state.currentWorkflow.endSector('workflow', lineNum, 0);
 
+      if (!state.currentTask) {
+        let block = this.block('isInputBlock', this.spec.INPUT_BLOCK);
+
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentWorkflow.getSector('input');
+          sector.setStart(lineNum, 0);
+        } else {
+          block.exit(line, lineNum, state);
+        }
+
+        if (state.isInputBlock) {
+          const sector = state.currentWorkflow.getSector('input');
+          sector.setEnd(lineNum + 1, 0);
+        }
+      }
+
       let block = this.block('isTaskBlock', this.spec.TASK_BLOCK);
 
       if (block.enter(line, lineNum, state)) {
@@ -171,6 +192,8 @@ export default class MistralDefinition extends Definition {
         sector.setStart(lineNum, 0);
         sector.setEnd(lineNum + 1, 0);
         sector.indent = _.repeat(state.unit, state.isTaskBlock - 1);
+        const unit = _.repeat(state.unit, sector.indent.length - state.currentWorkflow.indent.length);
+        sector.childStarter = sector.indent + unit;
         return;
       }
 

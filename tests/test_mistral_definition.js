@@ -92,6 +92,7 @@ describe('Mistral definition', () => {
           },
           'sectors': {
             'name': new Sector(5,2,5,6).setType('name'),
+            'input': new Sector(8,0,11,0).setType('input'),
             'taskBlock': new Sector(),
             'workflow': new Sector(5,0,13,0).setType('workflow')
           }
@@ -246,7 +247,8 @@ describe('Mistral definition', () => {
           },
           'sectors': {
             'name': new Sector(5,2,5,6).setType('name'),
-            'taskBlock': new Sector(14,0,42,0)._setSpecial({ indent: '    ' }),
+            'input': new Sector(8,0,11,0).setType('input'),
+            'taskBlock': new Sector(14,0,42,0)._setSpecial({ indent: '    ', childStarter: '      ' }),
             'workflow': new Sector(5,0,41,0).setType('workflow')
           }
         }

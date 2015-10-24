@@ -588,6 +588,15 @@ class Main extends React.Component {
     window.name = `st2flow+${api.client.index.url}+${action.ref}`;
     this.setState({ action });
     this.setState({ meta: false });
+
+    const inputs = _(action.parameters).chain()
+      .keys()
+      .reject((e) => {
+        return _.includes(this.model.definition.runner_params, e);
+      })
+      .value();
+
+    this.setInput(action.ref, inputs);
   }
 
   auth(bundle64) {
@@ -872,6 +881,18 @@ class Main extends React.Component {
     });
 
     this.canvas.focus();
+  }
+
+  setInput(name, fields) {
+    const workflow = this.model.workflow(name);
+
+    if (!workflow) {
+      return;
+    }
+
+    let inputs = this.model.fragments.input(workflow, fields);
+
+    this.editor.env.document.replace(workflow.getSector('input'), inputs);
   }
 
   showTask(name) {
