@@ -32,7 +32,7 @@ describe('Mistral definition', () => {
         `---`,
         `version: '2.0'`,
         ``,
-        `main:`,
+        `untitled:`,
         `  type: direct`,
         `  tasks:`,
         `    some:`,
@@ -66,7 +66,7 @@ describe('Mistral definition', () => {
         `---`,
         `version: '2.0'`,
         ``,
-        `main:`,
+        `untitled:`,
         `  type: direct`,
         `  tasks:`,
         `    some:`,
@@ -134,7 +134,6 @@ describe('Mistral definition', () => {
             'name': 'main'
           },
           'sectors': {
-            'name': new Sector(4,0,4,4).setType('name'),
             'input': new Sector(7,0,10,0).setType('input'),
             'taskBlock': new Sector(),
             'workflow': new Sector(4,0,12,0).setType('workflow')
@@ -451,7 +450,6 @@ describe('Mistral definition', () => {
             'name': 'main'
           },
           'sectors': {
-            'name': new Sector(4,0,4,4).setType('name'),
             'input': new Sector(7,0,10,0).setType('input'),
             'taskBlock': new Sector(13,0,41,0)._setSpecial({ indent: '  ', childStarter: '    ' }),
             'workflow': new Sector(4,0,40,0).setType('workflow')

@@ -29,6 +29,7 @@ export default class MistralDefinition extends Definition {
 
   get spec() {
     return _.assign(super.spec, {
+      WORKBOOK_NAME: /(.*)(name:\s+['"]*)([\w.-]+)/,
       WORKFLOWS_BLOCK: /^(\s*)workflows:/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):/,
       TASK_BLOCK: /^(\s*)tasks:/,
@@ -55,9 +56,12 @@ export default class MistralDefinition extends Definition {
         indent + 'action: ${ref}\n'
       ),
       block: {
-        base: () => _.template(`---\nversion: '2.0'\n\n`),
-        workflow: (external, internal) =>
+        wb_base: () => _.template('---\nversion: \'2.0\'\nname: ${name}\n\nworkflows:\n'),
+        wf_base: () => _.template('---\nversion: \'2.0\'\n\n${name}:\n'),
+        wb_workflow: (external, internal) =>
           _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
+        wf_workflow: (external, internal) => _.template(internal + 'type: ${type}\n'),
+        wb_name: () => _.template('name: ${name}\n'),
         input: (indent) => _.template(indent + 'input:\n'),
         tasks: (indent) => _.template(indent + 'tasks:\n'),
         coord: (indent) => _.template(indent + '# [${coord}]\n'),
@@ -92,8 +96,14 @@ export default class MistralDefinition extends Definition {
     const indent = line.match(this.spec.WS_INDENT)[0];
 
     if (state.potentialWorkflow && indent.length > state.potentialWorkflow.indent.length) {
-      const name = state.potentialWorkflow.getProperty('name');
-      state.currentWorkflow = this.model.workflow(name, state.potentialWorkflow);
+      const wf = state.potentialWorkflow;
+      const name = wf.getProperty('name');
+      const nameSector = wf.getSector('name');
+      state.workbook.setProperty('name', name);
+      state.workbook.setSector('name', nameSector);
+      wf.setProperty('name', 'main');
+      delete wf.sectors.name;
+      state.currentWorkflow = this.model.workflow('main', wf);
       state.taskBlock = state.currentWorkflow.getSector('taskBlock');
       state.indent = indent;
     }
@@ -105,6 +115,7 @@ export default class MistralDefinition extends Definition {
     if (block.enter(line, lineNum, state)) {
       state.workflowBlock.setStart(lineNum, 0);
       state.workflowBlock.setEnd(lineNum + 1, 0);
+      state.workbook.setSector('name', state.workbook.getSector('name') || new Sector(lineNum, 0, lineNum, 0));
       return;
     }
 
@@ -115,6 +126,18 @@ export default class MistralDefinition extends Definition {
 
     if (state.isWorkflowBlock) {
       state.workflowBlock.setEnd(lineNum + 1, 0); // ? lineNum + 1
+    } else {
+      let match;
+
+      match = this.spec.WORKBOOK_NAME.exec(line);
+      if (match) {
+        const [,_prefix,key,value] = match
+            , coords = [lineNum, (_prefix+key).length, lineNum, (_prefix+key+value).length]
+            ;
+
+        const sector = new Sector(...coords).setType('name');
+        state.workbook.setProperty('name', value).setSector('name', sector);
+      }
     }
 
     {

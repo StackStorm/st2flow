@@ -602,7 +602,7 @@ class Main extends React.Component {
       })
       .value();
 
-    this.setInput(action.ref, inputs);
+    this.setInput(inputs);
   }
 
   auth(bundle64) {
@@ -890,17 +890,18 @@ class Main extends React.Component {
   }
 
   setName(name) {
-    const workflow = this.model.workflows[0];
+    const sector = this.model.workbook.getSector('name');
+    let line = name;
 
-    if (!workflow) {
-      return;
+    if (sector.isEmpty()) {
+      line = this.model.fragments.name(name);
     }
 
-    this.editor.env.document.replace(workflow.getSector('name'), name);
+    this.editor.env.document.replace(sector, line);
   }
 
-  setInput(name, fields) {
-    const workflow = this.model.workflow(name);
+  setInput(fields) {
+    const workflow = this.model.workflow('main');
 
     if (!workflow) {
       return;

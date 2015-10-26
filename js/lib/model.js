@@ -6,6 +6,7 @@ import Messages from './models/messages';
 import Sector from './models/sector';
 import Task from './models/task';
 import Workflow from './models/workflow';
+import Workbook from './models/workbook';
 
 export default class Model extends EventEmitter {
   constructor(action) {
@@ -39,16 +40,18 @@ export default class Model extends EventEmitter {
       const defs = this.definition.defaults.indents;
 
       if (!this.workflowBlock || this.workflowBlock.isUndefined() && _.isEmpty(this.workflows)) {
-        result += this.definition.template.block.base()();
+        result += this.definition.template.block.wf_base()({
+          name: this.workbook && this.workbook.getProperty('name') || 'untitled'
+        });
       }
 
       if (_.isEmpty(this.workflows)) {
         const workflow = {
-          name: this.action.ref || 'main',
+          name: 'main',
           type: 'direct'
         };
 
-        result += this.definition.template.block.workflow(defs.workflow, defs.tasks)(workflow);
+        result += this.definition.template.block.wf_workflow(defs.workflow, defs.tasks)(workflow);
 
         const params = this.action.parameters;
         if (params) {
@@ -125,12 +128,21 @@ export default class Model extends EventEmitter {
           , transitionTemplate = templates.transition(childStarter)
           ;
 
-      if (inputs.length) {
+      if (inputs && inputs.length) {
         result += blockTemplate();
       }
 
       _.each(inputs, (name) => {
         result += transitionTemplate({ value: { name } });
+      });
+
+      return result;
+    },
+    name: (name) => {
+      let result = '';
+
+      result += this.definition.template.block.wb_name()({
+        name
       });
 
       return result;
@@ -141,6 +153,7 @@ export default class Model extends EventEmitter {
     let lines = code.split('\n');
 
     let state = {
+      workbook: new Workbook(),
       isTaskBlock: false,
       taskBlockIdent: null,
       currentTask: null,
@@ -159,6 +172,7 @@ export default class Model extends EventEmitter {
 
     this.workflowBlock = state.workflowBlock;
     this.taskBlock = state.taskBlock;
+    this.workbook = state.workbook;
 
     // Delete all the tasks not updated during parsing
     _.each(state.untouchedTasks, (name) => {
