@@ -15,7 +15,7 @@ describe('Mistral definition', () => {
   let model;
 
   beforeEach(() => {
-    model = new Model('mistral-v2');
+    model = new Model({ runner_type: 'mistral-v2' });
   });
 
   describe('cases', () => {

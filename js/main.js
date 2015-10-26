@@ -171,6 +171,10 @@ class Main extends React.Component {
     if (state.source !== this.state.source) {
       api.connect(this.state.source);
     }
+
+    if (state.action !== this.state.action) {
+      this.model.setAction(this.state.action);
+    }
   }
 
   initEditor() {
@@ -292,7 +296,7 @@ class Main extends React.Component {
   }
 
   initModel() {
-    this.model = new Model();
+    this.model = new Model(this.state.action);
 
     this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
@@ -589,6 +593,8 @@ class Main extends React.Component {
     this.setState({ action });
     this.setState({ meta: false });
 
+    this.setName(action.ref);
+
     const inputs = _(action.parameters).chain()
       .keys()
       .reject((e) => {
@@ -883,6 +889,16 @@ class Main extends React.Component {
     this.canvas.focus();
   }
 
+  setName(name) {
+    const workflow = this.model.workflows[0];
+
+    if (!workflow) {
+      return;
+    }
+
+    this.editor.env.document.replace(workflow.getSector('name'), name);
+  }
+
   setInput(name, fields) {
     const workflow = this.model.workflow(name);
 
@@ -890,7 +906,11 @@ class Main extends React.Component {
       return;
     }
 
-    let inputs = this.model.fragments.input(workflow, fields);
+    const indent = workflow.getSector('taskBlock').indent
+        , childStarter = workflow.getSector('taskBlock').childStarter + '- '
+        ;
+
+    const inputs = this.model.fragments.input(indent, childStarter, fields);
 
     this.editor.env.document.replace(workflow.getSector('input'), inputs);
   }

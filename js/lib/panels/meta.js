@@ -349,7 +349,7 @@ export default class Meta extends React.Component {
             }
           }
         },
-        options: _.pluck(this.state.packs, 'name')
+        options: _(this.state.packs).pluck('name').union(['default']).value()
       }, {
         name: 'dot',
         type: 'comment',

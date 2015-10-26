@@ -194,6 +194,13 @@ export default class MistralDefinition extends Definition {
         sector.indent = _.repeat(state.unit, state.isTaskBlock - 1);
         const unit = _.repeat(state.unit, sector.indent.length - state.currentWorkflow.indent.length);
         sector.childStarter = sector.indent + unit;
+
+        const input = state.currentWorkflow.getSector('input');
+        if (input.isUndefined()) {
+          input.setStart(lineNum, 0);
+          input.setEnd(lineNum, 0);
+        }
+
         return;
       }
 

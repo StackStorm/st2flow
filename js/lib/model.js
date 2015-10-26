@@ -8,12 +8,15 @@ import Task from './models/task';
 import Workflow from './models/workflow';
 
 export default class Model extends EventEmitter {
-  constructor(type='mistral-v2') {
+  constructor(action) {
     super();
+
+    this.action = action;
 
     this.tasks = [];
     this.workflows = [];
 
+    const type = action.runner_type || 'mistral-v2';
     this.definition = new Definitions[type](this);
     this.messages = new Messages();
   }
@@ -23,6 +26,10 @@ export default class Model extends EventEmitter {
       .map((task) => _(task.sectors).values().flatten().value())
       .flatten()
       .value();
+  }
+
+  setAction(value) {
+    this.action = value;
   }
 
   fragments = {
@@ -37,11 +44,23 @@ export default class Model extends EventEmitter {
 
       if (_.isEmpty(this.workflows)) {
         const workflow = {
-          name: 'main',
+          name: this.action.ref || 'main',
           type: 'direct'
         };
 
         result += this.definition.template.block.workflow(defs.workflow, defs.tasks)(workflow);
+
+        const params = this.action.parameters;
+        if (params) {
+          const fields = _(params).chain()
+            .keys()
+            .reject((e) => {
+              return _.includes(this.definition.runner_params, e);
+            })
+            .value();
+
+          result += this.fragments.input(defs.tasks, defs.task + '- ', fields);
+        }
       }
 
       if (!this.taskBlock || this.taskBlock.isUndefined()) {
@@ -96,15 +115,13 @@ export default class Model extends EventEmitter {
 
       return result;
     },
-    input: (workflow, inputs) => {
+    input: (indent, childStarter, inputs) => {
       let result = '';
 
       const defs = this.definition.defaults.indents;
 
       const templates = this.definition.template
-          , outdent = workflow.getSector('taskBlock').indent
-          , childStarter = workflow.getSector('taskBlock').childStarter + '- '
-          , blockTemplate = templates.block.input(outdent || defs.tasks)
+          , blockTemplate = templates.block.input(indent || defs.tasks)
           , transitionTemplate = templates.transition(childStarter)
           ;
 
