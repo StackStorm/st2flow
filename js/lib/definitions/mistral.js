@@ -18,11 +18,11 @@ export default class MistralDefinition extends Definition {
     return {
       indents: {
         base: '',
-        workflow: _.repeat(unit, 1),
-        tasks: _.repeat(unit, 2),
-        task: _.repeat(unit, 3),
-        property: _.repeat(unit, 4),
-        transition: _.repeat(unit, 5)
+        workflow: _.repeat(unit, 0),
+        tasks: _.repeat(unit, 1),
+        task: _.repeat(unit, 2),
+        property: _.repeat(unit, 3),
+        transition: _.repeat(unit, 4)
       }
     };
   }
@@ -55,7 +55,7 @@ export default class MistralDefinition extends Definition {
         indent + 'action: ${ref}\n'
       ),
       block: {
-        base: () => _.template(`---\nversion: '2.0'\n\nworkflows:\n`),
+        base: () => _.template(`---\nversion: '2.0'\n\n`),
         workflow: (external, internal) =>
           _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
         input: (indent) => _.template(indent + 'input:\n'),
