@@ -463,7 +463,7 @@ class Main extends React.Component {
       <div className="st2-header">
         <div className="st2-header__logo"><img src="i/logo.svg" width="101" height="25" /></div>
         <div {...workflowButtonProps} >
-          { this.state.action.ref || 'New worflow' }
+          { this.state.action.ref || 'New workflow' }
         </div>
         <div className="st2-header__edit" onClick={this.showMeta.bind(this)}>
           <i className="st2-icon__tools" />
