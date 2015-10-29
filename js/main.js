@@ -171,6 +171,10 @@ class Main extends React.Component {
     if (state.source !== this.state.source) {
       api.connect(this.state.source);
     }
+
+    if (state.action !== this.state.action) {
+      this.model.setAction(this.state.action);
+    }
   }
 
   initEditor() {
@@ -292,7 +296,7 @@ class Main extends React.Component {
   }
 
   initModel() {
-    this.model = new Model();
+    this.model = new Model(this.state.action);
 
     this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
@@ -459,7 +463,7 @@ class Main extends React.Component {
       <div className="st2-header">
         <div className="st2-header__logo"><img src="i/logo.svg" width="101" height="25" /></div>
         <div {...workflowButtonProps} >
-          { this.state.action.ref || 'New worflow' }
+          { this.state.action.ref || 'New workflow' }
         </div>
         <div className="st2-header__edit" onClick={this.showMeta.bind(this)}>
           <i className="st2-icon__tools" />
@@ -588,6 +592,17 @@ class Main extends React.Component {
     window.name = `st2flow+${api.client.index.url}+${action.ref}`;
     this.setState({ action });
     this.setState({ meta: false });
+
+    this.setName(action.ref);
+
+    const inputs = _(action.parameters).chain()
+      .keys()
+      .reject((e) => {
+        return _.includes(this.model.definition.runner_params, e);
+      })
+      .value();
+
+    this.setInput(inputs);
   }
 
   auth(bundle64) {
@@ -872,6 +887,33 @@ class Main extends React.Component {
     });
 
     this.canvas.focus();
+  }
+
+  setName(name) {
+    const sector = this.model.workbook.getSector('name');
+    let line = name;
+
+    if (sector.isEmpty()) {
+      line = this.model.fragments.name(name);
+    }
+
+    this.editor.env.document.replace(sector, line);
+  }
+
+  setInput(fields) {
+    const workflow = this.model.workflow('main');
+
+    if (!workflow) {
+      return;
+    }
+
+    const indent = workflow.getSector('taskBlock').indent
+        , childStarter = workflow.getSector('taskBlock').childStarter + '- '
+        ;
+
+    const inputs = this.model.fragments.input(indent, childStarter, fields);
+
+    this.editor.env.document.replace(workflow.getSector('input'), inputs);
   }
 
   showTask(name) {

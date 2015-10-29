@@ -1,0 +1,41 @@
+---
+name: autoscale.asg.expand
+version: '2.0'
+
+main:
+  description: Guard rails to expand the number of new nodes in an autoscale group
+  type: direct
+  input:
+    - asg
+    - force
+  task-defaults:
+    on-error:
+      - fail
+  tasks:
+    update_group_start_status:
+      action: st2.kv.set
+      input:
+        key: 'asg.<% $.asg %>.status'
+        value: 'expanding'
+        ttl: 900
+      on-success:
+        - get_chatops_channel
+    get_chatops_channel:
+      action: st2.kv.get
+      input:
+        key: 'asg.<% $.asg %>.channel'
+      publish:
+        channel: <% $.get_chatops_channel.result %>
+      on-success:
+        - notify_start_wf
+    notify_start_wf:
+      action: slack.post_message
+      input:
+        message: "```ASG[<% $.asg %>] ASG needs some help, eh? Let me get on that.```"
+        channel: <% $.channel %>
+      on-success:
+        - get_current_epoch
+    get_current_epoch:
+      action: autoscale.epoch
+      publish:
+        current_epoch: <% $.get_current_epoch.result %>

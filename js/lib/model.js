@@ -6,14 +6,18 @@ import Messages from './models/messages';
 import Sector from './models/sector';
 import Task from './models/task';
 import Workflow from './models/workflow';
+import Workbook from './models/workbook';
 
 export default class Model extends EventEmitter {
-  constructor(type='mistral-v2') {
+  constructor(action) {
     super();
+
+    this.action = action;
 
     this.tasks = [];
     this.workflows = [];
 
+    const type = action.runner_type || 'mistral-v2';
     this.definition = new Definitions[type](this);
     this.messages = new Messages();
   }
@@ -25,6 +29,10 @@ export default class Model extends EventEmitter {
       .value();
   }
 
+  setAction(value) {
+    this.action = value;
+  }
+
   fragments = {
     task: (params) => {
       let result = '';
@@ -32,7 +40,9 @@ export default class Model extends EventEmitter {
       const defs = this.definition.defaults.indents;
 
       if (!this.workflowBlock || this.workflowBlock.isUndefined() && _.isEmpty(this.workflows)) {
-        result += this.definition.template.block.base()();
+        result += this.definition.template.block.wf_base()({
+          name: this.workbook && this.workbook.getProperty('name') || 'untitled'
+        });
       }
 
       if (_.isEmpty(this.workflows)) {
@@ -41,7 +51,19 @@ export default class Model extends EventEmitter {
           type: 'direct'
         };
 
-        result += this.definition.template.block.workflow(defs.workflow, defs.tasks)(workflow);
+        result += this.definition.template.block.wf_workflow(defs.workflow, defs.tasks)(workflow);
+
+        const params = this.action.parameters;
+        if (params) {
+          const fields = _(params).chain()
+            .keys()
+            .reject((e) => {
+              return _.includes(this.definition.runner_params, e);
+            })
+            .value();
+
+          result += this.fragments.input(defs.tasks, defs.task + '- ', fields);
+        }
       }
 
       if (!this.taskBlock || this.taskBlock.isUndefined()) {
@@ -95,6 +117,35 @@ export default class Model extends EventEmitter {
       }
 
       return result;
+    },
+    input: (indent, childStarter, inputs) => {
+      let result = '';
+
+      const defs = this.definition.defaults.indents;
+
+      const templates = this.definition.template
+          , blockTemplate = templates.block.input(indent || defs.tasks)
+          , transitionTemplate = templates.transition(childStarter)
+          ;
+
+      if (inputs && inputs.length) {
+        result += blockTemplate();
+      }
+
+      _.each(inputs, (name) => {
+        result += transitionTemplate({ value: { name } });
+      });
+
+      return result;
+    },
+    name: (name) => {
+      let result = '';
+
+      result += this.definition.template.block.wb_name()({
+        name
+      });
+
+      return result;
     }
   }
 
@@ -102,6 +153,7 @@ export default class Model extends EventEmitter {
     let lines = code.split('\n');
 
     let state = {
+      workbook: new Workbook(),
       isTaskBlock: false,
       taskBlockIdent: null,
       currentTask: null,
@@ -120,6 +172,7 @@ export default class Model extends EventEmitter {
 
     this.workflowBlock = state.workflowBlock;
     this.taskBlock = state.taskBlock;
+    this.workbook = state.workbook;
 
     // Delete all the tasks not updated during parsing
     _.each(state.untouchedTasks, (name) => {

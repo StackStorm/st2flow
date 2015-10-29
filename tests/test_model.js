@@ -10,7 +10,7 @@ describe('Model', () => {
   let model;
 
   beforeEach(() => {
-    model = new Model('action-chain');
+    model = new Model({ runner_type: 'action-chain' });
   });
 
   describe('#task()', () => {
