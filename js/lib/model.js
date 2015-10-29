@@ -41,7 +41,7 @@ export default class Model extends EventEmitter {
 
       if (!this.workflowBlock || this.workflowBlock.isUndefined() && _.isEmpty(this.workflows)) {
         result += this.definition.template.block.wf_base()({
-          name: this.workbook && this.workbook.getProperty('name') || 'untitled'
+          name: this.action && this.action.ref || 'untitled'
         });
       }
 
