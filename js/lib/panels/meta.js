@@ -133,6 +133,7 @@ export class ParameterEditor extends React.Component {
       name: 'Name',
       type: 'text',
       props: {
+        autoFocus: true,
         required: true,
         value: this.state.parameter.name,
         onChange: (event) => this.changeValue('name', event.target.value || undefined)
@@ -262,6 +263,7 @@ export default class Meta extends React.Component {
     parameters[name] = parameter;
 
     this.changeValue('parameters', parameters);
+    this.changeValue('add', false);
   }
 
   handleParameterUpdate(oldName, bundle) {
