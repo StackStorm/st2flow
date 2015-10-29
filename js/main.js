@@ -890,6 +890,10 @@ class Main extends React.Component {
   }
 
   setName(name) {
+    if (!this.model.workbook) {
+      return;
+    }
+
     const sector = this.model.workbook.getSector('name');
     let line = name;
 
