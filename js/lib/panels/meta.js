@@ -251,9 +251,7 @@ export default class Meta extends React.Component {
   handleCancel(event) {
     event.preventDefault();
 
-    if (confirm('Do you really want to cancel without saving?')) { // eslint-disable-line no-alert
-      this.setState({ show: false });
-    }
+    this.setState({ show: false });
   }
 
   handleParameterCreate(bundle) {
