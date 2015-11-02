@@ -58,9 +58,9 @@ export default class MistralDefinition extends Definition {
       block: {
         wb_base: () => _.template('---\nversion: \'2.0\'\nname: ${name}\n\nworkflows:\n'),
         wf_base: () => _.template('---\nversion: \'2.0\'\n\n${name}:\n'),
-        wb_workflow: (external, internal) =>
-          _.template(external + '${name}:\n' + internal + 'type: ${type}\n'),
-        wf_workflow: (external, internal) => _.template(internal + 'type: ${type}\n'),
+        wb_workflow: (external) =>
+          _.template(external + '${name}:\n'),
+        wf_workflow: () => _.template(),
         wb_name: () => _.template('name: ${name}\n'),
         input: (indent) => _.template(indent + 'input:\n'),
         tasks: (indent) => _.template(indent + 'tasks:\n'),
