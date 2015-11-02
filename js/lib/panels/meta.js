@@ -263,7 +263,7 @@ export default class Meta extends React.Component {
     parameters[name] = parameter;
 
     this.changeValue('parameters', parameters);
-    this.changeValue('add', false);
+    this.setState({ 'add': false });
   }
 
   handleParameterUpdate(oldName, bundle) {
