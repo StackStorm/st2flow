@@ -12,7 +12,7 @@ const st2Class = bem('popup')
     ;
 
 const paramTypes = _.keys(specTypes)
-    , specialProperties = ['required', 'immutable'];
+    , specialProperties = ['required', 'immutable', 'secret'];
 
 export class Parameter extends React.Component {
   static propTypes = {
