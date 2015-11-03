@@ -68,8 +68,8 @@ function bundle(b) {
       this.emit('end');
     })
     .pipe(source('main.js'))
-    .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(buffer())
+    .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(sourcemaps.init({ loadMaps: true }))
     .pipe(sourcemaps.write('./'))
     .pipe(gulp.dest('dist/js'))
