@@ -12,7 +12,7 @@ const st2Class = bem('popup')
     ;
 
 const paramTypes = _.keys(specTypes)
-    , specialProperties = ['required', 'immutable'];
+    , specialProperties = ['required', 'immutable', 'secret'];
 
 export class Parameter extends React.Component {
   static propTypes = {
@@ -251,9 +251,7 @@ export default class Meta extends React.Component {
   handleCancel(event) {
     event.preventDefault();
 
-    if (confirm('Do you really want to cancel without saving?')) { // eslint-disable-line no-alert
-      this.setState({ show: false });
-    }
+    this.setState({ show: false });
   }
 
   handleParameterCreate(bundle) {
@@ -263,7 +261,7 @@ export default class Meta extends React.Component {
     parameters[name] = parameter;
 
     this.changeValue('parameters', parameters);
-    this.changeValue('add', false);
+    this.setState({ 'add': false });
   }
 
   handleParameterUpdate(oldName, bundle) {
