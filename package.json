@@ -58,6 +58,6 @@
     "react": "0.13.3",
     "react-time": "4.0.0",
     "revalidator": "0.3.1",
-    "st2client": "0.3.9"
+    "st2client": "0.4.3"
   }
 }

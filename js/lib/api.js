@@ -16,7 +16,8 @@ export class API extends EventEmitter {
     this.server = {
       protocol: api.protocol,
       host: api.hostname,
-      port: api.port
+      port: api.port,
+      prefix: api.path
     };
 
     if (auth) {
@@ -27,7 +28,8 @@ export class API extends EventEmitter {
       this.server.auth = {
         protocol: auth.protocol,
         host: auth.hostname,
-        port: auth.port
+        port: auth.port,
+        prefix: auth.path
       };
     }
 
