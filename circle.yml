@@ -1,0 +1,58 @@
+# No additional ENV variables are required
+general:
+  artifacts:
+    - ~/packages
+
+machine:
+  environment:
+    DISTROS: "wheezy jessie trusty el6 el7"
+    PKGTYPE: "deb deb deb rpm rpm"
+    ST2_PACKAGES_REPO: https://github.com/StackStorm/st2-packages
+    DEPLOY_PACKAGES: 1
+  pre:
+    - mkdir -p ~/packages
+
+checkout:
+  post:
+    - git clone --depth 1 ${ST2_PACKAGES_REPO} ~/st2-packages
+    - |
+      DISTROS=($DISTROS)
+      PKG_VERSION=$(node -e "console.log(require('./package.json').version);")
+      PKG_RELEASE=1
+      echo "export PKG_VERSION=${PKG_VERSION}" >> ~/.circlerc
+      echo "export PKG_RELEASE=${PKG_RELEASE}" >> ~/.circlerc
+
+dependencies:
+  pre:
+    - sudo apt-get install rpm
+
+test:
+  post:
+    - dpkg-buildpackage -b -uc -us
+    - rpmbuild -bb rpm/st2flow.spec
+
+deployment:
+  publish:
+    owner: StackStorm
+    branch:
+      - master
+      - /v[0-9]+(\.[0-9]+)*/
+      - feature/circleci
+    commands:
+      # Deploy to Bintray all artifacts for respective distros in parallel
+      - |
+        DISTROS=($DISTROS)
+        PKGTYPE=($PKGTYPE)
+        for i in ${!DISTROS[@]}; do
+          mkdir -p ~/packages/${DISTROS[$i]}
+          cp ../*.${PKGTYPE[$i]} ~/packages/${DISTROS[$i]}
+        done
+        wait
+      - ~/st2-packages/.circle/save_payload.py ~/packages
+
+experimental:
+  notify:
+    branches:
+      only:
+        - master
+        - /v[0-9]+(\.[0-9]+)*/
