@@ -73,3 +73,8 @@ Temporary Items
 ### CUSTOM ###
 
 dist
+
+debian/st2flow
+debian/*.debhelper.log
+debian/*.substvars
+debian/files

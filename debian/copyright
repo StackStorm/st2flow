@@ -1,0 +1,10 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: st2flow
+Source: <url://example.com>
+
+Files: *
+Copyright: 2015-2016 StackStorm, Inc.
+License: Apache-2.0
+
+Files: debian/*
+Copyright: 2016 unknown <opsadmin@stackstorm.com>
