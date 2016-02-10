@@ -1,4 +1,5 @@
-# No additional ENV variables are required
+# Setup in CircleCI account the following ENV variables:
+# PACKAGECLOUD_TOKEN
 general:
   artifacts:
     - ~/packages
@@ -8,6 +9,7 @@ machine:
     DISTROS: "wheezy jessie trusty el6 el7"
     PKGTYPE: "deb deb deb rpm rpm"
     ST2_PACKAGES_REPO: https://github.com/StackStorm/st2-packages
+    IS_ENTERPRISE: 1
     DEPLOY_PACKAGES: 1
   pre:
     - mkdir -p ~/packages
@@ -16,15 +18,15 @@ checkout:
   post:
     - git clone --depth 1 ${ST2_PACKAGES_REPO} ~/st2-packages
     - |
-      DISTROS=($DISTROS)
       PKG_VERSION=$(node -e "console.log(require('./package.json').version);")
-      PKG_RELEASE=1
+      PKG_RELEASE=$(~/st2-packages/.circle/packagecloud.sh next-revision trusty ${PKG_VERSION} st2flow)
       echo "export PKG_VERSION=${PKG_VERSION}" >> ~/.circlerc
       echo "export PKG_RELEASE=${PKG_RELEASE}" >> ~/.circlerc
 
 dependencies:
   pre:
-    - sudo apt-get install rpm
+    - sudo apt-get install rpm jq
+    - gem install package_cloud
 
 test:
   post:
@@ -39,15 +41,15 @@ deployment:
       - /v[0-9]+(\.[0-9]+)*/
       - feature/circleci
     commands:
-      # Deploy to Bintray all artifacts for respective distros in parallel
+      # Copy files to CircleCI artifact dir and deploy to PackageCloud
       - |
         DISTROS=($DISTROS)
         PKGTYPE=($PKGTYPE)
         for i in ${!DISTROS[@]}; do
           mkdir -p ~/packages/${DISTROS[$i]}
           cp ../*.${PKGTYPE[$i]} ~/packages/${DISTROS[$i]}
+          ~/st2-packages/.circle/packagecloud.sh deploy ${DISTROS[$i]} ~/packages/${DISTROS[$i]}
         done
-        wait
       - ~/st2-packages/.circle/save_payload.py ~/packages
 
 experimental:
