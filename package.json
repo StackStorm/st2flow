@@ -15,7 +15,7 @@
   "homepage": "https://github.com/stackstorm/st2flow",
   "devDependencies": {
     "autoprefixer-core": "5.2.0",
-    "babel-eslint": "4.1.6",
+    "babel-eslint": "5.0.0-beta10",
     "babelify": "6.1.2",
     "browserify": "10.2.3",
     "chai": "3.0.0",
