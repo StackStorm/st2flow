@@ -124,13 +124,13 @@ export class Settings {
   }
 
   load() {
-    let settings = () => {
+    let settings = (() => {
       try {
         return JSON.parse(window.localStorage.getItem(KEY)) || {};
       } catch (e) {
         throw new Error(`Unable to parse the config. Error: ${e}`);
       }
-    }();
+    })();
 
     if (settings._rev) {
       const revision = _.find(this.revisions, { id: settings._rev })
@@ -183,13 +183,13 @@ export class Settings {
   }
 
   loadFallback() {
-    this.settings = () => {
+    this.settings = (() => {
       try {
         return JSON.parse(window.localStorage.getItem(FALLBACK_KEY)) || {};
       } catch (e) {
         throw new Error(`Unable to parse the fallback config. Error: ${e}`);
       }
-    }();
+    })();
 
     return this;
   }
@@ -218,10 +218,10 @@ export class Settings {
 }
 
 // Avoid throwing exception in environement where `window` is not available
-export default () => {
+export default (() => {
   try {
     return new Settings();
   } catch (e) {
     console.error(e);
   }
-}();
+})();
