@@ -18,7 +18,7 @@ checkout:
   post:
     - git clone --depth 1 ${ST2_PACKAGES_REPO} ~/st2-packages
     - |
-      PKG_VERSION=$(node -e "console.log(require('./package.json').version);")
+      PKG_VERSION=$(node -e "console.log(require('./package.json').st2_version);")
       PKG_RELEASE=$(~/st2-packages/.circle/packagecloud.sh next-revision trusty ${PKG_VERSION} st2flow)
       echo "export PKG_VERSION=${PKG_VERSION}" >> ~/.circlerc
       echo "export PKG_RELEASE=${PKG_RELEASE}" >> ~/.circlerc
