@@ -2,11 +2,11 @@
 
 %define version %(echo "${PKG_VERSION:-%{pkg_version}}")
 %define release %(echo "${PKG_RELEASE:-1}")
-%define epoch %(_epoch=`echo %{version} | grep -q dev || echo 1`; echo "${_epoch:-0}")
+#define epoch %(_epoch=`echo %{version} | grep -q dev || echo 1`; echo "${_epoch:-0}")
 
 Name:           st2flow
 Version:        %{version}
-%if 0%{epoch}
+%if 0%{?epoch}
 Epoch: %{epoch}
 %endif
 Release:        %{release}
