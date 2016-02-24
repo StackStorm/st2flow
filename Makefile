@@ -1,16 +1,12 @@
 COMPONENT := $(notdir $(CURDIR))
 PKG_RELEASE ?= 1
-PKG_VERSION ?= $(shell node -e "console.log(require('./package.json').version)")
+PKG_VERSION ?= $(shell node -e "console.log(require('./package.json').st2_version)")
 PREFIX ?= /opt/stackstorm/static/webui/flow
+CHANGELOG_COMMENT ?= "automated build, version: $(PKG_VERSION)"
+DEB_EPOCH := $(shell echo $(PKG_VERSION) | grep -q dev || echo '1')
+DEB_DISTRO := $(shell [ -z $(DEB_EPOCH) ] && echo unstable || echo stable)
 
-ifneq (,$(wildcard /etc/debian_version))
-	DEBIAN := 1
-	DESTDIR ?= $(CURDIR)/debian/$(COMPONENT)
-else
-	REDHAT := 1
-endif
-
-.PHONY: all build clean install
+.PHONY: all build clean install deb rpm
 all: build
 
 build:
@@ -20,11 +16,16 @@ clean:
 	rm -Rf dist/
 	mkdir -p dist/
 
-install: changelog
+install:
 	mkdir -p $(DESTDIR)$(PREFIX)
 	cp -R $(CURDIR)/dist/* $(DESTDIR)$(PREFIX)
 
-changelog:
-ifeq ($(DEBIAN),1)
-	debchange -v $(PKG_VERSION)-$(PKG_RELEASE) -M ""
-endif
+deb:
+	# Stable versions use epoch, for example 1:1.3.1-3, this made to distinguish
+	# them form dev versions (which use no epoch).
+	[ $(DEB_DISTRO) = stable ] && _epoch="$(DEB_EPOCH):" || true; \
+		dch -m --force-distribution -v$${_epoch}$(PKG_VERSION)-$(PKG_RELEASE) -D$(DEB_DISTRO) $(CHANGELOG_COMMENT)
+	dpkg-buildpackage -b -uc -us
+
+rpm:
+	rpmbuild -bb rpm/st2flow.spec
