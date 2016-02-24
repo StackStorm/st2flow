@@ -30,8 +30,8 @@ dependencies:
 
 test:
   post:
-    - dpkg-buildpackage -b -uc -us
-    - rpmbuild -bb rpm/st2flow.spec
+    - make deb
+    - make rpm
 
 deployment:
   publish:
