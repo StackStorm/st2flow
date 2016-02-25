@@ -1,2 +1,33 @@
-echo 'angular.module('main').run(function (st2Config) { st2Config.flow = '/flow' });' >> /opt/stackstorm/static/webui/config.js
-printenv
+#!/bin/sh
+set -e
+
+WEBUI_CONFIGJS="/opt/stackstorm/static/webui/config.js"
+FLOW_CONFIG=$(cat <<EHD
+// Package injected: flow-config
+angular.module('main').run(
+    function (st2Config) {
+        st2Config.flow = '/flow';
+    }
+);
+// Package injected: flow-config
+EHD
+)
+
+jsinject_flaw() {
+  [ -f "$WEBUI_CONFIGJS" ] || { echo "St2web \`${WEBUI_CONFIGJS}' not found"; exit 1; }
+  # configuration has been already injected (might be by hand), so return
+  grep -q "st2Config.flow\\s\+=\\s\+" $WEBUI_CONFIGJS) && return 0 || :
+  echo "$FLOW_CONFIG" >> $WEBUI_CONFIGJS
+}
+
+case "$1" in
+    configure)
+      jsinject_flaw
+    ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
