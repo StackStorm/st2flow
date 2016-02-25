@@ -10,6 +10,6 @@ Homepage: <insert the upstream URL, if relevant>
 
 Package: st2flow
 Architecture: any
-Pre-Depends: dpkg (>= 1.16.16)
+Pre-Depends: dpkg (>= 1.16.16), perl
 Description: St2Flow - StackStorm Workflow Editor
  <insert long description, indented with spaces>
