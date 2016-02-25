@@ -12,7 +12,7 @@ Epoch: %{epoch}
 Release:        %{release}
 Summary:        St2Flow - StackStorm Workflow Editor
 
-Requires: perl
+Requires: perl, st2web
 
 License:        Apache
 URL:            https://github.com/stackstorm/st2flow
