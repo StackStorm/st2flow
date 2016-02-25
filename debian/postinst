@@ -1,0 +1,2 @@
+echo 'angular.module('main').run(function (st2Config) { st2Config.flow = '/flow' });' >> /opt/stackstorm/static/webui/config.js
+printenv
