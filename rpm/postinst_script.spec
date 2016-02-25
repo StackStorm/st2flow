@@ -14,5 +14,5 @@ EHD
 
 [ -f "$WEBUI_CONFIGJS" ] || { echo "St2web \`${WEBUI_CONFIGJS}' not found"; exit 1; }
 # configuration has been already injected (might be by hand), so return
-grep -q "st2Config.flow\\s\+=\\s\+" $WEBUI_CONFIGJS) && return 0 || :
+grep -q "st2Config.flow\\s\+=\\s\+" $WEBUI_CONFIGJS && return 0 || :
 echo "$FLOW_CONFIG" >> $WEBUI_CONFIGJS
