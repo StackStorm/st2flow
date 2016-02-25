@@ -1,25 +1,27 @@
 # Setup in CircleCI account the following ENV variables:
 # PACKAGECLOUD_TOKEN
-general:
-  artifacts:
-    - ~/packages
-
 machine:
   environment:
-    DISTROS: "wheezy jessie trusty el6 el7"
-    PKGTYPE: "deb deb deb rpm rpm"
-    ST2_PACKAGES_REPO: https://github.com/StackStorm/st2-packages
+    DEB: wheezy jessie trusty
+    RPM: el6 el7
     IS_ENTERPRISE: 1
     DEPLOY_PACKAGES: 1
-  pre:
-    - mkdir -p ~/packages
+  post:
+    - cd ${CIRCLE_ARTIFACTS} && mkdir ${DEB} ${RPM}
 
 checkout:
+  pre:
+    - |
+        # Download helper scripts (for packagecloud)
+        mkdir ~/scripts
+        wget -qO - https://github.com/StackStorm/st2-packages/raw/master/.circle/packagecloud.sh > ~/scripts/packagecloud.sh
+        wget -qO - https://github.com/StackStorm/st2-packages/raw/master/.circle/save_payload.py > ~/scripts/save_payload.py
+        chmod 755 ~/scripts/{packagecloud.sh,save_payload.py}
+        echo "export PATH=${HOME}/scripts:${PATH}" >> ~/.circlerc
   post:
-    - git clone --depth 1 ${ST2_PACKAGES_REPO} ~/st2-packages
     - |
       PKG_VERSION=$(node -e "console.log(require('./package.json').st2_version);")
-      PKG_RELEASE=$(~/st2-packages/.circle/packagecloud.sh next-revision trusty ${PKG_VERSION} st2flow)
+      PKG_RELEASE=$(packagecloud.sh next-revision trusty ${PKG_VERSION} st2flow)
       echo "export PKG_VERSION=${PKG_VERSION}" >> ~/.circlerc
       echo "export PKG_RELEASE=${PKG_RELEASE}" >> ~/.circlerc
 
@@ -30,16 +32,13 @@ dependencies:
 
 test:
   post:
-    - make deb
-    - make rpm
-    # Copy files to CircleCI artifact dir
     - |
-      DISTROS=($DISTROS)
-      PKGTYPE=($PKGTYPE)
-      for i in ${!DISTROS[@]}; do
-        mkdir -p ~/packages/${DISTROS[$i]}
-        cp ../*.${PKGTYPE[$i]} ~/packages/${DISTROS[$i]}
-      done
+        make deb
+        echo $DEB | tr ' ' '\n' | xargs -I{} cp -vr ../st2flow_*.{deb,changes} $CIRCLE_ARTIFACTS/{}
+    - |
+        make rpm
+        echo $RPM | tr ' ' '\n' | xargs -I{} cp -vr ../st2flow-*.rpm $CIRCLE_ARTIFACTS/{}
+
 
 deployment:
   publish:
@@ -49,9 +48,11 @@ deployment:
       - /v[0-9]+(\.[0-9]+)*/
       - feature/circleci
     commands:
-      # Deploy to PackageCloud
-      - "parallel -v -j0 --line-buffer ~/st2-packages/.circle/packagecloud.sh deploy {} ~/packages/{} ::: ${DISTROS}"
-      - ~/st2-packages/.circle/save_payload.py ~/packages
+      - |
+          for distro in ${RPM} ${DEB}; do
+            packagecloud.sh deploy $distro $CIRCLE_ARTIFACTS/$distro
+          done
+      - save_payload.py ${CIRCLE_ARTIFACTS}
 
 experimental:
   notify:
