@@ -52,8 +52,7 @@ deployment:
           for distro in ${RPM} ${DEB}; do
             packagecloud.sh deploy $distro $CIRCLE_ARTIFACTS/$distro
           done
-      - save_payload.py ${CIRCLE_ARTIFACTS}
-
+      - DISTROS="$DEB $RPM" save_payload.py ${CIRCLE_ARTIFACTS}
 experimental:
   notify:
     branches:
