@@ -32,6 +32,14 @@ test:
   post:
     - make deb
     - make rpm
+    # Copy files to CircleCI artifact dir
+    - |
+      DISTROS=($DISTROS)
+      PKGTYPE=($PKGTYPE)
+      for i in ${!DISTROS[@]}; do
+        mkdir -p ~/packages/${DISTROS[$i]}
+        cp ../*.${PKGTYPE[$i]} ~/packages/${DISTROS[$i]}
+      done
 
 deployment:
   publish:
@@ -41,15 +49,8 @@ deployment:
       - /v[0-9]+(\.[0-9]+)*/
       - feature/circleci
     commands:
-      # Copy files to CircleCI artifact dir and deploy to PackageCloud
-      - |
-        DISTROS=($DISTROS)
-        PKGTYPE=($PKGTYPE)
-        for i in ${!DISTROS[@]}; do
-          mkdir -p ~/packages/${DISTROS[$i]}
-          cp ../*.${PKGTYPE[$i]} ~/packages/${DISTROS[$i]}
-          ~/st2-packages/.circle/packagecloud.sh deploy ${DISTROS[$i]} ~/packages/${DISTROS[$i]}
-        done
+      # Deploy to PackageCloud
+      - "parallel -v -j0 --line-buffer ~/st2-packages/.circle/packagecloud.sh deploy {} ~/packages/{} ::: ${DISTROS}"
       - ~/st2-packages/.circle/save_payload.py ~/packages
 
 experimental:
