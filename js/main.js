@@ -616,6 +616,11 @@ class Main extends React.Component {
       });
     }
 
+    if (source.api === undefined) {
+      source.api = 'https://' + window.location.hostname + ':443/api';
+      source.auth = 'https://' + window.location.hostname + ':443/auth';
+    }
+
     if (source.auth === true) {
       source.auth = new URI(source.api).port(9100).toString();
     }
