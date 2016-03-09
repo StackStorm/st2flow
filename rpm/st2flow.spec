@@ -14,7 +14,7 @@ Summary:        St2Flow - StackStorm Workflow Editor
 
 Requires: perl, st2web
 
-License:        Apache
+License:        StackStorm Enterprise EULA
 URL:            https://github.com/stackstorm/st2flow
 Source0:        st2flow
 
@@ -48,4 +48,5 @@ Prefix:         /opt/stackstorm/static/webui/flow
   rm -rf %{buildroot}
 
 %files
+  %doc rpm/LICENSE
   /*
