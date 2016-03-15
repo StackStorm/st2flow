@@ -4,8 +4,7 @@ export default function intersectRect(node, point) {
   var x = node.x;
   var y = node.y;
 
-  // Rectangle intersection algorithm from:
-  // http://math.stackexchange.com/questions/108113/find-edge-between-two-boxes
+  // The algorithm below finds the point on the edge of a rectangle, which is the closest to the "point"
   var dx = point.x - x;
   var dy = point.y - y;
   var w = node.width / 2;
