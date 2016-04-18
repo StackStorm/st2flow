@@ -15,11 +15,12 @@ const st2Class = bem('palette')
 class Pack extends React.Component {
   static propTypes = {
     name: React.PropTypes.string.isRequired,
-    icon: React.PropTypes.string
+    icon: React.PropTypes.string,
+    filtered: React.PropTypes.bool
   }
 
   state = {
-    collapsed: false
+    collapsed: true
   }
 
   handleClick() {
@@ -27,11 +28,13 @@ class Pack extends React.Component {
   }
 
   render() {
+    const collapsed = this.props.filtered ? false : this.state.collapsed;
+
     const props = {
       className: st2Class('pack')
     };
 
-    if (this.state.collapsed) {
+    if (collapsed) {
       props.className += ' ' + st2Class('pack', 'collapsed');
     }
 
@@ -39,8 +42,8 @@ class Pack extends React.Component {
       className: st2Class('pack-toggle')
     };
 
-    if (this.state.collapsed) {
-      toggleProps.className += ' ' + st2Icon('left-open');
+    if (collapsed) {
+      toggleProps.className += ' ' + st2Icon('right-open');
     } else {
       toggleProps.className += ' ' + st2Icon('down-open');
     }
@@ -207,15 +210,21 @@ export default class Palette extends React.Component {
           </div>
         }
         {
-          _.map(packs, (actions, name) =>
-            <Pack key={name} name={name} icon={this.state.icons && this.state.icons[name]}>
+          _.map(packs, (actions, name) => {
+            const props = {
+              key: name,
+              name,
+              icon: this.state.icons && this.state.icons[name],
+              filtered: !!this.state.filter
+            };
+            return <Pack {...props} >
               {
                 _.map(actions, (action) =>
                   <Action key={action.ref} action={action} ></Action>
                 )
               }
-            </Pack>
-          )
+            </Pack>;
+          })
         }
       </div>
     </div>;
