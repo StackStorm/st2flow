@@ -2,7 +2,10 @@
 @import '../dist/font/st2flow-embedded.css';
 @import 'https://fonts.googleapis.com/css?family=Oswald:400,300,700';
 
-html, body, main {
+html,
+body,
+.container,
+main {
   height: 100%;
   overflow: hidden;
 }

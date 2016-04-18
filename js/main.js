@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import ace from 'brace';
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Router } from 'director';
 import URI from 'URIjs';
 
@@ -219,7 +220,7 @@ class Main extends React.Component {
     };
     langTools.setCompleters([paramCompleter]);
 
-    const editor = ace.edit(this.refs.editor.getDOMNode());
+    const editor = ace.edit(this.refs.editor);
 
     require('brace/mode/yaml');
     editor.getSession().setMode('ace/mode/yaml');
@@ -1101,4 +1102,4 @@ class Main extends React.Component {
   }
 }
 
-window.st2flow = React.render(<Main />, document.body);
+window.st2flow = ReactDOM.render(<Main />, document.querySelector('.container'));

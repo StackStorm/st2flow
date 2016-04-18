@@ -90,7 +90,7 @@ class SearchField extends React.Component {
 
   handleChange() {
     this.props.onChange(
-      this.refs.filter.getDOMNode().value
+      this.refs.filter.value
     );
   }
 
@@ -99,7 +99,7 @@ class SearchField extends React.Component {
       className: st2Class('search-reset'),
       onClick: () => {
         this.props.onChange('');
-        this.refs.filter.getDOMNode().focus();
+        this.refs.filter.focus();
       }
     };
 
