@@ -517,7 +517,9 @@ class Main extends React.Component {
           </div>
 
         </div>
-        <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} >
+        <Panel ref="panel"
+            onToggle={(...e) => this.resizeCanvas(...e)}
+            onResize={(...e) => this.resizeCanvas(...e)} >
           <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
         </Panel>
 
