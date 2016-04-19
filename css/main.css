@@ -267,7 +267,7 @@ main {
       color: #eee;
 
       &::placeholder {
-        color: #23282d;
+        color: color(#6b8ca3 l(80%));
       }
     }
 
