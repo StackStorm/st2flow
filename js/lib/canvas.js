@@ -212,6 +212,10 @@ export default class Canvas extends EventEmitter {
           d3.event.stopPropagation();
           self.dropOnNode(this, d3.event, name);
         })
+        .on('dblclick', function (name) {
+          d3.event.stopPropagation();
+          self.edit(name);
+        })
         .each(d => {
           const node = g.node(d);
 
