@@ -612,7 +612,7 @@ class Main extends React.Component {
     let source;
 
     try {
-      source = JSON.parse(atob(bundle64));
+      source = JSON.parse(window.atob(bundle64));
     } catch (e) {
       return new Promise((resolve, reject) => {
         reject(`Bundle is malformed: ${e}`);

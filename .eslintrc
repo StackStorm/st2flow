@@ -3,13 +3,15 @@ env:
   jasmine: false
   node: true
   mocha: true
-  browser: true
   builtin: true
   es6: true
 ecmaFeatures:
   jsx: true
   modules: true
   classes: true
+globals:
+  window: false
+  document: false
 rules:
   block-scoped-var: 0
   camelcase: 0
