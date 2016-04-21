@@ -56,9 +56,9 @@
     "moment": "2.10.6",
     "normalize.css": "3.0.3",
     "object.observe": "0.2.4",
-    "react": "0.14.8",
-    "react-dom": "0.14.8",
-    "react-time": "4.0.0",
+    "react": "15.0.1",
+    "react-dom": "15.0.1",
+    "react-time": "4.0.2",
     "revalidator": "0.3.1",
     "st2client": "0.4.3"
   }

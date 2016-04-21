@@ -17,6 +17,9 @@ export default class Node extends EventEmitter {
     });
   }
 
+  width = 210
+  height = 52
+
   select() {
     this.graph.select(this.name);
   }

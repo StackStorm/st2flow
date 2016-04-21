@@ -301,7 +301,7 @@ class Main extends React.Component {
 
     this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
-      this.canvas.render(this.graph);
+      this.canvas.draw(this.graph);
 
       const nodes = this.graph.nodes();
       if (!_.isEmpty(nodes)) {
@@ -326,7 +326,7 @@ class Main extends React.Component {
   }
 
   initCanvas() {
-    this.canvas = new Canvas();
+    this.canvas = this.refs.canvas;
 
     this.canvas.on('select', (name, event) => {
       const SHIFT = 1
@@ -511,10 +511,7 @@ class Main extends React.Component {
             </ControlGroup>
           </div>
 
-          <div className="st2-viewer">
-            <svg className="st2-viewer__canvas">
-            </svg>
-          </div>
+          <Canvas ref='canvas' graph={this.graph} />
 
         </div>
         <Panel ref="panel"
