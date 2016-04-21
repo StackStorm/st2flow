@@ -995,6 +995,8 @@ main {
   }
 
   &__edge {
+    pointer-events: none;
+
     &-path {
       stroke-width: 6px;
       stroke: white;

@@ -27,6 +27,22 @@ export default class Node extends React.Component {
 
   state = {}
 
+  constructor() {
+    super();
+
+    this._resetFallthrough = () => {
+      this.setState({ fallthrough: false });
+    };
+  }
+
+  componentDidMount() {
+    document.addEventListener('dragend', this._resetFallthrough);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('dragend', this._resetFallthrough);
+  }
+
   edit() {
     return this.refs.name.focus();
   }
@@ -98,11 +114,18 @@ export default class Node extends React.Component {
 
   handleDragEnter(e) {
     e.stopPropagation();
-    this.setState({ active: true });
+    const dt = e.dataTransfer;
+
+    if (_.includes(['link', 'all'], dt.effectAllowed)) {
+      this.setState({ active: true });
+    } else {
+      this.setState({ fallthrough: true });
+    }
   }
 
   handleDragLeave(e) {
     e.stopPropagation();
+
     this.setState({ active: false });
   }
 
@@ -171,6 +194,10 @@ export default class Node extends React.Component {
 
     if (this.state.active) {
       nodeProps.className += ' ' + st2Class('node', 'active');
+    }
+
+    if (this.state.fallthrough) {
+      nodeProps.style.pointerEvents = 'none';
     }
 
     const iconProps = {
