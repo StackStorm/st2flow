@@ -236,6 +236,7 @@ export default class Meta extends React.Component {
       pack: 'default',
       runner_type: 'mistral-v2',
       enabled: true,
+      entry_point: '',
       parameters: {}
     },
     show: false
