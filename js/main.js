@@ -743,7 +743,9 @@ class Main extends React.Component {
       throw new Error('no such task:', source);
     }
 
-    this.embedCoords();
+    if (!this.model.tasks.some(v => v.properties.coord)) {
+      this.embedCoords();
+    }
 
     const params = _.map(transitions, (value) => ({ value }));
 
