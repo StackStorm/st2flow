@@ -4,7 +4,6 @@ import React from 'react';
 import bem from '../util/bem';
 import icons from '../util/icon';
 import { pack, unpack } from '../util/packer';
-import Vector from '../util/vector';
 
 import Name from './name';
 import Action from './action';
@@ -13,13 +12,11 @@ import Handle from './handle';
 const st2Class = bem('viewer')
     ;
 
-let hiddenNode;
-
 export default class Node extends React.Component {
   static propTypes = {
     value: React.PropTypes.object,
     onSelect: React.PropTypes.func,
-    onMove: React.PropTypes.func,
+    onPick: React.PropTypes.func,
     onRename: React.PropTypes.func,
     onDelete: React.PropTypes.func,
     onConnect: React.PropTypes.func,
@@ -72,34 +69,9 @@ export default class Node extends React.Component {
 
     this.setState({ dragged: true });
 
-    const dt = e.dataTransfer;
-
-    const {layerX: targetX, layerY: targetY} = e.nativeEvent;
-    const { name, x, y } = this.props.value;
-    const origin = this.props.origin;
-
-    const vViewport = new Vector(targetX, targetY);
-    const vNode = new Vector(x, y);
-    const vOrigin = new Vector(origin.x, origin.y);
-
-    const offset = vViewport.subtract(vNode).subtract(vOrigin);
-
-    const crt = e.target.cloneNode(true);
-    crt.style.removeProperty('transform');
-    crt.style.removeProperty('-webkit-transform');
-    crt.style.setProperty('z-index', -1);
-
-    if (hiddenNode) {
-      hiddenNode.parentNode.replaceChild(crt, hiddenNode);
-    } else {
-      document.body.appendChild(crt);
+    if (this.props.onPick) {
+      return this.props.onPick(e);
     }
-
-    hiddenNode = crt;
-
-    dt.setDragImage(crt, offset.x, offset.y);
-    dt.setData('nodePack', pack({ name, offsetX: offset.x, offsetY: offset.y }));
-    dt.effectAllowed = 'move';
   }
 
   handleDragEnd(e) {
