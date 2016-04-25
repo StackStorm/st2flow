@@ -2,6 +2,7 @@ import _ from 'lodash';
 import React from 'react';
 import { EventEmitter } from 'events';
 
+import Arrow from './util/arrow';
 import bem from './util/bem';
 import Vector from './util/vector';
 import { unpack } from './util/packer';
@@ -9,24 +10,7 @@ import { unpack } from './util/packer';
 const st2Class = bem('viewer')
     ;
 
-class CanvasController extends EventEmitter {
-  toInner(x, y) {
-    x -= this.paddings.left;
-    y -= this.paddings.top;
-
-    x = x < 0 ? 0 : x;
-    y = y < 0 ? 0 : y;
-
-    return [x, y];
-  }
-
-  fromInner(x=0, y=0) {
-    x += this.paddings.left;
-    y += this.paddings.top;
-
-    return [x, y];
-  }
-}
+class CanvasController extends EventEmitter {}
 
 
 
@@ -42,7 +26,37 @@ export default class Canvas extends React.Component {
   state = {
     scale: 1
   }
+
   nodes = {}
+
+  paddings = {
+    top: 45,
+    right: 10,
+    bottom: 10,
+    left: 10
+  }
+
+  toInner(x, y) {
+    x -= this.paddings.left;
+    y -= this.paddings.top;
+
+    x = x < 0 ? 0 : x;
+    y = y < 0 ? 0 : y;
+
+    return [x, y];
+  }
+
+  fromInner(x=0, y=0) {
+    if (_.isObject(x)) {
+      y = x.y;
+      x = x.x;
+    }
+
+    x += this.paddings.left;
+    y += this.paddings.top;
+
+    return [x, y];
+  }
 
   componentDidMount() {
     this._canvas = new CanvasController();
@@ -258,34 +272,30 @@ export default class Canvas extends React.Component {
     }
 
     this.setState({ scale });
-    // self.zoomer.style('transform', `scale(${self.scale})`);
   }
 
   getSvgSize() {
-    const element = this.refs.viewer;
+    const { nodes={} } = this.state;
 
-    let dimensions = {
-      width: element.offsetWidth,
-      height: element.offsetHeight
-    };
+    let { offsetWidth: width, offsetHeight: height } = this.refs.viewer;
 
-    if (this.state.nodes) {
-       dimensions = _.reduce(this.state.nodes, (acc, node) => {
-        let {x, y, width, height} = node;
+    const { top, bottom, left, right } = this.paddings;
 
-        // [x, y] = this.fromInner(x, y);
+    width -= left + right;
+    height -= top + bottom;
 
-        x += width;// + this.paddings.right;
-        y += height;// + this.paddings.bottom;
+    for (const key of Object.keys(nodes)) {
+      const { width: w, height: h } = nodes[key];
+      let [ x, y ] = this.fromInner(nodes[key]);
 
-        acc.width = acc.width < x ? x : acc.width;
-        acc.height = acc.height < y ? y : acc.height;
+      x += w;
+      y += h;
 
-        return acc;
-      }, dimensions);
+      width = width < x ? x : width;
+      height = height < y ? y : height;
     }
 
-    return dimensions;
+    return { width, height };
   }
 
   render() {
@@ -321,8 +331,13 @@ export default class Canvas extends React.Component {
       }
     };
 
+    const { top, bottom, left, right } = this.paddings;
+
     const canvasProps = {
       className: st2Class('canvas'),
+      style: {
+        margin: [top, right, bottom, left].map(v => v + 'px').join(' ')
+      },
       onDragEnter: (e) => this.handleCanvasDragEnter(e),
       onDragLeave: (e) => this.handleCanvasDragLeave(e),
       onDragOver: (e) => this.handleCanvasDragOver(e),
@@ -330,9 +345,8 @@ export default class Canvas extends React.Component {
     };
 
     if (this.refs.viewer) {
-      const svgSize = this.getSvgSize();
-      canvasProps.width = svgSize.width;
-      canvasProps.height = svgSize.height;
+      const { width, height } = this.getSvgSize();
+      Object.assign(canvasProps, { width, height });
     }
 
     return <div {...containerProps} >
@@ -340,10 +354,10 @@ export default class Canvas extends React.Component {
         <div {...zoomerProps} >
           <svg {...canvasProps} >
             {
-              _.map(this.state.edges, (v, k) => {
+              _.map(this.state.edges, (edge, key) => {
                 const props = {
-                  key: k,
-                  value: v
+                  key,
+                  value: edge
                 };
 
                 return <Edge {...props} />;
@@ -351,10 +365,23 @@ export default class Canvas extends React.Component {
             }
           </svg>
           {
-            _.map(this.state.edges, (v, k) => {
+            _.map(this.state.edges, (edge, key) => {
+              const { v, w } = edge;
+
+              const A = w.intersect(v)
+                  , B = v.intersect(w)
+                  // find mid point on the line excluding arrow
+                  , AB = B.subtract(A)
+                  , length = AB.length() + Arrow.size.x
+                  , M = AB.unit().multiply(length/2).add(A)
+                  , [x, y] = this.fromInner(M)
+                  ;
+
               const props = {
-                key: k,
-                value: v,
+                key,
+                value: edge,
+                x,
+                y,
                 onClick: (e) => this.handleLabelClick(e, v)
               };
 
@@ -362,15 +389,21 @@ export default class Canvas extends React.Component {
             })
           }
           {
-            _.map(this.state.nodes, (v, k) => {
+            _.map(this.state.nodes, (node, key) => {
+              const [ x, y ] = this.fromInner(node);
+              const origin = new Vector(...this.fromInner());
+
               const props = {
-                key: k,
-                value: v,
-                selected: k === this.state.selected,
-                ref: (c) => this.nodes[k] = c,
-                onSelect: (e) => this.handleNodeSelect(e, k),
-                onRename: (e, v) => this.handleNodeRename(e, k, v),
-                onDelete: (e) => this.handleNodeDelete(e, k),
+                key,
+                value: node,
+                x,
+                y,
+                origin,
+                selected: key === this.state.selected,
+                ref: (c) => this.nodes[key] = c,
+                onSelect: (e) => this.handleNodeSelect(e, key),
+                onRename: (e, v) => this.handleNodeRename(e, key, v),
+                onDelete: (e) => this.handleNodeDelete(e, key),
                 onConnect: (...args) => this.handleNodeConnect(...args)
               };
 

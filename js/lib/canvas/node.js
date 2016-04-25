@@ -4,6 +4,7 @@ import React from 'react';
 import bem from '../util/bem';
 import icons from '../util/icon';
 import { pack, unpack } from '../util/packer';
+import Vector from '../util/vector';
 
 import Name from './name';
 import Action from './action';
@@ -22,7 +23,13 @@ export default class Node extends React.Component {
     onRename: React.PropTypes.func,
     onDelete: React.PropTypes.func,
     onConnect: React.PropTypes.func,
-    selected: React.PropTypes.bool
+    selected: React.PropTypes.bool,
+    x: React.PropTypes.number,
+    y: React.PropTypes.number,
+    origin: React.PropTypes.shape({
+      x: React.PropTypes.number,
+      y: React.PropTypes.number
+    })
   }
 
   state = {}
@@ -69,9 +76,13 @@ export default class Node extends React.Component {
 
     const {layerX: targetX, layerY: targetY} = e.nativeEvent;
     const { name, x, y } = this.props.value;
+    const origin = this.props.origin;
 
-    const offsetX = targetX - x;
-    const offsetY = targetY - y;
+    const vViewport = new Vector(targetX, targetY);
+    const vNode = new Vector(x, y);
+    const vOrigin = new Vector(origin.x, origin.y);
+
+    const offset = vViewport.subtract(vNode).subtract(vOrigin);
 
     const crt = e.target.cloneNode(true);
     crt.style.removeProperty('transform');
@@ -86,8 +97,8 @@ export default class Node extends React.Component {
 
     hiddenNode = crt;
 
-    dt.setDragImage(crt, offsetX, offsetY);
-    dt.setData('nodePack', pack({ name, offsetX, offsetY }));
+    dt.setDragImage(crt, offset.x, offset.y);
+    dt.setData('nodePack', pack({ name, offsetX: offset.x, offsetY: offset.y }));
     dt.effectAllowed = 'move';
   }
 
@@ -163,7 +174,7 @@ export default class Node extends React.Component {
   }
 
   render() {
-    const { x, y } = this.props.value;
+    const { x, y } = this.props;
 
     const nodeProps = {
       className: st2Class('node'),
@@ -179,9 +190,10 @@ export default class Node extends React.Component {
       onDragLeave: (e) => this.handleDragLeave(e),
       onDragOver: (e) => this.handleDragOver(e),
       onDrop: (e) => this.handleDrop(e),
-      // Intercept mouse events so they won't trigger scroll during node movement
-      onMouseDown: (e) => e.stopPropagation(),
-      onMouseUp: (e) => e.stopPropagation()
+      // Intercept mouse down event so they won't trigger scroll during node movement.
+      // Mouse up event should continue to propagate to properly cancel canvas panning when
+      // cursor ends up on top of node.
+      onMouseDown: (e) => e.stopPropagation()
     };
 
     if (this.props.selected) {
