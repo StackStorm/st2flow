@@ -907,6 +907,7 @@ main {
 
       &:focus {
         background: #ddd;
+        pointer-events: all;
       }
     }
 
