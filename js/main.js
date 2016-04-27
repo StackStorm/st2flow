@@ -23,6 +23,7 @@ import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
 import settings from './lib/settings';
+import Completer, { InputCompletion, TaskCompletion, YaqlCompletion } from './lib/completer';
 
 class Main extends React.Component {
   state = {
@@ -30,110 +31,18 @@ class Main extends React.Component {
     source: settings.get('selected'),
     panel: 'editor',
     header: true,
-    actionParameters: {},
     action: {}
   }
 
-  suggestions = {
-    task: (sector) => {
-      const keywords = [
-        {
-          name: 'type',
-          type: 'string'
-        }, {
-          name: 'action',
-          type: 'string'
-        }, {
-          name: 'workflow',
-          type: 'string'
-        }, {
-          name: 'input',
-          type: 'object'
-        }, {
-          name: 'with-items',
-          type: 'string'
-        }, {
-          name: 'publish',
-          type: 'object'
-        }, {
-          name: 'retry',
-          type: 'string'
-        }, {
-          name: 'wait-before',
-          type: 'string'
-        }, {
-          name: 'wait-after',
-          type: 'string'
-        }, {
-          name: 'timeout',
-          type: 'string'
-        }, {
-          name: 'pause-before',
-          type: 'string'
-        }, {
-          name: 'concurrency',
-          type: 'string'
-        }, {
-          name: 'target',
-          type: 'string'
-        }, {
-          name: 'keep-result',
-          type: 'string'
-        }, {
-          name: 'join',
-          type: 'string'
-        }, {
-          name: 'on-success',
-          type: 'array'
-        }, {
-          name: 'on-error',
-          type: 'array'
-        }, {
-          name: 'on-complete',
-          type: 'array'
-        }
-      ];
-
-      const properties = {
-        ref: 'action'
-      };
-
-      const present = _(sector.task.properties)
-        .keys()
-        .map((property) => {
-          return properties[property] || property;
-        }).value();
-
-      return _(keywords).filter((keyword) => {
-        return !_.includes(present, keyword.name);
-      }).map((keyword) => {
-        return {
-          caption: keyword.name,
-          value: keyword.name,
-          score: 1,
-          spec: keyword,
-          meta: 'task'
-        };
-      }).value();
-    },
-    input: (sector) => {
-      const action = sector.task.getProperty('ref');
-
-      return _.map(this.state.actionParameters[action], (parameter) => {
-        return {
-          caption: parameter.name,
-          value: parameter.name,
-          score: 1,
-          spec: {
-            type: 'string'
-          },
-          meta: 'parameters'
-        };
-      });
-    }
-  }
+  completions = {
+    input: new InputCompletion(),
+    task: new TaskCompletion(),
+    yaql: new YaqlCompletion()
+  };
 
   componentDidMount() {
+    this.initModel();
+
     this.editor = this.initEditor();
     this.meta = this.refs.meta;
     this.palette = this.refs.palette;
@@ -141,7 +50,6 @@ class Main extends React.Component {
 
     this.initGraph();
     this.initCanvas();
-    this.initModel();
     this.initPanel();
 
     this.initRouter();
@@ -149,19 +57,12 @@ class Main extends React.Component {
     api.on('connect', (client) => {
       window.name = `st2flow+${client.index.url}`;
 
-      this.setState({ error: undefined, actions: undefined, actionParameters: {} });
+      this.setState({ error: undefined, actions: undefined });
 
       return client.actionOverview.list()
         .then((actions) => {
-          const keys = _.pluck(actions, 'ref');
-          const values = _.map(actions, (action) => {
-            return _.map(action.parameters, (prop, name) => {
-              return _.assign({}, prop, {name});
-            });
-          });
-          const actionParameters = _.zipObject(keys, values);
-
-          this.setState({ actions, actionParameters });
+          this.completions.input.update(actions);
+          this.setState({ actions });
         })
         .catch((error) => this.setState({ error }))
         ;
@@ -181,44 +82,7 @@ class Main extends React.Component {
   initEditor() {
     const langTools = ace.acequire('ace/ext/language_tools');
 
-    var paramCompleter = {
-      getCompletions: (editor, session, pos, prefix, callback) => {
-        const position = Range.fromPoints({ row: pos.row, column: 0 }, pos);
-        const sectors = this.model.search(position);
-
-        if (!sectors.length) {
-          return;
-        }
-
-        const results = _(sectors).filter((sector) => {
-          const type = sector.type;
-          return this.suggestions[type];
-        }).map((sector) => {
-          const type = sector.type;
-          const suggestions = this.suggestions[type](sector);
-          return _.map(suggestions, (suggestion) => {
-            if (suggestion.spec.type === 'string') {
-              suggestion.value += ': ';
-            }
-
-            if (suggestion.spec.type === 'object') {
-              const relativeIndent = sector.task.indent.replace(sector.task.starter, '');
-              suggestion.value += ':\n' + sector.task.indent + relativeIndent;
-            }
-
-            if (suggestion.spec.type === 'array') {
-              const relativeIndent = sector.task.indent.replace(sector.task.starter, '');
-              suggestion.value += ':\n' + sector.task.indent + relativeIndent + '- ';
-            }
-
-            return suggestion;
-          });
-        }).flatten().value();
-
-        callback(null, results);
-      }
-    };
-    langTools.setCompleters([paramCompleter]);
+    langTools.setCompleters([new Completer(this.model, this.completions)]);
 
     const editor = ace.edit(this.refs.editor);
 
@@ -302,6 +166,8 @@ class Main extends React.Component {
     this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
       this.canvas.draw(this.graph);
+
+      this.completions.task.update(this.model.definition.keywords);
 
       const nodes = this.graph.nodes();
       if (!_.isEmpty(nodes)) {

@@ -1,5 +1,6 @@
 import Task from './task';
 
 export default class Workflow extends Task {
-  // TODO: Figure out the difference
+  variables = new Set()
+  tasks = new Set()
 }

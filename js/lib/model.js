@@ -183,7 +183,7 @@ export default class Model extends EventEmitter {
   }
 
   update(delta) {
-    this.emit('update', this.search(delta.data.range));
+    this.emit('update', this.search(delta));
   }
 
   task(name, pending) {
