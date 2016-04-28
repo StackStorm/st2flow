@@ -345,10 +345,10 @@ export default class MistralDefinition extends Definition {
             yaqlVariableSector.value = variable;
             yaqlVariableSector.workflow = state.currentWorkflow;
 
-            const sectors = state.currentTask.getSector('yaqlvarable');
+            const sectors = state.currentTask.getSector('yaqlvariable');
             sectors.push(yaqlVariableSector);
 
-            state.currentTask.setSector('yaqlvarable', sectors);
+            state.currentTask.setSector('yaqlvariable', sectors);
 
             subline2 = prefix;
           }
@@ -622,7 +622,7 @@ export default class MistralDefinition extends Definition {
             .setSector('name', nameSector)
             .setSector('coord', coordSector)
             .setSector('yaql', [])
-            .setSector('yaqlvarable', [])
+            .setSector('yaqlvariable', [])
             .setSector('input', inputSector)
             .setSector('publish', publishSector)
             ;
