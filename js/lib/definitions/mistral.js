@@ -101,7 +101,8 @@ export default class MistralDefinition extends Definition {
       ERROR_BLOCK: /^(\s*)on-error:/,
       COMPLETE_BLOCK: /^(\s*)on-complete:/,
       INPUT_BLOCK: /^(\s*)input:/,
-      YAQL_BLOCK: /(.*<%\s*)(\S*)(\s*%>)/,
+      YAQL_BLOCK: /(.*<%\s*)(.*[^\s])(\s*%>)/,
+      YAQL_VARIABLE: /(.*\$\.)(\w+)/,
       TRANSITION: /^(\s*-\s*)(\w[\w.-]*)(.*)?$/
     });
   }
@@ -318,20 +319,39 @@ export default class MistralDefinition extends Definition {
         // blown AST parser
         let subline = line;
         while (match = this.spec.YAQL_BLOCK.exec(subline)) { // eslint-disable-line no-cond-assign
-          const [,starter,name,rest] = match
-              , coords = [lineNum, starter.length, lineNum, (starter+name+rest).length]
+          const [,starter,expression] = match
+              , coords = [lineNum, starter.length, lineNum, (starter+expression).length]
               ;
 
           const yaqlSector = new Sector(...coords).setType('yaql');
 
           // we don't usually set value for the sector, but this time, lets try
-          yaqlSector.value = name;
+          yaqlSector.value = expression;
           yaqlSector.workflow = state.currentWorkflow;
 
           const sectors = state.currentTask.getSector('yaql');
           sectors.push(yaqlSector);
 
           state.currentTask.setSector('yaql', sectors);
+
+          let subline2 = expression;
+          while (match = this.spec.YAQL_VARIABLE.exec(subline2)) { // eslint-disable-line no-cond-assign
+            const [,prefix,variable] = match
+                , coords = [lineNum, (starter+prefix).length, lineNum, (starter+prefix+variable).length]
+                ;
+
+            const yaqlVariableSector = new Sector(...coords).setType('yaqlvariable');
+
+            yaqlVariableSector.value = variable;
+            yaqlVariableSector.workflow = state.currentWorkflow;
+
+            const sectors = state.currentTask.getSector('yaqlvarable');
+            sectors.push(yaqlVariableSector);
+
+            state.currentTask.setSector('yaqlvarable', sectors);
+
+            subline2 = prefix;
+          }
 
           subline = starter;
         }
@@ -602,6 +622,7 @@ export default class MistralDefinition extends Definition {
             .setSector('name', nameSector)
             .setSector('coord', coordSector)
             .setSector('yaql', [])
+            .setSector('yaqlvarable', [])
             .setSector('input', inputSector)
             .setSector('publish', publishSector)
             ;

@@ -4,6 +4,10 @@ import Range from './util/range';
 
 
 export class YaqlCompletion {
+  insertMatch(editor, { value, sector }) {
+    return editor.env.document.replace(sector, value);
+  }
+
   getCompletions(sector) {
     const results = [];
 
@@ -12,7 +16,9 @@ export class YaqlCompletion {
         caption: variable,
         value: variable,
         score: 1,
-        meta: 'variable'
+        meta: 'variable',
+        completer: this,
+        sector
       };
 
       results.push(suggestion);
@@ -23,7 +29,9 @@ export class YaqlCompletion {
         caption: task.properties.name,
         value: task.properties.name,
         score: 1,
-        meta: 'task'
+        meta: 'task',
+        completer: this,
+        sector
       };
 
       results.push(suggestion);
@@ -115,7 +123,7 @@ export default class Completer {
   }
 
   getCompletions(editor, session, pos, prefix, callback) {
-    const position = Range.fromPoints({ row: pos.row, column: 0 }, pos);
+    const position = Range.fromPoints(pos, pos);
     const sectors = this.model.search(position);
 
     if (!sectors.length) {

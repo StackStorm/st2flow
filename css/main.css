@@ -1553,6 +1553,12 @@ main {
     border: 1px solid purple;
     box-sizing: border-box;
   }
+
+  &__active-yaqlvariable {
+    position: absolute;
+    background-color: color(red a(10%));
+    box-sizing: border-box;
+  }
 }
 
 /* theme */
