@@ -103,6 +103,17 @@ class Main extends React.Component {
 
     editor.session.setTabSize(2);
 
+    editor.promiseReplace = (...args) => {
+      const promise = new Promise(resolve => this.model.once('parse', resolve));
+
+      this.editor.env.document.replace(...args);
+
+      return promise
+        .catch(err => {
+          throw new Error(`Replace promise haven\'t been fullfilled: ${err}`);
+        });
+    };
+
     return editor;
   }
 
@@ -725,9 +736,8 @@ class Main extends React.Component {
       task = '\n' + task;
     }
 
-    this.editor.env.document.replace(cursor, task);
-
-    this.canvas.edit(name);
+    this.editor.promiseReplace(cursor, task)
+      .then(() => this.canvas.edit(name));
   }
 
   delete(name) {

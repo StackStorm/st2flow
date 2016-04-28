@@ -906,6 +906,7 @@ main {
       color: #eee;
 
       &:focus {
+        color: #222;
         background: #ddd;
         pointer-events: all;
       }

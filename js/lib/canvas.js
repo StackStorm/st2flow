@@ -79,8 +79,7 @@ export default class Canvas extends React.Component {
   }
 
   edit(name) {
-    console.log(name, this.nodes, this.nodes[name]);
-    // return this._canvas.edit(name);
+    return this.nodes[name].edit(name);
   }
 
   focus() {
