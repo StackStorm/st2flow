@@ -15,7 +15,7 @@ export class YaqlCompletion {
       const suggestion = {
         caption: variable,
         value: variable,
-        score: 1,
+        score: 2,
         meta: 'variable',
         completer: this,
         sector
@@ -28,7 +28,7 @@ export class YaqlCompletion {
       const suggestion = {
         caption: task.properties.name,
         value: task.properties.name,
-        score: 1,
+        score: 2,
         meta: 'task',
         completer: this,
         sector

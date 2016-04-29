@@ -37,7 +37,7 @@ class Main extends React.Component {
   completions = {
     input: new InputCompletion(),
     task: new TaskCompletion(),
-    yaql: new YaqlCompletion()
+    yaqlvariable: new YaqlCompletion()
   };
 
   componentDidMount() {
