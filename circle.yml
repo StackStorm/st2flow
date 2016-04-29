@@ -1,6 +1,8 @@
 # Setup in CircleCI account the following ENV variables:
 # PACKAGECLOUD_TOKEN
 machine:
+  node:
+    version: 4
   environment:
     DEB: wheezy jessie trusty
     RPM: el6 el7
