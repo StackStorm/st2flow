@@ -70,14 +70,6 @@ export default class Canvas extends React.Component {
     return this._canvas.on(...args);
   }
 
-  reposition() {
-    //return this._canvas.reposition();
-  }
-
-  resizeCanvas() {
-    // return this._canvas.resizeCanvas();
-  }
-
   edit(name) {
     return this.nodes[name].edit(name);
   }

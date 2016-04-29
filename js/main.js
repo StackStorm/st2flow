@@ -190,7 +190,6 @@ class Main extends React.Component {
 
         if (!_.any(nodes, hasCoords)) {
           this.graph.layout();
-          this.canvas.reposition();
         }
       }
 
@@ -239,8 +238,6 @@ class Main extends React.Component {
 
     this.canvas.on('move', (target, x, y) => {
       this.move(target, x, y);
-
-      this.canvas.reposition();
     });
 
     this.canvas.on('create', (action, x, y) => this.create(action, x, y));
@@ -281,10 +278,6 @@ class Main extends React.Component {
             this.editor.undo();
           }
       }
-    });
-
-    window.addEventListener('resize', () => {
-      this.canvas.resizeCanvas();
     });
   }
 
@@ -363,8 +356,7 @@ class Main extends React.Component {
         <Palette ref="palette"
           source={this.state.source}
           actions={this.state.actions}
-          error={this.state.error}
-          onToggle={this.resizeCanvas.bind(this)} />
+          error={this.state.error} />
 
         <div className="st2-container">
 
@@ -391,9 +383,7 @@ class Main extends React.Component {
           <Canvas ref='canvas' graph={this.graph} />
 
         </div>
-        <Panel ref="panel"
-            onToggle={(...e) => this.resizeCanvas(...e)}
-            onResize={(...e) => this.resizeCanvas(...e)} >
+        <Panel ref="panel">
           <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
         </Panel>
 
@@ -412,7 +402,7 @@ class Main extends React.Component {
   // Public methods
 
   collapseHeader() {
-    this.setState({ header: !this.state.header }, this.resizeCanvas.bind(this));
+    this.setState({ header: !this.state.header });
   }
 
   undo() {
@@ -427,8 +417,6 @@ class Main extends React.Component {
     this.graph.layout();
 
     this.embedCoords();
-
-    this.canvas.reposition();
   }
 
   collapseEditor(state) {
@@ -437,13 +425,6 @@ class Main extends React.Component {
 
   collapsePalette(state) {
     this.palette.toggleCollapse(state);
-  }
-
-  resizeCanvas(hide) {
-    this.canvas.resizeCanvas();
-    if (!hide) {
-      this.editor.resize();
-    }
   }
 
   showMeta() {
@@ -531,7 +512,6 @@ class Main extends React.Component {
       .then((workflow) => {
         this.graph.reset();
         this.editor.setValue(workflow);
-        this.canvas.reposition();
       })
       .then(() => {
         this.setState({ loading: false });
