@@ -406,7 +406,7 @@ export default class Canvas extends React.Component {
                 value: edge,
                 x,
                 y,
-                onClick: (e) => this.handleLabelClick(e, v)
+                onClick: (e) => this.handleLabelClick(e, edge)
               };
 
               return <Label {...props} />;
