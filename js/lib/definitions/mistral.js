@@ -92,7 +92,7 @@ export default class MistralDefinition extends Definition {
       TASK_BLOCK: /^(\s*)tasks:/,
       TASK_NAME: /^(\s*)(.+):/,
       TASK_NAME_VALIDATION: /^\w[\w.-]*$/,
-      TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
+      TASK_COORD: /^(\s*)(# \[)(-?\d+,\s*-?\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.-]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
       TASK_PUBLISH: /^(\s*)(.+):/,
