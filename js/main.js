@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import ace from 'brace';
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Router } from 'director';
 import URI from 'URIjs';
 
@@ -22,6 +23,7 @@ import Model from './lib/model';
 import Canvas from './lib/canvas';
 import Graph from './lib/graph';
 import settings from './lib/settings';
+import Completer, { InputCompletion, TaskCompletion, YaqlCompletion } from './lib/completer';
 
 class Main extends React.Component {
   state = {
@@ -29,110 +31,18 @@ class Main extends React.Component {
     source: settings.get('selected'),
     panel: 'editor',
     header: true,
-    actionParameters: {},
     action: {}
   }
 
-  suggestions = {
-    task: (sector) => {
-      const keywords = [
-        {
-          name: 'type',
-          type: 'string'
-        }, {
-          name: 'action',
-          type: 'string'
-        }, {
-          name: 'workflow',
-          type: 'string'
-        }, {
-          name: 'input',
-          type: 'object'
-        }, {
-          name: 'with-items',
-          type: 'string'
-        }, {
-          name: 'publish',
-          type: 'object'
-        }, {
-          name: 'retry',
-          type: 'string'
-        }, {
-          name: 'wait-before',
-          type: 'string'
-        }, {
-          name: 'wait-after',
-          type: 'string'
-        }, {
-          name: 'timeout',
-          type: 'string'
-        }, {
-          name: 'pause-before',
-          type: 'string'
-        }, {
-          name: 'concurrency',
-          type: 'string'
-        }, {
-          name: 'target',
-          type: 'string'
-        }, {
-          name: 'keep-result',
-          type: 'string'
-        }, {
-          name: 'join',
-          type: 'string'
-        }, {
-          name: 'on-success',
-          type: 'array'
-        }, {
-          name: 'on-error',
-          type: 'array'
-        }, {
-          name: 'on-complete',
-          type: 'array'
-        }
-      ];
-
-      const properties = {
-        ref: 'action'
-      };
-
-      const present = _(sector.task.properties)
-        .keys()
-        .map((property) => {
-          return properties[property] || property;
-        }).value();
-
-      return _(keywords).filter((keyword) => {
-        return !_.includes(present, keyword.name);
-      }).map((keyword) => {
-        return {
-          caption: keyword.name,
-          value: keyword.name,
-          score: 1,
-          spec: keyword,
-          meta: 'task'
-        };
-      }).value();
-    },
-    input: (sector) => {
-      const action = sector.task.getProperty('ref');
-
-      return _.map(this.state.actionParameters[action], (parameter) => {
-        return {
-          caption: parameter.name,
-          value: parameter.name,
-          score: 1,
-          spec: {
-            type: 'string'
-          },
-          meta: 'parameters'
-        };
-      });
-    }
-  }
+  completions = {
+    input: new InputCompletion(),
+    task: new TaskCompletion(),
+    yaqlvariable: new YaqlCompletion()
+  };
 
   componentDidMount() {
+    this.initModel();
+
     this.editor = this.initEditor();
     this.meta = this.refs.meta;
     this.palette = this.refs.palette;
@@ -140,7 +50,6 @@ class Main extends React.Component {
 
     this.initGraph();
     this.initCanvas();
-    this.initModel();
     this.initPanel();
 
     this.initRouter();
@@ -148,19 +57,12 @@ class Main extends React.Component {
     api.on('connect', (client) => {
       window.name = `st2flow+${client.index.url}`;
 
-      this.setState({ error: undefined, actions: undefined, actionParameters: {} });
+      this.setState({ error: undefined, actions: undefined });
 
       return client.actionOverview.list()
         .then((actions) => {
-          const keys = _.pluck(actions, 'ref');
-          const values = _.map(actions, (action) => {
-            return _.map(action.parameters, (prop, name) => {
-              return _.assign({}, prop, {name});
-            });
-          });
-          const actionParameters = _.zipObject(keys, values);
-
-          this.setState({ actions, actionParameters });
+          this.completions.input.update(actions);
+          this.setState({ actions });
         })
         .catch((error) => this.setState({ error }))
         ;
@@ -180,46 +82,9 @@ class Main extends React.Component {
   initEditor() {
     const langTools = ace.acequire('ace/ext/language_tools');
 
-    var paramCompleter = {
-      getCompletions: (editor, session, pos, prefix, callback) => {
-        const position = Range.fromPoints({ row: pos.row, column: 0 }, pos);
-        const sectors = this.model.search(position);
+    langTools.setCompleters([new Completer(this.model, this.completions)]);
 
-        if (!sectors.length) {
-          return;
-        }
-
-        const results = _(sectors).filter((sector) => {
-          const type = sector.type;
-          return this.suggestions[type];
-        }).map((sector) => {
-          const type = sector.type;
-          const suggestions = this.suggestions[type](sector);
-          return _.map(suggestions, (suggestion) => {
-            if (suggestion.spec.type === 'string') {
-              suggestion.value += ': ';
-            }
-
-            if (suggestion.spec.type === 'object') {
-              const relativeIndent = sector.task.indent.replace(sector.task.starter, '');
-              suggestion.value += ':\n' + sector.task.indent + relativeIndent;
-            }
-
-            if (suggestion.spec.type === 'array') {
-              const relativeIndent = sector.task.indent.replace(sector.task.starter, '');
-              suggestion.value += ':\n' + sector.task.indent + relativeIndent + '- ';
-            }
-
-            return suggestion;
-          });
-        }).flatten().value();
-
-        callback(null, results);
-      }
-    };
-    langTools.setCompleters([paramCompleter]);
-
-    const editor = ace.edit(this.refs.editor.getDOMNode());
+    const editor = ace.edit(this.refs.editor);
 
     require('brace/mode/yaml');
     editor.getSession().setMode('ace/mode/yaml');
@@ -237,6 +102,17 @@ class Main extends React.Component {
     editor.$blockScrolling = Infinity;
 
     editor.session.setTabSize(2);
+
+    editor.promiseReplace = (...args) => {
+      const promise = new Promise(resolve => this.model.once('parse', resolve));
+
+      this.editor.env.document.replace(...args);
+
+      return promise
+        .catch(err => {
+          throw new Error(`Replace promise haven\'t been fullfilled: ${err}`);
+        });
+    };
 
     return editor;
   }
@@ -300,7 +176,9 @@ class Main extends React.Component {
 
     this.model.on('parse', (tasks) => {
       this.graph.build(tasks);
-      this.canvas.render(this.graph);
+      this.canvas.draw(this.graph);
+
+      this.completions.task.update(this.model.definition.keywords);
 
       const nodes = this.graph.nodes();
       if (!_.isEmpty(nodes)) {
@@ -312,7 +190,6 @@ class Main extends React.Component {
 
         if (!_.any(nodes, hasCoords)) {
           this.graph.layout();
-          this.canvas.reposition();
         }
       }
 
@@ -325,7 +202,7 @@ class Main extends React.Component {
   }
 
   initCanvas() {
-    this.canvas = new Canvas();
+    this.canvas = this.refs.canvas;
 
     this.canvas.on('select', (name, event) => {
       const SHIFT = 1
@@ -361,8 +238,6 @@ class Main extends React.Component {
 
     this.canvas.on('move', (target, x, y) => {
       this.move(target, x, y);
-
-      this.canvas.reposition();
     });
 
     this.canvas.on('create', (action, x, y) => this.create(action, x, y));
@@ -403,10 +278,6 @@ class Main extends React.Component {
             this.editor.undo();
           }
       }
-    });
-
-    window.addEventListener('resize', () => {
-      this.canvas.resizeCanvas();
     });
   }
 
@@ -485,8 +356,7 @@ class Main extends React.Component {
         <Palette ref="palette"
           source={this.state.source}
           actions={this.state.actions}
-          error={this.state.error}
-          onToggle={this.resizeCanvas.bind(this)} />
+          error={this.state.error} />
 
         <div className="st2-container">
 
@@ -510,13 +380,10 @@ class Main extends React.Component {
             </ControlGroup>
           </div>
 
-          <div className="st2-viewer">
-            <svg className="st2-viewer__canvas">
-            </svg>
-          </div>
+          <Canvas ref='canvas' graph={this.graph} />
 
         </div>
-        <Panel ref="panel" onToggle={this.resizeCanvas.bind(this)} >
+        <Panel ref="panel">
           <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
         </Panel>
 
@@ -535,7 +402,7 @@ class Main extends React.Component {
   // Public methods
 
   collapseHeader() {
-    this.setState({ header: !this.state.header }, this.resizeCanvas.bind(this));
+    this.setState({ header: !this.state.header });
   }
 
   undo() {
@@ -550,8 +417,6 @@ class Main extends React.Component {
     this.graph.layout();
 
     this.embedCoords();
-
-    this.canvas.reposition();
   }
 
   collapseEditor(state) {
@@ -560,13 +425,6 @@ class Main extends React.Component {
 
   collapsePalette(state) {
     this.palette.toggleCollapse(state);
-  }
-
-  resizeCanvas(hide) {
-    this.canvas.resizeCanvas();
-    if (!hide) {
-      this.editor.resize();
-    }
   }
 
   showMeta() {
@@ -609,7 +467,7 @@ class Main extends React.Component {
     let source;
 
     try {
-      source = JSON.parse(atob(bundle64));
+      source = JSON.parse(window.atob(bundle64));
     } catch (e) {
       return new Promise((resolve, reject) => {
         reject(`Bundle is malformed: ${e}`);
@@ -654,7 +512,6 @@ class Main extends React.Component {
       .then((workflow) => {
         this.graph.reset();
         this.editor.setValue(workflow);
-        this.canvas.reposition();
       })
       .then(() => {
         this.setState({ loading: false });
@@ -743,7 +600,9 @@ class Main extends React.Component {
       throw new Error('no such task:', source);
     }
 
-    this.embedCoords();
+    if (!this.model.tasks.some(v => v.properties.coord)) {
+      this.embedCoords();
+    }
 
     const params = _.map(transitions, (value) => ({ value }));
 
@@ -857,9 +716,8 @@ class Main extends React.Component {
       task = '\n' + task;
     }
 
-    this.editor.env.document.replace(cursor, task);
-
-    this.canvas.edit(name);
+    this.editor.promiseReplace(cursor, task)
+      .then(() => this.canvas.edit(name));
   }
 
   delete(name) {
@@ -1101,4 +959,4 @@ class Main extends React.Component {
   }
 }
 
-window.st2flow = React.render(<Main />, document.body);
+window.st2flow = ReactDOM.render(<Main />, document.querySelector('.container'));

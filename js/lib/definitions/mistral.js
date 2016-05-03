@@ -11,6 +11,62 @@ export default class MistralDefinition extends Definition {
     this.model = model;
   }
 
+  keywords = [{
+    name: 'type',
+    type: 'string'
+  }, {
+    name: 'action',
+    type: 'string'
+  }, {
+    name: 'workflow',
+    type: 'string'
+  }, {
+    name: 'input',
+    type: 'object'
+  }, {
+    name: 'with-items',
+    type: 'string'
+  }, {
+    name: 'publish',
+    type: 'object'
+  }, {
+    name: 'retry',
+    type: 'string'
+  }, {
+    name: 'wait-before',
+    type: 'string'
+  }, {
+    name: 'wait-after',
+    type: 'string'
+  }, {
+    name: 'timeout',
+    type: 'string'
+  }, {
+    name: 'pause-before',
+    type: 'string'
+  }, {
+    name: 'concurrency',
+    type: 'string'
+  }, {
+    name: 'target',
+    type: 'string'
+  }, {
+    name: 'keep-result',
+    type: 'string'
+  }, {
+    name: 'join',
+    type: 'string'
+  }, {
+    name: 'on-success',
+    type: 'array'
+  }, {
+    name: 'on-error',
+    type: 'array'
+  }, {
+    name: 'on-complete',
+    type: 'array'
+  }]
+
   runner_params = ['skip_notify', 'task', 'context', 'workflow']
 
   get defaults() {
@@ -32,17 +88,20 @@ export default class MistralDefinition extends Definition {
       WORKBOOK_NAME: /(.*)(name:\s+['"]*)([\w.-]+)/,
       WORKFLOWS_BLOCK: /^(\s*)workflows:/,
       WORKFLOW_NAME: /^(\s*)([\w.-]+):/,
+      WORKFLOW_INPUT: /^(\s*-\s*)(\w[\w.-]*)(.*)?$/,
       TASK_BLOCK: /^(\s*)tasks:/,
       TASK_NAME: /^(\s*)(.+):/,
       TASK_NAME_VALIDATION: /^\w[\w.-]*$/,
-      TASK_COORD: /^(\s*)(# \[)(\d+,\s*\d+)/,
+      TASK_COORD: /^(\s*)(# \[)(-?\d+,\s*-?\d+)/,
       TASK_ACTION: /(.*)(action:\s+['"]*)([\w.-]+)/,
       TASK_WORKFLOW: /(.*)(workflow:\s+['"]*)([\w.]+)/,
-      TASK_PUBLISH: /^(\s*)publish:/,
+      TASK_PUBLISH: /^(\s*)(.+):/,
+      PUBLISH_BLOCK: /^(\s*)publish:/,
       SUCCESS_BLOCK: /^(\s*)on-success:/,
       ERROR_BLOCK: /^(\s*)on-error:/,
       COMPLETE_BLOCK: /^(\s*)on-complete:/,
       INPUT_BLOCK: /^(\s*)input:/,
+      YAQL_BLOCK: /(.*<%\s*)(.*[^\s])(\s*%>)/,
       YAQL_VARIABLE: /(.*\$\.)(\w+)/,
       TRANSITION: /^(\s*-\s*)(\w[\w.-]*)(.*)?$/
     });
@@ -205,6 +264,20 @@ export default class MistralDefinition extends Definition {
         if (state.isInputBlock) {
           const sector = state.currentWorkflow.getSector('input');
           sector.setEnd(lineNum + 1, 0);
+
+          let match;
+
+          match = this.spec.WORKFLOW_INPUT.exec(line);
+          if (match) {
+            const [,starter,name] = match
+              ;
+
+            sector.childStarter = starter;
+
+            state.currentWorkflow.variables.add(name);
+
+            return;
+          }
         }
       }
 
@@ -245,20 +318,40 @@ export default class MistralDefinition extends Definition {
         // be what you would expect, but the proper implementation requires full
         // blown AST parser
         let subline = line;
-        while (match = this.spec.YAQL_VARIABLE.exec(subline)) { // eslint-disable-line no-cond-assign
-          const [,starter,name] = match
-              , coords = [lineNum, starter.length, lineNum, (starter+name).length]
+        while (match = this.spec.YAQL_BLOCK.exec(subline)) { // eslint-disable-line no-cond-assign
+          const [,starter,expression] = match
+              , coords = [lineNum, starter.length, lineNum, (starter+expression).length]
               ;
 
           const yaqlSector = new Sector(...coords).setType('yaql');
 
           // we don't usually set value for the sector, but this time, lets try
-          yaqlSector.value = name;
+          yaqlSector.value = expression;
+          yaqlSector.workflow = state.currentWorkflow;
 
           const sectors = state.currentTask.getSector('yaql');
           sectors.push(yaqlSector);
 
           state.currentTask.setSector('yaql', sectors);
+
+          let subline2 = expression;
+          while (match = this.spec.YAQL_VARIABLE.exec(subline2)) { // eslint-disable-line no-cond-assign
+            const [,prefix,variable] = match
+                , coords = [lineNum, (starter+prefix).length, lineNum, (starter+prefix+variable).length]
+                ;
+
+            const yaqlVariableSector = new Sector(...coords).setType('yaqlvariable');
+
+            yaqlVariableSector.value = variable;
+            yaqlVariableSector.workflow = state.currentWorkflow;
+
+            const sectors = state.currentTask.getSector('yaqlvariable');
+            sectors.push(yaqlVariableSector);
+
+            state.currentTask.setSector('yaqlvariable', sectors);
+
+            subline2 = prefix;
+          }
 
           subline = starter;
         }
@@ -281,10 +374,37 @@ export default class MistralDefinition extends Definition {
           return;
         }
 
-        handler = this.handler('publish', this.spec.TASK_PUBLISH, () => '');
-        handler(line, lineNum, state);
-
         let block;
+
+        block = this.block('isPublishBlock', this.spec.PUBLISH_BLOCK);
+
+        if (block.enter(line, lineNum, state)) {
+          const sector = state.currentTask.getSector('publish');
+          sector.setStart(lineNum, 0);
+          sector.indent = _.repeat(state.unit, state.isPublishBlock - 1);
+          return;
+        } else {
+          block.exit(line, lineNum, state);
+        }
+
+        if (state.isPublishBlock) {
+          const sector = state.currentTask.getSector('publish');
+          sector.setEnd(lineNum + 1, 0);
+
+          let match;
+
+          match = this.spec.TASK_PUBLISH.exec(line);
+          if (match) {
+            const [,starter,name] = match
+              ;
+
+            sector.childStarter = starter;
+
+            state.currentWorkflow.variables.add(name);
+
+            return;
+          }
+        }
 
         block = this.block('isSuccessBlock', this.spec.SUCCESS_BLOCK);
 
@@ -464,6 +584,7 @@ export default class MistralDefinition extends Definition {
               , nameSector = new Sector(...coords).setType('name')
               , coordSector = new Sector(...nextLine).setType('coord')
               , inputSector = new Sector().setType('input')
+              , publishSector = new Sector().setType('publish')
               ;
 
           if (!name.match(this.spec.TASK_NAME_VALIDATION)) {
@@ -501,8 +622,12 @@ export default class MistralDefinition extends Definition {
             .setSector('name', nameSector)
             .setSector('coord', coordSector)
             .setSector('yaql', [])
+            .setSector('yaqlvariable', [])
             .setSector('input', inputSector)
+            .setSector('publish', publishSector)
             ;
+
+          state.currentWorkflow.tasks.add(state.currentTask);
 
           taskSector.task = state.currentTask;
           inputSector.setTask(state.currentTask);

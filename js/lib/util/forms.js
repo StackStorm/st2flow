@@ -244,7 +244,7 @@ export class SpecField extends React.Component {
   }
 
   getRefNode(ref) {
-    return this.refs.field.refs[ref].getDOMNode();
+    return this.refs.field.refs[ref];
   }
 }
 

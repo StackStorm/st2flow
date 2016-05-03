@@ -31,8 +31,8 @@ export class Parameter extends React.Component {
     this.setState({ edit: !this.state.edit });
   }
 
-  handleDelete() {
-    event.preventDefault();
+  handleDelete(e) {
+    e.preventDefault();
 
     this.props.onDelete(this.state.parameter);
   }
@@ -236,6 +236,7 @@ export default class Meta extends React.Component {
       pack: 'default',
       runner_type: 'mistral-v2',
       enabled: true,
+      entry_point: '',
       parameters: {}
     },
     show: false

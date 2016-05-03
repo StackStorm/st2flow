@@ -2,7 +2,10 @@
 @import '../dist/font/st2flow-embedded.css';
 @import 'https://fonts.googleapis.com/css?family=Oswald:400,300,700';
 
-html, body, main {
+html,
+body,
+.container,
+main {
   height: 100%;
   overflow: hidden;
 }
@@ -264,7 +267,7 @@ main {
       color: #eee;
 
       &::placeholder {
-        color: #23282d;
+        color: color(#6b8ca3 l(80%));
       }
     }
 
@@ -743,6 +746,7 @@ main {
   overflow: auto;
 
   cursor: grab;
+  cursor: -webkit-grab;
 
   &:focus {
     outline: none;
@@ -750,24 +754,32 @@ main {
   }
 
   &::-webkit-scrollbar {
-    width: 0.5em;
-  }
-
-  &::-webkit-scrollbar-track {
-    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(100, 100, 100, 0.8);
-  }
-
-  &::-webkit-scrollbar-corner,
-  &::-webkit-scrollbar-thumb:window-inactive {
-    background: rgba(100, 100, 100, 0.4);
+    width: 0;
+    height: 0;
   }
 
   &--grabbing {
     cursor: grabbing;
+    cursor: -webkit-grabbing;
+  }
+
+  & {
+    background-color: #fff;
+    background-image:
+      linear-gradient(color(black alpha(.05)) 1px, transparent 1px),
+      linear-gradient(90deg, color(black alpha(.05)) 1px, transparent 1px),
+      linear-gradient(color(black alpha(.02)) 1px, transparent 1px),
+      linear-gradient(90deg, color(black alpha(.02)) 1px, transparent 1px);
+    background-size:50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px
+  }
+
+  &--active {
+    background-image:
+      linear-gradient(color(black alpha(.2)) 1px, transparent 1px),
+      linear-gradient(90deg, color(black alpha(.2)) 1px, transparent 1px),
+      linear-gradient(color(black alpha(.1)) 1px, transparent 1px),
+      linear-gradient(90deg, color(black alpha(.1)) 1px, transparent 1px);
   }
 
   text {
@@ -776,31 +788,16 @@ main {
     font-size: 12px;
   }
 
+  &__zoomer {
+    width: 100%;
+    height: 100%;
+    -webkit-transform-origin: 0 0 0;
+  }
+
   &__canvas {
     position: absolute;
 
-    padding: 45px 10px 10px;
-
     box-sizing: border-box;
-
-    & {
-      background-color: #fff;
-      background-image:
-        linear-gradient(color(black alpha(.05)) 1px, transparent 1px),
-        linear-gradient(90deg, color(black alpha(.05)) 1px, transparent 1px),
-        linear-gradient(color(black alpha(.02)) 1px, transparent 1px),
-        linear-gradient(90deg, color(black alpha(.02)) 1px, transparent 1px);
-      background-size:50px 50px, 50px 50px, 10px 10px, 10px 10px;
-      background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px
-    }
-
-    &--active {
-      background-image:
-        linear-gradient(color(black alpha(.2)) 1px, transparent 1px),
-        linear-gradient(90deg, color(black alpha(.2)) 1px, transparent 1px),
-        linear-gradient(color(black alpha(.1)) 1px, transparent 1px),
-        linear-gradient(90deg, color(black alpha(.1)) 1px, transparent 1px);
-    }
   }
 
   &__node {
@@ -909,7 +906,9 @@ main {
       color: #eee;
 
       &:focus {
+        color: #222;
         background: #ddd;
+        pointer-events: all;
       }
     }
 
@@ -978,7 +977,7 @@ main {
     }
 
     &--active {
-      box-shadow: 0 0 0 5px rgba(255,255,255,0.5);
+      box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.5);
     }
 
     &--dragged {
@@ -987,6 +986,8 @@ main {
   }
 
   &__edge {
+    pointer-events: none;
+
     &-path {
       stroke-width: 6px;
       stroke: white;
@@ -1081,6 +1082,19 @@ main {
 
   &--hide {
     display: none;
+  }
+
+  &__resizer {
+    width: 10px;
+    height: 100%;
+    position: absolute;
+    cursor: col-resize;
+    z-index: 3;
+
+    &:hover,
+    &--active {
+      background-color: color(#000 a(.3));
+    }
   }
 
   &__editor {
@@ -1538,6 +1552,12 @@ main {
   &__active-yaql {
     position: absolute;
     border: 1px solid purple;
+    box-sizing: border-box;
+  }
+
+  &__active-yaqlvariable {
+    position: absolute;
+    background-color: color(red a(10%));
     box-sizing: border-box;
   }
 }

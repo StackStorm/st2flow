@@ -41,7 +41,7 @@ function Browserify() {
   var b = browserify(opts);
 
   if (watch) {
-    b = watchify(b)
+    b = watchify(b, { poll: 100 })
       .on('update', function () {
         bundle(b);
       });
