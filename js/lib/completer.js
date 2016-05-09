@@ -4,12 +4,18 @@ import Range from './util/range';
 
 
 export class YaqlCompletion {
-  insertMatch(editor, { value, sector }) {
-    return editor.env.document.replace(sector, value);
-  }
-
-  getCompletions(sector) {
+  getCompletions(sector, model) {
     const results = [];
+
+    const completer = {
+      insertMatch: (editor, { value }) => {
+        const pos = editor.getCursorPosition();
+        const position = Range.fromPoints(pos, pos);
+        const sectors = model.search(position, 'yaqlvariable');
+
+        return editor.env.document.replace(sectors[0], value);
+      }
+    };
 
     for (const variable of sector.workflow.variables) {
       const suggestion = {
@@ -17,8 +23,7 @@ export class YaqlCompletion {
         value: variable,
         score: 2,
         meta: 'variable',
-        completer: this,
-        sector
+        completer
       };
 
       results.push(suggestion);
@@ -30,8 +35,7 @@ export class YaqlCompletion {
         value: task.properties.name,
         score: 2,
         meta: 'task',
-        completer: this,
-        sector
+        completer
       };
 
       results.push(suggestion);
@@ -135,7 +139,7 @@ export default class Completer {
     for (const sector of sectors) {
       const type = sector.type;
       const completion = this.completions[type];
-      for (const suggestion of completion && completion.getCompletions(sector) || []) {
+      for (const suggestion of completion && completion.getCompletions(sector, this.model) || []) {
         results = results.concat(suggestion);
       }
     }
