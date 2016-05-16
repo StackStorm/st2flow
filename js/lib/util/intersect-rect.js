@@ -4,7 +4,10 @@ export default function intersectRect(node, point) {
   var x = node.x;
   var y = node.y;
 
-  // The algorithm below finds the point on the edge of a rectangle, which is the closest to the "point"
+  // The algorithm below finds the point on the line connecting center of the node with the `point`,
+  // which is the closest to the center of the rectangle yet lies outside the rectangle bounds.
+  // The calculation is needed to make sure the arrow on the transition line points to the node 
+  // instead of hiding behind it.
   var dx = point.x - x;
   var dy = point.y - y;
   var w = node.width / 2;
@@ -12,14 +15,14 @@ export default function intersectRect(node, point) {
 
   var sx, sy;
   if (Math.abs(dy) * w > Math.abs(dx) * h) {
-    // Intersection is top or bottom of rect.
+    // The line approaches the rectangle from tom or bottom
     if (dy < 0) {
       h = -h;
     }
     sx = dy === 0 ? 0 : h * dx / dy;
     sy = h;
   } else {
-    // Intersection is left or right of rect.
+    // The line approaches the rectangle from left or right
     if (dx < 0) {
       w = -w;
     }
