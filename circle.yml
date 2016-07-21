@@ -4,7 +4,7 @@ machine:
   node:
     version: 4
   environment:
-    DEB: wheezy jessie trusty
+    DEB: wheezy jessie trusty xenial
     RPM: el6 el7
     IS_ENTERPRISE: 1
     DEPLOY_PACKAGES: 1
