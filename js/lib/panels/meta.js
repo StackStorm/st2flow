@@ -204,11 +204,11 @@ export class ParameterEditor extends React.Component {
       }
       <div className={ st2Panel('footer') }>
         <input type="submit"
-            className={ st2Panel('field-input').and('field-input', 'inline') }
+            className={ st2Panel('field-button').and('field-button', 'positive') }
             value={ this.props.name ? 'Update' : 'Add' } />
         {
           this.props.onCancel && <input type="button"
-            className={ st2Panel('field-input').and('field-input', 'inline').and('field-input', 'cancel') }
+            className={ st2Panel('field-button') }
             onClick={ this.handleCancel.bind(this) }
             value="Cancel" />
         }
@@ -454,7 +454,7 @@ export default class Meta extends React.Component {
                 !this.state.add &&
                   <div className={ st2Panel('footer') } >
                     <input type="button"
-                        className={ st2Panel('field-input').and('field-input', 'inline') }
+                        className={ st2Panel('field-button') }
                         onClick={ this.toggleAdd.bind(this) }
                         value="Add parameter" />
                   </div>
@@ -472,10 +472,10 @@ export default class Meta extends React.Component {
             <div className={ st2Class('status') }>
               <input type="submit"
                   form="metaform"
-                  className={ st2Panel('field-input').and('field-input', 'inline') }
+                  className={ st2Panel('field-button').and('field-button', 'positive') }
                   value="Update" />
               <input type="button"
-                  className={ st2Panel('field-input').and('field-input', 'inline').and('field-input', 'cancel') }
+                  className={ st2Panel('field-button') }
                   onClick={ this.handleCancel.bind(this) }
                   value="Cancel" />
             </div>
