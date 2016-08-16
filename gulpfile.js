@@ -107,6 +107,7 @@ gulp.task('css', ['font'], function () {
     require('postcss-import')(),
     require('postcss-nested')(),
     require('postcss-mq-keyframes'),
+    require('postcss-custom-properties')(),
     require('postcss-color-function')()
   ];
   return gulp.src('css/*.css')
