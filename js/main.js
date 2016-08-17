@@ -332,7 +332,12 @@ class Main extends React.Component {
 
     return <main {...props} >
       <div className="st2-header">
-        <div className="st2-header__logo"><img src="i/logo.svg" width="101" height="25" /></div>
+        <div className="st2-header__logo">
+          <img src="i/logo-brocade.svg" width="101" height="25" />
+        </div>
+        <div className="st2-header__product-title">
+          Workflow Creator
+        </div>
         <div {...workflowButtonProps} >
           { this.state.action.ref || 'New workflow' }
         </div>

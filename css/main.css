@@ -210,12 +210,19 @@ main {
   line-height: 25px;
 
   &__logo {
-    width: 240px;
+    width: 120px;
 
     padding: 10px;
     box-sizing: border-box;
 
     font-size: 0;
+  }
+
+  &__product-title {
+    vertical-align: bottom;
+    display: inline;
+    padding-top: 16px;
+    width: 120px;
   }
 
   &__workflow {
