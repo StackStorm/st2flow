@@ -1,6 +1,7 @@
 @import '../node_modules/normalize.css/normalize.css';
 @import '../dist/font/st2flow-embedded.css';
-@import 'https://fonts.googleapis.com/css?family=Roboto:400,500,700';
+@import '../dist/font/brocadeicons.css';
+@import '../dist/font/Roboto.css';
 
 :root {
   /* Brocade color palette */
@@ -108,6 +109,8 @@ html {
   color: black;
   font-size: 1em;
   line-height: 1.4;
+
+  font-family: Dual,Roboto,sans-serif;
 }
 
 main {
@@ -366,21 +369,22 @@ main {
 
     &-reset {
       position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
+      top: 10px;
+      right: 10px;
+      bottom: 10px;
 
       display: block;
 
       box-sizing: border-box;
 
-      padding: 10px;
+      padding: 0 5px;
 
       font-size: 18px;
+      line-height: 27px;
 
       cursor: pointer;
 
-      color: #eee;
+      color: var(--grey-base);
     }
   }
 
@@ -465,10 +469,10 @@ main {
       }
 
       &::after {
-        content: '\e816';
+        content: '\e94d';
         color: #222;
 
-        font-family: "st2flow";
+        font-family: "brocadeicons";
         font-style: normal;
         font-weight: normal;
         speak: none;
@@ -819,7 +823,7 @@ main {
       border-radius: 0 0 0 3px;
     }
 
-    .main--collapsed &.st2-icon__left-open {
+    .main--collapsed &.icon-chevron_left {
       margin-right: 25px;
     }
   }
@@ -935,10 +939,10 @@ main {
       }
 
       &::after {
-        content: '\e816';
+        content: '\e94d';
         color: #222;
 
-        font-family: "st2flow";
+        font-family: "brocadeicons";
         font-style: normal;
         font-weight: normal;
         speak: none;
@@ -1048,13 +1052,16 @@ main {
         line-height: 1.7em;
       }
 
-      &.st2-icon__success {
+      &--success {
+        font-weight: bold;
         background-color: var(--green-base);
       }
-      &.st2-icon__error {
+      &--error {
+        font-weight: bold;
         background-color: var(--red-base);
       }
-      &.st2-icon__complete {
+      &--complete {
+        font-weight: bold;
         background-color: var(--yellow-base);
       }
     }
@@ -1065,6 +1072,11 @@ main {
 
     &--dragged {
       /*pointer-events: none;*/
+    }
+
+    &-edit,
+    &-delete {
+      line-height: 21px;
     }
   }
 
@@ -1103,7 +1115,7 @@ main {
       border-radius: 50%;
       color: white;
 
-      font-family: "st2flow";
+      font-family: "brocadeicons";
       font-style: normal;
       font-weight: normal;
       font-size: 11px;
@@ -1120,20 +1132,20 @@ main {
     }
 
     &--success:before {
-      content: '\e803';
+      content: '\e968';
       background-color: var(--green-base);
     }
     &--error:before {
-      content: '\e804';
+      content: '\e940';
       background-color: var(--red-base);
     }
     &--complete:before {
-      content: '\e805';
+      content: '\e951';
       background-color: var(--yellow-base);
     }
 
     &:hover:before {
-      content: '\e807';
+      content: '\e937';
       color: white;
       border-color: inherit;
       cursor: pointer;
@@ -1368,14 +1380,14 @@ main {
       position: relative;
 
       &:after {
-        content: '\e80f';
+        content: '\e91c';
 
         position: absolute;
         top: 0;
         right: 0;
         bottom: 0;
 
-        font-family: "st2flow";
+        font-family: "brocadeicons";
         font-style: normal;
         font-weight: normal;
         speak: none;
@@ -1444,6 +1456,8 @@ main {
 
     &-button {
       cursor: pointer;
+      margin: 0 5px;
+      font-size: 120%;
 
       &s {
         position: absolute;

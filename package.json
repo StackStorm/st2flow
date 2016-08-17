@@ -41,6 +41,7 @@
     "postcss-import": "5.2.2",
     "postcss-mq-keyframes": "0.2.1",
     "postcss-nested": "0.3.2",
+    "postcss-custom-properties": "4.1.0",
     "vinyl-buffer": "1.0.0",
     "vinyl-source-stream": "1.1.0",
     "watchify": "3.3.0"

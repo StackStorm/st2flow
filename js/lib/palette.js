@@ -9,7 +9,6 @@ import { pack } from './util/packer';
 import icons from './util/icon';
 
 const st2Class = bem('palette')
-    , st2Icon = bem('icon')
     ;
 
 class Pack extends React.Component {
@@ -42,10 +41,10 @@ class Pack extends React.Component {
       className: st2Class('pack-toggle')
     };
 
-    if (collapsed) {
-      toggleProps.className += ' ' + st2Icon('right-open');
+    if (this.state.collapsed) {
+      toggleProps.className += ' ' + 'icon-chevron-up';
     } else {
-      toggleProps.className += ' ' + st2Icon('down-open');
+      toggleProps.className += ' ' + 'icon-chevron-down';
     }
 
     return <div {...props} >
@@ -107,9 +106,9 @@ class SearchField extends React.Component {
     };
 
     if (this.props.filter) {
-      resetProps.className += ' ' + st2Icon('reset');
+      resetProps.className += ' ' + 'icon-cross';
     } else {
-      resetProps.className += ' ' + st2Icon('search');
+      resetProps.className += ' ' + 'icon-lens';
     }
 
     return <form className={st2Class('search')}>
@@ -192,7 +191,7 @@ export default class Palette extends React.Component {
           !this.props.source
           ? <div className={st2Class('error')}>
               <p>No action source is set. Please fill in credentials by clicking
-              <i className={st2Icon('cog')}></i> button on the right.</p>
+              <i className='icon-gear'></i> button on the right.</p>
               <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
             </div>
           : null
@@ -205,7 +204,7 @@ export default class Palette extends React.Component {
           this.props.error && <div className={st2Class('error')}>
             <p>Error loading actions from {this.props.source.host}:</p>
             <code>{this.props.error.message.faultstring || this.props.error.message}</code>
-            <p>Check your config by clicking <i className={st2Icon('cog')}></i> button on the right.</p>
+            <p>Check your config by clicking <i className='icon-gear'></i> button on the right.</p>
             <p>Here is the number of actions that are most likely to be on your installation of st2.</p>
           </div>
         }

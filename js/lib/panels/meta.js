@@ -8,7 +8,6 @@ import { Field, SpecField, specTypes } from '../util/forms';
 
 const st2Class = bem('popup')
     , st2Panel = bem('panel')
-    , st2Icon = bem('icon')
     ;
 
 const paramTypes = _.keys(specTypes)
@@ -51,9 +50,9 @@ export class Parameter extends React.Component {
 
     return <div className={ st2Panel('parameter') }>
       <div className={ st2Panel('parameter-buttons') }>
-        <span className={ [st2Icon('edit'), st2Panel('parameter-button')].join(' ') }
+        <span className={ ['icon-edit', st2Panel('parameter-button')].join(' ') }
           onClick={ this.handleEdit.bind(this) }/>
-        <span className={ [st2Icon('delete'), st2Panel('parameter-button')].join(' ') }
+        <span className={ ['icon-delete', st2Panel('parameter-button')].join(' ') }
           onClick={ this.handleDelete.bind(this) }/>
       </div>
       <div className={ st2Panel('parameter-name') }>{ name }</div>

@@ -337,12 +337,12 @@ class Main extends React.Component {
           { this.state.action.ref || 'New workflow' }
         </div>
         <div className="st2-header__edit" onClick={this.showMeta.bind(this)}>
-          <i className="st2-icon__tools" />
+          <i className="icon-wrenches" />
         </div>
         <div className="st2-header__separator" />
         <Login source={this.state.source} />
         <div className="st2-header__settings" onClick={this.showSourceForm.bind(this)} >
-          <i className="st2-icon__cog" />
+          <i className="icon-gear" />
         </div>
         <SourceForm ref="sourceForm"
             sources={this.state.sources}
@@ -350,7 +350,7 @@ class Main extends React.Component {
             onChange={this.handleSourceChange.bind(this)} />
       </div>
       <div className="main__collapse" onClick={ this.collapseHeader.bind(this) }>
-        <i className={ this.state.header ? 'st2-icon__up-open' : 'st2-icon__down-open'} />
+        <i className={ this.state.header ? 'icon-chevron-up' : 'icon-chevron-down'} />
       </div>
       <div className="main__content">
         <Palette ref="palette"
@@ -362,20 +362,20 @@ class Main extends React.Component {
 
           <div className="st2-controls">
             <ControlGroup position='left'>
-              <Control icon="right-open" activeIcon="left-open" type="toggle" initial={true}
+              <Control icon="chevron_right" activeIcon="chevron_left" type="toggle" initial={true}
                 onClick={this.collapsePalette.bind(this)} />
             </ControlGroup>
             <ControlGroup position='center'>
-              <Control icon="undo" onClick={this.undo.bind(this)} />
-              <Control icon="redo" onClick={this.redo.bind(this)} />
-              <Control icon="layout" onClick={this.layout.bind(this)} />
-              <CatchControl icon="floppy" onClick={this.save.bind(this)} />
+              <Control icon="redirect" onClick={this.undo.bind(this)} />
+              <Control icon="redirect2" onClick={this.redo.bind(this)} />
+              <Control icon="arrange" onClick={this.layout.bind(this)} />
+              <CatchControl icon="save" onClick={this.save.bind(this)} />
               <ExecutionControl ref="executionControl"
                 action={this.state.action}
                 onClick={this.showRun.bind(this)} />
             </ControlGroup>
             <ControlGroup position='right'>
-              <Control icon="left-open" activeIcon="right-open" type="toggle" initial={true}
+              <Control icon="chevron_left" activeIcon="chevron_right" type="toggle" initial={true}
                 onClick={this.collapseEditor.bind(this)} />
             </ControlGroup>
           </div>

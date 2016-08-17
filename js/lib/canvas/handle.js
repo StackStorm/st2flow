@@ -3,7 +3,6 @@ import React from 'react';
 import bem from '../util/bem';
 
 const st2Class = bem('viewer')
-    , st2Icon = bem('icon')
     ;
 
 export default class Handle extends React.Component {
@@ -22,7 +21,7 @@ export default class Handle extends React.Component {
 
   render() {
     const props = {
-      className: st2Class('node-button') + ' ' + st2Icon(this.props.type),
+      className: st2Class('node-button') + ' ' + st2Class('node-button', this.props.type),
       draggable: true,
       onDragStart: (e) => this.handleDragStart(e)
     };
