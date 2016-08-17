@@ -114,9 +114,6 @@ export default class SourceForm extends React.Component {
       },
       options: options
     }, {
-      name: 'sep1',
-      type: 'separator'
-    }, {
       name: 'API',
       type: 'text',
       props: {
@@ -142,9 +139,6 @@ export default class SourceForm extends React.Component {
 
     if (this.state.model.auth) {
       fields = fields.concat([{
-        name: 'sep2',
-        type: 'separator'
-      }, {
         name: 'Login',
         type: 'text',
         props: {
@@ -180,7 +174,7 @@ export default class SourceForm extends React.Component {
           _.map(fields, (field) => forms[field.type](field))
         }
         <input type="submit"
-          className="st2-panel__field-input"
+          className="st2-panel__field-button"
           value="Save" />
       </form>
     </div>;
