@@ -121,7 +121,7 @@ export default class SourceForm extends React.Component {
         onChange: (event) => this.changeValue('api', event.target.value),
         placeholder: 'https://localhost:9101/',
         type: 'text',
-        pattern: '(https?\\:)?//(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?',
+        pattern: '(https?\:)?//(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?',
         required: true
       }
     }, {
@@ -132,7 +132,7 @@ export default class SourceForm extends React.Component {
         onChange: (event) => this.changeValue('auth', event.target.value),
         placeholder: 'https://localhost:9100/',
         type: 'text',
-        pattern: '(https?\\:)?//(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?',
+        pattern: '(https?\:)?//(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?',
         required: false
       }
     }];
