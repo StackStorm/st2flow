@@ -5,6 +5,12 @@ import bem from '../util/bem';
 const st2Class = bem('viewer')
     ;
 
+const icons = {
+  'success': 'icon-check2',
+  'error': 'icon-delete',
+  'complete': 'icon-instance'
+};
+
 export default class Handle extends React.Component {
   static propTypes = {
     type: React.PropTypes.string,
@@ -21,7 +27,7 @@ export default class Handle extends React.Component {
 
   render() {
     const props = {
-      className: st2Class('node-button') + ' ' + st2Class('node-button', this.props.type),
+      className: st2Class('node-button') + ' ' + st2Class('node-button', this.props.type) + ' ' + icons[this.props.type],
       draggable: true,
       onDragStart: (e) => this.handleDragStart(e)
     };

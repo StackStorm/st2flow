@@ -1010,21 +1010,12 @@ main {
       margin: -3px;
       outline: 0;
       width: 100%;
-      color: #eee;
+      color: black;
 
       &:focus {
         color: #222;
         background: #ddd;
         pointer-events: all;
-      }
-    }
-
-    &--selected &-name {
-      color: #eee;
-
-      &:focus {
-        /* specificity */
-        color: #222;
       }
     }
 
