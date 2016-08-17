@@ -109,7 +109,7 @@ export default class Run extends React.Component {
               }
               <div className={ st2Class('status') }>
                 <input type="submit"
-                    className="st2-panel__field-input"
+                    className="st2-panel__field-button"
                     disabled={ this.state.pending }
                     value={ this.state.pending ? 'Pending...' : 'Run'} />
               </div>
