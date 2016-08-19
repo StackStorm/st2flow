@@ -22,7 +22,7 @@ export default class Login extends React.Component {
     const userLine = `${ token && token.user || 'stanley' }@${ url.host() }`;
 
     return <div className={ st2Class('login') }>
-      <i className='icon-user'/>{ userLine }
+      { userLine }
     </div>;
   }
 }

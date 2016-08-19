@@ -338,16 +338,17 @@ class Main extends React.Component {
         <div className="st2-header__product-title">
           Workflow Creator
         </div>
+        <div className="st2-header__separator" />
         <div {...workflowButtonProps} >
-          { this.state.action.ref || 'New workflow' }
+          Current: { this.state.action.ref || 'New workflow' }
         </div>
         <div className="st2-header__edit" onClick={this.showMeta.bind(this)}>
-          <i className="icon-wrenches" />
+          <i className="icon-gear" />
         </div>
         <div className="st2-header__separator" />
-        <Login source={this.state.source} />
         <div className="st2-header__settings" onClick={this.showSourceForm.bind(this)} >
-          <i className="icon-gear" />
+          <Login source={this.state.source} />
+          <i className="icon-user" />
         </div>
         <SourceForm ref="sourceForm"
             sources={this.state.sources}
