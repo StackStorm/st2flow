@@ -114,9 +114,6 @@ export default class SourceForm extends React.Component {
       },
       options: options
     }, {
-      name: 'sep1',
-      type: 'separator'
-    }, {
       name: 'API',
       type: 'text',
       props: {
@@ -124,7 +121,7 @@ export default class SourceForm extends React.Component {
         onChange: (event) => this.changeValue('api', event.target.value),
         placeholder: 'https://localhost:9101/',
         type: 'text',
-        pattern: '(https?\\:)?//(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?',
+        pattern: '(https?\:)?//(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?',
         required: true
       }
     }, {
@@ -135,16 +132,13 @@ export default class SourceForm extends React.Component {
         onChange: (event) => this.changeValue('auth', event.target.value),
         placeholder: 'https://localhost:9100/',
         type: 'text',
-        pattern: '(https?\\:)?//(-\\.)?([^\\s/?\\.#-]+\\.?)+(/[^\\s]*)?',
+        pattern: '(https?\:)?//(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?',
         required: false
       }
     }];
 
     if (this.state.model.auth) {
       fields = fields.concat([{
-        name: 'sep2',
-        type: 'separator'
-      }, {
         name: 'Login',
         type: 'text',
         props: {
@@ -180,7 +174,7 @@ export default class SourceForm extends React.Component {
           _.map(fields, (field) => forms[field.type](field))
         }
         <input type="submit"
-          className="st2-panel__field-input"
+          className="st2-panel__field-button"
           value="Save" />
       </form>
     </div>;

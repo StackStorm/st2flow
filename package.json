@@ -41,6 +41,7 @@
     "postcss-import": "5.2.2",
     "postcss-mq-keyframes": "0.2.1",
     "postcss-nested": "0.3.2",
+    "postcss-custom-properties": "4.1.0",
     "vinyl-buffer": "1.0.0",
     "vinyl-source-stream": "1.1.0",
     "watchify": "3.3.0"
@@ -59,6 +60,6 @@
     "react-dom": "15.0.1",
     "react-time": "4.0.2",
     "revalidator": "0.3.1",
-    "st2client": "0.4.3"
+    "st2client": "1.0.0"
   }
 }

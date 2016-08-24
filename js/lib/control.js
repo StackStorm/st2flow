@@ -3,7 +3,6 @@ import React from 'react';
 import bem from './util/bem';
 
 const st2Class = bem('controls')
-    , st2Icon = bem('icon')
     ;
 
 export default class Controls extends React.Component {
@@ -64,9 +63,9 @@ export default class Controls extends React.Component {
     };
 
     if (this.props.activeIcon && this.state.value) {
-      props.className += ' ' + st2Icon(this.props.activeIcon);
+      props.className += ' ' + 'icon-' + this.props.activeIcon;
     } else {
-      props.className += ' ' + st2Icon(this.props.icon);
+      props.className += ' ' + 'icon-' + this.props.icon;
     }
 
     if (this.state.value) {

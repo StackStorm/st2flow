@@ -4,7 +4,6 @@ import URI from 'URIjs';
 import bem from '../util/bem';
 
 const st2Class = bem('header')
-    , st2Icon = bem('icon')
     ;
 
 export default class Login extends React.Component {
@@ -23,7 +22,7 @@ export default class Login extends React.Component {
     const userLine = `${ token && token.user || 'stanley' }@${ url.host() }`;
 
     return <div className={ st2Class('login') }>
-      <i className={ st2Icon('user') } />{ userLine }
+      { userLine }
     </div>;
   }
 }

@@ -55,8 +55,9 @@ export const templates = {
       <div className="st2-panel__field-name">{ field.name }{ field.props.required && ' *'}</div>
       <input className="st2-panel__field-input" type="checkbox" {...field.props} />
       <div className="st2-panel__field-toggle">
-        <div className="st2-panel__field-toggle-item">yes</div>
         <div className="st2-panel__field-toggle-item">no</div>
+        <div className="st2-panel__field-toggle-lever" />
+        <div className="st2-panel__field-toggle-item">yes</div>
       </div>
     </label>,
 
