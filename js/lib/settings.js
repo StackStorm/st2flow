@@ -112,6 +112,53 @@ export class Settings {
 
       return result;
     }
+  }, {
+    id: 'v2',
+    schema: {
+      _rev: {
+        type: 'string'
+      },
+      sources: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            api: {
+              type: 'string',
+              format: 'uri'
+            },
+            auth: {
+              type: 'string',
+              format: 'uri'
+            }
+          }
+        }
+      },
+      selected: {
+        type: 'object',
+        properties: {
+          api: {
+            type: 'string',
+            format: 'uri'
+          },
+          auth: {
+            type: 'string',
+            format: 'uri'
+          },
+          token: {
+            type: 'object'
+          }
+        }
+      },
+      tour: {
+        type: 'boolean'
+      }
+    },
+    additionalProperties: false,
+    migration: (previous) => {
+      previous.tour = true;
+      return previous;
+    }
   }];
 
   constructor() {

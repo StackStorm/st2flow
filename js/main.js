@@ -24,6 +24,7 @@ import Canvas from './lib/canvas';
 import Graph from './lib/graph';
 import settings from './lib/settings';
 import Completer, { InputCompletion, TaskCompletion, YaqlCompletion } from './lib/completer';
+import Guide from './lib/guide';
 
 class Main extends React.Component {
   state = {
@@ -47,6 +48,7 @@ class Main extends React.Component {
     this.meta = this.refs.meta;
     this.palette = this.refs.palette;
     this.panel = this.refs.panel;
+    this.settings = settings;
 
     this.initGraph();
     this.initCanvas();
@@ -346,7 +348,7 @@ class Main extends React.Component {
           <i className="icon-gear" />
         </div>
         <div className="st2-header__separator" />
-        <div className="st2-header__settings" onClick={this.showSourceForm.bind(this)} >
+        <div className="st2-header__section" onClick={this.showSourceForm.bind(this)} >
           <Login source={this.state.source} />
           <i className="icon-user" />
         </div>
@@ -354,6 +356,9 @@ class Main extends React.Component {
             sources={this.state.sources}
             defaultValue={this.state.source}
             onChange={this.handleSourceChange.bind(this)} />
+        <div className="st2-header__section" onClick={() => this.refs.guide.show()} >
+          <i className="icon-question" />
+        </div>
       </div>
       <div className="main__collapse" onClick={ this.collapseHeader.bind(this) }>
         <i className={ this.state.header ? 'icon-chevron-up' : 'icon-chevron-down'} />
@@ -387,6 +392,8 @@ class Main extends React.Component {
           </div>
 
           <Canvas ref='canvas' graph={this.graph} />
+
+          <Guide ref='guide' />
 
         </div>
         <Panel ref="panel">
