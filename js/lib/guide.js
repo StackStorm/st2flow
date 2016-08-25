@@ -38,7 +38,7 @@ export default class Guide extends React.Component {
           To get started, pick an action from one of the packs on the left panel and drag it to the middle one.
         </p>
         <p>
-          You can reposition the node at any time.
+          You can reposition the node at any time by simply dragging it around the canvas.
         </p>
       </Screen>,
       <Screen direction="right" title="Live editor">
@@ -46,12 +46,12 @@ export default class Guide extends React.Component {
           On the right panel you will see the code representing the workflow you have on the canvas. You can edit the code and the canvas will update live.
         </p>
         <p>
-          You can also select the node on canvas and the editor will show you the fragment of code related to that node.
+          If you select the node on canvas, the editor will show you the fragment of code related to that node.
         </p>
       </Screen>,
       <Screen title="Transitions">
         <p>
-          You can add another node, then link them together by dragging one of the color circles onto another node and observe the changes that happen to the code. Clicking on the circle in the middle of the arrow will disconnect the nodes.
+          You can add another node, then link them together by dragging one of the colored circles onto another node and observe the changes that happen to the code. Clicking on the circle in the middle of the arrow will disconnect the nodes.
         </p>
         <p>
           Different colors represent different transitions: <Handle type="success" />&nbsp;only happens when action has finished successfully, <Handle type="error" />&nbsp;happens when action failed and <Handle type="complete" />&nbsp;will be followed in both cases.
@@ -62,7 +62,7 @@ export default class Guide extends React.Component {
           You can <i className="icon-redirect" />&nbsp;undo and <i className="icon-redirect2" />&nbsp;redo the change to your workflow, <i className="icon-arrange" />&nbsp;rearrange the nodes automatically, <i className="icon-save" />&nbsp;save and <i className="icon-play" />&nbsp;run the workflow.
         </p>
         <p>
-          You can also <i className="icon-edit" />&nbsp;rename and <i className="icon-delete" />&nbsp;delete the node with buttons on the node itself.
+          You can also <i className="icon-edit" />&nbsp;rename and <i className="icon-delete" />&nbsp;delete the node using buttons on the node itself.
         </p>
       </Screen>
     ];
