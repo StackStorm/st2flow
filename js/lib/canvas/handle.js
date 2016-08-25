@@ -28,7 +28,7 @@ export default class Handle extends React.Component {
   render() {
     const props = {
       className: st2Class('node-button') + ' ' + st2Class('node-button', this.props.type) + ' ' + icons[this.props.type],
-      draggable: true,
+      draggable: !!this.props.onDrag,
       onDragStart: (e) => this.handleDragStart(e)
     };
 
