@@ -686,7 +686,6 @@ main {
     }
 
     &-message {
-      color: #eee;
       text-align: center;
       font-size: 11px;
       padding: 5px;
