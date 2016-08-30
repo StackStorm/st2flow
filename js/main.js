@@ -338,7 +338,7 @@ class Main extends React.Component {
           <img src="i/logo-brocade.svg" width="101" height="25" />
         </div>
         <div className="st2-header__product-title">
-          Workflow Creator
+          Workflow Designer
         </div>
         <div className="st2-header__separator" />
         <div {...workflowButtonProps} >
