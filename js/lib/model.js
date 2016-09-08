@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { EventEmitter } from 'events';
 
 import Definitions from './definitions';
+import Graph from './graph';
 import Messages from './models/messages';
 import Sector from './models/sector';
 import Task from './models/task';
@@ -16,6 +17,8 @@ export default class Model extends EventEmitter {
 
     this.tasks = [];
     this.workflows = [];
+
+    this.graph = new Graph();
 
     const type = action.runner_type || 'mistral-v2';
     this.definition = new Definitions[type](this);
@@ -179,6 +182,8 @@ export default class Model extends EventEmitter {
       _.remove(this.tasks, (task) => task.getProperty('name') === name);
     });
 
+    this.graph.build(this.tasks);
+
     this.emit('parse', this.tasks);
   }
 
@@ -241,5 +246,36 @@ export default class Model extends EventEmitter {
       }
       return sector.intersects(range);
     });
+  }
+
+  // Selected node
+  select(name) {
+    this.__selected__ = name;
+    this.emit('select', name);
+  }
+
+  get selected() {
+    return this.__selected__;
+  }
+
+  isSelected(name) {
+    return this.__selected__ === name;
+  }
+
+  // Graph related methods
+  nodes() {
+    return this.graph.nodes();
+  }
+
+  node(name) {
+    return this.graph.node(name);
+  }
+
+  layout() {
+    return this.graph.layout();
+  }
+
+  reset() {
+    return this.graph.reset();
   }
 }

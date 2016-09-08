@@ -59,17 +59,6 @@ export default class Graph extends mixin(dagre.graphlib.Graph, EventEmitter) {
     _.each(nodes, v => this.removeNode(v));
   }
 
-  select(name) {
-    this.__selected__ = name;
-    this.emit('select', name);
-  }
-  get selected() {
-    return this.node(this.__selected__);
-  }
-  isSelected(name) {
-    return this.__selected__ === name;
-  }
-
   connect(source, targets, type='success') {
     targets = [].concat(targets);
 

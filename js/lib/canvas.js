@@ -20,7 +20,7 @@ class CanvasController extends EventEmitter {}
 
 export default class Canvas extends React.Component {
   static propTypes = {
-    graph: React.PropTypes.object
+    model: React.PropTypes.object
   }
 
   state = {
@@ -79,9 +79,14 @@ export default class Canvas extends React.Component {
   }
 
   show(name) {
-    const node = this._canvas.graph.node(name)
-        , view = this.refs.viewer
-        , { x, y, width, height } = node
+    const node = this.props.model.node(name)
+        , view = this.refs.viewer;
+
+    if (!node) {
+      return;
+    }
+
+    const { x, y, width, height } = node
         , { scrollLeft, scrollTop, clientWidth, clientHeight } = view
         , [ viewWidth, viewHeight ] = [clientWidth, clientHeight]//this.toInner(clientWidth, clientHeight)
         ;
@@ -111,7 +116,8 @@ export default class Canvas extends React.Component {
     }
   }
 
-  draw(graph) {
+  draw() {
+    const graph = this.props.model.graph;
     const nodes = graph._nodes;
     const edges = _.mapValues(graph._edgeObjs, (edge, key) => {
       const { v, w } = edge;
@@ -124,7 +130,6 @@ export default class Canvas extends React.Component {
     });
 
     this.setState({ nodes, edges });
-    this._canvas.graph = graph;
   }
 
   handleLabelClick(e, edge) {

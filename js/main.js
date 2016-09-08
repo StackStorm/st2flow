@@ -1,17 +1,15 @@
 import _ from 'lodash';
-import ace from 'brace';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Router } from 'director';
 import URI from 'URIjs';
-
-import 'brace/ext/language_tools';
 
 import api from './lib/api';
 import Range from './lib/util/range';
 import Palette from './lib/palette';
 import Control from './lib/control';
 import ControlGroup from './lib/controlgroup';
+import Editor from './lib/editor';
 import ExecutionControl from './lib/executioncontrol';
 import CatchControl from './lib/catchcontrol';
 import Panel from './lib/panel';
@@ -21,9 +19,7 @@ import SourceForm from './lib/panels/sourceform';
 import Login from './lib/panels/login';
 import Model from './lib/model';
 import Canvas from './lib/canvas';
-import Graph from './lib/graph';
 import settings from './lib/settings';
-import Completer, { InputCompletion, TaskCompletion, YaqlCompletion } from './lib/completer';
 import Guide from './lib/guide';
 
 class Main extends React.Component {
@@ -35,24 +31,19 @@ class Main extends React.Component {
     action: {}
   }
 
-  completions = {
-    input: new InputCompletion(),
-    task: new TaskCompletion(),
-    yaqlvariable: new YaqlCompletion()
-  };
+  constructor(...args) {
+    super(...args);
+    this.initModel();
+  }
 
   componentDidMount() {
-    this.initModel();
-
-    this.editor = this.initEditor();
+    this.editor = this.refs.editor;
     this.meta = this.refs.meta;
     this.palette = this.refs.palette;
     this.panel = this.refs.panel;
     this.settings = settings;
 
-    this.initGraph();
     this.initCanvas();
-    this.initPanel();
 
     this.initRouter();
 
@@ -63,7 +54,7 @@ class Main extends React.Component {
 
       return client.actionOverview.list()
         .then((actions) => {
-          this.completions.input.update(actions);
+          this.editor.completions.input.update(actions);
           this.setState({ actions });
         })
         .catch((error) => this.setState({ error }))
@@ -79,44 +70,6 @@ class Main extends React.Component {
     if (state.action !== this.state.action) {
       this.model.setAction(this.state.action);
     }
-  }
-
-  initEditor() {
-    const langTools = ace.acequire('ace/ext/language_tools');
-
-    langTools.setCompleters([new Completer(this.model, this.completions)]);
-
-    const editor = ace.edit(this.refs.editor);
-
-    require('brace/mode/yaml');
-    editor.getSession().setMode('ace/mode/yaml');
-
-    editor.setTheme({
-      cssClass: 'ace-st2'
-    });
-
-    editor.setOptions({
-      enableBasicAutocompletion: true,
-      enableLiveAutocompletion: true
-    });
-
-    editor.setHighlightActiveLine(false);
-    editor.$blockScrolling = Infinity;
-
-    editor.session.setTabSize(2);
-
-    editor.promiseReplace = (...args) => {
-      const promise = new Promise(resolve => this.model.once('parse', resolve));
-
-      this.editor.env.document.replace(...args);
-
-      return promise
-        .catch(err => {
-          throw new Error(`Replace promise haven\'t been fullfilled: ${err}`);
-        });
-    };
-
-    return editor;
   }
 
   initRouter() {
@@ -148,58 +101,32 @@ class Main extends React.Component {
     router.init('/');
   }
 
-  initPanel() {
-    const editor = this.editor;
-
-    editor.on('change', (delta) => {
-      if (this._bulk) {
-        return;
-      }
-
-      this.model.update(delta);
-      this.parse();
-    });
-
-    editor.selection.on('changeCursor', () => {
-      let { row, column } = this.editor.selection.getCursor()
-        , range = new Range(row, column, row, column)
-        , sectors = this.model.search(range, ['task'])
-        , sector = _.first(sectors)
-        ;
-
-      if (!this._bulk && sector && sector.task) {
-        this.graph.select(sector.task.getProperty('name'));
-      }
-    });
-  }
-
   initModel() {
     this.model = new Model(this.state.action);
 
-    this.model.on('parse', (tasks) => {
-      this.graph.build(tasks);
-      this.canvas.draw(this.graph);
+    this.model.on('parse', () => {
+      this.canvas.draw();
 
-      this.completions.task.update(this.model.definition.keywords);
+      this.editor.completions.task.update(this.model.definition.keywords);
 
-      const nodes = this.graph.nodes();
+      const nodes = this.model.nodes();
       if (!_.isEmpty(nodes)) {
         const hasCoords = (name) => {
-          const { x, y } = this.graph.node(name);
+          const { x, y } = this.model.node(name);
 
           return x !== undefined && y !== undefined;
         };
 
         if (!_.any(nodes, hasCoords)) {
-          this.graph.layout();
+          this.model.layout();
         }
       }
 
-      this.showTask(this.graph.__selected__);
+      this.showTask(this.model.selected);
     });
 
     this.model.messages.on('change', _.debounce((messages) => {
-      this.editor.session.setAnnotations(messages);
+      this.editor.setAnnotations(messages);
     }));
   }
 
@@ -221,20 +148,19 @@ class Main extends React.Component {
 
       switch(mode) {
         case SHIFT:
-          this.connect(this.graph.__selected__, name, 'success');
+          this.connect(this.model.selected, name, 'success');
           break;
         case ALT:
-          this.connect(this.graph.__selected__, name, 'error');
+          this.connect(this.model.selected, name, 'error');
           break;
         case SHIFT + ALT:
-          this.connect(this.graph.__selected__, name, 'complete');
+          this.connect(this.model.selected, name, 'complete');
           break;
         case META:
           this.rename(name);
           break;
         default:
-          const { row, column } = this.model.task(name).getSector('name').start;
-          this.editor.selection.moveTo(row, column);
+          this.editor.setCursor(name);
       }
     });
 
@@ -268,7 +194,7 @@ class Main extends React.Component {
         case BACKSPACE:
         case DELETE:
           event.preventDefault();
-          this.delete(this.graph.__selected__);
+          this.delete(this.model.selected);
           break;
         case Z:
           if (!event.ctrlKey && !event.metaKey) {
@@ -281,12 +207,6 @@ class Main extends React.Component {
           }
       }
     });
-  }
-
-  initGraph() {
-    this.graph = new Graph();
-
-    this.graph.on('select', (name) => this.showTask(name));
   }
 
   handleSourceChange(config) {
@@ -391,13 +311,13 @@ class Main extends React.Component {
             </ControlGroup>
           </div>
 
-          <Canvas ref='canvas' graph={this.graph} />
+          <Canvas ref='canvas' model={this.model} />
 
           <Guide ref='guide' />
 
         </div>
         <Panel ref="panel">
-          <div ref="editor" className="st2-panel__panel st2-panel__editor st2-editor"></div>
+          <Editor ref='editor' model={this.model} />
         </Panel>
 
         <Meta ref="metaPopup"
@@ -427,9 +347,9 @@ class Main extends React.Component {
   }
 
   layout() {
-    this.graph.layout();
+    this.model.layout();
 
-    this.embedCoords();
+    this.editor.embedCoords();
   }
 
   collapseEditor(state) {
@@ -523,7 +443,7 @@ class Main extends React.Component {
         return client.packFile.get(`${action.pack}/actions/${action.entry_point}`);
       })
       .then((workflow) => {
-        this.graph.reset();
+        this.model.reset();
         this.editor.setValue(workflow);
       })
       .then(() => {
@@ -540,7 +460,7 @@ class Main extends React.Component {
     const result = _.assign({}, this.state.action, {
       data_files: [{
         file_path: this.state.action.entry_point,
-        content: this.editor.env.document.doc.getAllLines().join('\n')
+        content: this.editor.getValue()
       }]
     });
 
@@ -614,7 +534,7 @@ class Main extends React.Component {
     }
 
     if (!this.model.tasks.some(v => v.properties.coord)) {
-      this.embedCoords();
+      this.editor.embedCoords();
     }
 
     const params = _.map(transitions, (value) => ({ value }));
@@ -628,16 +548,17 @@ class Main extends React.Component {
     }
 
     // if file doesn't end with newline, add one to the new task
-    const lastRow = this.editor.env.document.doc.getLength() - 1;
+    const lastRow = this.editor.getLength() - 1;
     if (task.getSector(type).compare(lastRow) < 0) {
       block = '\n' + block;
     }
 
-    this.editor.env.document.replace(task.getSector(type), block);
+    this.editor.replace(task.getSector(type), block);
+    //!! ^^ THIS PORTION SHOULD GET REFACTORED
   }
 
   rename(target, name) {
-    this.embedCoords();
+    this.editor.embedCoords();
 
     let task = this.model.task(target);
 
@@ -671,15 +592,15 @@ class Main extends React.Component {
 
     _.each(this.model.sectors, (sector) => {
       if (sector.type === 'yaql' && sector.value === oldName) {
-        this.editor.env.document.replace(sector, name);
+        this.editor.replace(sector, name);
       }
     });
 
-    this.editor.env.document.replace(sector, name);
+    this.editor.replace(sector, name);
   }
 
   move(name, x, y) {
-    const node = this.graph.node(name);
+    const node = this.model.node(name);
 
     if (!node) {
       return;
@@ -687,11 +608,11 @@ class Main extends React.Component {
 
     _.assign(node, { x, y });
 
-    this.embedCoords();
+    this.editor.embedCoords();
   }
 
   create(action, x, y) {
-    this.embedCoords();
+    this.editor.embedCoords();
 
     const indices = _.map(this.model.tasks, task => {
             const name = task.getProperty('name')
@@ -724,12 +645,12 @@ class Main extends React.Component {
     })(this.model.taskBlock);
 
     // if file doesn't end with newline, add one to the new task
-    const lastRow = this.editor.env.document.doc.getLength() - 1;
+    const lastRow = this.editor.getLength() - 1;
     if (!cursor.compare(lastRow) <= 0) {
       task = '\n' + task;
     }
 
-    this.editor.promiseReplace(cursor, task)
+    this.editor.replace(cursor, task)
       .then(() => this.canvas.edit(name));
   }
 
@@ -740,7 +661,7 @@ class Main extends React.Component {
       throw new Error('no such task:', name);
     }
 
-    this.editor.env.document.replace(task.getSector('task'), '');
+    this.editor.replace(task.getSector('task'), '');
 
     _.each(this.model.tasks, (t) => {
       const tName = t.getProperty('name');
@@ -777,7 +698,7 @@ class Main extends React.Component {
       line = this.model.fragments.name(name);
     }
 
-    this.editor.env.document.replace(sector, line);
+    this.editor.replace(sector, line);
   }
 
   setInput(fields) {
@@ -793,116 +714,13 @@ class Main extends React.Component {
 
     const inputs = this.model.fragments.input(indent, childStarter, fields);
 
-    this.editor.env.document.replace(workflow.getSector('input'), inputs);
+    this.editor.replace(workflow.getSector('input'), inputs);
   }
 
   showTask(name) {
-    const task = this.model.task(name);
-
-    if (!task) {
-      return;
-    }
-
-    const sector = task.getSector('task');
-
-    // Since we're using `fullLine` marker, remove the last (zero character long) line from range
-    let range = new Range(sector.start.row, sector.start.column, sector.end.row - 1, Infinity);
-
-    if (this.selectMarker) {
-      this.editor.session.removeMarker(this.selectMarker);
-    }
-
-    const { row, column } = this.editor.selection.getCursor();
-
-    if (!sector.compare(row, column)) {
-      this.editor.renderer.scrollCursorIntoView({ row, column }, 0.5);
-    } else {
-      this.editor.renderer.scrollSelectionIntoView(sector.start, sector.end, 0.5);
-    }
-
-    this.selectMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
+    this.editor.showTask(name);
 
     this.canvas.show(name);
-  }
-
-  embedCoords() {
-    // FIX: Quick and dirty implementation for bulk updates missing in current
-    // version of brace. We'll need a better solution sooner rather than later.
-    this._bulk = true;
-    let shift = 0;
-    const nodes = this.graph.nodes();
-    _(nodes)
-      .map(name => {
-        return this.model.task(name);
-      })
-      .sortBy(task => {
-        return task.getSector('coord').start.row;
-      })
-      .each((task) => {
-        const name = task.getProperty('name')
-            , { x, y } = this.graph.node(name);
-
-        const sector = task.getSector('coord')
-            , fragment = this.model.fragments.coord(task, Math.round(x), Math.round(y))
-            ;
-
-        // Some replaces would create a new line, so each sector should be
-        // shifted one more line below to preserve the intended position.
-        sector.moveBy(shift, 0);
-
-        if (sector.isEmpty()) {
-          shift++;
-        }
-
-        this.editor.env.document.replace(sector, fragment);
-      })
-      .value();
-    this._bulk = false;
-
-    this.parse();
-  }
-
-  parse() {
-    this.model.messages.clear();
-
-    const str = this.editor.env.document.doc.getAllLines();
-
-    const tabs = _(str)
-      .map((line, index) => {
-        const match = line.match(/^(\s+)\S/);
-        return match && {
-          index: index,
-          indent: match[1]
-        };
-      })
-      .filter()
-      .sortBy('indent')
-      .uniq(true, 'indent')
-      .value()
-      ;
-
-    const smallest = tabs && tabs[0];
-
-    const mixed = _.filter(tabs, (tab) => tab.indent.length % smallest.indent.length);
-
-    if (mixed.length) {
-      _.forEach(mixed, ({ index, indent }) => {
-        const message = {
-          type: 'warning',
-          row: index,
-          column: 0,
-          text: `Mixed indentation. This line has ${ indent.length } characters when the rest are of mod ${ smallest.indent.length }`
-        };
-        this.model.messages.add(message);
-      });
-    } else {
-      if (smallest) {
-        const indent = smallest.indent[0] === '\t' ? 4 : smallest.indent.length;
-        this.editor.session.setTabSize(indent);
-      }
-    }
-
-    this.model.parse(str.join('\n'));
   }
 
   // Debug helpers
@@ -913,7 +731,7 @@ class Main extends React.Component {
     this.model.on('parse', () => {
       {
         _.each(debugSectorMarkers, (marker) => {
-          this.editor.session.removeMarker(marker);
+          this.editor.removeMarker(marker);
         });
         debugSectorMarkers = [];
       }
@@ -930,7 +748,7 @@ class Main extends React.Component {
           let range, marker;
 
           range = new Range(sector.start.row, sector.start.column, sector.end.row, sector.end.column);
-          marker = this.editor.session.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
+          marker = this.editor.addMarker(range, `st2-editor__active-${sector.type}`, 'text');
           debugSectorMarkers.push(marker);
         });
     });
@@ -964,10 +782,10 @@ class Main extends React.Component {
       let range = this.model.taskBlock;
 
       if (taskBlockMarker) {
-        this.editor.session.removeMarker(taskBlockMarker);
+        this.editor.removeMarker(taskBlockMarker);
       }
 
-      taskBlockMarker = this.editor.session.addMarker(range, 'st2-editor__active-task', 'fullLine');
+      taskBlockMarker = this.editor.addMarker(range, 'st2-editor__active-task', 'fullLine');
     });
   }
 }
