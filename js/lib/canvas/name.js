@@ -59,6 +59,7 @@ export default class Name extends React.Component {
       className: st2Class('node-name'),
       ref: 'field',
       value: this.state.value,
+      onKeyDown: (e) => e.stopPropagation(),
       onChange: (e) => this.handleChange(e),
       onBlur: () => this.handleBlur()
     };

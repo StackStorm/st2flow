@@ -33,7 +33,7 @@ class Main extends React.Component {
 
   constructor(...args) {
     super(...args);
-    this.initModel();
+    this.model = new Model(this.state.action);
   }
 
   componentDidMount() {
@@ -41,9 +41,8 @@ class Main extends React.Component {
     this.meta = this.refs.meta;
     this.palette = this.refs.palette;
     this.panel = this.refs.panel;
+    this.canvas = this.refs.canvas;
     this.settings = settings;
-
-    this.initCanvas();
 
     this.initRouter();
 
@@ -99,114 +98,6 @@ class Main extends React.Component {
     });
 
     router.init('/');
-  }
-
-  initModel() {
-    this.model = new Model(this.state.action);
-
-    this.model.on('parse', () => {
-      this.canvas.draw();
-
-      this.editor.completions.task.update(this.model.definition.keywords);
-
-      const nodes = this.model.nodes();
-      if (!_.isEmpty(nodes)) {
-        const hasCoords = (name) => {
-          const { x, y } = this.model.node(name);
-
-          return x !== undefined && y !== undefined;
-        };
-
-        if (!_.any(nodes, hasCoords)) {
-          this.model.layout();
-        }
-      }
-
-      this.showTask(this.model.selected);
-    });
-
-    this.model.messages.on('change', _.debounce((messages) => {
-      this.editor.setAnnotations(messages);
-    }));
-  }
-
-  initCanvas() {
-    this.canvas = this.refs.canvas;
-
-    this.canvas.on('select', (name, event) => {
-      const SHIFT = 1
-          , ALT = 2
-          , CTRL = 4
-          , META = 8
-          ;
-
-      const mode =
-        event.shiftKey * SHIFT +
-        event.altKey * ALT +
-        event.ctrlKey * CTRL +
-        event.metaKey * META;
-
-      switch(mode) {
-        case SHIFT:
-          this.connect(this.model.selected, name, 'success');
-          break;
-        case ALT:
-          this.connect(this.model.selected, name, 'error');
-          break;
-        case SHIFT + ALT:
-          this.connect(this.model.selected, name, 'complete');
-          break;
-        case META:
-          this.rename(name);
-          break;
-        default:
-          this.editor.setCursor(name);
-      }
-    });
-
-    this.canvas.on('move', (target, x, y) => {
-      this.move(target, x, y);
-    });
-
-    this.canvas.on('create', (action, x, y) => this.create(action, x, y));
-
-    this.canvas.on('rename', (target, name) => this.rename(target, name));
-
-    this.canvas.on('delete', (name) => this.delete(name));
-
-    this.canvas.on('link', (source, destination, type) => {
-      if (type) {
-        this.connect(source, destination, type);
-      } else {
-        this.disconnect(source, destination, type);
-      }
-    });
-
-    this.canvas.on('disconnect', (edge) => this.disconnect(edge.v, edge.w));
-
-    this.canvas.on('keydown', (event) => {
-      const BACKSPACE = 8
-          , DELETE = 46
-          , Z = 90
-          ;
-
-      switch(event.key || event.keyCode) {
-        case BACKSPACE:
-        case DELETE:
-          event.preventDefault();
-          this.delete(this.model.selected);
-          break;
-        case Z:
-          if (!event.ctrlKey && !event.metaKey) {
-            return;
-          }
-          if (event.shiftKey) {
-            this.editor.redo();
-          } else {
-            this.editor.undo();
-          }
-      }
-    });
   }
 
   handleSourceChange(config) {
@@ -339,17 +230,15 @@ class Main extends React.Component {
   }
 
   undo() {
-    this.editor.undo();
+    this.model.undo();
   }
 
   redo() {
-    this.editor.redo();
+    this.model.redo();
   }
 
   layout() {
     this.model.layout();
-
-    this.editor.embedCoords();
   }
 
   collapseEditor(state) {
@@ -384,7 +273,7 @@ class Main extends React.Component {
     this.setState({ action });
     this.setState({ meta: false });
 
-    this.setName(action.ref);
+    this.model.setName(action.ref);
 
     const inputs = _(action.parameters).chain()
       .keys()
@@ -393,7 +282,7 @@ class Main extends React.Component {
       })
       .value();
 
-    this.setInput(inputs);
+    this.model.setInput(inputs);
   }
 
   auth(bundle64) {
@@ -494,233 +383,6 @@ class Main extends React.Component {
       console.error(err);
       throw err;
     });
-  }
-
-  connect(source, target, type='success') {
-    let task = this.model.task(source);
-
-    if (!task) {
-      throw new Error('no such task:', source);
-    }
-
-    const transitions = task.getProperty(type) || [];
-
-    transitions.push({ name: target });
-
-    this.setTransitions(source, transitions, type);
-  }
-
-  disconnect(source, destination, type=['success', 'error', 'complete']) {
-    let task = this.model.task(source);
-
-    if (!task) {
-      throw new Error('no such task:', source);
-    }
-
-    _.each([].concat(type), (type) => {
-      const transitions = task.getProperty(type) || [];
-
-      _.remove(transitions, (transition) => transition.name === destination);
-
-      this.setTransitions(source, transitions, type);
-    });
-  }
-
-  setTransitions(source, transitions, type) {
-    let task = this.model.task(source);
-
-    if (!task) {
-      throw new Error('no such task:', source);
-    }
-
-    if (!this.model.tasks.some(v => v.properties.coord)) {
-      this.editor.embedCoords();
-    }
-
-    const params = _.map(transitions, (value) => ({ value }));
-
-    let block = this.model.fragments.transitions(task, params, type);
-
-    if (task.getSector(type).isStart() || task.getSector(type).isEnd()) {
-      const coord = task.getSector('task').end;
-      task.getSector(type).setStart(coord);
-      task.getSector(type).setEnd(coord);
-    }
-
-    // if file doesn't end with newline, add one to the new task
-    const lastRow = this.editor.getLength() - 1;
-    if (task.getSector(type).compare(lastRow) < 0) {
-      block = '\n' + block;
-    }
-
-    this.editor.replace(task.getSector(type), block);
-    //!! ^^ THIS PORTION SHOULD GET REFACTORED
-  }
-
-  rename(target, name) {
-    this.editor.embedCoords();
-
-    let task = this.model.task(target);
-
-    if (!task) {
-      return;
-    }
-
-    const oldName = task.getProperty('name');
-
-    if (!name || name === oldName) {
-      return;
-    }
-
-    let sector = task.getSector('name');
-
-    _.each(this.model.tasks, (t) => {
-      const tName = t.getProperty('name');
-
-      _.each(['success', 'error', 'complete'], (type) => {
-        const transitions = _.map(t.getProperty(type), (transition) => {
-            if (transition.name === target) {
-              transition.name = name;
-            }
-            return transition;
-          })
-          ;
-
-        this.setTransitions(tName, transitions, type);
-      });
-    });
-
-    _.each(this.model.sectors, (sector) => {
-      if (sector.type === 'yaql' && sector.value === oldName) {
-        this.editor.replace(sector, name);
-      }
-    });
-
-    this.editor.replace(sector, name);
-  }
-
-  move(name, x, y) {
-    const node = this.model.node(name);
-
-    if (!node) {
-      return;
-    }
-
-    _.assign(node, { x, y });
-
-    this.editor.embedCoords();
-  }
-
-  create(action, x, y) {
-    this.editor.embedCoords();
-
-    const indices = _.map(this.model.tasks, task => {
-            const name = task.getProperty('name')
-                , expr = /task(\d+)/
-                , match = expr.exec(name)
-                ;
-
-            return _.parseInt(match && match[1]);
-          })
-        , index = _.max([0].concat(indices)) + 1
-        , name = `task${index}`
-        ;
-
-    let task = this.model.fragments.task({
-      name: name,
-      ref: action.ref,
-      x: x,
-      y: y
-    });
-
-    const cursor = ((block) => {
-      if (block && !block.isEnd()) {
-        const range = new Range();
-        range.setStart(block.end);
-        range.setEnd(block.end);
-        return range;
-      } else {
-        return new Range(0, 0, 0, 0);
-      }
-    })(this.model.taskBlock);
-
-    // if file doesn't end with newline, add one to the new task
-    const lastRow = this.editor.getLength() - 1;
-    if (!cursor.compare(lastRow) <= 0) {
-      task = '\n' + task;
-    }
-
-    this.editor.replace(cursor, task)
-      .then(() => this.canvas.edit(name));
-  }
-
-  delete(name) {
-    const task = this.model.task(name);
-
-    if (!task) {
-      throw new Error('no such task:', name);
-    }
-
-    this.editor.replace(task.getSector('task'), '');
-
-    _.each(this.model.tasks, (t) => {
-      const tName = t.getProperty('name');
-
-      _.each(['success', 'error', 'complete'], (type) => {
-        // const transitions = t.getProperty(type) || []
-        //     , index = transitions.indexOf(name)
-        //     ;
-        // if (~index) { // eslint-disable-line no-bitwise
-        //   transitions.splice(index, 1);
-        //   this.setTransitions(tName, transitions, type);
-        // }
-        const transitions = _.clone(t.getProperty(type) || [])
-          ;
-
-        _.remove(transitions, { name });
-
-        this.setTransitions(tName, transitions, type);
-      });
-    });
-
-    this.canvas.focus();
-  }
-
-  setName(name) {
-    if (!this.model.workbook) {
-      return;
-    }
-
-    const sector = this.model.workbook.getSector('name');
-    let line = name;
-
-    if (sector.isEmpty()) {
-      line = this.model.fragments.name(name);
-    }
-
-    this.editor.replace(sector, line);
-  }
-
-  setInput(fields) {
-    const workflow = this.model.workflow('main');
-
-    if (!workflow) {
-      return;
-    }
-
-    const indent = workflow.getSector('taskBlock').indent
-        , childStarter = workflow.getSector('taskBlock').childStarter + '- '
-        ;
-
-    const inputs = this.model.fragments.input(indent, childStarter, fields);
-
-    this.editor.replace(workflow.getSector('input'), inputs);
-  }
-
-  showTask(name) {
-    this.editor.showTask(name);
-
-    this.canvas.show(name);
   }
 
   // Debug helpers

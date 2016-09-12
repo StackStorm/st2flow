@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import React from 'react';
-import { EventEmitter } from 'events';
 
 import Arrow from './util/arrow';
 import bem from './util/bem';
@@ -15,8 +14,6 @@ import Edge from './canvas/edge';
 import Label from './canvas/label';
 
 let hiddenNode;
-
-class CanvasController extends EventEmitter {}
 
 export default class Canvas extends React.Component {
   static propTypes = {
@@ -59,15 +56,30 @@ export default class Canvas extends React.Component {
   }
 
   componentDidMount() {
-    this._canvas = new CanvasController();
+    this.props.model.on('parse', () => {
+      this.draw();
 
-    this._canvas.on('select', (selected) => {
+      // If at least one node doesn't have coordinates, relayout them all, but
+      // not embed coordinates just yet.
+      const nodes = this.props.model.nodes();
+      if (!_.isEmpty(nodes)) {
+        const hasCoords = (name) => {
+          const { x, y } = this.props.model.node(name);
+
+          return x !== undefined && y !== undefined;
+        };
+
+        if (!_.any(nodes, hasCoords)) {
+          this.props.model.graph.layout();
+        }
+      }
+
+      this.show(this.props.model.selected);
+    });
+
+    this.props.model.on('select', (selected) => {
       this.setState({ selected });
     });
-  }
-
-  on(...args) {
-    return this._canvas.on(...args);
   }
 
   edit(name) {
@@ -88,13 +100,13 @@ export default class Canvas extends React.Component {
 
     const { x, y, width, height } = node
         , { scrollLeft, scrollTop, clientWidth, clientHeight } = view
-        , [ viewWidth, viewHeight ] = [clientWidth, clientHeight]//this.toInner(clientWidth, clientHeight)
+        , [ viewWidth, viewHeight ] = [clientWidth, clientHeight]
         ;
 
     const A = new Vector(scrollLeft, scrollTop)
         , B = new Vector(x, y)
         , C = new Vector(x + width, y + height)
-        , D = new Vector(...[scrollLeft + viewWidth, scrollTop + viewHeight])//this.toInner(scrollLeft + viewWidth, scrollTop + viewHeight))
+        , D = new Vector(...[scrollLeft + viewWidth, scrollTop + viewHeight])
         , AB = B.subtract(A)
         , CD = D.subtract(C)
         ;
@@ -134,12 +146,38 @@ export default class Canvas extends React.Component {
 
   handleLabelClick(e, edge) {
     const { v, w } = edge;
-    this._canvas.emit('disconnect', { v: v.name, w: w.name });
+    this.props.model.disconnect(v.name, w.name);
   }
 
-  handleNodeSelect(e, name) {
-    this._canvas.emit('select', name, e);
-    // this.setState({ selected });
+  handleNodeSelect(event, name) {
+    const SHIFT = 1
+        , ALT = 2
+        , CTRL = 4
+        , META = 8
+        ;
+
+    const mode =
+      event.shiftKey * SHIFT +
+      event.altKey * ALT +
+      event.ctrlKey * CTRL +
+      event.metaKey * META;
+
+    switch(mode) {
+      case SHIFT:
+        this.props.model.connect(this.props.model.selected, name, 'success');
+        break;
+      case ALT:
+        this.props.model.connect(this.props.model.selected, name, 'error');
+        break;
+      case SHIFT + ALT:
+        this.props.model.connect(this.props.model.selected, name, 'complete');
+        break;
+      case META:
+        this.edit(name);
+        break;
+      default:
+        this.props.model.select(name);
+    }
   }
 
   handleNodePick(e, name) {
@@ -173,15 +211,20 @@ export default class Canvas extends React.Component {
   }
 
   handleNodeRename(e, name, value) {
-    this._canvas.emit('rename', name, value);
+    return this.props.model.rename(name, value);
   }
 
   handleNodeDelete(e, name) {
-    this._canvas.emit('delete', name);
+    this.props.model.delete(name);
+    this.focus();
   }
 
   handleNodeConnect(e, source, destination, type) {
-    this._canvas.emit('link', source, destination, type);
+    if (type) {
+      this.props.model.connect(source, destination, type);
+    } else {
+      this.props.model.disconnect(source, destination, type);
+    }
   }
 
   handleCanvasDragEnter(e) {
@@ -211,12 +254,12 @@ export default class Canvas extends React.Component {
     packet = e.dataTransfer.getData('nodePack');
     if (packet) {
       let { name, offsetX, offsetY } = unpack(packet)
-        , {offsetX: x, offsetY: y} = e.nativeEvent // Relative to itself (Viewer)
+        , {offsetX: x, offsetY: y} = e.nativeEvent
         ;
 
-      [x, y] = [x - offsetX, y - offsetY]; //this.toInner(x - offsetX, y - offsetY);
+      [x, y] = [x - offsetX, y - offsetY];
 
-      this._canvas.emit('move', name, x, y);
+      this.props.model.move(name, x, y);
       this.setState({ active: false });
       return;
     }
@@ -224,12 +267,12 @@ export default class Canvas extends React.Component {
     packet = e.dataTransfer.getData('actionPack');
     if (packet) {
       let { action } = unpack(packet)
-        , {offsetX: x, offsetY: y} = e.nativeEvent // Relative to itself (Viewer)
+        , {offsetX: x, offsetY: y} = e.nativeEvent
         ;
 
-      // [x, y] = this.toInner(x, y);
+      this.props.model.create(action, x, y)
+        .then((name) => this.edit(name));
 
-      this._canvas.emit('create', action, x, y);
       this.setState({ active: false });
       return;
     }
@@ -300,6 +343,30 @@ export default class Canvas extends React.Component {
     this.setState({ scale });
   }
 
+  handleKeyDown(e) {
+    const BACKSPACE = 8
+        , DELETE = 46
+        , Z = 90
+        ;
+
+    switch(e.keyCode) {
+      case BACKSPACE:
+      case DELETE:
+        e.preventDefault();
+        this.props.model.delete(this.props.model.selected);
+        break;
+      case Z:
+        if (!e.ctrlKey && !e.metaKey) {
+          return;
+        }
+        if (e.shiftKey) {
+          this.props.model.redo();
+        } else {
+          this.props.model.undo();
+        }
+    }
+  }
+
   getSvgSize() {
     const { nodes={}, scale } = this.state;
 
@@ -341,8 +408,9 @@ export default class Canvas extends React.Component {
 
     const viewerProps = {
       className: st2Class(null),
-      tabindex: -1,
-      ref: 'viewer'
+      tabIndex: '-1',
+      ref: 'viewer',
+      onKeyDown: (e) => this.handleKeyDown(e)
     };
 
     if (this.state.active) {

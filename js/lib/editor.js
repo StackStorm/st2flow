@@ -59,7 +59,21 @@ export default class Editor extends React.Component {
       }
     });
 
+    this.props.model.on('parse', () => {
+      this.completions.task.update(this.props.model.definition.keywords);
+
+      this.showTask(this.props.model.selected);
+    });
+
     this.props.model.on('select', (name) => this.showTask(name));
+    this.props.model.on('embedCoords', () => this.embedCoords());
+    this.props.model.on('replace', (cursor, str) => this.replace(cursor, str));
+    this.props.model.on('undo', () => this.undo());
+    this.props.model.on('redo', () => this.redo());
+
+    this.props.model.messages.on('change', _.debounce((messages) => {
+      this.setAnnotations(messages);
+    }));
   }
 
   setCursor(name) {
@@ -119,12 +133,14 @@ export default class Editor extends React.Component {
   }
 
   replace(sector, str) {
-    return new Promise(resolve => {
-      this.props.model.once('parse', resolve);
-      this.editor.env.document.replace(sector, str);
-    }).catch(err => {
-      throw new Error(`Replace promise haven\'t been fullfilled: ${err}`);
-    });
+    const isInsert = sector.isEmpty();
+    const lastRow = this.getLength() - 1;
+
+    if (isInsert && sector.start.row > lastRow) {
+      str = '\n' + str;
+    }
+
+    return this.editor.env.document.replace(sector, str);
   }
 
   addMarker(range, cls, type) {
