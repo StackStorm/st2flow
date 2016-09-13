@@ -7,6 +7,7 @@ import Messages from './models/messages';
 import Range from './util/range';
 import Sector from './models/sector';
 import Task from './models/task';
+import VirtualEditor from './virtualeditor';
 import Workflow from './models/workflow';
 import Workbook from './models/workbook';
 
@@ -20,6 +21,13 @@ export default class Model extends EventEmitter {
     this.workflows = [];
 
     this.graph = new Graph();
+
+    this.virtualEditor = new VirtualEditor(this);
+    this.virtualEditor.on('change', (delta) => {
+      this.messages.clear();
+
+      this.parse(this.virtualEditor.getValue());
+    });
 
     const type = action.runner_type || 'mistral-v2';
     this.definition = new Definitions[type](this);
@@ -274,7 +282,7 @@ export default class Model extends EventEmitter {
 
   layout() {
     this.graph.layout();
-    this.emit('embedCoords');
+    this.virtualEditor.embedCoords();
   }
 
   reset() {
@@ -301,7 +309,7 @@ export default class Model extends EventEmitter {
     }
 
     if (!this.tasks.some(v => v.properties.coord)) {
-      this.emit('embedCoords');
+      this.virtualEditor.embedCoords();
     }
 
     const params = _.map(transitions, (value) => ({ value }));
@@ -314,11 +322,11 @@ export default class Model extends EventEmitter {
       task.getSector(type).setEnd(coord);
     }
 
-    this.emit('replace', task.getSector(type), block);
+    this.virtualEditor.replace(task.getSector(type), block);
   }
 
   create(action, x, y) {
-    this.emit('embedCoords');
+    this.virtualEditor.embedCoords();
 
     const indices = _.map(this.tasks, task => {
             const name = task.getProperty('name')
@@ -352,7 +360,7 @@ export default class Model extends EventEmitter {
 
     return new Promise(resolve => {
       this.once('parse', () => resolve(name));
-      this.emit('replace', cursor, task);
+      this.virtualEditor.replace(cursor, task);
     });
   }
 
@@ -363,7 +371,7 @@ export default class Model extends EventEmitter {
       throw new Error('no such task:', name);
     }
 
-    this.emit('replace', task.getSector('task'), '');
+    this.virtualEditor.replace(task.getSector('task'), '');
 
     _.each(this.tasks, (t) => {
       const tName = t.getProperty('name');
@@ -380,7 +388,7 @@ export default class Model extends EventEmitter {
   }
 
   rename(target, name) {
-    this.emit('embedCoords');
+    this.virtualEditor.embedCoords();
 
     let task = this.task(target);
 
@@ -414,11 +422,11 @@ export default class Model extends EventEmitter {
 
     _.each(this.sectors, (sector) => {
       if (sector.type === 'yaql' && sector.value === oldName) {
-        this.emit('replace', sector, name);
+        this.virtualEditor.replace(sector, name);
       }
     });
 
-    this.emit('replace', sector, name);
+    this.virtualEditor.replace(sector, name);
   }
 
   move(name, x, y) {
@@ -430,7 +438,7 @@ export default class Model extends EventEmitter {
 
     _.assign(node, { x, y });
 
-    this.emit('embedCoords');
+    this.virtualEditor.embedCoords();
   }
 
   connect(source, target, type='success') {
@@ -464,11 +472,11 @@ export default class Model extends EventEmitter {
   }
 
   undo() {
-    this.emit('undo');
+    this.virtualEditor.undo();
   }
 
   redo() {
-    this.emit('redo');
+    this.virtualEditor.redo();
   }
 
   setName(name) {
@@ -483,7 +491,7 @@ export default class Model extends EventEmitter {
       line = this.fragments.name(name);
     }
 
-    this.emit('replace', sector, line);
+    this.virtualEditor.replace(sector, line);
   }
 
   setInput(fields) {
@@ -499,6 +507,6 @@ export default class Model extends EventEmitter {
 
     const inputs = this.fragments.input(indent, childStarter, fields);
 
-    this.emit('replace', workflow.getSector('input'), inputs);
+    this.virtualEditor.replace(workflow.getSector('input'), inputs);
   }
 }
