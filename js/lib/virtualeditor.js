@@ -5,19 +5,13 @@ import Range from './util/range';
 
 
 // TODO: ACE-compatible deltas
-// TODO: Bulk history records
 
 class Historian {
   index = -1
   history = []
 
-  push(prevSector, prevValue, nextSector, nextValue) {
-    this.history.splice(this.index + 1, history.length, {
-      prevSector,
-      prevValue,
-      nextSector,
-      nextValue
-    });
+  push(...deltas) {
+    this.history.splice(this.index + 1, this.history.length, deltas);
 
     this.index = this.index + 1;
   }
@@ -27,14 +21,14 @@ class Historian {
       return false;
     }
 
-    const { nextSector, prevValue } = this.history[this.index];
+    const deltas = this.history[this.index];
 
     this.index = this.index - 1;
 
-    return {
+    return deltas.map(({ nextSector, prevValue }) => ({
       sector: nextSector,
       value: prevValue
-    };
+    }));
   }
 
   next() {
@@ -44,12 +38,12 @@ class Historian {
 
     this.index = this.index + 1;
 
-    const { prevSector, nextValue } = this.history[this.index];
+    const deltas = this.history[this.index];
 
-    return {
+    return deltas.map(({ prevSector, nextValue }) => ({
       sector: prevSector,
       value: nextValue
-    };
+    }));
   }
 }
 
@@ -67,23 +61,31 @@ export default class VirtualEditor extends EventEmitter {
   }
 
   undo() {
-    const { sector, value } = this.historian.prev();
+    const changes = this.historian.prev();
 
-    if (sector) {
-      return this._replace(sector, value);
-    } else {
+    if (!changes) {
       return false;
     }
+
+    const deltas = changes.map(({sector, value}) => this._replace(sector, value));
+
+    this.emit('change', deltas);
+
+    return deltas;
   }
 
   redo() {
-    const { sector, value } = this.historian.next();
+    const changes = this.historian.next();
 
-    if (sector) {
-      return this._replace(sector, value);
-    } else {
+    if (!changes) {
       return false;
     }
+
+    const deltas = changes.map(({sector, value}) => this._replace(sector, value));
+
+    this.emit('change', deltas);
+
+    return deltas;
   }
 
   getValue() {
@@ -91,20 +93,22 @@ export default class VirtualEditor extends EventEmitter {
   }
 
   setValue(str) {
-    const prevLastRow = this.lines.length - 1
-    const oldSector = new Range(0, 0, prevLastRow, this.lines[prevLastRow].length);
-    const deleted = this.lines.join('\n');
+    const prevLastRow = this.lines.length - 1;
+    const prevSector = new Range(0, 0, prevLastRow, this.lines[prevLastRow].length);
+    const prevValue = this.lines.join('\n');
 
     this.lines = str.split('\n');
 
     const newLastRow = this.lines.length - 1;
-    const newSector = new Range(0, 0, newLastRow, this.lines[newLastRow].length);
-    const inserted = this.lines.join('\n');
+    const nextSector = new Range(0, 0, newLastRow, this.lines[newLastRow].length);
+    const nextValue = this.lines.join('\n');
 
-    this.historian.push(oldSector, deleted, newSector, inserted);
-    this.emit('change');
+    const delta = { prevSector, prevValue, nextSector, nextValue };
 
-    return inserted;
+    this.emit('change', [delta]);
+    this.historian.push(delta);
+
+    return nextValue;
   }
 
   getLength() {
@@ -112,7 +116,41 @@ export default class VirtualEditor extends EventEmitter {
   }
 
   _replace(sector, str) {
-    // TODO: make sure sector is whithing the bounds of the document
+    const lastRow = this.lines.length - 1;
+    const bounds = new Range(0, 0, lastRow, this.lines[lastRow].length);
+
+    switch(bounds.compareRange(sector)) {
+      case -2:
+        // Both sector's coordinates are negative. Should never happen.
+      case -1:
+        // Sectors start coordinate is negative. Should never happen.
+        console.error('WTFError: Sector starts before the document');
+        break;
+      case 0:
+        // Sector within bounds. That's how it's suppose to be.
+        break;
+      case 1:
+        // Sector is longer than document. Should not happen, but happens once
+        // in a while. Set end coordinate to bondary end to mimic Ace editor
+        // behaviour.
+        console.error('WTFError: Sector is longer than the document');
+        sector.setEnd(bounds.end);
+        break;
+      case 2:
+        // Sector is completely out of bounds. Should not happen, but happens.
+        // Mimic Ace Editor behaviour and append the code to the end of the
+        // document.
+        console.error('WTFError: Sector starts after the document');
+        sector.setStart(bounds.end);
+        sector.setEnd(bounds.end);
+        break;
+      case 42:
+      default:
+        // Some truly magical stuff.
+        console.error('WTFError: Case 42');
+        break;
+    }
+
     const prefix = this.lines[sector.start.row].substring(0, sector.start.column);
     const postfix = this.lines[sector.end.row].substring(sector.end.column);
 
@@ -122,35 +160,39 @@ export default class VirtualEditor extends EventEmitter {
 
     const deletedLines = this.lines.splice(sector.start.row, sector.end.row - sector.start.row + 1, ...lines);
     deletedLines.unshift(deletedLines.shift().substring(sector.start.column));
-    deletedLines.push(deletedLines.pop().substring(0, sector.end.column));
-    const deleted = deletedLines.join('\n')
+    if (deletedLines.length === 1) {
+      // if there's only one line, compensate for what you've already cut off of it
+      deletedLines.push(deletedLines.pop().substring(0, sector.end.column - sector.start.column));
+    } else {
+      deletedLines.push(deletedLines.pop().substring(0, sector.end.column));
+    }
+    const prevValue = deletedLines.join('\n');
 
     const endRow = sector.start.row + lines.length - 1;
-    const endColumn = this.lines[endRow].length - postfix.length
+    const endColumn = this.lines[endRow].length - postfix.length;
 
-    const newSector = sector.clone();
-    newSector.setEnd(endRow, endColumn);
-
-    this.emit('change');
+    const nextSector = sector.clone();
+    nextSector.setEnd(endRow, endColumn);
 
     return {
-      oldSector: sector, deleted, newSector, inserted: str
+      prevSector: sector, prevValue, nextSector, nextValue: str
     };
   }
 
   replace(sector, str) {
-    const isInsert = sector.isEmpty()
+    const isInsert = sector.isEmpty();
     const lastRow = this.getLength() - 1;
 
     if (isInsert && sector.start.row > lastRow) {
       str = '\n' + str;
     }
 
-    const { oldSector, deleted, newSector, inserted } = this._replace(sector, str);
+    const delta = this._replace(sector, str);
 
-    this.historian.push(oldSector, deleted, newSector, inserted);
+    this.emit('change', [delta]);
+    this.historian.push(delta);
 
-    return newSector.end;
+    return delta.nextSector.end;
   }
 
   embedCoords() {
@@ -159,15 +201,12 @@ export default class VirtualEditor extends EventEmitter {
       return;
     }
 
-    // FIX: Quick and dirty implementation for bulk updates missing in current
-    // version of brace. We'll need a better solution sooner rather than later.
-    this._bulk = true;
     let shift = 0;
-    _(this.props.model.tasks)
+    const deltas = _(this.props.model.tasks)
       .sortBy(task => {
         return task.getSector('coord').start.row;
       })
-      .each(task => {
+      .map(task => {
         const name = task.getProperty('name')
             , { x, y } = this.props.model.graph.node(name);
 
@@ -183,19 +222,11 @@ export default class VirtualEditor extends EventEmitter {
           shift++;
         }
 
-        this.replace(sector, fragment);
+        return this._replace(sector, fragment);
       })
       .value();
-    this._bulk = false;
 
-    this.emit('change');
-  }
-
-  emit(...args) {
-    if (this._bulk) {
-      return;
-    }
-
-    super.emit(...args);
+    this.emit('change', deltas);
+    this.historian.push(...deltas);
   }
 }
