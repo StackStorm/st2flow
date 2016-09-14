@@ -38,6 +38,14 @@ export default class Editor extends React.Component {
 
     this.editor.session.setTabSize(2);
 
+    this.editor.session.setUndoManager({
+      undo: () => this.props.model.undo(),
+      redo: () => this.props.model.redo(),
+      // VirtualEditor handles reseting Historian and keeping views in sync
+      reset: () => false,
+      execute: () => false
+    });
+
     this.editor.on('change', (delta) => {
       if (this._bulk) {
         return;

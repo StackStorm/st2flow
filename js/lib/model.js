@@ -200,11 +200,10 @@ export default class Model extends EventEmitter {
   update(delta) {
     const { prevSector, nextValue } = delta;
 
-    const change = this.virtualEditor.replace(prevSector, nextValue);
+    this.virtualEditor.replace(prevSector, nextValue);
 
-    console.log(delta, change);
-
-    // this.emit('update', this.search(delta));
+    // We only use this event for debug purposes for now.
+    this.emit('update', this.search(prevSector));
   }
 
   task(name, pending) {

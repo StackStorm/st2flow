@@ -4,8 +4,6 @@ import EventEmitter from 'events';
 import Range from './util/range';
 
 
-// TODO: ACE-compatible deltas
-
 class Historian {
   index = -1
   history = []
