@@ -333,7 +333,7 @@ class Main extends React.Component {
       })
       .then((workflow) => {
         this.model.reset();
-        this.editor.setValue(workflow);
+        this.model.setValue(workflow);
       })
       .then(() => {
         this.setState({ loading: false });
@@ -349,7 +349,7 @@ class Main extends React.Component {
     const result = _.assign({}, this.state.action, {
       data_files: [{
         file_path: this.state.action.entry_point,
-        content: this.editor.getValue()
+        content: this.model.getValue()
       }]
     });
 

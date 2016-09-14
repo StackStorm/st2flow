@@ -43,8 +43,36 @@ export default class Editor extends React.Component {
         return;
       }
 
-      this.props.model.update(delta);
-      this.parse();
+      const startRange = Range.fromPoints(delta.start, delta.start);
+      const fullRange = Range.fromPoints(delta.start, delta.end);
+      const deltaString = delta.lines.join('\n');
+      const emptyString = '';
+
+      const flowDelta = {
+        prevSector: startRange,
+        prevValue: emptyString,
+        nextSector: startRange,
+        nextValue: emptyString
+      };
+
+      switch (delta.action) {
+        case 'insert':
+          flowDelta.nextSector = fullRange;
+          flowDelta.nextValue = deltaString;
+          break;
+        case 'remove':
+          flowDelta.prevSector = fullRange;
+          flowDelta.prevValue = deltaString;
+          break;
+        default:
+          console.log('WTFError: Unsupported delta action.');
+      }
+
+      this._inProgress = true;
+      this.props.model.update(flowDelta);
+      this._inProgress = false;
+
+      this.detectIndent();
     });
 
     this.editor.selection.on('changeCursor', () => {
@@ -59,6 +87,36 @@ export default class Editor extends React.Component {
       }
     });
 
+    this.props.model.on('change', deltas => {
+      if (this._inProgress) {
+        return;
+      }
+
+      this._bulk = true;
+
+      for (const { prevSector, prevValue, nextSector, nextValue } of deltas) {
+        if (!prevSector.isEmpty()) {
+          this.editor.session.doc.applyDelta({
+            action: 'remove',
+            start: prevSector.start,
+            end: prevSector.end,
+            lines: prevValue.split('\n')
+          });
+        }
+
+        if (nextValue) {
+          this.editor.session.doc.applyDelta({
+            action: 'insert',
+            start: nextSector.start,
+            end: nextSector.end,
+            lines: nextValue.split('\n')
+          });
+        }
+      }
+
+      this._bulk = false;
+    });
+
     this.props.model.on('parse', () => {
       this.completions.task.update(this.props.model.definition.keywords);
 
@@ -66,10 +124,6 @@ export default class Editor extends React.Component {
     });
 
     this.props.model.on('select', (name) => this.showTask(name));
-    this.props.model.on('embedCoords', () => this.embedCoords());
-    this.props.model.on('replace', (cursor, str) => this.replace(cursor, str));
-    this.props.model.on('undo', () => this.undo());
-    this.props.model.on('redo', () => this.redo());
 
     this.props.model.messages.on('change', _.debounce((messages) => {
       this.setAnnotations(messages);
@@ -82,19 +136,11 @@ export default class Editor extends React.Component {
   }
 
   undo() {
-    return this.editor.undo();
+    return this.props.model.undo();
   }
 
   redo() {
-    return this.editor.redo();
-  }
-
-  getValue() {
-    return this.editor.env.document.doc.getAllLines().join('\n');
-  }
-
-  setValue(str) {
-    return this.editor.setValue(str);
+    return this.props.model.redo();
   }
 
   getLength() {
@@ -151,49 +197,13 @@ export default class Editor extends React.Component {
     return this.editor.session.removeMarker(marker);
   }
 
-  embedCoords() {
-    if (!this.props.model.tasks.length) {
-      return;
-    }
-
-    // FIX: Quick and dirty implementation for bulk updates missing in current
-    // version of brace. We'll need a better solution sooner rather than later.
-    this._bulk = true;
-    let shift = 0;
-    _(this.props.model.tasks)
-      .sortBy(task => {
-        return task.getSector('coord').start.row;
-      })
-      .each(task => {
-        const name = task.getProperty('name')
-            , { x, y } = this.props.model.graph.node(name);
-
-        const sector = task.getSector('coord')
-            , fragment = this.props.model.fragments.coord(task, Math.round(x), Math.round(y))
-            ;
-
-        // Some replaces would create a new line, so each sector should be
-        // shifted one more line below to preserve the intended position.
-        sector.moveBy(shift, 0);
-
-        if (sector.isEmpty()) {
-          shift++;
-        }
-
-        this.replace(sector, fragment);
-      })
-      .value();
-    this._bulk = false;
-
-    this.parse();
-  }
-
-  parse() {
+  detectIndent() {
+    // TODO: probably makes sense to move it to virtualeditor too
     this.props.model.messages.clear();
 
-    const str = this.getValue().split('\n');
+    const lines = this.editor.env.document.doc.getAllLines();
 
-    const tabs = _(str)
+    const tabs = _(lines)
       .map((line, index) => {
         const match = line.match(/^(\s+)\S/);
         return match && {
@@ -227,8 +237,6 @@ export default class Editor extends React.Component {
         this.editor.session.setTabSize(indent);
       }
     }
-
-    this.props.model.parse(str.join('\n'));
   }
 
   render() {

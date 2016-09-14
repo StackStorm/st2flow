@@ -23,9 +23,10 @@ export default class Model extends EventEmitter {
     this.graph = new Graph();
 
     this.virtualEditor = new VirtualEditor(this);
-    this.virtualEditor.on('change', (delta) => {
+    this.virtualEditor.on('change', (deltas) => {
       this.messages.clear();
 
+      this.emit('change', deltas);
       this.parse(this.virtualEditor.getValue());
     });
 
@@ -197,7 +198,13 @@ export default class Model extends EventEmitter {
   }
 
   update(delta) {
-    this.emit('update', this.search(delta));
+    const { prevSector, nextValue } = delta;
+
+    const change = this.virtualEditor.replace(prevSector, nextValue);
+
+    console.log(delta, change);
+
+    // this.emit('update', this.search(delta));
   }
 
   task(name, pending) {
@@ -300,6 +307,14 @@ export default class Model extends EventEmitter {
   // editor (even if it's not a valid yaml document to begin with), while at the
   // same time, make the data structural enough to be able to traverse and
   // modify the document like if it was parsed by a regular yaml parser.
+
+  getValue() {
+    return this.virtualEditor.getValue();
+  }
+
+  setValue(str) {
+    return this.virtualEditor.setValue(str);
+  }
 
   setTransitions(source, transitions, type) {
     let task = this.task(source);
