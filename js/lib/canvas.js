@@ -82,6 +82,13 @@ export default class Canvas extends React.Component {
     });
   }
 
+  componentDidUpdate() {
+    if (this._pendingEdit) {
+      this.edit(this._pendingEdit);
+      this._pendingEdit = void 0;
+    }
+  }
+
   edit(name) {
     return this.nodes[name].edit(name);
   }
@@ -270,8 +277,8 @@ export default class Canvas extends React.Component {
         , {offsetX: x, offsetY: y} = e.nativeEvent
         ;
 
-      this.props.model.create(action, x, y)
-        .then((name) => this.edit(name));
+      const node = this.props.model.create(action, x, y);
+      this._pendingEdit = node.name;
 
       this.setState({ active: false });
       return;

@@ -372,10 +372,11 @@ export default class Model extends EventEmitter {
       }
     })(this.taskBlock);
 
-    return new Promise(resolve => {
-      this.once('parse', () => resolve(name));
-      this.virtualEditor.replace(cursor, task);
-    });
+    this.virtualEditor.replace(cursor, task);
+
+    this.select(name);
+
+    return this.node(name);
   }
 
   delete(name) {
