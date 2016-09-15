@@ -32,7 +32,7 @@ function buildHeader() {
 
 var watch;
 var customOpts = {
-  entries: ['js/main.js'],
+  entries: ['lib/main.js'],
   debug: true
 };
 var opts = _.assign({}, watchify.args, customOpts);
@@ -72,7 +72,7 @@ function bundle(b) {
     .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(sourcemaps.init({ loadMaps: true }))
     .pipe(sourcemaps.write('./'))
-    .pipe(gulp.dest('dist/js'))
+    .pipe(gulp.dest('dist/lib'))
     .pipe(size({
       showFiles: true
     }))
@@ -87,7 +87,7 @@ gulp.task('clean', function(cb) {
 });
 
 gulp.task('lint', function() {
-  return gulp.src(['js/**/*.js', 'tests/**/*.js'])
+  return gulp.src(['lib/**/*.js', 'tests/**/*.js'])
     .pipe(plumber())
     .pipe(cached('linting'))
     .pipe(eslint())
@@ -176,7 +176,7 @@ gulp.task('build', ['css', 'browserify', 'static']);
 gulp.task('watch', ['css', 'watchify', 'static'], function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
-  gulp.watch(['js/**/*.js'], ['lint']);
+  gulp.watch(['lib/**/*.js'], ['lint']);
 
   process.stdin.setEncoding('utf8');
   process.stdin.on('readable', function() {

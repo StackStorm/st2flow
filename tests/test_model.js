@@ -2,8 +2,8 @@ import _ from 'lodash';
 import { expect } from 'chai';
 import fs from 'fs';
 
-import Range from '../js/lib/util/range';
-import Model from '../js/lib/model';
+import Range from '../lib/util/range';
+import Model from '../lib/model';
 
 describe('Model', () => {
 

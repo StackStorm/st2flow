@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { Settings } from '../js/lib/settings';
+import { Settings } from '../lib/settings';
 
 describe('Settings', () => {
 

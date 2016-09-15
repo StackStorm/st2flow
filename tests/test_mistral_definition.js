@@ -2,9 +2,9 @@
 import { expect } from 'chai';
 import fs from 'fs';
 
-import Sector from '../js/lib/models/sector';
-import Task from '../js/lib/models/task';
-import Model from '../js/lib/model';
+import Sector from '../lib/model/sector';
+import Task from '../lib/model/task';
+import Model from '../lib/model';
 
 function getFixture(filename) {
   return fs.readFileSync(`${ __dirname }/fixtures/${ filename }`).toString();
