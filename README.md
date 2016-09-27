@@ -1,5 +1,8 @@
-StackStorm Flow [![Build Status][travis-image]][travis-url]
+StackStorm Flow 
 ===============
+
+[![Circle CI Build Status](https://circleci.com/gh/StackStorm/st2flow/tree/master.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/StackStorm/st2flow)
+
 
 Quick start
 -----------
