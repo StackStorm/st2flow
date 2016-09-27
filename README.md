@@ -1,7 +1,7 @@
 StackStorm Flow 
 ===============
 
-[![Circle CI Build Status](https://circleci.com/gh/StackStorm/st2flow/tree/master.svg?style=shield&circle-token=472e546d430f9ef8be1e784e0c73ae5a1123c9b0)](https://circleci.com/gh/StackStorm/st2flow)
+[![Circle CI Build Status](https://circleci.com/gh/StackStorm/st2flow/tree/master.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/StackStorm/st2flow)
 
 
 Quick start
