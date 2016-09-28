@@ -234,4 +234,113 @@ describe('VirtualEditor', () => {
 
   });
 
+  describe('#undo()', () => {
+    const initial =
+      dedent`some
+            |thing
+            |else
+            |`;
+
+    beforeEach(() => {
+      editor.setValue(initial);
+    });
+
+    it('should undo the latest changes', () => {
+      const range = new Range(1,1,2,3);
+      editor.replace(range, '[inserted\ntext]');
+
+      editor.undo()
+
+      expect(editor.getValue()).to.be.equal(initial);
+    });
+
+    it('should not create a new history record', () => {
+      const range = new Range(1,1,2,3);
+      editor.replace(range, '[inserted\ntext]');
+
+      const numRecords = editor.historian.history.length;
+
+      editor.undo()
+
+      expect(editor.historian.history).to.have.length(numRecords);
+    });
+  });
+
+  describe('#bulkReplace()', () => {
+    const initial =
+      dedent`some
+            |thing
+            |else
+            |`;
+
+    beforeEach(() => {
+      editor.setValue(initial);
+    });
+
+    it('should make multiple replacements within the file as a single change', () => {
+      const numRecords = editor.historian.history.length;
+
+      const changes = [{
+        sector: new Range(1,1,2,3),
+        value: '[inserted\ntext]'
+      }, {
+        sector: new Range(2,0,2,4),
+        value: '[correction]'
+      }];
+
+      editor.bulkReplace(changes);
+
+      const expected =
+        dedent`some
+              |t[inserted
+              |[correction]]e
+              |`;
+      expect(editor.getValue()).to.be.equal(expected);
+
+      editor.undo();
+      expect(editor.getValue()).to.be.equal(initial);
+
+      editor.redo();
+      expect(editor.getValue()).to.be.equal(expected);
+
+      expect(editor.historian.history).to.have.length(numRecords + 1);
+    });
+  })
+
+  describe('#redo()', () => {
+    const initial =
+      dedent`some
+            |thing
+            |else
+            |`;
+
+    beforeEach(() => {
+      editor.setValue(initial);
+    });
+
+    it('should undo the latest changes', () => {
+      const range = new Range(1,1,2,3);
+      editor.replace(range, '[inserted\ntext]');
+
+      const expected = editor.getValue();
+      editor.undo();
+
+      editor.redo();
+
+      expect(editor.getValue()).to.be.equal(expected);
+    });
+
+    it('should not create a new history record', () => {
+      const range = new Range(1,1,2,3);
+      editor.replace(range, '[inserted\ntext]');
+      editor.undo();
+
+      const numRecords = editor.historian.history.length;
+
+      editor.redo();
+
+      expect(editor.historian.history).to.have.length(numRecords);
+    });
+  });
+
 });
