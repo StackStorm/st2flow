@@ -32,7 +32,7 @@ function buildHeader() {
 
 var watch;
 var customOpts = {
-  entries: ['js/main.js'],
+  entries: ['lib/main.js'],
   debug: true
 };
 var opts = _.assign({}, watchify.args, customOpts);
@@ -48,10 +48,7 @@ function Browserify() {
   }
 
   b
-    .transform(babelify.configure({
-      // Make sure to change in test_compiler.js too
-      optional: ['es7.classProperties']
-    }))
+    .transform(babelify.configure())
     .on('log', gutil.log)
     ;
 
@@ -69,10 +66,10 @@ function bundle(b) {
     })
     .pipe(source('main.js'))
     .pipe(buffer())
-    .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(sourcemaps.init({ loadMaps: true }))
+    .pipe(header('/* ' + buildHeader() + ' */'))
     .pipe(sourcemaps.write('./'))
-    .pipe(gulp.dest('dist/js'))
+    .pipe(gulp.dest('dist/lib'))
     .pipe(size({
       showFiles: true
     }))
@@ -87,7 +84,7 @@ gulp.task('clean', function(cb) {
 });
 
 gulp.task('lint', function() {
-  return gulp.src(['js/**/*.js', 'tests/**/*.js'])
+  return gulp.src(['lib/**/*.js', 'tests/**/*.js'])
     .pipe(plumber())
     .pipe(cached('linting'))
     .pipe(eslint())
@@ -103,7 +100,7 @@ gulp.task('font', function () {
 
 gulp.task('css', ['font'], function () {
   var processors = [
-    require('autoprefixer-core')({browsers: ['last 2 version']}),
+    require('autoprefixer')({browsers: ['last 2 version']}),
     require('postcss-import')(),
     require('postcss-nested')(),
     require('postcss-mq-keyframes'),
@@ -163,7 +160,7 @@ gulp.task('static', function () {
     ;
 });
 
-gulp.task('serve', ['build'], function() {
+gulp.task('serve', ['watch'], function() {
   gulp.src('dist')
     .pipe(webserver({
       host: '0.0.0.0',
@@ -176,7 +173,7 @@ gulp.task('build', ['css', 'browserify', 'static']);
 gulp.task('watch', ['css', 'watchify', 'static'], function() {
   gulp.watch('static/*', ['static']);
   gulp.watch('css/**/*.css', ['css']);
-  gulp.watch(['js/**/*.js'], ['lint']);
+  gulp.watch(['lib/**/*.js'], ['lint']);
 
   process.stdin.setEncoding('utf8');
   process.stdin.on('readable', function() {

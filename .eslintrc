@@ -1,14 +1,19 @@
+plugins:
+  - react
+extends:
+  - plugin:react/recommended
 parser: babel-eslint
+parserOptions:
+  ecmaVersion: 6
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
 env:
   jasmine: false
   node: true
   mocha: true
   builtin: true
   es6: true
-ecmaFeatures:
-  jsx: true
-  modules: true
-  classes: true
 globals:
   window: false
   document: false
@@ -50,9 +55,12 @@ rules:
   quotes:
     - 2
     - single
+    - allowTemplateLiterals: true
   valid-typeof: 0
   wrap-iife:
     - 0
     - inside
-plugins:
-  - react
+  react/display-name:
+    - 0
+  react/prop-types:
+    - 0
