@@ -21,12 +21,14 @@ describe('Mistral definition', () => {
   describe('cases', () => {
 
     it('should properly output task fragment even before the parse', () => {
-      const taskStrings = model.fragments.task({
-        name: 'some',
-        ref: 'thing',
-        x: 0,
-        y: 0
-      });
+      const taskStrings =
+        model.fragments.workflow() +
+        model.fragments.task({
+          name: 'some',
+          ref: 'thing',
+          x: 0,
+          y: 0
+        });
 
       expect(taskStrings).to.deep.equal([
         `---`,
@@ -54,12 +56,14 @@ describe('Mistral definition', () => {
 
       // Fragments
 
-      const taskStrings = model.fragments.task({
-        name: 'some',
-        ref: 'thing',
-        x: 0,
-        y: 0
-      });
+      const taskStrings =
+        model.fragments.workflow() +
+        model.fragments.task({
+          name: 'some',
+          ref: 'thing',
+          x: 0,
+          y: 0
+        });
 
       expect(taskStrings).to.deep.equal([
         `---`,
@@ -113,7 +117,6 @@ describe('Mistral definition', () => {
       // indent from adjacent blocks
       // TODO: Fix indentation calculation for workbook with empty task block
       expect(taskStrings).to.deep.equal([
-        '  tasks:',
         '    some:',
         '      # [0, 0]',
         '      action: thing',
@@ -156,7 +159,6 @@ describe('Mistral definition', () => {
       });
 
       expect(taskStrings).to.deep.equal([
-        '  tasks:',
         '    some:',
         '      # [0, 0]',
         '      action: thing',
