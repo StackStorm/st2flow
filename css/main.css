@@ -1473,6 +1473,10 @@ main {
         background-color: var(--green-base);
       }
 
+      &--negative {
+        background-color: var(--red-base);
+      }
+
       & + & {
         margin-left: 10px;
       }
