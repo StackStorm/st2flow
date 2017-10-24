@@ -30,7 +30,7 @@ checkout:
 dependencies:
   pre:
     - sudo apt-get install rpm jq
-    - gem install package_cloud
+    - gem install package_cloud -v 0.2.45
 
 test:
   post:
