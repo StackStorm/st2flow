@@ -1,6 +1,8 @@
 # Setup in CircleCI account the following ENV variables:
 # PACKAGECLOUD_TOKEN
 machine:
+  ruby:
+    version: ruby-2.0.0-p645
   node:
     version: 4
   environment:
