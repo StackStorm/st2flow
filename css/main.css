@@ -1366,15 +1366,10 @@ main {
       /* Token, not toggle */
       cursor: pointer;
       user-select: none;
-
-      box-shadow:
-        0 0 0 2px #2C3339,
-        0 0 0 3px #404C54,
-        0 0 0 5px #2C3339;
     }
     input[type=checkbox]&-input:checked ~ &-token {
-      background-color: #90d5fc;
-      color: #2C3339;
+      background-color: #619F42;
+      color: white;
     }
     textarea&-input {
       &::-webkit-scrollbar {
@@ -1516,18 +1511,14 @@ main {
     &-token {
       display: inline-block;
       margin: 0 8px 0 4px;
-      padding: 1px 3px;
+      padding: 4px 10px;
 
       font-size: 11px;
 
-      background-color: #2C3339;
-      color: #90d5fc;
+      background-color: #fff;
+      color: black;
 
       border-radius: 1px;
-
-      box-shadow:
-        0 0 0 2px #2C3339,
-        0 0 0 3px #404C54;
 
       &s {
         margin: 5px 0;
