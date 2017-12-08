@@ -5,6 +5,8 @@ machine:
     version: ruby-2.0.0-p645
   node:
     version: 4
+  ruby:
+    version: ruby-2.0.0-p645
   environment:
     DEB: trusty xenial
     RPM: el6 el7
@@ -32,7 +34,7 @@ checkout:
 dependencies:
   pre:
     - sudo apt-get install rpm jq
-    - gem install package_cloud -v 0.2.45
+    - gem install package_cloud
 
 test:
   post:
