@@ -203,7 +203,7 @@ main {
 
   position: absolute;
 
-  background: linear-gradient(45deg, rgb(189, 80, 48) 0%, rgb(165, 24, 144) 100%) !important;
+  background: linear-gradient(45deg, rgb(64, 0, 153) 0%, rgb(165, 24, 144) 100%) !important;
   color: white;
 
   font-size: 12px;
