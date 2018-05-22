@@ -42,6 +42,7 @@
   "dependencies": {
     "@stackstorm/module-api": "1.0.0-pre.5",
     "@stackstorm/st2-style": "1.0.0-pre.5",
+    "@stackstorm/st2flow-model": "1.0.0-pre.5",
     "classnames": "^2.2.5",
     "flow-bin": "^0.72.0",
     "insert-css": "^2.0.0",
