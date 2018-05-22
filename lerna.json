@@ -1,0 +1,12 @@
+{
+  "lerna": "2.5.1",
+  "packages": [
+    "../st2web/apps/*",
+    "../st2web/modules/*",
+    "../st2web/tasks",
+    "apps/*",
+    "modules/*",
+    "tasks",
+    "."
+  ]
+}
