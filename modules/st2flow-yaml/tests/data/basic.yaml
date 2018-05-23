@@ -1,28 +1,69 @@
-version: 1.0
+emptyArray:  []
+emptyObject: {}
 
-description: >
-  A sample workflow that demonstrates how to use conditions
-  to determine which path in the workflow to take.
+bools:
+  true:
+    - true
+    - True
+    - TRUE
+  false:
+    - false
+    - False
+    - FALSE
 
-input:
-  - which
+floats:
+  canonical: 6.8523015e+5
+  exponential: 685.230_15e+03
+  fixed: 685_230.15
 
-tasks:
-  t1:
-    action: core.local cmd="printf <% $.which %>"
-    on-complete:
-      - if: <% state() = "succeeded" and result().stdout = 'a' %>
-        publish: path=<% result().stdout %>
-        next: a
-      - if: <% state() = "succeeded" and result().stdout = 'b' %>
-        publish: path=<% result().stdout %>
-        next: b
-      - if: <% state() = "succeeded" and not result().stdout in list(a, b) %>
-        publish: path=<% result().stdout %>
-        next: c
-  a:
-    action: core.local cmd="echo 'Took path A.'"
-  b:
-    action: core.local cmd="echo 'Took path B.'"
-  c:
-    action: core.local cmd="echo 'Took path C.'"
+ints:
+  canonical: 685230
+  decimal: +685_230
+  octal: 02472256
+  hexadecimal: 0x_0A_74_AE
+  binary: 0b1010_0111_0100_1010_1110
+
+nulls:
+  empty:
+  canonical: ~
+  english: null
+  sparse:
+    - ~
+    - 2nd entry
+    -
+    - 4th entry
+    - Null
+
+strings:
+  simpleString: hello world
+  simpleStringComma: 'hello, world'
+  stackTrace: |-
+    Error: foo
+        at repl:1:5
+        at REPLServer.defaultEval (repl.js:116:27)
+        at bound (domain.js:254:14)
+
+  trailingSpace: 'hello space    '
+  trailingTab: "hello tab  \t"
+  trailingCR: |
+    hello newline
+  simpleQuotes: |-
+    won't you be my neighbor
+  unprintable: "number 1 is \x01 and the biggest byte is \uFFFF ok"
+  multiline: |
+    hello
+    world
+  multilineChomp: |-
+    hello
+    world
+  multilineTrailingCR: |+
+    hello
+    world
+
+timestamps:
+  canonical:        2001-12-15T02:59:43.1Z
+  valid iso8601:    2001-12-14t21:59:43.10-05:00
+  space separated:  2001-12-14 21:59:43.10 -5
+  no time zone (Z): 2001-12-15 2:59:43.10
+  date (00:00:00Z): 2002-12-14
+  not a date:       2002-1-1
