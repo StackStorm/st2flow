@@ -2,25 +2,17 @@
 
 export type JSONable = string | number | { [string]: JSONable } | Array<JSONable>;
 
-export type LineMeta = {
-	prefix: string,
+export type NodeMeta = {
+  indent: string,
 };
-
-export type LineData = Object;
-
-export type Line = {
-	meta: LineMeta,
-	data: LineData,
-};
-
 
 export interface Node {
-	prefix: string;
-	children: NodeList;
+  meta: NodeMeta;
+  children: NodeList;
 
-	constructor(meta: LineMeta, data: LineData): void;
+  constructor(meta: NodeMeta, data: any): void;
 
-	toJSON(): JSONable;
+  toJSON(): JSONable;
   toYAML(): string;
 }
 
