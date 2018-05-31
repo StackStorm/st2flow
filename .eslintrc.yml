@@ -54,7 +54,6 @@ rules:
   no-loop-func: error
   no-multi-str: error
   no-new: error
-  no-plusplus: error
   no-proto: error
   no-script-url: error
   no-sequences: error
