@@ -1,20 +1,29 @@
 // @flow
 
-import type { Node } from './interfaces';
-import parse from './parse';
+import type { Token } from './types';
+import Reader from './reader';
+import Writer from './writer';
 
-export default class YamlAST {
-  tree: Node
+export function read(yaml: string): Array<Token> {
+  const reader = new Reader(yaml);
+  const tokens = [];
 
-  constructor(yaml: string) {
-    this.tree = parse(yaml);
+  let token;
+  do {
+    token = reader.next();
+    tokens.push(token);
+  }
+  while (token.type !== 'eof');
+
+  return tokens;
+}
+
+export function write(tokens: Array<Token>): string {
+  const writer = new Writer();
+
+  for (const token of tokens) {
+    writer.write(token);
   }
 
-  toJSON(): Object {
-    return {};
-  }
-
-  toYAML(): string {
-    return '';
-  }
+  return writer.toString();
 }
