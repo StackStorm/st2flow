@@ -6,10 +6,10 @@ import { stringifyValue } from './values';
 export default class Writer {
   strings: Array<string> = [];
 
-  write({ type, value, valueMetadata, prefix }: Token) {
+  write({ type, value, valueMetadata, prefix, suffix }: Token) {
     const string = type === 'value' ? stringifyValue(value, valueMetadata) : value;
 
-    this.strings.push(prefix, string);
+    this.strings.push(prefix, string, suffix);
 
     return string;
   }

@@ -5,7 +5,11 @@ export type TokenType = 'key' | 'value' | 'token-separator' | 'token-sequence' |
 export type Token = {
   start: number,
   end: number,
+  level: number,
   type: TokenType,
   value?: Value,
   prefix: string,
+  suffix: string,
 };
+
+export type TokenList = Array<Token>;

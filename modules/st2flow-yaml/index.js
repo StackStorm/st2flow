@@ -1,10 +1,12 @@
 // @flow
 
-import type { Token } from './types';
+import type { TokenList } from './types';
 import Reader from './reader';
 import Writer from './writer';
 
-export function read(yaml: string): Array<Token> {
+import NestedSet from './nested-set';
+
+export function read(yaml: string): TokenList {
   const reader = new Reader(yaml);
   const tokens = [];
 
@@ -18,7 +20,11 @@ export function read(yaml: string): Array<Token> {
   return tokens;
 }
 
-export function write(tokens: Array<Token>): string {
+export function readSet(yaml: string): NestedSet {
+  return new NestedSet(read(yaml));
+}
+
+export function write(tokens: TokenList): string {
   const writer = new Writer();
 
   for (const token of tokens) {
