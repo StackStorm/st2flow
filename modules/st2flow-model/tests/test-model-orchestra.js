@@ -10,6 +10,16 @@ describe('st2flow-model: Orchestra Model', () => {
 
     const model = new Model(raw);
 
-    expect(model.toYAML()).to.equal(raw);
+    const version = model.get('version');
+    expect(version).to.have.property('type', 'value');
+    expect(version).to.have.property('value', 1);
+
+    const description = model.get('description');
+    expect(description).to.have.property('type', 'value');
+    expect(description).to.have.property('value', 'A sample workflow that demonstrates how to use conditions to determine which path in the workflow to take.');
+
+    console.log(model.get('input'));
+
+    // expect(model.toYAML()).to.equal(raw);
   });
 });

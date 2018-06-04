@@ -1,3 +1,5 @@
+// @flow
+
 export type TransitionType = 'Success' | 'Error' | 'Complete'
 
 export interface CanvasPoint {
