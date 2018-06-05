@@ -27,4 +27,17 @@ export default class NestedSet {
 
     return new NestedSet(this.raw.slice(start, end), this.raw[start].level);
   }
+
+  get keys(): Array<string> {
+    return this.raw
+      .filter(node => node.level === this.level)
+      .map(({ type, value }) => {
+        if (type !== 'key') {
+          throw new Error('invalid structure');
+        }
+
+        return value;
+      })
+    ;
+  }
 }

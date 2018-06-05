@@ -3,8 +3,8 @@
 export type TransitionType = 'Success' | 'Error' | 'Complete'
 
 export interface CanvasPoint {
-    x: Number;
-    y: Number
+    x: number;
+    y: number
 }
 
 export interface TaskInterface {
@@ -32,8 +32,8 @@ export interface TransitionRefInterface {
 }
 
 export interface ModelInterface {
-    tasks: TaskInterface[];
-    transitions: TransitionInterface[];
+    +tasks: Array<TaskInterface>;
+    +transitions: Array<TransitionInterface>;
 
     constructor(yaml: string): void;
     toYAML(): string;
