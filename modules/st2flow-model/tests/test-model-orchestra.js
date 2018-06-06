@@ -15,13 +15,8 @@ describe('st2flow-model: Orchestra Model', () => {
     });
 
     it('reads metadata', () => {
-      const version = model.get('version');
-      expect(version).to.have.property('type', 'value');
-      expect(version).to.have.property('value', 1);
-
-      const description = model.get('description');
-      expect(description).to.have.property('type', 'value');
-      expect(description).to.have.property('value', 'A sample workflow that demonstrates how to use conditions to determine which path in the workflow to take.');
+      expect(model).to.have.property('version', 1);
+      expect(model).to.have.property('description', 'A sample workflow that demonstrates how to use conditions to determine which path in the workflow to take.');
     });
 
     it('reads tasks', () => {
@@ -33,6 +28,18 @@ describe('st2flow-model: Orchestra Model', () => {
         expect(task).to.have.property('action');
         expect(task).to.have.nested.property('coord.x');
         expect(task).to.have.nested.property('coord.y');
+      }
+    });
+
+    it('reads transitions', () => {
+      const transitions = model.transitions;
+      expect(transitions).to.have.property('length', 3);
+
+      for (const task of transitions) {
+        expect(task).to.have.nested.property('from.name');
+        expect(task).to.have.nested.property('to.name');
+        expect(task).to.have.property('type');
+        expect(task).to.have.property('condition');
       }
     });
 

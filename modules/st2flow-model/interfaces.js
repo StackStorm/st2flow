@@ -32,6 +32,8 @@ export interface TransitionRefInterface {
 }
 
 export interface ModelInterface {
+    +version: number;
+    +description: string;
     +tasks: Array<TaskInterface>;
     +transitions: Array<TransitionInterface>;
 

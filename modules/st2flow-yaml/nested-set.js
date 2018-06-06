@@ -11,9 +11,11 @@ export default class NestedSet {
     this.raw = raw;
   }
 
-  get(key: string): NestedSet | Token {
+  get(key: string | number): NestedSet | Token {
     const top = this.raw.filter(node => node.level === this.level);
-    const index = top.findIndex(node => node.type === 'key' && node.value === key);
+    const index = typeof key === 'number' ? key
+      : top.findIndex((node, index) => node.type === 'key' && node.value === key)
+    ;
 
     const end = index === top.length - 1 ? this.raw.length : this.raw.findIndex(node => node === top[index + 1]);
     let start = this.raw.findIndex(node => node === top[index]) + 1;
@@ -28,15 +30,19 @@ export default class NestedSet {
     return new NestedSet(this.raw.slice(start, end), this.raw[start].level);
   }
 
-  get keys(): Array<string> {
+  get keys(): Array<string | number> {
     return this.raw
       .filter(node => node.level === this.level)
-      .map(({ type, value }) => {
-        if (type !== 'key') {
-          throw new Error('invalid structure');
+      .map(({ type, value }, index) => {
+        if (type === 'key') {
+          return value;
         }
 
-        return value;
+        if (type === 'token-sequence') {
+          return index;
+        }
+
+        throw new Error('invalid structure');
       })
     ;
   }
