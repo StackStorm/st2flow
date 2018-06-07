@@ -13,7 +13,9 @@ tasks:
     on-complete:
       - if: <% state() = "succeeded" and result().stdout = 'a' %>
         publish: path=<% result().stdout %>
-        next: a
+        next:
+          - a
+          - b
       - if: <% state() = "succeeded" and result().stdout = 'b' %>
         publish: path=<% result().stdout %>
         next: b

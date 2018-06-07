@@ -48,12 +48,10 @@ export default class OrchestraModel implements ModelInterface {
   get tasks(): Array<TaskInterface> {
     const tasks = this.get('tasks');
 
-    return tasks.keys.map((name: string | number) => {
+    return tasks.map((task, name: string | number) => {
       if (typeof name !== 'string') {
         throw new Error('invalid orchestra structure');
       }
-
-      const task = tasks.get(name);
 
       const action: Token = task.get('action');
       if (!action || action.type !== 'value') {
@@ -72,23 +70,38 @@ export default class OrchestraModel implements ModelInterface {
     const tasks = this.get('tasks');
 
     // $FlowFixMe
-    return [].concat(...tasks.keys.map((from: string | number) => {
-      const task = tasks.get(from);
+    return [].concat(...tasks.map((task, from: string | number) => {
+      const onComplete = task.get('on-complete');
+      if (onComplete) {
+        return [].concat(...onComplete.map((transition, index: string | number) => {
+          const condition: Token = transition.get('if');
 
-      const to: Token = task.get('next');
-      if (to) {
-        return {
-          from: { name: from },
-          to: { name : to.value },
-        };
+          const next = transition.get('next');
+
+          if (next.type === 'value') {
+            return {
+              from: { name: from },
+              to: { name : next.value },
+              type: 'Success',
+              condition: condition && condition.value,
+            };
+          }
+
+          return [].concat(...next.map((to, index: string | number) => {
+            return {
+              from: { name: from },
+              to: { name : to.value },
+              type: 'Success',
+              condition: condition && condition.value,
+            };
+          }));
+        }));
       }
 
       return [].concat(...task.keys.filter(key => key !== 'action').map((type: string | number) => {
         const trigger = task.get(type);
 
-        return [].concat(...trigger.keys.map((index: string | number) => {
-          const action = trigger.get(index);
-
+        return [].concat(...trigger.map((action, index: string | number) => {
           const condition: Token = action.get('if');
           const to: Token = action.get('next');
 

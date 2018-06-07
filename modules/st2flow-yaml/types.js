@@ -10,6 +10,7 @@ export type Token = {
   value?: Value,
   prefix: string,
   suffix: string,
+  newline: bool,
 };
 
 export type TokenList = Array<Token>;

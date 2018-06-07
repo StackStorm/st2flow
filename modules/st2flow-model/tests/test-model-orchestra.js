@@ -33,7 +33,7 @@ describe('st2flow-model: Orchestra Model', () => {
 
     it('reads transitions', () => {
       const transitions = model.transitions;
-      expect(transitions).to.have.property('length', 3);
+      expect(transitions).to.have.property('length', 4);
 
       for (const task of transitions) {
         expect(task).to.have.nested.property('from.name');

@@ -46,4 +46,10 @@ export default class NestedSet {
       })
     ;
   }
+
+  map(fn: Function): Array<any> {
+    return this.keys.map((key: string | number, index: number, keys: Array<string | number>) =>
+      fn(this.get(key), key, keys)
+    );
+  }
 }

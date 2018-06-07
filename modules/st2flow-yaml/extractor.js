@@ -3,7 +3,7 @@
 import type { Token, TokenList } from './types';
 
 const whitespace = /^(\s+)/;
-const newline = /^((?:\r\n|\n)+)/;
+const newlineStart = /^((?:\r\n|\n)+)/;
 
 const specialTokens = {
   ':': {
@@ -77,6 +77,7 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
       value: '',
       prefix,
       suffix: '',
+      newline: true,
     };
   }
 
@@ -111,7 +112,7 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
     chars.push(next);
   }
 
-  let suffix = data.slice(index).match(newline) || '';
+  let suffix = data.slice(index).match(newlineStart) || '';
   if (suffix) {
     suffix = suffix[1];
     index += suffix.length;
@@ -121,34 +122,23 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
   const type = (specialTokens[value] ? specialTokens[value].token : null) || 'token';
 
   const last = ancestors[ancestors.length - 1];
+  const newline = (!last || last.suffix) ? true : false;
 
   let level = 0;
   if (last && last.suffix) {
-    const previousIndex = findLastIndex(ancestors.slice(0, -1), ancestor => ancestor.suffix) + 1;
+    const previousIndex = findLastIndex(ancestors.slice(0, -1), ancestor => ancestor.newline);
     const previous = ancestors[previousIndex];
 
     if (prefix === previous.prefix) {
       level = previousIndex - ancestors.length;
     }
     else if (previous.prefix.startsWith(prefix)) {
-      const siblingIndex = findLastIndex(ancestors.slice(0, -1), (ancestor, index, ancestors) => {
-        if (index > 0 && !ancestors[index - 1].suffix) {
-          return false;
-        }
-
-        return ancestor.prefix === prefix;
-      });
+      const siblingIndex = findLastIndex(ancestors.slice(0, -1), ancestor => ancestor.newline && ancestor.prefix === prefix);
 
       level = siblingIndex - ancestors.length;
     }
     else if (prefix.startsWith(previous.prefix)) {
-      const parentIndex = findLastIndex(ancestors.slice(0), (ancestor, index, ancestors) => {
-        if (index > 0 && !ancestors[index - 1].suffix) {
-          return false;
-        }
-
-        return prefix.startsWith(ancestor.prefix);
-      });
+      const parentIndex = findLastIndex(ancestors.slice(0), ancestor => ancestor.newline && prefix.startsWith(ancestor.prefix));
 
       for (let i = parentIndex; i < ancestors.length; i++) {
         if (ancestors[i].type.startsWith('token-')) {
@@ -176,6 +166,7 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
     value,
     prefix,
     suffix,
+    newline,
   };
 }
 

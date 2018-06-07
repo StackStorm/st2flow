@@ -15,4 +15,6 @@ strings:
 
 lists:
   - foo: bar
-    bar: foo
+    bar:
+      - foo
+      - bar
