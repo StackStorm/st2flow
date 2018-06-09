@@ -22,8 +22,8 @@ export default class OrchestraModel implements ModelInterface {
     return writeYaml(this.tokens.raw);
   }
 
-  get(key: string) {
-    return this.tokens.get(key);
+  get(...keys: Array<string | number>) {
+    return this.tokens.get(...keys);
   }
 
 
@@ -122,7 +122,19 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   updateTask(ref: TaskRefInterface, opts: TaskInterface) {
+    const task = this.get('tasks', ref.name);
+    if (!task) {
+      throw new Error('task not found for ref');
+    }
 
+    if (typeof opts.name !== 'undefined') {
+      this.tokens.set(task, opts.name, 'key');
+    }
+
+    if (typeof opts.action !== 'undefined') {
+      const action = task.get('action');
+      this.tokens.set(action, opts.action);
+    }
   }
 
   deleteTask(ref: TaskRefInterface) {
@@ -135,10 +147,68 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   updateTransition(ref: TransitionRefInterface, opts: TransitionInterface) {
+    if (typeof opts.condition !== 'undefined') {
+      const condition: Token = findTransitionToken(this.tokens, ref, 'condition');
+      if (!condition) {
+        throw new Error('transition condition not found for ref');
+      }
 
+      this.tokens.set(condition, opts.condition);
+    }
   }
 
   deleteTransition(ref: TransitionRefInterface) {
 
   }
+}
+
+function findTransitionToken(tokens: NestedSet, ref: TransitionRefInterface, key: string): Token | void {
+  const task = tokens.get('tasks', ref.from.name);
+
+  if (![ 'condition' ].includes(key)) {
+    throw new Error(`invalid key: ${key}`);
+  }
+
+  const onComplete = task.get('on-complete');
+  if (onComplete) {
+    for (const transitionKey of onComplete.keys) {
+      const transition = onComplete.get(transitionKey);
+      const condition: Token = transition.get('if');
+
+      const next = transition.get('next');
+
+      if (next.type === 'value' && next.value === ref.to.name) {
+        if (key === 'condition') {
+          return condition;
+        }
+      }
+
+      for (const toKey of next.keys) {
+        const to = next.get(toKey);
+        if (to.type === 'value' && to.value === ref.to.name) {
+          if (key === 'condition') {
+            return condition;
+          }
+        }
+      }
+    }
+  }
+
+  for (const type of task.keys) {
+    const trigger = task.get(type);
+
+    for (const actionKey of trigger.keys) {
+      const action = trigger.get(actionKey);
+      const condition: Token = action.get('if');
+      const to: Token = action.get('next');
+
+      if (to.type === 'value' && to.value === ref.to.name) {
+        if (key === 'condition') {
+          return condition;
+        }
+      }
+    }
+  }
+
+  return undefined;
 }

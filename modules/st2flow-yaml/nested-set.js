@@ -1,6 +1,7 @@
 // @flow
 
-import type { Token, TokenList } from './types';
+import type { Token, TokenList, Value } from './types';
+import { stringifyValue } from './values';
 
 export default class NestedSet {
   level: number;
@@ -11,7 +12,9 @@ export default class NestedSet {
     this.raw = raw;
   }
 
-  get(key: string | number): NestedSet | Token {
+  get(...keys: Array<string | number>): NestedSet | Token {
+    const key = keys.shift();
+
     const top = this.raw.filter(node => node.level === this.level);
     const index = typeof key === 'number' ? key
       : top.findIndex((node, index) => node.type === 'key' && node.value === key)
@@ -27,7 +30,53 @@ export default class NestedSet {
       return this.raw[start];
     }
 
-    return new NestedSet(this.raw.slice(start, end), this.raw[start].level);
+    const result = new NestedSet(this.raw.slice(start, end), this.raw[start].level);
+
+    if (keys.length) {
+      return result.get(...keys);
+    }
+
+    return result;
+  }
+
+  set(target: Token, value: Value, key?: string) {
+    if (target instanceof NestedSet) {
+      const index = this.raw.indexOf(target.raw[0]);
+      if (index === -1) {
+        throw new Error('target not found');
+      }
+
+      if (key === 'key') {
+        if (this.raw[index - 1].type !== 'token-separator') {
+          throw new Error('invalid structure');
+        }
+
+        if (this.raw[index - 2].type !== 'key') {
+          throw new Error('invalid structure');
+        }
+
+        target = this.raw[index - 2];
+      }
+    }
+    else {
+      if (typeof key !== 'undefined') {
+        throw new Error('cannot provide `key` without NestedSet target');
+      }
+    }
+
+    const index = this.raw.indexOf(target);
+    if (index === -1) {
+      throw new Error('target not found');
+    }
+
+    const delta = stringifyValue(value, target.valueMetadata).length - stringifyValue(target.value, target.valueMetadata).length;
+    this.raw[index].value = value;
+    this.raw[index].end += delta;
+
+    for (let i = index; i < this.raw.length; i++) {
+      this.raw[i].start += delta;
+      this.raw[i].end += delta;
+    }
   }
 
   get keys(): Array<string | number> {

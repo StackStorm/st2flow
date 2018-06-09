@@ -98,6 +98,10 @@ export function parseValue(token: string): { value: Value, metadata: string } {
 }
 
 export function stringifyValue(value: Value, metadata: string): string {
+  if (typeof metadata === 'undefined') {
+    return value;
+  }
+
   if (value === null) {
     if (metadata === '~' || metadata === '') {
       return metadata;
