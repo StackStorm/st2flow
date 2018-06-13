@@ -138,7 +138,12 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   deleteTask(ref: TaskRefInterface) {
+    const task = this.get('tasks', ref.name);
+    if (!task) {
+      throw new Error('task not found for ref');
+    }
 
+    this.tokens.delete(task);
   }
 
 
@@ -158,14 +163,19 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   deleteTransition(ref: TransitionRefInterface) {
+    const transition: Token = findTransitionToken(this.tokens, ref, 'to');
+    if (!transition) {
+      throw new Error('transition not found for ref');
+    }
 
+    this.tokens.delete(transition);
   }
 }
 
 function findTransitionToken(tokens: NestedSet, ref: TransitionRefInterface, key: string): Token | void {
   const task = tokens.get('tasks', ref.from.name);
 
-  if (![ 'condition' ].includes(key)) {
+  if (![ 'to', 'condition' ].includes(key)) {
     throw new Error(`invalid key: ${key}`);
   }
 
@@ -178,6 +188,10 @@ function findTransitionToken(tokens: NestedSet, ref: TransitionRefInterface, key
       const next = transition.get('next');
 
       if (next.type === 'value' && next.value === ref.to.name) {
+        if (key === 'to') {
+          return next;
+        }
+
         if (key === 'condition') {
           return condition;
         }
@@ -186,6 +200,10 @@ function findTransitionToken(tokens: NestedSet, ref: TransitionRefInterface, key
       for (const toKey of next.keys) {
         const to = next.get(toKey);
         if (to.type === 'value' && to.value === ref.to.name) {
+          if (key === 'to') {
+            return to;
+          }
+
           if (key === 'condition') {
             return condition;
           }
@@ -203,6 +221,10 @@ function findTransitionToken(tokens: NestedSet, ref: TransitionRefInterface, key
       const to: Token = action.get('next');
 
       if (to.type === 'value' && to.value === ref.to.name) {
+        if (key === 'to') {
+          return to;
+        }
+
         if (key === 'condition') {
           return condition;
         }

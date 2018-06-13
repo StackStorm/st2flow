@@ -74,6 +74,26 @@ describe('st2flow-model: Orchestra Model', () => {
       expect(task).to.have.nested.property('coord.y', 0);
     });
 
+    it.skip('updates basic.yaml with task/transition updates', () => {
+      expect(model.toYAML()).to.equal(raw);
+    });
+
+    it('deletes transitions', () => {
+      expect(model.transitions).to.have.property('length', 4);
+      model.deleteTransition(model.transitions[0]);
+      expect(model.transitions).to.have.property('length', 3);
+    });
+
+    it('deletes tasks', () => {
+      expect(model.tasks).to.have.property('length', 4);
+      model.deleteTask(model.tasks[0]);
+      expect(model.tasks).to.have.property('length', 3);
+    });
+
+    it.skip('updates basic.yaml with task/transition deletes', () => {
+      expect(model.toYAML()).to.equal(raw);
+    });
+
   });
 
 });

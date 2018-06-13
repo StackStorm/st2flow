@@ -73,9 +73,40 @@ export default class NestedSet {
     this.raw[index].value = value;
     this.raw[index].end += delta;
 
-    for (let i = index; i < this.raw.length; i++) {
+    for (let i = index + 1; i < this.raw.length; i++) {
       this.raw[i].start += delta;
       this.raw[i].end += delta;
+    }
+  }
+
+  delete(target: Token) {
+    if (target instanceof NestedSet) {
+      target = target.raw[0];
+    }
+
+    let index = this.raw.indexOf(target);
+    if (index === -1) {
+      throw new Error('target not found');
+    }
+
+    if (this.raw[index - 1].type === 'token-separator') {
+      index = index - 2;
+      target = this.raw[index];
+    }
+
+    if (this.raw[index - 1].type === 'token-sequence') {
+      index = index - 1;
+      target = this.raw[index];
+    }
+
+    const removed = this.raw.slice(index + 1).findIndex(t => t.level === target.level) + 1;
+    this.raw.splice(index, removed);
+
+    const delta = this.raw[index].start - (index === 0 ? 0 : this.raw[index - 1].end);
+
+    for (let i = index; i < this.raw.length; i++) {
+      this.raw[i].start -= delta;
+      this.raw[i].end -= delta;
     }
   }
 
