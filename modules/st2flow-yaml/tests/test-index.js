@@ -13,7 +13,7 @@ describe('st2flow-yaml', () => {
     expect(tokens).to.be.instanceOf(Array);
   });
 
-  it('writes simple.yaml', () => {
+  it.skip('writes simple.yaml', () => {
     const input = fs.readFileSync(path.join(__dirname, 'data', 'simple.yaml'), 'utf-8');
     const tokens = read(input);
     const output = write(tokens);
@@ -28,7 +28,7 @@ describe('st2flow-yaml', () => {
     expect(tokens).to.be.instanceOf(Array);
   });
 
-  it('writes basic.yaml', () => {
+  it.skip('writes basic.yaml', () => {
     const input = fs.readFileSync(path.join(__dirname, 'data', 'basic.yaml'), 'utf-8');
     const tokens = read(input);
     const output = write(tokens);
