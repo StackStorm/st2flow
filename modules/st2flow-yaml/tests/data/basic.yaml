@@ -35,7 +35,7 @@ nulls:
 strings:
   simpleString: hello world
   simpleStringComma: 'hello, world'
-  stackTrace: |-
+  stackTrace: |
     Error: foo
         at repl:1:5
         at REPLServer.defaultEval (repl.js:116:27)
@@ -45,16 +45,16 @@ strings:
   trailingTab: "hello tab  \t"
   trailingCR: |
     hello newline
-  simpleQuotes: |-
+  simpleQuotes: |
     won't you be my neighbor
   unprintable: "number 1 is \x01 and the biggest byte is \uFFFF ok"
   multiline: |
     hello
     world
-  multilineChomp: |-
+  multilineChomp: |
     hello
     world
-  multilineTrailingCR: |+
+  multilineTrailingCR: |
     hello
     world
 

@@ -29,7 +29,7 @@ const specialTokens = {
     process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
       const { length, data: rest } = getMultiline(index, data);
 
-      chars.push(rest.join(' '));
+      chars.push([ '>' ].concat(rest).join('\n'));
       return length;
     },
   },
@@ -38,7 +38,7 @@ const specialTokens = {
     process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
       const { length, data: rest } = getMultiline(index, data);
 
-      chars.push(rest.join('\n'));
+      chars.push([ '|' ].concat(rest).join('\n'));
       return length;
     },
   },
@@ -213,9 +213,7 @@ function getMultiline(index: number, data: string): { length: number, data: Arra
 
   return {
     length: 1 + keep.reduce((s, v) => s + v.length, keep.length - 1),
-    data: keep.map((line) => {
-      return line.slice(prefix.length);
-    }),
+    data: keep,
   };
 }
 

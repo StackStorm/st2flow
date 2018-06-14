@@ -44,7 +44,7 @@ describe('st2flow-model: Orchestra Model', () => {
       }
     });
 
-    it.skip('writes basic.yaml', () => {
+    it('writes basic.yaml', () => {
       expect(model.toYAML()).to.equal(raw);
     });
 
@@ -74,8 +74,12 @@ describe('st2flow-model: Orchestra Model', () => {
       expect(task).to.have.nested.property('coord.y', 0);
     });
 
-    it.skip('updates basic.yaml with task/transition updates', () => {
-      expect(model.toYAML()).to.equal(raw);
+    it('updates basic.yaml with task/transition updates', () => {
+      expect(model.toYAML()).to.equal(raw
+        .replace('<% state() = "succeeded" and result().stdout = \'a\' %>', 'bar')
+        .replace('core.local cmd="printf <% $.which %>"', 'bar')
+        .replace('t1:', 'foo:')
+      );
     });
 
     it('deletes transitions', () => {
@@ -90,8 +94,11 @@ describe('st2flow-model: Orchestra Model', () => {
       expect(model.tasks).to.have.property('length', 3);
     });
 
-    it.skip('updates basic.yaml with task/transition deletes', () => {
-      expect(model.toYAML()).to.equal(raw);
+    it('updates basic.yaml with task/transition deletes', () => {
+      const lines = raw.split('\n');
+      lines.splice(10, 14);
+
+      expect(model.toYAML()).to.equal(lines.join('\n'));
     });
 
   });
