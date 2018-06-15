@@ -1,11 +1,14 @@
 {
   "plugins": [
+    "transform-async-to-generator",
+    "transform-runtime",
     "transform-class-properties",
     "transform-object-rest-spread",
     "transform-decorators-legacy",
-    "babel-plugin-transform-flow-strip-types"
+    "transform-flow-strip-types"
   ],
   "presets": [
+    "react",
     "env"
   ]
 }
