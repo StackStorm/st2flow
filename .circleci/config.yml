@@ -1,0 +1,82 @@
+# Setup in CircleCI account the following ENV variables:
+# PACKAGECLOUD_TOKEN
+version: 2
+jobs:
+  build:
+    machine: true
+    environment:
+      DEB: trusty xenial
+      RPM: el6 el7
+      IS_ENTERPRISE: 1
+      DEPLOY_PACKAGES: 1
+    steps:
+      - checkout
+      - run:
+          name: Download helper scripts (for packagecloud)
+          command: |
+            mkdir ~/scripts
+            wget -qO - https://github.com/StackStorm/st2-packages/raw/master/.circle/packagecloud.sh > ~/scripts/packagecloud.sh
+            chmod 755 ~/scripts/packagecloud.sh
+            echo "export PATH=${HOME}/scripts:${PATH}" >> $BASH_ENV
+      - run:
+          name: Switch to supported version of Node
+          command: |
+            set +e
+            export NVM_DIR="/opt/circleci/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            nvm install 4
+            nvm alias default 4
+
+            # Each step uses the same `$BASH_ENV`, so need to modify it
+            echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
+            echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
+      - run:
+          name: Export package version
+          command: |
+            PKG_VERSION=$(node -e "console.log(require('./package.json').st2_version);")
+            PKG_RELEASE=$(packagecloud.sh next-revision trusty ${PKG_VERSION} st2flow)
+            echo "export PKG_VERSION=${PKG_VERSION}" >> $BASH_ENV
+            echo "export PKG_RELEASE=${PKG_RELEASE}" >> $BASH_ENV
+      - run:
+          name: Install system dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install rpm jq devscripts debhelper
+            gem install package_cloud -v 0.2.45
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Run unit tests
+          command: npm run test
+      - run:
+          name: Create directories for Artifacts
+          command: mkdir ~/artifacts && cd ~/artifacts && mkdir ${DEB} ${RPM} logs
+      - run:
+          name: Make deb packages
+          command: |
+            make deb
+            echo $DEB | tr ' ' '\n' | xargs -I{} cp -vr ../st2flow_*.{deb,changes} ~/artifacts/{}
+      - run:
+          name: Make RPM packages
+          command: |
+            make rpm
+            echo $RPM | tr ' ' '\n' | xargs -I{} cp -vr ../st2flow-*.rpm ~/artifacts/{}
+      - store_artifacts:
+          path: ~/artifacts
+          destination: packages
+      - deploy:
+          name: Maybe Deploy
+          command: |
+            if [[ "${CIRCLE_BRANCH}" == "master" || "${CIRCLE_BRANCH}" =~ v[0-9]+(\.[0-9]+)* || "${CIRCLE_BRANCH}" == "feature/circleci" ]]; then
+              for distro in ${RPM} ${DEB}; do
+                packagecloud.sh deploy $distro ~/artifacts/$distro
+              done
+            fi
+
+experimental:
+  notify:
+    branches:
+      only:
+        - master
+        - /v[0-9]+(\.[0-9]+)*/
