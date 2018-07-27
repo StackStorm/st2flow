@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-WEBUI_CONFIGJS="/opt/stackstorm/static/webui/config.js"
+WEBUI_CONFIGJS="/opt/stackstorm/webui/config.js"
 FLOW_CONFIG=$(cat <<EHD
 // Package injected: flow-config
 angular.module('main').run(

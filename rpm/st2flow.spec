@@ -2,7 +2,7 @@
 %define version %(echo "${PKG_VERSION:-%{pkg_version}}")
 %define release %(echo "${PKG_RELEASE:-1}")
 #define epoch %(_epoch=`echo %{version} | grep -q dev || echo 1`; echo "${_epoch:-0}")
-%define webui_configjs /opt/stackstorm/static/webui/config.js
+%define webui_configjs /opt/stackstorm/webui/config.js
 
 Name:           st2flow
 Version:        %{version}
@@ -18,7 +18,7 @@ License:        StackStorm Enterprise EULA
 URL:            https://github.com/stackstorm/st2flow
 Source0:        st2flow
 
-Prefix:         /opt/stackstorm/static/webui/flow
+Prefix:         /opt/stackstorm/webui/flow
 
 %define _builddir %(pwd)
 %define _rpmdir %(pwd)/..
