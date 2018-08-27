@@ -1,6 +1,6 @@
 export type Value = string | number | boolean | null;
 
-export type TokenType = 'key' | 'value' | 'token-separator' | 'token-sequence' | 'eof';
+export type TokenType = 'key' | 'value' | 'token-separator' | 'token-sequence' | 'empty-line' | 'eof';
 
 export type Token = {
   start: number,

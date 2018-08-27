@@ -9,7 +9,7 @@ describe('st2flow-yaml', () => {
   it('reads simple.yaml', () => {
     const input = fs.readFileSync(path.join(__dirname, 'data', 'simple.yaml'), 'utf-8');
     const tokens = read(input);
-
+    console.log(tokens);
     expect(tokens).to.be.instanceOf(Array);
   });
 

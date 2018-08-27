@@ -62,6 +62,19 @@ function getPrefix(data: string, index: number): string {
   return prefix && prefix[1] || '';
 }
 
+export function endOfFileToken (data: string = '\n') {
+  return {
+    start: 0,
+    end: data.length,
+    level: 0,
+    type: 'eof',
+    value: '',
+    prefix: data,
+    suffix: '',
+    newline: true,
+  };
+}
+
 export default function extractToken(ancestors: TokenList, data: string, start: number): Token {
   let index = start;
 
@@ -72,8 +85,8 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
     return {
       start,
       end: index,
-      level: -ancestors.length,
-      type: 'eof',
+      level: ancestors.length,
+      type: 'empty-line',
       value: '',
       prefix,
       suffix: '',
@@ -124,7 +137,7 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
   const last = ancestors[ancestors.length - 1];
   const newline = (!last || last.suffix) ? true : false;
 
-  let level = 0;
+  let level = 1;
   if (last && last.suffix) {
     const previousIndex = findLastIndex(ancestors.slice(0, -1), ancestor => ancestor.newline);
     const previous = ancestors[previousIndex];
@@ -154,9 +167,6 @@ export default function extractToken(ancestors: TokenList, data: string, start: 
       }
     }
   }
-  else {
-    level = 1;
-  }
 
   return {
     start,
@@ -179,6 +189,7 @@ function getNextAfterWhitespace(index: number, data: string): string | void {
   return data[index + match[0].length];
 }
 
+// TODO: need to update this method to account for empty-line tokens
 function getMultiline(index: number, data: string): { length: number, data: Array<string> } {
   const lines = data.slice(index + 1).split('\n');
   const keep = [];
@@ -219,7 +230,7 @@ function getMultiline(index: number, data: string): { length: number, data: Arra
 
 
 function findLastIndex(array: Array<any>, test: Function): number {
-  for (let i = array.length - 1; i >=0; i--) {
+  for (let i = array.length - 1; i >= 0; i--) {
     if (test(array[i], i, array)) {
       return i;
     }

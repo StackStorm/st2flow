@@ -9,19 +9,21 @@ input:
 
 tasks:
   t1:
-    action: core.local cmd="printf <% $.which %>"
-    on-complete:
-      - if: <% state() = "succeeded" and result().stdout = 'a' %>
+    action: core.local
+    input:
+      cmd: printf <% $.which %>
+    next:
+      - when: <% succeeded() and result().stdout = 'a' %>
         publish: path=<% result().stdout %>
-        next:
+        do:
           - a
           - b
-      - if: <% state() = "succeeded" and result().stdout = 'b' %>
+      - when: <% succeeded() and result().stdout = 'b' %>
         publish: path=<% result().stdout %>
-        next: b
-      - if: <% state() = "succeeded" and not result().stdout in list(a, b) %>
+        do: b
+      - when: <% succeeded() and not result().stdout in list(a, b) %>
         publish: path=<% result().stdout %>
-        next: c
+        do: c
   a:
     action: core.local cmd="echo 'Took path A.'"
   b:

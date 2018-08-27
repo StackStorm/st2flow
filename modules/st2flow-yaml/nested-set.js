@@ -1,24 +1,44 @@
 // @flow
 
 import type { Token, TokenList, Value } from './types';
-import { stringifyValue } from './values';
+import { writeValue, writeToken, writeSet } from './writer';
 
-export default class NestedSet {
+class NestedSet {
   level: number;
   raw: TokenList;
 
-  constructor(raw: TokenList, level: number = 1) {
+  // The NestedSet constructor is analogous to the native
+  // Array constructor, except it can take an optional "level"
+  // as the first parameter. All other parameters must be of
+  // type Token.
+  constructor(level: number | Token, ...tokens: TokenList) {
+    if (typeof level !== 'number') {
+      tokens = [].concat(level, tokens);
+      level = 1;
+    }
+    this.raw = tokens;
     this.level = level;
-    this.raw = raw;
   }
 
-  get(...keys: Array<string | number>): NestedSet | Token {
+  // Since NestedSet is not an Array, this method must be used to access
+  // items by index (in leu of nestedset[15]). If this becomes a problem,
+  // we can look into using Proxy.
+  getItemAtIndex(index: number): Token {
+    return this.raw[index];
+  }
+
+  getValueByKey(...keys: Array<string | number>): NestedSet | Token {
     const key = keys.shift();
 
     const top = this.raw.filter(node => node.level === this.level);
     const index = typeof key === 'number' ? key
       : top.findIndex((node, index) => node.type === 'key' && node.value === key)
     ;
+
+    if (index === -1 || index > top.length - 1) {
+      // TODO: return undefined?
+      throw new Error(`cannot find "${key}" at level ${this.level}`);
+    }
 
     const end = index === top.length - 1 ? this.raw.length : this.raw.findIndex(node => node === top[index + 1]);
     let start = this.raw.findIndex(node => node === top[index]) + 1;
@@ -30,10 +50,10 @@ export default class NestedSet {
       return this.raw[start];
     }
 
-    const result = new NestedSet(this.raw.slice(start, end), this.raw[start].level);
+    const result = new NestedSet(this.raw[start].level, ...this.raw.slice(start, end));
 
     if (keys.length) {
-      return result.get(...keys);
+      return result.getValueByKey(...keys);
     }
 
     return result;
@@ -69,11 +89,11 @@ export default class NestedSet {
       throw new Error('target not found');
     }
 
-    const delta = stringifyValue(value, target.valueMetadata).length - stringifyValue(target.value, target.valueMetadata).length;
+    const delta = writeValue(value, target.valueMetadata).length - writeValue(target.value, target.valueMetadata).length;
     this.raw[index].value = value;
     this.raw[index].end += delta;
 
-    for (let i = index + 1; i < this.raw.length; i++) {
+    for (let i = index + 1, l = this.raw.length; i < l; i++) {
       this.raw[i].start += delta;
       this.raw[i].end += delta;
     }
@@ -104,10 +124,14 @@ export default class NestedSet {
 
     const delta = this.raw[index].start - (index === 0 ? 0 : this.raw[index - 1].end);
 
-    for (let i = index; i < this.raw.length; i++) {
+    for (let i = index, l = this.raw.length; i < l; i++) {
       this.raw[i].start -= delta;
       this.raw[i].end -= delta;
     }
+  }
+
+  get length(): number {
+    return this.raw.length;
   }
 
   get keys(): Array<string | number> {
@@ -127,9 +151,32 @@ export default class NestedSet {
     ;
   }
 
-  map(fn: Function): Array<any> {
-    return this.keys.map((key: string | number, index: number, keys: Array<string | number>) =>
-      fn(this.get(key), key, keys)
-    );
+  splice(index: number, deleteCount: number, ...items: TokenList) {
+    const removeLength = deleteCount ? writeSet(this.raw.slice(index, index + deleteCount)).length : 0;
+    const insertLength = items.length ? writeSet(items).length : 0;
+    const delta = insertLength - removeLength;
+
+    Array.prototype.splice.call(this.raw, index, deleteCount, ...items);
+    let nextStart = index > 0 ? this.raw[index - 1].end : this.raw[0].length;
+
+    this.raw.slice(index).forEach(token => {
+      token.start = nextStart;
+      nextStart = token.end = nextStart + writeToken(token).length;
+    });
   }
 }
+
+// These methods return an instance of NestedSet
+['slice', 'filter'].forEach(method => {
+  NestedSet.prototype[method] = function (...args) {
+    const result = Array.prototype[method].apply(this.raw, args);
+    return new NestedSet(result[0].level, ...result);
+  }
+});
+['forEach', 'pop', 'map', 'reduce'].forEach(method => {
+  NestedSet.prototype[method] = function (...args) {
+    return Array.prototype[method].apply(this.raw, args);
+  }
+});
+
+export default NestedSet;

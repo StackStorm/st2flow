@@ -21,14 +21,14 @@ export function read(yaml: string): TokenList {
 }
 
 export function readSet(yaml: string): NestedSet {
-  return new NestedSet(read(yaml));
+  return new NestedSet(...read(yaml));
 }
 
 export function write(tokens: TokenList): string {
   const writer = new Writer();
 
   for (const token of tokens) {
-    writer.write(token);
+    writer.writeToken(token);
   }
 
   return writer.toString();

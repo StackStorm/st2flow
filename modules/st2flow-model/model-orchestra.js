@@ -23,7 +23,7 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   get(...keys: Array<string | number>) {
-    return this.tokens.get(...keys);
+    return this.tokens.getValueByKey(...keys);
   }
 
 
@@ -46,74 +46,167 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   get tasks(): Array<TaskInterface> {
-    const tasks = this.get('tasks');
+    const tokens = this.get('tasks');
+    if (!tokens.length) {
+      return [];
+    }
 
-    return tasks.map((task, name: string | number) => {
-      if (typeof name !== 'string') {
-        throw new Error('invalid orchestra structure');
+    // TODO: get rid of this after objectify is finished.
+    const first = tokens.getItemAtIndex(0);
+    if (first.type !== 'key') {
+      throw new Error('invalid set - must start with a key');
+    }
+
+    return tokens.filter(t =>
+      // filter only task names
+      t.type === 'key' && t.level === first.level
+    ).reduce((tasks, token, i) => {
+      const name = token.value; // task name
+      const task = tokens.getValueByKey(name);
+      const action = task.getValueByKey('action');
+      if (!action) {
+        throw new Error('invalid orchestra structure - task must have action');
       }
-
-      const action: Token = task.get('action');
-      if (!action || action.type !== 'value') {
-        throw new Error('invalid orchestra structure');
-      }
-
-      return {
+      tasks.push({
         name,
         action: action.value,
-        coord: { x: 0, y: 0 },
-      };
-    });
+        coord: { x: 1, y: 1 }
+      });
+      return tasks;
+    }, []);
   }
 
-  get transitions() {
-    const tasks = this.get('tasks');
+  // TODO: this is not finished and will be moved to NestedSet or util
+  arrayify(tokens: NestedSet): Array | Object {
+    let first = tokens.getItemAtIndex(0);
+    if (first.type !== 'token-sequence') {
+      throw new Error('first item must be a sequence separator');
+    }
+    const result = [];
+    tokens.forEach(token => {
+      if (token.type === 'token-sequence') return; // continue
+      if (token.type === 'value') {
 
-    // $FlowFixMe
-    return [].concat(...tasks.map((task, from: string | number) => {
-      const onComplete = task.get('on-complete');
-      if (onComplete) {
-        return [].concat(...onComplete.map((transition, index: string | number) => {
-          const condition: Token = transition.get('if');
-
-          const next = transition.get('next');
-
-          if (next.type === 'value') {
-            return {
-              from: { name: from },
-              to: { name : next.value },
-              type: 'Success',
-              condition: condition && condition.value,
-            };
-          }
-
-          return [].concat(...next.map((to, index: string | number) => {
-            return {
-              from: { name: from },
-              to: { name : to.value },
-              type: 'Success',
-              condition: condition && condition.value,
-            };
-          }));
-        }));
       }
+    })
+  }
 
-      return [].concat(...task.keys.filter(key => key !== 'action').map((type: string | number) => {
-        const trigger = task.get(type);
+  // TODO: this is not finished and will be moved to NestedSet or util
+  objectify(tokens: NestedSet, result = {}): Array | Object {
+    // console.log(tokens);
+    const isArray = Array.isArray(result);
+    let first = tokens.getItemAtIndex(0);
 
-        return [].concat(...trigger.map((action, index: string | number) => {
-          const condition: Token = action.get('if');
-          const to: Token = action.get('next');
+    switch (first.type) {
+    case 'token-sequence':
+      const sliced = tokens.slice(1);
+      console.log('================ SLICE');
+      // console.log(sliced);
+      // console.log('================');
+      return this.objectify(sliced, []);
 
-          return {
-            from: { name: from },
-            to: { name : to.value },
-            type: types[type],
-            condition: condition && condition.value,
-          };
+    case 'value':
+      if (!isArray) {
+        throw new Error('leading values are intended to be part of an array ' + JSON.stringify(first, null, '  '));
+      }
+      result.push(first.value);
+      return result;
+
+    case 'key':
+      break; // keep going
+
+    default:
+      throw new Error('invalid set - expected a key but got ' + JSON.stringify(first, null, '  '));
+    }
+
+    // console.log('KEYS', tokens.keys);
+    return tokens.keys.reduce((obj, key) => {
+      const value: Token | NestedSet = tokens.getValueByKey(key);
+      // TODO: this is where a children property would be useful
+      let $value;
+      if (value.type === 'value'){
+        // console.log(key, ':', value.value);
+        $value = value.value;
+      } else {
+        // console.log('---- long value for:', key, value.getItemAtIndex(0))
+        $value = this.objectify(value);
+      }
+      if (isArray){
+        obj.push($value)
+      } else {
+        obj[key] = value;
+      }
+      return obj;
+    }, result);
+  }
+
+  // Transitions are any task with a "next" property
+  get transitions(): Array<TransitionInterface> {
+    const tasks = this.objectify( this.get('tasks') );
+    // console.log('Tasks', tasks);
+    return tasks.filter(t => t.keys.includes('next')).reduce((flatList, task) => {
+      const next = task.get('next');
+      return flatList.concat(next.map(transition => {
+        const $when: Token = transition.get('when');
+        let $do: Token = [].concat(transition.get('do'));
+
+        return $do.map(to => ({
+          from: { name: from },
+          to: { name : to.value },
+          type: 'Success',
+          condition: $when && $when.value,
         }));
       }));
-    }));
+    }, []);
+
+    // $FlowFixMe
+    // return [].concat(...tasks.map((task, from: string | number) => {
+    //   const next = task.get('next');
+    //   if (next) {
+    //     return [].concat(...next.map((transition, index: string | number) => {
+    //       const $when: Token = transition.get('when');
+    //       const $do: Token = transition.get('do');
+
+    //       // do: taskB
+    //       if ($do.type === 'value') {
+    //         return [{
+    //           from: { name: from },
+    //           to: { name : $do.value },
+    //           type: 'Success',
+    //           condition: $when && $when.value,
+    //         }];
+    //       }
+
+    //       // do:
+    //       //   - taskB
+    //       //   - taskC
+    //       return $do.map((to, index: string | number) => {
+    //         return {
+    //           from: { name: from },
+    //           to: { name : to.value },
+    //           type: 'Success',
+    //           condition: $when && $when.value,
+    //         };
+    //       });
+    //     }));
+    //   }
+
+    //   return [].concat(...task.keys.filter(key => key !== 'action').map((type: string | number) => {
+    //     const trigger = task.get(type);
+
+    //     return [].concat(...trigger.map((action, index: string | number) => {
+    //       const condition: Token = action.get('if');
+    //       const to: Token = action.get('next');
+
+    //       return {
+    //         from: { name: from },
+    //         to: { name : to.value },
+    //         type: types[type],
+    //         condition: condition && condition.value,
+    //       };
+    //     }));
+    //   }));
+    // }));
   }
 
 
