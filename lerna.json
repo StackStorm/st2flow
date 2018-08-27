@@ -1,5 +1,4 @@
 {
-  "lerna": "2.5.1",
   "packages": [
     "../st2web/apps/*",
     "../st2web/modules/*",
@@ -8,5 +7,6 @@
     "modules/*",
     "tasks",
     "."
-  ]
+  ],
+  "version": "0.0.0"
 }

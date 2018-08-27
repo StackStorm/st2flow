@@ -1,4 +1,4 @@
-import './style.less';
+import './style.css';
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import ReactDOM from 'react-dom';
@@ -9,6 +9,10 @@ import {
   Switch,
 } from 'react-router-dom';
 import createHashHistory from 'history/createHashHistory';
+
+import Header from '@stackstorm/st2flow-header';
+import { Panel } from '@stackstorm/module-panel';
+import ActionsPanel from './modules/st2flow-actions/actions.component';
 
 // import api from '@stackstorm/module-api';
 
@@ -26,11 +30,14 @@ class Editor extends Component {
   };
 
   render() {
-    const { match: { path, params: { ref } } } = this.props;
+    const { location, match, match: { path, params: { ref } } } = this.props;
 
     return (
-      <div>
-        {path} {ref}
+      <div class="wrapper"  >
+        <Header />
+        <Panel detailed>
+          <ActionsPanel location={location} match={match} />
+        </Panel>
       </div>
     );
   }
@@ -61,6 +68,7 @@ export class Container extends Component {
               this.auth(bundle);
 
               setTimeout(() => {
+                // TODO: use replace?
                 history.push(ref ? `/action/${ref}` : '/');
               }, 100);
 
