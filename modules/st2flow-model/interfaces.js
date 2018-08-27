@@ -48,3 +48,15 @@ export interface ModelInterface {
     updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;
     deleteTransition(ref: TransitionRefInterface): void;
 }
+
+export interface EditorPoint {
+    row: number;
+    column: number;
+}
+
+export interface DeltaInterface {
+    start: EditorPoint;
+    end: EditorPoint;
+    action: 'insert' | 'remove';
+    lines: Array<string>;
+}

@@ -1,4 +1,5 @@
 [ignore]
+.*/module-deps/test/invalid_pkg/package.json
 
 [include]
 

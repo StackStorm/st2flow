@@ -1,6 +1,6 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
+import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface, DeltaInterface } from './interfaces';
 import type NestedSet from '@stackstorm/st2flow-yaml/nested-set';
 import type { Token } from '@stackstorm/st2flow-yaml/types';
 
@@ -14,7 +14,13 @@ export default class OrchestraModel implements ModelInterface {
   tokens: NestedSet;
 
 
-  constructor(yaml: string) {
+  constructor(yaml: ?string) {
+    if (yaml) {
+      this.parse(yaml);
+    }
+  }
+
+  parse(yaml: string) {
     this.tokens = readYaml(yaml);
   }
 
@@ -209,6 +215,10 @@ export default class OrchestraModel implements ModelInterface {
     // }));
   }
 
+
+  applyDelta(delta: DeltaInterface) {
+
+  }
 
   addTask(opts: TaskInterface) {
 

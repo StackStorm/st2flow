@@ -1,0 +1,10 @@
+.component {
+  grid-area: canvas;
+
+  flex: 1;
+  height: 100%;
+
+  display: none;
+
+  background-color: white;
+}

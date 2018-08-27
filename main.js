@@ -1,4 +1,3 @@
-import './style.css';
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import ReactDOM from 'react-dom';
@@ -10,15 +9,18 @@ import {
 } from 'react-router-dom';
 import createHashHistory from 'history/createHashHistory';
 
-import Header from '@stackstorm/st2flow-header';
-import { Panel } from '@stackstorm/module-panel';
-import ActionsPanel from './modules/st2flow-actions/actions.component';
+import Model from '@stackstorm/st2flow-model/model-orchestra';
 
-// import api from '@stackstorm/module-api';
+import Header from '@stackstorm/st2flow-header';
+import Palette from '@stackstorm/st2flow-palette';
+import Canvas from '@stackstorm/st2flow-canvas';
+import Editor from '@stackstorm/st2flow-editor';
+
+import './style.css';
 
 const history = window.routerHistory = createHashHistory({});
 
-class Editor extends Component {
+class Window extends Component {
   static propTypes = {
     match: PropTypes.shape({
       url: PropTypes.string.isRequired,
@@ -29,15 +31,20 @@ class Editor extends Component {
     }).isRequired,
   };
 
+  constructor(props) {
+    super(props);
+    this.model = new Model();
+  }
+
   render() {
-    const { location, match, match: { path, params: { ref } } } = this.props;
+    const { match: { path, params: { ref } } } = this.props;
 
     return (
-      <div class="wrapper"  >
+      <div className="component" >
         <Header />
-        <Panel detailed>
-          <ActionsPanel location={location} match={match} />
-        </Panel>
+        <Palette />
+        <Canvas />
+        <Editor model={this.model} />
       </div>
     );
   }
@@ -51,16 +58,14 @@ export class Container extends Component {
       source.api = `https://${window.location.hostname}:443/api`;
       source.auth = `https://${window.location.hostname}:443/auth`;
     }
-
-    // console.log(source);
   }
 
   render() {
     return (
       <Router history={history}>
         <Switch>
-          <Route exact path="/" component={Editor} />
-          <Route path="/action/:ref" component={Editor} />
+          <Route exact path="/" component={Window} />
+          <Route path="/action/:ref" component={Window} />
 
           <Route
             path="/import/:bundle/:ref?"
@@ -68,7 +73,6 @@ export class Container extends Component {
               this.auth(bundle);
 
               setTimeout(() => {
-                // TODO: use replace?
                 history.push(ref ? `/action/${ref}` : '/');
               }, 100);
 

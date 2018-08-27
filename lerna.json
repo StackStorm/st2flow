@@ -1,11 +1,6 @@
 {
   "packages": [
-    "../st2web/apps/*",
-    "../st2web/modules/*",
-    "../st2web/tasks",
-    "apps/*",
     "modules/*",
-    "tasks",
     "."
   ],
   "version": "0.0.0"
