@@ -1,8 +1,6 @@
 .component {
   grid-area: details;
 
-  flex: 1;
-
   height: 100%;
 
   &:after {

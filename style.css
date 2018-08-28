@@ -1,13 +1,10 @@
 @import 'node_modules/@stackstorm/st2-style/style.css';
 
 .component {
-  display: flex;
+  display: grid;
 
-  flex-wrap: wrap;
-  align-content: flex-start;
-
-  grid-template-columns: 150px auto 30%;
-  grid-template-rows: 50px auto;
+  grid-template-columns: 0 1fr 40%;
+  grid-template-rows: 50px 1fr;
   grid-template-areas: 
     "header header header"
     "palette canvas details";

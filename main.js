@@ -34,6 +34,45 @@ class Window extends Component {
   constructor(props) {
     super(props);
     this.model = new Model();
+
+    this.fakeModel = {
+      tasks: [{
+        name: 'task1',
+        action: 'someaction',
+        coord: {
+          x: 120,
+          y: 100,
+        },
+      }, {
+        name: 'task2',
+        action: 'someaction',
+        coord: {
+          x: 210,
+          y: 100,
+        },
+      }, {
+        name: 'task3',
+        action: 'someaction',
+        coord: {
+          x: 100,
+          y: 250,
+        },
+      }, {
+        name: 'task4',
+        action: 'someaction',
+        coord: {
+          x: 200,
+          y: 230,
+        },
+      }, {
+        name: 'task5',
+        action: 'someaction',
+        coord: {
+          x: 300,
+          y: 300,
+        },
+      }],
+    };
   }
 
   render() {
@@ -43,7 +82,7 @@ class Window extends Component {
       <div className="component" >
         <Header />
         <Palette />
-        <Canvas />
+        <Canvas model={this.fakeModel} />
         <Editor model={this.model} />
       </div>
     );
