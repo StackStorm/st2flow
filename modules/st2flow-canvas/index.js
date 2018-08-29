@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
 import Task from './task';
+import Transition from './transition';
 
 import style from './style.css';
 
@@ -11,6 +12,8 @@ export default class Canvas extends Component {
   }
 
   componentDidMount() {
+    this.props.model.on(() => this.forceUpdate());
+
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
@@ -78,6 +81,10 @@ export default class Canvas extends Component {
     return false;
   }
 
+  handleTaskMove(ref, coords) {
+    this.props.model.updateTask(ref, { coords });
+  }
+
   style = style
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
@@ -92,9 +99,29 @@ export default class Canvas extends Component {
         <div className={this.style.surface} ref={this.surfaceRef}>
           {
             model.tasks.map((task) => {
-              return <Task key={task.name} task={task} />;
+              return (
+                <Task
+                  key={task.name}
+                  task={task}
+                  handleMove={(...a) => this.handleTaskMove(task.name, ...a)}
+                />
+              );
             })
           }
+          <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+            {
+              model.transitions
+                .map((transition) => {
+                  return (
+                    <Transition
+                      key={`${transition.from.name}-${transition.to.name}`}
+                      from={transition.from}
+                      to={transition.to}
+                    />
+                  );
+                })
+            }
+          </svg>
         </div>
       </div>
     );

@@ -1,3 +1,7 @@
+:root {
+  --transition-color: orange;
+}
+
 .component {
   grid-area: canvas;
 
@@ -18,6 +22,18 @@
   background-color: white;
 
   box-shadow: 3px 3px 0 rgba(0, 0, 0, .3);
+
+  box-sizing: border-box;
+}
+
+.transition {
+  stroke: var(--transition-color);
+  stroke-width: 5;
+  fill: transparent;
+}
+
+.transition-arrow {
+  fill: var(--transition-color);
 }
 
 .surface {
@@ -35,4 +51,9 @@
   position: relative;
 
   transform-origin: 0 0;
+}
+
+.svg {
+  width: 100%;
+  height: 100%;
 }

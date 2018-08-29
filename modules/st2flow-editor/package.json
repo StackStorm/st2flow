@@ -29,7 +29,7 @@
           ],
           "inject": "insert-css",
           "modularize": {
-            "capitalize": true
+            "camelCase": true
           },
           "plugin": [
             "postcss-import",

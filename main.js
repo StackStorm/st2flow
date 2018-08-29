@@ -20,6 +20,157 @@ import './style.css';
 
 const history = window.routerHistory = createHashHistory({});
 
+class FakeModel extends Model {
+  _tasks = [{
+    name: 'task1',
+    action: 'someaction',
+    size: {
+      x: 80,
+      y: 40,
+    },
+    coords: {
+      x: 120,
+      y: 100,
+    },
+  }, {
+    name: 'task2',
+    action: 'someaction',
+    size: {
+      x: 80,
+      y: 40,
+    },
+    coords: {
+      x: 210,
+      y: 100,
+    },
+  }, {
+    name: 'task3',
+    action: 'someaction',
+    size: {
+      x: 80,
+      y: 40,
+    },
+    coords: {
+      x: 100,
+      y: 250,
+    },
+  }, {
+    name: 'task4',
+    action: 'someaction',
+    size: {
+      x: 80,
+      y: 40,
+    },
+    coords: {
+      x: 200,
+      y: 230,
+    },
+  }, {
+    name: 'task5',
+    action: 'someaction',
+    size: {
+      x: 80,
+      y: 40,
+    },
+    coords: {
+      x: 300,
+      y: 300,
+    },
+  }]
+
+  _transitions = [{
+    from: {
+      task: 'task2',
+      anchor: 'right',
+    },
+    to: {
+      task: 'task4',
+      anchor: 'right',
+    },
+  }, {
+    from: {
+      task: 'task1',
+      anchor: 'right',
+    },
+    to: {
+      task: 'task2',
+      anchor: 'left',
+    },
+  }, {
+    from: {
+      task: 'task2',
+      anchor: 'top',
+    },
+    to: {
+      task: 'task5',
+      anchor: 'right',
+    },
+  }, {
+    from: {
+      task: 'task1',
+      anchor: 'left',
+    },
+    to: {
+      task: 'task3',
+      anchor: 'left',
+    },
+  }, {
+    from: {
+      task: 'task1',
+      anchor: 'bottom',
+    },
+    to: {
+      task: 'task4',
+      anchor: 'top',
+    },
+  }]
+
+  _callbacks = []
+
+  on(fn) {
+    this._callbacks.push(fn);
+  }
+
+  emit() {
+    this._callbacks.forEach(fn => fn());
+  }
+
+  get tasks() {
+    return this._tasks;
+  }
+
+  get transitions() {
+    return this._transitions
+      .map(({ from, to }) => {
+        return {
+          from: {
+            ...from,
+            name: from.task,
+            task: this._tasks.find(task => task.name === from.task),
+          },
+          to: {
+            ...to,
+            name: to.task,
+            task: this._tasks.find(task => task.name === to.task),
+          },
+        };
+      });
+  }
+
+  updateTask(ref, opts) {
+    const task = this.tasks.find(task => task.name === ref);
+    
+    if (!task) {
+      throw new Error('task not found for ref');
+    }
+
+    if (opts.coords) {
+      task.coords = opts.coords;
+      this.emit();
+    }
+  }
+}
+
 class Window extends Component {
   static propTypes = {
     match: PropTypes.shape({
@@ -33,46 +184,7 @@ class Window extends Component {
 
   constructor(props) {
     super(props);
-    this.model = new Model();
-
-    this.fakeModel = {
-      tasks: [{
-        name: 'task1',
-        action: 'someaction',
-        coord: {
-          x: 120,
-          y: 100,
-        },
-      }, {
-        name: 'task2',
-        action: 'someaction',
-        coord: {
-          x: 210,
-          y: 100,
-        },
-      }, {
-        name: 'task3',
-        action: 'someaction',
-        coord: {
-          x: 100,
-          y: 250,
-        },
-      }, {
-        name: 'task4',
-        action: 'someaction',
-        coord: {
-          x: 200,
-          y: 230,
-        },
-      }, {
-        name: 'task5',
-        action: 'someaction',
-        coord: {
-          x: 300,
-          y: 300,
-        },
-      }],
-    };
+    window.model = this.model = new FakeModel();
   }
 
   render() {
@@ -82,7 +194,7 @@ class Window extends Component {
       <div className="component" >
         <Header />
         <Palette />
-        <Canvas model={this.fakeModel} />
+        <Canvas model={this.model} />
         <Editor model={this.model} />
       </div>
     );
