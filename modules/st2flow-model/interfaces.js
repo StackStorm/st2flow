@@ -11,7 +11,7 @@ export interface TaskInterface {
     name: string;
     action: string;
 
-    coord: CanvasPoint;
+    coords: CanvasPoint;
 }
 
 export interface TaskRefInterface {

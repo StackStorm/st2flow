@@ -76,7 +76,7 @@ export default class OrchestraModel implements ModelInterface {
       tasks.push({
         name,
         action: action.value,
-        coord: { x: 1, y: 1 }
+        coords: { x: 1, y: 1 }
       });
       return tasks;
     }, []);
