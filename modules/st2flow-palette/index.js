@@ -1,19 +1,23 @@
 import React, { Component } from 'react';
-import { PropTypes } from 'prop-types';
+
+import Action from './action';
 
 import style from './style.css';
 
+const actions = [{
+  ref: 'core.local',
+  description: 'Some long ass description',
+}];
+
 export default class Palette extends Component {
-  static propTypes = {
-
-  }
-
   style = style
 
   render() {
     return (
       <div className={this.style.component}>
-        1
+        {
+          actions.map(action => <Action key={action.ref} action={action} />)
+        }
       </div>
     );
   }

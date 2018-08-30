@@ -21,13 +21,14 @@ import './style.css';
 const history = window.routerHistory = createHashHistory({});
 
 class FakeModel extends Model {
+  _size = {
+    x: 100,
+    y: 40,
+  }
   _tasks = [{
     name: 'task1',
     action: 'someaction',
-    size: {
-      x: 80,
-      y: 40,
-    },
+    size: this._size,
     coords: {
       x: 120,
       y: 100,
@@ -35,32 +36,23 @@ class FakeModel extends Model {
   }, {
     name: 'task2',
     action: 'someaction',
-    size: {
-      x: 80,
-      y: 40,
-    },
+    size: this._size,
     coords: {
-      x: 210,
+      x: 260,
       y: 100,
     },
   }, {
     name: 'task3',
     action: 'someaction',
-    size: {
-      x: 80,
-      y: 40,
-    },
+    size: this._size,
     coords: {
-      x: 100,
+      x: 50,
       y: 250,
     },
   }, {
     name: 'task4',
     action: 'someaction',
-    size: {
-      x: 80,
-      y: 40,
-    },
+    size: this._size,
     coords: {
       x: 200,
       y: 230,
@@ -68,13 +60,10 @@ class FakeModel extends Model {
   }, {
     name: 'task5',
     action: 'someaction',
-    size: {
-      x: 80,
-      y: 40,
-    },
+    size: this._size,
     coords: {
-      x: 300,
-      y: 300,
+      x: 500,
+      y: 200,
     },
   }]
 
@@ -155,6 +144,17 @@ class FakeModel extends Model {
           },
         };
       });
+  }
+
+  addTask(opts) {
+    this._tasks.push({
+      name: `task${this._tasks.length + 1}`,
+      action: opts.action,
+      coords: opts.coords,
+      size: this._size,
+    });
+
+    this.emit();
   }
 
   updateTask(ref, opts) {

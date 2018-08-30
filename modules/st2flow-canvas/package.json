@@ -34,6 +34,7 @@
           "plugin": [
             "postcss-import",
             "postcss-nested",
+            "postcss-color-mod-function",
             "postcss-preset-env"
           ]
         }
@@ -50,6 +51,7 @@
     "@stackstorm/browserify-postcss": "0.3.4-patch.5",
     "babelify": "8.0.0",
     "postcss": "6.0.22",
+    "postcss-color-mod-function": "^2.4.3",
     "postcss-import": "11.1.0",
     "postcss-nested": "3.0.0",
     "postcss-preset-env": "5.1.0"

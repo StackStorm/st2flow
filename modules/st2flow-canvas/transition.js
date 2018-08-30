@@ -21,6 +21,8 @@ const CONTROLS = {
   right: new Vector(1, 0),
 };
 
+const CONTROL_SIZE = 100;
+
 export default class Task extends Component {
   static propTypes = {
     from: PropTypes.object.isRequired,
@@ -40,7 +42,7 @@ export default class Task extends Component {
     const fromSize = new Vector(from.task.size);
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
-    const fromControlPoint = fromControl.multiply(100).add(fromPoint);
+    const fromControlPoint = fromControl.multiply(CONTROL_SIZE).add(fromPoint);
 
     path.push(`M ${fromPoint.x} ${fromPoint.y}`);
     path.push(`C ${fromControlPoint.x} ${fromControlPoint.y},`);
@@ -53,7 +55,7 @@ export default class Task extends Component {
     // Compensating for the arrow
     const toRealPoint = toSize.multiply(toAnchor).add(toCoords);
 
-    const toControlPoint = toControl.multiply(100).add(toRealPoint);
+    const toControlPoint = toControl.multiply(CONTROL_SIZE).add(toRealPoint);
     const toPoint = toControl.multiply(10).add(toRealPoint);
 
     path.push(`${toControlPoint.x} ${toControlPoint.y},`);

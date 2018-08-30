@@ -3,6 +3,7 @@ import { PropTypes } from 'prop-types';
 
 import Task from './task';
 import Transition from './transition';
+import Vector from './vector';
 
 import style from './style.css';
 
@@ -18,12 +19,16 @@ export default class Canvas extends Component {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseWheel = this.handleMouseWheel.bind(this);
+    this.handleDragOver = this.handleDragOver.bind(this);
+    this.handleDrop = this.handleDrop.bind(this);
 
     const el = this.canvasRef.current;
     el.addEventListener('wheel', this.handleMouseWheel);
     el.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
+    el.addEventListener('dragover', this.handleDragOver);
+    el.addEventListener('drop', this.handleDrop);
   }
 
   componentWillUnmount() {
@@ -32,6 +37,8 @@ export default class Canvas extends Component {
     el.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
+    el.removeEventListener('dragover', this.handleDragOver);
+    el.removeEventListener('drop', this.handleDrop);
   }
 
   handleMouseWheel(e) {
@@ -77,6 +84,31 @@ export default class Canvas extends Component {
     const el = this.canvasRef.current;
     el.scrollLeft += (this.startx - (e.clientX + el.scrollLeft));
     el.scrollTop += (this.starty - (e.clientY + el.scrollTop));
+
+    return false;
+  }
+
+  handleDragOver(e) {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+
+    e.dataTransfer.dropEffect = 'copy';
+  }
+
+  handleDrop(e) {
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    const { action, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
+
+    const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle));
+
+    this.props.model.addTask({
+      action,
+      coords, 
+    });
 
     return false;
   }
