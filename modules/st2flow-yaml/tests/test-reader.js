@@ -4,7 +4,7 @@ import path from 'path';
 
 import Reader from '../reader';
 
-describe('st2flow-yaml: Reader', () => {
+describe.skip('st2flow-yaml: Reader', () => {
 
   describe('parses simple.yaml', () => {
     const yaml = fs.readFileSync(path.join(__dirname, 'data', 'simple.yaml'), 'utf-8');

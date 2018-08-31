@@ -1,6 +1,6 @@
 // @flow
 
-import type { Token, TokenList } from './types';
+import type { Token, TokenList } from '../types';
 
 const whitespace = /^(\s+)/;
 const newlineStart = /^((?:\r\n|\n)+)/;
@@ -14,6 +14,7 @@ const specialTokens = {
     test: (chars) => !chars.length,
     token: 'token-sequence',
   },
+  // TODO: handle single quote
   '"': {
     test: (chars) => !chars.length,
     process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
@@ -24,23 +25,27 @@ const specialTokens = {
       return rest.length + 1;
     },
   },
+  // TODO: handle >- and >+
   '>': {
     test: (chars) => !chars.length,
-    process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
-      const { length, data: rest } = getMultiline(index, data);
+    token: 'token-multiline',
+    // process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
+    //   const { length, data: rest } = getMultiline(index, data);
 
-      chars.push([ '>' ].concat(rest).join('\n'));
-      return length;
-    },
+    //   chars.push([ '>' ].concat(rest).join('\n'));
+    //   return length;
+    // },
   },
+  // TODO: handle |- and |+
   '|': {
     test: (chars) => !chars.length,
-    process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
-      const { length, data: rest } = getMultiline(index, data);
+    token: 'token-multiline',
+    // process: (ancestors: TokenList, data: string, index: number, chars: Array<string>) => {
+    //   const { length, data: rest } = getMultiline(index, data);
 
-      chars.push([ '|' ].concat(rest).join('\n'));
-      return length;
-    },
+    //   chars.push([ '|' ].concat(rest).join('\n'));
+    //   return length;
+    // },
   },
 };
 
