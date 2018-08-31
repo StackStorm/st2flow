@@ -1,7 +1,7 @@
 // @flow
 
-import type { Token, TokenList } from './types';
-import { parseValue } from './values';
+import type { Token, TokenList } from '../types';
+import parseValue from './parse-value';
 import extractToken, { endOfFileToken } from './extractor';
 
 export default class Reader {

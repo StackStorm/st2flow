@@ -1,21 +1,19 @@
 // @flow
 
 import type { Token, TokenList } from './types';
-import { stringifyValue } from './values';
+import writeValue from './stringify-value';
 
-export { stringifyValue as writeValue }
-
-export function writeToken({ type, value, valueMetadata, prefix, suffix }: Token): string {
+function writeToken({ type, value, valueMetadata, prefix, suffix }: Token): string {
   const string = type === 'value' ? stringifyValue(value, valueMetadata) : value;
 
   return (prefix || '') + string + (suffix || '');
 }
 
-export function writeSet(tokens: TokenList): string {
+function writeSet(tokens: TokenList): string {
   return tokens.reduce((str, token) => str + writeToken(token), '');
 }
 
-export default class Writer {
+class Writer {
   strings: Array<string> = [];
   linePrefix: string = '';
 
@@ -30,3 +28,6 @@ export default class Writer {
     return this.strings.join('');
   }
 }
+
+export default Writer;
+export { writeValue, writeToken, writeSet };

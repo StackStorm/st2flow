@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import NestedSet from '../nested-set';
 
-describe('st2flow-yaml: NestedSet', () => {
+describe.skip('st2flow-yaml: NestedSet', () => {
 
   describe('array methods', () => {
     let set;

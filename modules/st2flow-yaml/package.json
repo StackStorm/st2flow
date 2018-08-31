@@ -17,5 +17,8 @@
   },
   "devDependencies": {
     "babelify": "^8.0.0"
+  },
+  "dependencies": {
+    "yaml-ast-parser": "0.0.40"
   }
 }

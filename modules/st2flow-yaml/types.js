@@ -1,17 +1,42 @@
-export type Value = string | number | boolean | null;
+type Kind = 0 | 1 | 2 | 3 | 4;
 
-export type TokenType = 'key' | 'value' | 'token-separator' | 'token-sequence' | 'empty-line' | 'eof';
-
-export type Token = {
-  start: number,
-  end: number,
-  level: number,
-  type: TokenType,
-  value: Value,
-  valueMetadata?: string,
-  prefix: string,
-  suffix: string,
-  newline: bool,
+type BaseToken = {
+	startPosition: number,
+  endPosition: number,
+  kind: Kind,
+  jpath: Array<string | number>,
 };
 
-export type TokenList = Array<Token>;
+export type TokenRawValue = BaseToken & {
+	// kind = 0
+	value: string,
+  rawValue: string,
+  doubleQuoted: boolean,
+  plainScalar: boolean,
+  prefix: Array<TokenRawValue>,
+  singleQuoted?: boolean,
+  valueObject?: string | number,
+  anchorId?: string
+};
+
+export type TokenKeyValue = BaseToken & {
+	// kind = 1
+	key: TokenRawValue | TokenCollection,
+	value: TokenRawValue | TokenCollection,
+};
+
+export type TokenMapping = BaseToken & {
+	// kind = 2
+  mappings: Array<TokenKeyValue>,
+};
+
+export type TokenCollection = BaseToken & {
+	// kind = 3
+  items: Array<Token>,
+};
+
+export type TokenReference = BaseToken & {
+	// kind = 4
+  referencesAnchor: string,
+  value: BaseToken
+};

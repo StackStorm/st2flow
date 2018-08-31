@@ -1,0 +1,65 @@
+# foo
+
+version:   1
+desription: "hello"
+
+# comment
+data:
+  foo: 'barbar'
+dedoo: miltiline
+  value
+
+"key in quotes": here
+boo:
+  bing: >
+    # another  comment
+    line 1
+    line 2
+
+? - Manchester United
+  - Real Madrid
+: [ 2001-01-01, 2002-02-02 ]
+
+a_sequence:
+- Item 1
+- Item 2
+- 0.5 # sequences can contain disparate types.
+- Item 4
+- key: value
+  another_key: another_value
+-
+  - This is a sequence
+  - inside another sequence
+- - - Nested sequence indicators
+    - can be collapsed
+
+json_map: {"key": "value"}
+json_seq: [3, 2, 1, "takeoff"]
+and quotes are optional: {key: [3, 2, 1, takeoff]}
+
+anchored_content: &anchor_name This string will appear as the value of two keys.
+other_anchor: *anchor_name
+
+base: &base
+  name: Everyone has same name
+
+foo: &foo
+  <<: *base
+  age: 10
+
+bar: &bar
+  <<: *base
+  age: 20
+
+double: 0.5
+explicit_string: !!str 0.5
+
+datetime: 2001-12-15T02:59:43.1Z
+datetime_with_spaces: 2001-12-14 21:59:43.10 -5
+date: 2002-12-14
+
+set:
+  ? item1
+  ? item2
+  ? item3
+or: {item1, item2, item3}
