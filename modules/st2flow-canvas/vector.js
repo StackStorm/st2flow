@@ -30,39 +30,34 @@ export default class Vector {
     this.z = z || 0;
   }
 
+  transform(fn, v) {
+    if (v instanceof Vector) {
+      return new Vector(fn(this.x, v.x), fn(this.y, v.y), fn(this.z, v.z));
+    }
+    return new Vector(fn(this.x, v), fn(this.y, v), fn(this.z, v));
+  }
+
   // ### Instance Methods
   // The methods `add()`, `subtract()`, `multiply()`, and `divide()` can all
   // take either a vector or a number as an argument.
   negative() {
-    return new Vector(-this.x, -this.y, -this.z);
+    return this.transform(i => -i);
   }
 
   add(v) {
-    if (v instanceof Vector) {
-      return new Vector(this.x + v.x, this.y + v.y, this.z + v.z);
-    }
-    return new Vector(this.x + v, this.y + v, this.z + v);
+    return this.transform((i, v) => i + v, v);
   }
 
   subtract(v) {
-    if (v instanceof Vector) {
-      return new Vector(this.x - v.x, this.y - v.y, this.z - v.z);
-    }
-    return new Vector(this.x - v, this.y - v, this.z - v);
+    return this.transform((i, v) => i - v, v);
   }
 
   multiply(v) {
-    if (v instanceof Vector) {
-      return new Vector(this.x * v.x, this.y * v.y, this.z * v.z);
-    }
-    return new Vector(this.x * v, this.y * v, this.z * v);
+    return this.transform((i, v) => i * v, v);
   }
 
   divide(v) {
-    if (v instanceof Vector) {
-      return new Vector(this.x / v.x, this.y / v.y, this.z / v.z);
-    }
-    return new Vector(this.x / v, this.y / v, this.z / v);
+    return this.transform((i, v) => i / v, v);
   }
 
   equals(v) {
