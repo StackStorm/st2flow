@@ -12,6 +12,10 @@ export default class Canvas extends Component {
     model: PropTypes.object.isRequired,
   }
 
+  state = {
+    scale: 0,
+  }
+
   componentDidMount() {
     this.props.model.on(() => this.forceUpdate());
 
@@ -29,6 +33,12 @@ export default class Canvas extends Component {
     window.addEventListener('mouseup', this.handleMouseUp);
     el.addEventListener('dragover', this.handleDragOver);
     el.addEventListener('drop', this.handleDrop);
+
+    this.handleUpdate();
+  }
+
+  componentDidUpdate() {
+    this.handleUpdate();
   }
 
   componentWillUnmount() {
@@ -41,12 +51,40 @@ export default class Canvas extends Component {
     el.removeEventListener('drop', this.handleDrop);
   }
 
+  handleUpdate() {
+    const { model } = this.props;
+    const { width, height } = this.canvasRef.current.getBoundingClientRect();
+
+    const scale = Math.E ** this.state.scale;
+
+    this.size = model.tasks.reduce((acc, item) => {
+      const coords = new Vector(item.coords);
+      const size = new Vector(item.size);
+      const { x, y } = coords.add(size).add(50);
+
+      return {
+        x: Math.max(x, acc.x),
+        y: Math.max(y, acc.y), 
+      };
+    }, {
+      x: width / scale,
+      y: height / scale,
+    });
+
+    this.surfaceRef.current.style.width = `${this.size.x}px`;
+    this.surfaceRef.current.style.height = `${this.size.y}px`;
+  }
+
   handleMouseWheel(e) {
     e.preventDefault();
     e.stopPropagation();
 
-    this.scale += e.wheelDelta / 1200;
-    this.surfaceRef.current.style.transform = `scale(${Math.E ** this.scale})`;
+    const { scale } = this.state;
+    this.setState({
+      scale: scale + e.wheelDelta / 1200,
+    });
+
+    this.handleUpdate();
 
     return false;
   }
@@ -121,20 +159,24 @@ export default class Canvas extends Component {
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
 
-  scale = 0;
-
   render() {
     const { model } = this.props;
+    const { scale } = this.state;
+
+    const surfaceStyle = {
+      transform: `scale(${Math.E ** scale})`,
+    };
 
     return (
       <div className={this.style.component} ref={this.canvasRef}>
-        <div className={this.style.surface} ref={this.surfaceRef}>
+        <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
           {
             model.tasks.map((task) => {
               return (
                 <Task
                   key={task.name}
                   task={task}
+                  scale={scale}
                   handleMove={(...a) => this.handleTaskMove(task.name, ...a)}
                 />
               );

@@ -6,6 +6,7 @@ import style from './style.css';
 export default class Task extends Component {
   static propTypes = {
     task: PropTypes.object.isRequired,
+    scale: PropTypes.number.isRequired,
     handleMove: PropTypes.func,
   }
 
@@ -55,12 +56,14 @@ export default class Task extends Component {
     if (this.drag) {
       this.drag = false;
 
+      const scale = Math.E ** this.props.scale;
+
       if (this.props.handleMove) {
         const { coords } = this.props.task;
         const { x, y } = this.state.delta;
         this.props.handleMove({
-          x: coords.x + x,
-          y: coords.y + y,
+          x: coords.x + x / scale,
+          y: coords.y + y / scale,
         });
       }
       
@@ -100,10 +103,12 @@ export default class Task extends Component {
     const { task } = this.props;
     const { delta } = this.state;
 
+    const scale = Math.E ** this.props.scale;
+
     const additionalStyles = {
       width: task.size.x,
       height: task.size.y,
-      transform: `translate(${task.coords.x + delta.x}px, ${task.coords.y + delta.y}px)`,
+      transform: `translate(${task.coords.x + delta.x / scale}px, ${task.coords.y + delta.y / scale}px)`,
     };
 
     return (
