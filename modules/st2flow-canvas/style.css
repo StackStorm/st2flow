@@ -28,6 +28,11 @@
   box-sizing: border-box;
 
   user-select: none;
+
+  &.selected {
+    border: 1px solid #ffa256;
+    background-color: #fff3e6;
+  }
 }
 
 .transition {

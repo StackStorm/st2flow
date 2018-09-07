@@ -16,14 +16,15 @@ export default class Editor extends Component {
 
   componentDidMount() {
     const { model } = this.props;
-    model;
-    
+ 
     ace.acequire('ace/ext/language_tools');
 
     this.editor = ace.edit(editorId);
     this.editor.getSession().setMode('ace/mode/yaml');
 
     this.editor.on('change', delta => model.applyDelta(delta));
+
+    this.editor.resize();
   }
 
   style = style

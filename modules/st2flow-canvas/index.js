@@ -10,6 +10,7 @@ import style from './style.css';
 export default class Canvas extends Component {
   static propTypes = {
     model: PropTypes.object.isRequired,
+    selected: PropTypes.string,
   }
 
   state = {
@@ -17,8 +18,6 @@ export default class Canvas extends Component {
   }
 
   componentDidMount() {
-    this.props.model.on(() => this.forceUpdate());
-
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
@@ -151,8 +150,18 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleTaskMove(ref, coords) {
-    this.props.model.updateTask(ref, { coords });
+  handleTaskMove(task, coords) {
+    this.props.model.updateTask(task.name, { coords });
+  }
+
+  handleTaskSelect(task) {
+    this.props.model.selectTask(task.name);
+  }
+
+  handleCanvasClick(e) {
+    e.stopPropagation();
+
+    this.props.model.selectTask();
   }
 
   style = style
@@ -160,7 +169,7 @@ export default class Canvas extends Component {
   surfaceRef = React.createRef();
 
   render() {
-    const { model } = this.props;
+    const { model, selected } = this.props;
     const { scale } = this.state;
 
     const surfaceStyle = {
@@ -168,7 +177,11 @@ export default class Canvas extends Component {
     };
 
     return (
-      <div className={this.style.component} ref={this.canvasRef}>
+      <div
+        className={this.style.component}
+        ref={this.canvasRef}
+        onClick={e => this.handleCanvasClick(e)}
+      >
         <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
           {
             model.tasks.map((task) => {
@@ -176,8 +189,10 @@ export default class Canvas extends Component {
                 <Task
                   key={task.name}
                   task={task}
+                  selected={task.name === selected}
                   scale={scale}
-                  handleMove={(...a) => this.handleTaskMove(task.name, ...a)}
+                  onMove={(...a) => this.handleTaskMove(task, ...a)}
+                  onClick={() => this.handleTaskSelect(task)}
                 />
               );
             })

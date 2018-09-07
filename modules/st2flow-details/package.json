@@ -1,5 +1,5 @@
 {
-  "name": "@stackstorm/st2flow-palette",
+  "name": "@stackstorm/st2flow-details",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -44,6 +44,8 @@
     "access": "public"
   },
   "dependencies": {
+    "@stackstorm/module-auto-form": "2.0.0",
+    "@stackstorm/st2flow-editor": "1.0.0",
     "insert-css": "2.0.0"
   },
   "devDependencies": {

@@ -14,7 +14,7 @@ import Model from '@stackstorm/st2flow-model/model-orchestra';
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
-import Editor from '@stackstorm/st2flow-editor';
+import Details from '@stackstorm/st2flow-details';
 
 import './style.css';
 
@@ -114,6 +114,8 @@ class FakeModel extends Model {
     },
   }]
 
+  _parameters = []
+
   _callbacks = []
 
   on(fn) {
@@ -146,6 +148,22 @@ class FakeModel extends Model {
       });
   }
 
+  get parameters() {
+    return this._parameters;
+  }
+
+  _selected = null;
+
+  get selected() {
+    return this._selected;
+  }
+
+  selectTask(ref = null) {
+    this._selected = ref;
+
+    this.emit();
+  }
+
   addTask(opts) {
     this._tasks.push({
       name: `task${this._tasks.length + 1}`,
@@ -169,6 +187,16 @@ class FakeModel extends Model {
       this.emit();
     }
   }
+
+  _meta = {}
+
+  get meta() {
+    return this._meta;
+  }
+
+  setMeta(value) {
+    this._meta = value;
+  }
 }
 
 class Window extends Component {
@@ -185,17 +213,30 @@ class Window extends Component {
   constructor(props) {
     super(props);
     window.model = this.model = new FakeModel();
+    this.model.on(() => this.forceUpdate());
+  }
+
+  state = {
+    actions: [],
+  }
+
+  async componentDidMount() {
+    const res = await fetch('/actions.json');
+
+    this.setState({ actions: await res.json() });
   }
 
   render() {
     const { match: { path, params: { ref } } } = this.props;
 
+    const { actions } = this.state;
+
     return (
       <div className="component" >
         <Header />
-        <Palette />
-        <Canvas model={this.model} />
-        <Editor model={this.model} />
+        <Palette actions={actions} />
+        <Canvas model={this.model} selected={this.model.selected} />
+        <Details actions={actions} model={this.model} selected={this.model.selected} />
       </div>
     );
   }

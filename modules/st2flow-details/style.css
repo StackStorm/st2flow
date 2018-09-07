@@ -1,0 +1,73 @@
+.component {
+  grid-area: details;
+
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  background-color: #444;
+
+  color: #bbb;
+
+  display: flex;
+
+  &.secondary {
+    Background-color: #d8d8d8;
+    color: #888;
+  }
+}
+
+.toolbar-button {
+  padding: 15px;
+  
+  font-size: 16px;
+
+  cursor: pointer;
+
+  &.selected {
+    background-color: #333;
+    color: #ff921a;
+  }
+}
+
+.code {
+  margin: 10px;
+  padding: 4px;
+
+  margin-left: auto;
+
+  border: 1px solid #888;
+  border-radius: 3px;
+  
+  min-width: 23px;
+  
+  text-align: center;
+
+  &.selected {
+    background-color: #ff921a;
+    border-color: #ff921a;
+    color: #444;
+  }
+}
+
+.panel {
+  background-color: #f8f8f8;
+  padding: 20px;
+
+  overflow: auto;
+
+  flex: 1;
+}
+
+.taskPanel {
+  padding: 10px;
+}
+
+.task {
+  padding: 10px;
+
+  border-bottom: 1px solid #ccc;
+}

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import style from './style.css';
 
@@ -7,7 +8,9 @@ export default class Task extends Component {
   static propTypes = {
     task: PropTypes.object.isRequired,
     scale: PropTypes.number.isRequired,
-    handleMove: PropTypes.func,
+    selected: PropTypes.bool,
+    onMove: PropTypes.func,
+    onClick: PropTypes.func,
   }
 
   state = {
@@ -58,10 +61,10 @@ export default class Task extends Component {
 
       const scale = Math.E ** this.props.scale;
 
-      if (this.props.handleMove) {
+      if (this.props.onMove) {
         const { coords } = this.props.task;
         const { x, y } = this.state.delta;
-        this.props.handleMove({
+        this.props.onMove({
           x: coords.x + x / scale,
           y: coords.y + y / scale,
         });
@@ -96,11 +99,19 @@ export default class Task extends Component {
     return false;
   }
 
+  handleClick(e) {
+    e.stopPropagation();
+
+    if (this.props.onClick) {
+      this.props.onClick();
+    }
+  }
+
   style = style
   taskRef = React.createRef();
 
   render() {
-    const { task } = this.props;
+    const { task, selected } = this.props;
     const { delta } = this.state;
 
     const scale = Math.E ** this.props.scale;
@@ -113,9 +124,10 @@ export default class Task extends Component {
 
     return (
       <div
-        className={this.style.task}
+        className={cx(this.style.task, selected && this.style.selected)}
         style={additionalStyles}
         ref={this.taskRef}
+        onClick={e => this.handleClick(e)}
       >
         {task.name}
       </div>

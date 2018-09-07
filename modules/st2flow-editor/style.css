@@ -1,12 +1,5 @@
 .component {
-  grid-area: details;
-
-  height: 100%;
-
-  &:after {
-    /* Adds some content to block so we can position anything inside it. Making it "after" ensures that we don't have any visible gaps. */
-    content: '\00a0';
-  }
+  flex: 1;
 }
 
 .editor {
