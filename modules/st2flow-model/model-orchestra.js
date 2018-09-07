@@ -1,220 +1,55 @@
 // @flow
 
 import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface, DeltaInterface } from './interfaces';
-import type NestedSet from '@stackstorm/st2flow-yaml/nested-set';
-import type { Token } from '@stackstorm/st2flow-yaml/types';
 
-import { readSet as readYaml, write as writeYaml } from '@stackstorm/st2flow-yaml';
+import { TokenSet, Crawler } from '@stackstorm/st2flow-yaml';
 
 const types = {
   'on-complete': 'Success',
 };
 
-export default class OrchestraModel implements ModelInterface {
-  tokens: NestedSet;
-
+class OrchestraModel implements ModelInterface {
+  tokens: TokenSet;
 
   constructor(yaml: ?string) {
     if (yaml) {
-      this.parse(yaml);
+      this.fromYAML(yaml);
     }
   }
 
-  parse(yaml: string) {
-    this.tokens = readYaml(yaml);
+  fromYAML(yaml: string): void {
+    this.tokens = new TokenSet(yaml);
+    this.crawler = new Crawler(this.tokens);
   }
 
-  toYAML() {
-    return writeYaml(this.tokens.raw);
+  toYAML(): string {
+    return this.tokens.toYAML();
   }
-
-  get(...keys: Array<string | number>) {
-    return this.tokens.getValueByKey(...keys);
-  }
-
 
   get version() {
-    const version: Token = this.get('version');
-    if (version.type !== 'value') {
-      throw new Error('invalid orchestra structure');
-    }
-
-    return version.value;
+    return this.crawler.getValueByKey('version');
   }
 
   get description() {
-    const description: Token = this.get('description');
-    if (description.type !== 'value') {
-      throw new Error('invalid orchestra structure');
-    }
-
-    return description.value;
+    return this.crawler.getValueByKey('description');
   }
 
   get tasks(): Array<TaskInterface> {
-    const tokens = this.get('tasks');
-    if (!tokens.length) {
-      return [];
-    }
+    const tasks = this.crawler.getValueByKey('tasks');
 
-    // TODO: get rid of this after objectify is finished.
-    const first = tokens.getItemAtIndex(0);
-    if (first.type !== 'key') {
-      throw new Error('invalid set - must start with a key');
-    }
-
-    return tokens.filter(t =>
-      // filter only task names
-      t.type === 'key' && t.level === first.level
-    ).reduce((tasks, token, i) => {
-      const name = token.value; // task name
-      const task = tokens.getValueByKey(name);
-      const action = task.getValueByKey('action');
-      if (!action) {
-        throw new Error('invalid orchestra structure - task must have action');
-      }
-      tasks.push({
+    return tasks.__keys.map(name =>
+      Object.assign({}, tasks[name], {
         name,
-        action: action.value,
-        coord: { x: 1, y: 1 }
-      });
-      return tasks;
-    }, []);
-  }
-
-  // TODO: this is not finished and will be moved to NestedSet or util
-  arrayify(tokens: NestedSet): Array | Object {
-    let first = tokens.getItemAtIndex(0);
-    if (first.type !== 'token-sequence') {
-      throw new Error('first item must be a sequence separator');
-    }
-    const result = [];
-    tokens.forEach(token => {
-      if (token.type === 'token-sequence') return; // continue
-      if (token.type === 'value') {
-
-      }
-    })
-  }
-
-  // TODO: this is not finished and will be moved to NestedSet or util
-  objectify(tokens: NestedSet, result = {}): Array | Object {
-    // console.log(tokens);
-    const isArray = Array.isArray(result);
-    let first = tokens.getItemAtIndex(0);
-
-    switch (first.type) {
-    case 'token-sequence':
-      const sliced = tokens.slice(1);
-      console.log('================ SLICE');
-      // console.log(sliced);
-      // console.log('================');
-      return this.objectify(sliced, []);
-
-    case 'value':
-      if (!isArray) {
-        throw new Error('leading values are intended to be part of an array ' + JSON.stringify(first, null, '  '));
-      }
-      result.push(first.value);
-      return result;
-
-    case 'key':
-      break; // keep going
-
-    default:
-      throw new Error('invalid set - expected a key but got ' + JSON.stringify(first, null, '  '));
-    }
-
-    // console.log('KEYS', tokens.keys);
-    return tokens.keys.reduce((obj, key) => {
-      const value: Token | NestedSet = tokens.getValueByKey(key);
-      // TODO: this is where a children property would be useful
-      let $value;
-      if (value.type === 'value'){
-        // console.log(key, ':', value.value);
-        $value = value.value;
-      } else {
-        // console.log('---- long value for:', key, value.getItemAtIndex(0))
-        $value = this.objectify(value);
-      }
-      if (isArray){
-        obj.push($value)
-      } else {
-        obj[key] = value;
-      }
-      return obj;
-    }, result);
+        // TODO: get coords from comment tokens
+        coord: { x: 0, y: 0 }
+      })
+    );
   }
 
   // Transitions are any task with a "next" property
   get transitions(): Array<TransitionInterface> {
-    const tasks = this.objectify( this.get('tasks') );
-    // console.log('Tasks', tasks);
-    return tasks.filter(t => t.keys.includes('next')).reduce((flatList, task) => {
-      const next = task.get('next');
-      return flatList.concat(next.map(transition => {
-        const $when: Token = transition.get('when');
-        let $do: Token = [].concat(transition.get('do'));
-
-        return $do.map(to => ({
-          from: { name: from },
-          to: { name : to.value },
-          type: 'Success',
-          condition: $when && $when.value,
-        }));
-      }));
-    }, []);
-
-    // $FlowFixMe
-    // return [].concat(...tasks.map((task, from: string | number) => {
-    //   const next = task.get('next');
-    //   if (next) {
-    //     return [].concat(...next.map((transition, index: string | number) => {
-    //       const $when: Token = transition.get('when');
-    //       const $do: Token = transition.get('do');
-
-    //       // do: taskB
-    //       if ($do.type === 'value') {
-    //         return [{
-    //           from: { name: from },
-    //           to: { name : $do.value },
-    //           type: 'Success',
-    //           condition: $when && $when.value,
-    //         }];
-    //       }
-
-    //       // do:
-    //       //   - taskB
-    //       //   - taskC
-    //       return $do.map((to, index: string | number) => {
-    //         return {
-    //           from: { name: from },
-    //           to: { name : to.value },
-    //           type: 'Success',
-    //           condition: $when && $when.value,
-    //         };
-    //       });
-    //     }));
-    //   }
-
-    //   return [].concat(...task.keys.filter(key => key !== 'action').map((type: string | number) => {
-    //     const trigger = task.get(type);
-
-    //     return [].concat(...trigger.map((action, index: string | number) => {
-    //       const condition: Token = action.get('if');
-    //       const to: Token = action.get('next');
-
-    //       return {
-    //         from: { name: from },
-    //         to: { name : to.value },
-    //         type: types[type],
-    //         condition: condition && condition.value,
-    //       };
-    //     }));
-    //   }));
-    // }));
+    return this.tasks.filter(task => task.hasOwnProperty('next'));
   }
-
 
   applyDelta(delta: DeltaInterface) {
 
@@ -225,19 +60,13 @@ export default class OrchestraModel implements ModelInterface {
   }
 
   updateTask(ref: TaskRefInterface, opts: TaskInterface) {
-    const task = this.get('tasks', ref.name);
+    const task = this.crawler.getValueByKey('tasks.' + ref.name);
+
     if (!task) {
       throw new Error('task not found for ref');
     }
 
-    if (typeof opts.name !== 'undefined') {
-      this.tokens.set(task, opts.name, 'key');
-    }
-
-    if (typeof opts.action !== 'undefined') {
-      const action = task.get('action');
-      this.tokens.set(action, opts.action);
-    }
+    this.tokens.updateToken(task.jpath, task);
   }
 
   deleteTask(ref: TaskRefInterface) {
@@ -337,3 +166,5 @@ function findTransitionToken(tokens: NestedSet, ref: TransitionRefInterface, key
 
   return undefined;
 }
+
+export default OrchestraModel;

@@ -32,7 +32,7 @@ export type TokenMapping = BaseToken & {
 
 export type TokenCollection = BaseToken & {
 	// kind = 3
-  items: Array<Token>,
+  items: Array,
 };
 
 export type TokenReference = BaseToken & {

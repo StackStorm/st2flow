@@ -1,3 +1,4 @@
 // @flow
 
-export { default } from './token-set';
+export { default as TokenSet } from './token-set';
+export { default as Crawler } from './crawler';

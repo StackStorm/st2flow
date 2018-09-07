@@ -1,30 +1,128 @@
+---
 # foo
 
 version:   1
-desription: "hello"
+description: "hello"
+dedoo: multiline
+  string value
+"key in quotes": value not in quotes
+enabled: true
+double: 0.5
+explicit_string: !!str 0.5
 
-# comment
+this:
+  is:
+    a:
+      deep:
+        value: yay!!
+    b:
+      - some_array:
+          value: awesome
+
+nulls:
+- ~
+- null
+- Null
+- Null
+-
+
+integers:
+- 12345          # canonical
+- +12_345.00     # decimal
+- 3:25:45        # sexagecimal
+- 030071         # octal
+- 0x3039         # hexadecimal
+- 0b0011_0000_0011_1001   # binary
+
+floats:
+- 1.23015e3     # canonical
+- 12.3015e+02   # exponential
+- 123_015e-02   # exponential
+- 123,015e-02   # exponential
+- 20:30.15      # sexagecimal
+- 1_230.15      # fixed
+
+dates:
+- 2001-12-15T02:59:43.1Z
+- 2001-12-14t21:59:43.10-05:00
+- 2001-12-14 21:59:43.10 -5
+- 2001-12-15 2:59:43.10
+- 2002-12-14
+
+special:
+- .NaN
+- .inf
+- -.inf
+
+bools:
+- true
+- True
+- TRUE
+- y
+- Yes
+- on
+- false
+- False
+- FALSE
+- n
+- No
+- Off
+
+# Tests expect this object to contain these values
 data:
   foo: 'barbar'
-dedoo: miltiline
-  value
-
-"key in quotes": here
-boo:
-  bing: >
-    # another  comment
+  bing: 222
+  booz: true
+  nothing:
+  scalar: firstline
+    secondline
+  # foleded multiline strings
+  angle_clip: >
     line 1
     line 2
+
+  angle_strip: >-
+    line 3
+    line 4
+
+  angle_keep: >+
+    line 5
+    line 6
+
+
+  pipe_clip: |
+    line 1
+    line 2
+
+  pipe_strip: |-
+    line 3
+    line 4
+
+  pipe_keep: |+
+    line 5
+    line 6
+
+
+? multiline
+  scalar key
+: some value
 
 ? - Manchester United
   - Real Madrid
 : [ 2001-01-01, 2002-02-02 ]
 
+anchored_content: &anchor_name This is a referencable value.
+other_anchor: *anchor_name
+
+# Tests expect this array to contain these values in this order
 a_sequence:
-- Item 1
 - Item 2
 - 0.5 # sequences can contain disparate types.
-- Item 4
+- false
+- null
+- Null
+- NULL
+-
 - key: value
   another_key: another_value
 -
@@ -32,31 +130,28 @@ a_sequence:
   - inside another sequence
 - - - Nested sequence indicators
     - can be collapsed
+    - *anchor_name
 
 json_map: {"key": "value"}
 json_seq: [3, 2, 1, "takeoff"]
-and quotes are optional: {key: [3, 2, 1, takeoff]}
-
-anchored_content: &anchor_name This string will appear as the value of two keys.
-other_anchor: *anchor_name
+quotes are optional: {key: [3, 2, 1, takeoff]}
 
 base: &base
   name: Everyone has same name
 
-foo: &foo
+base2: &base2
+  email: foo@bar.com
+
+foobase: &foo
   <<: *base
   age: 10
 
-bar: &bar
-  <<: *base
-  age: 20
+foobarbase:
+  <<: *foo
+  height: 6.0
 
-double: 0.5
-explicit_string: !!str 0.5
-
-datetime: 2001-12-15T02:59:43.1Z
-datetime_with_spaces: 2001-12-14 21:59:43.10 -5
-date: 2002-12-14
+multibase:
+  <<: [*base, *base2]
 
 set:
   ? item1
