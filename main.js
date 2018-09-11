@@ -23,96 +23,13 @@ const history = window.routerHistory = createHashHistory({});
 class FakeModel extends Model {
   _size = {
     x: 100,
-    y: 40,
+    y: 46,
   }
-  _tasks = [{
-    name: 'task1',
-    action: 'someaction',
-    size: this._size,
-    coords: {
-      x: 120,
-      y: 100,
-    },
-  }, {
-    name: 'task2',
-    action: 'someaction',
-    size: this._size,
-    coords: {
-      x: 260,
-      y: 100,
-    },
-  }, {
-    name: 'task3',
-    action: 'someaction',
-    size: this._size,
-    coords: {
-      x: 50,
-      y: 250,
-    },
-  }, {
-    name: 'task4',
-    action: 'someaction',
-    size: this._size,
-    coords: {
-      x: 200,
-      y: 230,
-    },
-  }, {
-    name: 'task5',
-    action: 'someaction',
-    size: this._size,
-    coords: {
-      x: 500,
-      y: 200,
-    },
-  }]
-
-  _transitions = [{
-    from: {
-      task: 'task2',
-      anchor: 'right',
-    },
-    to: {
-      task: 'task4',
-      anchor: 'right',
-    },
-  }, {
-    from: {
-      task: 'task1',
-      anchor: 'right',
-    },
-    to: {
-      task: 'task2',
-      anchor: 'left',
-    },
-  }, {
-    from: {
-      task: 'task2',
-      anchor: 'top',
-    },
-    to: {
-      task: 'task5',
-      anchor: 'right',
-    },
-  }, {
-    from: {
-      task: 'task1',
-      anchor: 'left',
-    },
-    to: {
-      task: 'task3',
-      anchor: 'left',
-    },
-  }, {
-    from: {
-      task: 'task1',
-      anchor: 'bottom',
-    },
-    to: {
-      task: 'task4',
-      anchor: 'top',
-    },
-  }]
+  
+  _definition = {
+    tasks: [],
+    transitions: [],
+  }
 
   _parameters = []
 
@@ -127,22 +44,28 @@ class FakeModel extends Model {
   }
 
   get tasks() {
-    return this._tasks;
+    return this._definition.tasks
+      .map(task => {
+        return {
+          ...task,
+          size: this._size,
+        };
+      });
   }
 
   get transitions() {
-    return this._transitions
+    return this._definition.transitions
       .map(({ from, to }) => {
         return {
           from: {
             ...from,
             name: from.task,
-            task: this._tasks.find(task => task.name === from.task),
+            task: this.tasks.find(task => task.name === from.task),
           },
           to: {
             ...to,
             name: to.task,
-            task: this._tasks.find(task => task.name === to.task),
+            task: this.tasks.find(task => task.name === to.task),
           },
         };
       });
@@ -165,8 +88,8 @@ class FakeModel extends Model {
   }
 
   addTask(opts) {
-    this._tasks.push({
-      name: `task${this._tasks.length + 1}`,
+    this._definition.tasks.push({
+      name: `task${this.tasks.length + 1}`,
       action: opts.action,
       coords: opts.coords,
       size: this._size,
@@ -176,14 +99,37 @@ class FakeModel extends Model {
   }
 
   updateTask(ref, opts) {
-    const task = this.tasks.find(task => task.name === ref);
+    const task = this._definition.tasks.find(task => task.name === ref);
     
     if (!task) {
       throw new Error('task not found for ref');
     }
 
+    if (opts.name) {
+      task.name = opts.name;
+      this.emit();
+    }
+
+    if (opts.action) {
+      task.action = opts.action;
+      this.emit();
+    }
+
     if (opts.coords) {
       task.coords = opts.coords;
+      this.emit();
+    }
+  }
+
+  deleteTask(ref) {
+    const taskIndex = this._definition.tasks.findIndex(task => task.name === ref);
+
+    if (taskIndex > -1) {
+      delete this._definition.tasks[taskIndex];
+
+      this._definition.transitions = this._definition.transitions
+        .filter(transition => transition.from.task !== ref && transition.to.task !== ref);
+
       this.emit();
     }
   }
@@ -196,6 +142,19 @@ class FakeModel extends Model {
 
   setMeta(value) {
     this._meta = value;
+  }
+
+  parse(string) {
+    try {
+      this._definition = JSON.parse(string);
+
+      this.emit();
+    }
+    catch (e) { /* pass */ }
+  }
+
+  stringify() {
+    return JSON.stringify(this._definition, null, 2);
   }
 }
 

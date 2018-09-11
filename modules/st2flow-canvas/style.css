@@ -33,6 +33,52 @@
     border: 1px solid #ffa256;
     background-color: #fff3e6;
   }
+
+  &.selected &-button {
+    display: flex;
+  }
+
+  &-button {
+    position: absolute;
+
+    width: 24px;
+    height: 24px;
+
+    right: -36px;
+
+    border-radius: 50%;
+    border: 1px solid #ffa256;
+    background-color: #fff3e6;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    &:after {
+      content: ' ';
+    }
+
+    &.edit {
+      top: -12px;
+    }
+
+    &.delete {
+      top: initial;
+      bottom: -12px;
+    }
+  }
+
+  &-name {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &-action {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .transition {
@@ -65,4 +111,42 @@
 
   /* Chrome shows vertical scroll when svg canvas matches container exactly so we're subtracting 3 pixels at the bottom */
   margin-bottom: -3px;
+}
+
+.toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+
+  height: 40px;
+
+  display: flex;
+  justify-content: center;
+}
+
+.toolbar-button {
+  width: 32px;
+  height: 32px;
+
+  border-radius: 50%;
+  background-color: white;
+
+  z-index: 1;
+  margin: 4px;
+
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  color: #444;
+  font-size: 20px;
+
+  &:after {
+    content: ' ';
+  }
 }

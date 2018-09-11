@@ -20,11 +20,27 @@ export default class Editor extends Component {
     ace.acequire('ace/ext/language_tools');
 
     this.editor = ace.edit(editorId);
-    this.editor.getSession().setMode('ace/mode/yaml');
+    this.editor.getSession().setOptions({
+      mode: 'ace/mode/yaml',
+      tabSize: 2,
+      useSoftTabs: true,
+    });
 
-    this.editor.on('change', delta => model.applyDelta(delta));
+    this.editor.$blockScrolling = Infinity;
+
+    this.editor.on('change', delta => model.parse(this.editor.getValue()));
 
     this.editor.resize();
+
+    model.on(() => {
+      const str = model.stringify();
+
+      if (this.editor.getValue() === str) {
+        return;
+      }
+
+      this.editor.setValue(str);
+    });
   }
 
   style = style

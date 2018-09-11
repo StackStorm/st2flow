@@ -4,6 +4,7 @@ import { PropTypes } from 'prop-types';
 import Task from './task';
 import Transition from './transition';
 import Vector from './vector';
+import Toolbar from './toolbar';
 
 import style from './style.css';
 
@@ -143,7 +144,7 @@ export default class Canvas extends Component {
     const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle));
 
     this.props.model.addTask({
-      action,
+      action: action.ref,
       coords, 
     });
 
@@ -182,6 +183,13 @@ export default class Canvas extends Component {
         ref={this.canvasRef}
         onClick={e => this.handleCanvasClick(e)}
       >
+        <Toolbar>
+          <div key="undo" icon="icon-redirect" onClick={() => console.log('undo')} />
+          <div key="redo" icon="icon-redirect2" onClick={() => console.log('redo')} />
+          <div key="rearrange" icon="icon-arrange" onClick={() => console.log('rearrange')} />
+          <div key="save" icon="icon-save" onClick={() => console.log('save')} />
+          <div key="run" icon="icon-play" onClick={() => console.log('run')} />
+        </Toolbar>
         <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
           {
             model.tasks.map((task) => {

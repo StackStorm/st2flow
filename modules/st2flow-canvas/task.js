@@ -39,6 +39,11 @@ export default class Task extends Component {
   }
 
   handleMouseDown(e) {
+    // Drag should only work on left button press
+    if (e.button !== 0) {
+      return true;
+    }
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -129,7 +134,10 @@ export default class Task extends Component {
         ref={this.taskRef}
         onClick={e => this.handleClick(e)}
       >
-        {task.name}
+        <div className={cx(this.style.taskName)}>{task.name}</div>
+        <div className={cx(this.style.taskAction)}>{task.action}</div>
+        <div className={cx(this.style.taskButton, this.style.edit, 'icon-edit')} />
+        <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} />
       </div>
     );
   }
