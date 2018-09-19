@@ -11,30 +11,86 @@ const editorId = 'editor_mount_point';
 
 export default class Editor extends Component {
   static propTypes = {
+    className: PropTypes.string,
     model: PropTypes.object.isRequired,
+  }
+
+  constructor(...args) {
+    super(...args);
+    this.state = {
+      error: null,
+    };
   }
 
   componentDidMount() {
     const { model } = this.props;
-    model;
-    
+
     ace.acequire('ace/ext/language_tools');
 
     this.editor = ace.edit(editorId);
-    this.editor.getSession().setMode('ace/mode/yaml');
+    this.editor.$blockScrolling = Infinity;
+    this.editor.getSession().setOptions({
+      mode: 'ace/mode/yaml',
+      tabSize: 2,
+      useSoftTabs: true,
+    });
+    this.editor.setValue(model.tokenSet.yaml, -1);
+    this.editor.on('change', this.handleEditorChange);
 
-    this.editor.on('change', delta => model.applyDelta(delta));
+    model.on('change', this.handleModelChange);
+    model.on('error', this.handleModelError);
   }
 
-  style = style
+  componentWillUnmount() {
+    const { model } = this.props;
+
+    clearTimeout(this.deltaTimer);
+    this.editor.removeListener('change', this.handleEditorChange);
+    model.removeListener('change', this.handleModelChange);
+    model.removeListener('error', this.handleModelError);
+  }
+
+  handleEditorChange = (delta) => {
+    clearTimeout(this.deltaTimer);
+
+    // Only if the user is actually typing
+    if(this.editor.isFocused()) {
+      this.deltaTimer = setTimeout(() => {
+        this.props.model.applyDelta(delta, this.editor.getValue());
+      }, 300);
+    }
+  }
+
+  handleModelChange = (deltas, yaml) => {
+    this.setState({ error: null });
+
+    if (yaml !== this.editor.getValue()) {
+      // yaml was changed outside this editor
+      this.editor.setValue(yaml, -1);
+    }
+  }
+
+  handleModelError = (err) => {
+    // error may or may not be an array
+    const error = err && [].concat(err).reduce((str, e) => str += `${e.message}\n`, '');
+    this.setState({ error });
+  }
+
+  deltaTimer = 0; // debounce timer
 
   render() {
     return (
-      <div className={this.style.component}>
+      <div className={`${this.props.className} ${style.component}`}>
         <div
           id={editorId}
-          className={this.style.editor}
+          className={style.editor}
         />
+        {!this.state.error ?
+          null : (
+            <div className={style['yaml-error']}>
+              {this.state.error}
+            </div>
+          )}
       </div>
     );
   }

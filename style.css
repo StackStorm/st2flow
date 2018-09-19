@@ -3,11 +3,29 @@
 .component {
   display: grid;
 
-  grid-template-columns: 0 1fr 40%;
+  grid-template-columns: 150px 1fr 40%;
   grid-template-rows: 50px 1fr;
-  grid-template-areas: 
+  grid-template-areas:
     "header header header"
     "palette canvas details";
-  
+
   height: 100%;
+}
+
+.header {
+  grid-area: header;
+}
+
+.palette {
+  grid-area: palette;
+  height: 100%;
+}
+
+.canvas {
+  grid-area: canvas;
+}
+
+.details {
+  height: 100%;
+  grid-area: details;
 }

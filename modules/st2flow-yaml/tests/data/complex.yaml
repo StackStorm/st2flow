@@ -68,6 +68,15 @@ bools:
 - No
 - Off
 
+# After parsing, the left side should not equal the right
+specialKeys:
+  y: true
+  Yes: true
+  Off: true
+  n: false
+  no: false
+  off: false
+
 # Tests expect this object to contain these values
 data:
   foo: 'barbar'

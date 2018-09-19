@@ -8,8 +8,6 @@ export default class Task extends Component {
     task: PropTypes.object.isRequired,
   }
 
-  style = style
-
   render() {
     const { task } = this.props;
 
@@ -19,10 +17,11 @@ export default class Task extends Component {
 
     return (
       <div
-        className={this.style.task}
+        className={style.task}
         style={additionalStyles}
       >
-        {task.name}
+        {task.name}<br />
+        <i>{task.action}</i>
       </div>
     );
   }

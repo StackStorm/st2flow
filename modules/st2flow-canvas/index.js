@@ -7,6 +7,7 @@ import style from './style.css';
 
 export default class Canvas extends Component {
   static propTypes = {
+    className: PropTypes.string,
     model: PropTypes.object.isRequired,
   }
 
@@ -21,14 +22,19 @@ export default class Canvas extends Component {
     el.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
+
+    const { model } = this.props;
+    model.on('change', this.handleModelChange);
   }
 
   componentWillUnmount() {
     const el = this.canvasRef.current;
+    const { model } = this.props;
     el.removeEventListener('wheel', this.handleMouseWheel);
     el.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
+    model.removeListener('change', this.handleModelChange);
   }
 
   handleMouseWheel(e) {
@@ -78,7 +84,10 @@ export default class Canvas extends Component {
     return false;
   }
 
-  style = style
+  handleModelChange = (deltas, yaml) => {
+    this.forceUpdate();
+  }
+
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
 
@@ -88,8 +97,8 @@ export default class Canvas extends Component {
     const { model } = this.props;
 
     return (
-      <div className={this.style.component} ref={this.canvasRef}>
-        <div className={this.style.surface} ref={this.surfaceRef}>
+      <div className={`${this.props.className} ${style.component}`} ref={this.canvasRef}>
+        <div className={style.surface} ref={this.surfaceRef}>
           {
             model.tasks.map((task) => {
               return <Task key={task.name} task={task} />;

@@ -1,3 +1,5 @@
+// @flow
+
 // Some lodashy functions without all the dashy
 
 function pick(obj, ...keys) {
@@ -16,8 +18,13 @@ function omit(obj, ...keys) {
   }, {});
 }
 
-function get(obj, dotKey) {
-  return (`${dotKey}`).split('.').reduce((o, key) => o[key], obj);
+// TODO: support keys with dots
+function get(obj, dotKey: string | Array) {
+  if (typeof dotKey === 'string') {
+    dotKey = dotKey.split('.');
+  }
+
+  return dotKey.reduce((o, key) => o[key], obj);
 }
 
 export {

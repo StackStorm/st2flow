@@ -16,7 +16,9 @@
     ]
   },
   "dependencies": {
-    "@stackstorm/st2flow-yaml": "1.0.0-pre.5"
+    "@stackstorm/st2flow-yaml": "1.0.0-pre.5",
+    "deep-diff": "^1.0.2",
+    "eventemitter3": "^3.1.0"
   },
   "devDependencies": {
     "babelify": "^8.0.0"

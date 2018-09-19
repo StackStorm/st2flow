@@ -16,7 +16,8 @@ export type TokenRawValue = BaseToken & {
   prefix: Array<TokenRawValue>,
   singleQuoted?: boolean,
   valueObject?: string | number,
-  anchorId?: string
+  anchorId?: string,
+  isTag?: boolean
 };
 
 export type TokenKeyValue = BaseToken & {
@@ -40,3 +41,5 @@ export type TokenReference = BaseToken & {
   referencesAnchor: string,
   value: BaseToken
 };
+
+export type AnyToken = TokenRawValue | TokenKeyValue | TokenMapping | TokenCollection | TokenReference;

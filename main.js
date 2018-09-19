@@ -9,14 +9,16 @@ import {
 } from 'react-router-dom';
 import createHashHistory from 'history/createHashHistory';
 
-import Model from '@stackstorm/st2flow-model/model-orchestra';
+import { OrquestaModel } from '@stackstorm/st2flow-model';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
 import Editor from '@stackstorm/st2flow-editor';
 
-import './style.css';
+import style from './style.css';
+
+console.log(style);
 
 const history = window.routerHistory = createHashHistory({});
 
@@ -33,57 +35,50 @@ class Window extends Component {
 
   constructor(props) {
     super(props);
-    this.model = new Model();
+    const tmpYAML = `---
+version: 1.0
 
-    this.fakeModel = {
-      tasks: [{
-        name: 'task1',
-        action: 'someaction',
-        coord: {
-          x: 120,
-          y: 100,
-        },
-      }, {
-        name: 'task2',
-        action: 'someaction',
-        coord: {
-          x: 210,
-          y: 100,
-        },
-      }, {
-        name: 'task3',
-        action: 'someaction',
-        coord: {
-          x: 100,
-          y: 250,
-        },
-      }, {
-        name: 'task4',
-        action: 'someaction',
-        coord: {
-          x: 200,
-          y: 230,
-        },
-      }, {
-        name: 'task5',
-        action: 'someaction',
-        coord: {
-          x: 300,
-          y: 300,
-        },
-      }],
-    };
+description: >
+  A sample workflow that demonstrates how to use conditions
+  to determine which path in the workflow to take.
+
+input:
+  - which
+
+tasks:
+  task1:
+    action: core.local
+    coord: { x: 120, y: 100 }
+
+  task2:
+    action: core.local cmd="echo 'Took path A.'"
+    coord: { x: 210, y: 100 }
+
+  task3:
+    action: core.local cmd="echo 'Took path B.'"
+    coord: { x: 100, y: 250 }
+
+  task4:
+    action: core.local cmd="echo 'Took path C.'"
+    coord: { x: 200, y: 230 }
+
+  task5:
+    action: core.local cmd="echo 'Took path D.'"
+    coord: { x: 300, y: 300 }
+`;
+
+    this.model = new OrquestaModel(tmpYAML);
   }
 
   render() {
-    const { match: { path, params: { ref } } } = this.props;
+    // const { match: { path, params: { ref } } } = this.props;
 
     return (
-      <div className="component" >
-        <Header />
-        <Palette />
-        <Canvas model={this.fakeModel} />
-        <Editor model={this.model} />
+      <div className={style.component} >
+        <Header className={style.header} matchedRoute={this.props.match} />
+        <Palette className={style.palette} model={this.model} />
+        <Canvas className={style.canvas} model={this.model} />
+        <Editor className={style.details} model={this.model} />
       </div>
     );
   }
@@ -124,4 +119,4 @@ export class Container extends Component {
   }
 }
 
-ReactDOM.render(<Container />, document.querySelector('#container'));
+ReactDOM.render(<Container className={style.container} />, document.querySelector('#container'));

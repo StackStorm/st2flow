@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import fs from 'fs';
 import path from 'path';
 
-import Model from '../model-orchestra';
+import Model from '../model-orquesta';
 
 describe.skip('st2flow-model: Orchestra Model', () => {
   let raw = null;
