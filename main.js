@@ -18,8 +18,6 @@ import Editor from '@stackstorm/st2flow-editor';
 
 import style from './style.css';
 
-console.log(style);
-
 const history = window.routerHistory = createHashHistory({});
 
 class Window extends Component {

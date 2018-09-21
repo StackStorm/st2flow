@@ -5,7 +5,7 @@ import TokenSet from '../token-set';
 
 describe('TokenSet', () => {
   describe('toYAML method', () => {
-    [ /*'basic', 'simple', 'long', */'complex' ].forEach(file => {
+    [ 'basic', 'simple', 'long', 'complex' ].forEach(file => {
       it(`maintains source identity with ${file}.yaml`, () => {
         const yaml = fs.readFileSync(path.join(__dirname, 'data', `${file}.yaml`), 'utf-8');
         const set = new TokenSet(yaml);
