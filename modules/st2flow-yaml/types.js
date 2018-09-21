@@ -14,10 +14,11 @@ export type TokenRawValue = BaseToken & {
   doubleQuoted: boolean,
   plainScalar: boolean,
   prefix: Array<TokenRawValue>,
+
   singleQuoted?: boolean,
   valueObject?: string | number,
   anchorId?: string,
-  isTag?: boolean
+  isTag?: boolean,
 };
 
 export type TokenKeyValue = BaseToken & {
@@ -39,7 +40,12 @@ export type TokenCollection = BaseToken & {
 export type TokenReference = BaseToken & {
 	// kind = 4
   referencesAnchor: string,
-  value: BaseToken
+  value: BaseToken,
 };
 
 export type AnyToken = TokenRawValue | TokenKeyValue | TokenMapping | TokenCollection | TokenReference;
+
+export type Refinement = {
+  tree: TokenMapping,
+  tail: string,
+}

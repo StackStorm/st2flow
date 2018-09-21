@@ -4,6 +4,7 @@ import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, Token
 import { load } from 'yaml-ast-parser';
 import { pick, omit } from './util';
 import Objectifier from './objectifier';
+import Refinery from './token-refinery';
 import perf from '@stackstorm/st2flow-perf';
 
 const REG_CARRIAGE = /\r/g;
@@ -22,6 +23,7 @@ class TokenSet {
   lastToken: TokenRawValue;     // The last "value" token (kind: 0) that was processed
   anchors: Object;              // Map of anchor IDs to the original token
   objectified: ?Object;         // POJO representation of the token tree
+  stringified: ?string;         // Stringified YAML
 
   constructor(yaml: string) {
     this.parseYAML(yaml);
@@ -41,6 +43,7 @@ class TokenSet {
 
     this.anchors = {};
     this.objectified = null;
+    this.stringified = null;
     this.tree = this.parseNode(rootNode);
     this.head = this.yaml.slice(0, this.tree.startPosition);
     this.tail = this.yaml.slice(this.lastToken.endPosition);
@@ -183,6 +186,7 @@ class TokenSet {
       rawValue: (i > 0 ? '\n' : '') + item,
       startPosition: startIdx,
       endPosition: (startIdx += item.length + (i > 0 ? 1 : 0)),
+      isComment: item.indexOf('#') !== -1,
     })).filter(item => !!item.rawValue);
   }
 
@@ -208,92 +212,6 @@ class TokenSet {
     return undefined;
   }
 
-  createToken(data: any) {
-    if(Array.isArray(data)) {
-      return this.createCollectionToken(data);
-    }
-
-    if(Object.prototype.toString.call(data) === '[object Object]') {
-      return this.createMappingToken(data);
-    }
-
-    if(data === null || typeof data === 'undefined') {
-      data = null;
-    }
-
-    // Date, new String(), new Number(), et al
-    if(typeof data === 'object') {
-      return this.createRawValueToken(JSON.stringify(data), data);
-    }
-
-    return this.createRawValueToken(`${data}`, data);
-  }
-
-  /**
-   * Given a value string, creates a raw value token (kind: 0)
-   * The valObj is the object form of the value. This should be the
-   * JS primitive/native form of the value (eg. dates, booleans, numbers, etc.)
-   */
-  createRawValueToken(val: string, valObj: any): TokenRawValue {
-    const token: TokenRawValue = {
-      kind: 0,
-      value: val,
-      rawValue: val,
-      doubleQuoted: false,
-      plainScalar: true,
-      startPosition: 0,
-      endPosition: val.length,
-      prefix: [ /* keep this empty */ ],
-    };
-
-    if(typeof valObj !== 'undefined' && val !== valObj) {
-      token.valueObject = valObj;
-    }
-
-    return token;
-  }
-
-  /**
-   * Given a key and a value, creates a key/value token (kind: 1)
-   * The value can be any type.
-   */
-  createKeyValueToken(key: string, val: any): TokenKeyValue {
-    return {
-      kind: 1,
-      key: this.createToken(key),
-      value: this.createToken(val),
-    };
-  }
-
-  /**
-   * Given a plain JS object, creates a mapping token (kind: 2)
-   * The values can be a mix of types.
-   */
-  createMappingToken(data: Object): TokenMapping {
-    const mappings = Object.keys(data).reduce((arr, key) => {
-      arr.push(this.createKeyValueToken(key, data[key]));
-      return arr;
-    }, []);
-
-    return {
-      kind: 2,
-      mappings,
-    };
-  }
-
-  /**
-   * Given an array of values, creates a collection token (kind: 3).
-   * The data can be a mix of types of values.
-   */
-  createCollectionToken(data: Array<any>): TokenCollection {
-    const items = data.map(item => this.createToken(item));
-
-    return {
-      kind: 3,
-      items,
-    };
-  }
-
   /**
    * Should be called any time a mutation is made to the tree.
    * This will reindex all tokens, ensure proper jpaths and prefixes,
@@ -304,182 +222,34 @@ class TokenSet {
    * any time a mutation is made! Consumers should not have to pass any
    * paremeters and can simply call the method.
    */
-  refineTree(startToken: AnyToken, startPos: number = 0, depth: number = 0, jpath: Array<string | number> = []) {
-    if(typeof startToken === 'undefined' || startToken === this.tree) {
-      startToken = this.tree;
-      startPos = this.head.length;
-      depth = 0;
-      jpath = [ 'mappings' ];
-      this.objectified = null;
-    }
+  refineTree() {
+    perf.start('refineTree');
 
-    startToken.jpath = jpath;
+    this.objectified = null;
+    this.stringified = null;
 
-    switch(startToken.kind) {
-      case 0:
-        startToken.startPosition = startToken.prefix.reduce((pos, token) => {
-          token.startPosition = pos;
-          token.endPosition = token.startPosition + token.rawValue.length;
-          return token.endPosition;
-        }, startPos);
-        startToken.endPosition = startToken.startPosition + startToken.rawValue.length;
+    const refinery = new Refinery(this.yaml, this.head, this.tail);
+    const { tree, tail } = refinery.refineTree(this.tree);
 
-        break;
+    this.tree = tree;
+    this.tail = tail;
+    this.yaml = this.toYAML();
 
-      case 1:
-        this.refineTree(startToken.key, startPos, depth + 1, jpath.concat('key'));
-        startToken.startPosition = startToken.key.startPosition;
-        startToken.endPosition = startToken.key.endPosition;
-
-        // If there is no prefix AND this is not the first key/value token.
-        if( (!startToken.key.prefix || !startToken.key.prefix.length) && jpath.join('.') !== 'mappings.0') {
-          if(!startToken.key.prefix) {
-            startToken.key.prefix = [];
-          }
-
-          startToken.key.prefix.unshift(this.createToken(`\n${' '.repeat(depth * 2)}`));
-
-          if(startToken.startPosition === this.yaml.length - this.tail.length) {
-            startToken.key.prefix.unshift(this.createToken(`${this.tail}`));
-            this.tail = '\n';
-          }
-        }
-
-        if(startToken.value !== null) {
-          this.refineTree(startToken.value, startToken.key.endPosition, depth + 1, jpath.concat('value'));
-          startToken.endPosition = startToken.value.endPosition;
-          this._addValuePrefix(startToken.value, depth);
-        }
-
-        break;
-
-      case 2:
-        this._refineCollection(startToken, 'mappings', startPos, depth, jpath);
-        break;
-
-      case 3:
-        this._refineCollection(startToken, 'items', startPos, depth, jpath);
-        break;
-
-      case 4:
-        startToken.startPosition = startToken.prefix.reduce((pos, token) => {
-          token.startPosition = pos;
-          token.endPosition = token.startPosition + token.rawValue.length;
-          return token.endPosition;
-        }, startPos);
-
-        break;
-
-      default:
-        throw new Error('ahhhhh');
-    }
-
-    return startToken;
-  }
-
-  _refineCollection(startToken: TokenMapping | TokenCollection, key: string, startPos: number, depth: number, jpath: Array<string | number>) {
-    let lastToken: AnyToken;
-
-    startToken[key].reduce((pos, token, i) => {
-      if (token !== null) {
-        this.refineTree(token, pos, depth, jpath.concat(i));
-
-        if(!lastToken) {
-          startToken.startPosition = token.startPosition;
-        }
-
-        lastToken = token;
-        return token.endPosition;
-      }
-
-      return pos;
-    }, startPos);
-
-    if (!lastToken) {
-      throw new Error('Expected lastToken not to be null. This is likely an edge case that needs to be fixed.');
-    }
-
-    startToken.endPosition = lastToken.endPosition;
+    perf.stop('refineTree');
   }
 
   /**
-   * Finds the first token of type 0 or 4
-   */
-  _findFirstValueToken(token: AnyToken): TokenRawValue {
-    switch(token.kind) {
-      case 0:
-      case 4:
-        return token;
-
-      case 1:
-        return this._findFirstValueToken(token.key);
-
-      case 2:
-        return this._findFirstValueToken(token.mappings[0]);
-
-      case 3:
-        return this._findFirstValueToken(token.items[0]);
-
-      default:
-        throw new Error(`Unrecognized token kind: ${token.kind}`);
-    }
-  }
-
-  /**
-   * This is for adding a prefix to "value" tokens (eg. the right hand
-   * side of a key/value pair).
-   */
-  _addValuePrefix(token: AnyToken, depth: number): void {
-    switch(token.kind) {
-      case 0:
-      case 4:
-        if (!token.prefix || !token.prefix.length) {
-          token.prefix = [ this.createToken(': ') ];
-        }
-        return;
-
-      case 1:
-        this._addValuePrefix(this._findFirstValueToken(token), depth);
-        return;
-
-      case 2:
-        token = this._findFirstValueToken(token);
-        if(!token.prefix) {
-          token.prefix = [];
-        }
-        if(!token.prefix.length || token.prefix.every(t => t.value.indexOf(':') === -1)) {
-          token.prefix.unshift(this.createToken(`:`));
-        }
-        return;
-
-      case 3:
-        token.items.forEach((t, i) => {
-          const token = this._findFirstValueToken(t);
-          if(!token.prefix) {
-            token.prefix = [];
-          }
-          if(!token.prefix.length || token.prefix.every(t => t.value.indexOf('- ') === -1)) {
-            token.prefix.unshift(this.createToken(`\n${' '.repeat(depth * 2)} - `));
-          }
-          if(i === 0 && token.prefix[0].value.indexOf(':') === -1) {
-            token.prefix.unshift(this.createToken(':'));
-          }
-        });
-        return;
-    }
-  }
-
-  /**
-   * Returns an object representation of the token tree. Most consumers
+   * Returns a POJO representation of the token tree. Most consumers
    * should work with the friendly object returned by this method. The
-   * crawler is the "bridge" between this plain object and the AST. The
-   * crawler should be used to make modifications to the AST.
+   * crawler is the "bridge" between this plain object and the AST and
+   * should be used to make modifications to the AST.
    */
   toObject(): Object {
     if (!this.objectified) {
-      const objectifier = new Objectifier(this);
+      const objectifier = new Objectifier(this.anchors);
       this.objectified = objectifier.getTokenValue(this.tree);
     }
+
     return this.objectified;
   }
 
@@ -487,11 +257,15 @@ class TokenSet {
    * Contructs a YAML string from the token tree.
    */
   toYAML(): string {
-    return this.head + this.stringifyToken(this.tree) + this.tail;
+    if(!this.stringified) {
+      this.stringified = this.head + this.stringifyToken(this.tree) + this.tail;
+    }
+
+    return this.stringified;
   }
 
   /**
-   * Recursively stringifies tokens.
+   * Recursively stringifies tokens into YAML.
    */
   stringifyToken(token: AnyToken, str: string = ''): string {
     if(!token) {

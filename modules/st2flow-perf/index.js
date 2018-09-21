@@ -1,22 +1,30 @@
-const debug = require('debug')('stflow.perf');
+const debug = require('debug')('st2flow.perf');
+const IS_NODE = typeof process === 'object' && Object.prototype.toString.call(process) === '[object process]';
 
-performance.setResourceTimingBufferSize(150);
+if (IS_NODE) {
+  module.exports = {
+    start() {},
+    stop() {},
+  };
+}
+else {
+  performance.setResourceTimingBufferSize(150);
 
-const perf = {
-  start(name) {
-    performance.mark(`${name}-start`);
-  },
+  module.exports = {
+    start(name) {
+      performance.mark(`${name}-start`);
+    },
 
-  stop(name) {
-    performance.mark(`${name}-end`);
-    performance.measure(name, `${name}-start`, `${name}-end`);
+    stop(name) {
+      performance.mark(`${name}-end`);
+      performance.measure(name, `${name}-start`, `${name}-end`);
 
-    const measures = performance.getEntriesByName(name, 'measure');
-    const dur = measures[measures.length - 1].duration;
-    const average = measures.reduce((sum, m) => sum + m.duration, 0) / measures.length;
+      const measures = performance.getEntriesByName(name, 'measure');
+      const dur = measures[measures.length - 1].duration;
+      const average = measures.reduce((sum, m) => sum + m.duration, 0) / measures.length;
 
-    debug(`${name} task took ${dur}ms and takes ${average}ms on average.`);
-  }
+      debug(`${name} task took ${dur}ms and takes ${average}ms on average.`);
+    },
+  };
 }
 
-module.exports = perf;

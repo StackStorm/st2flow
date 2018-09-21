@@ -1,17 +1,17 @@
 // @flow
 
-import type { TokenRawValue, /*TokenKeyValue,*/ TokenMapping, TokenCollection, TokenReference } from './types';
+import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken } from './types';
 
 const STR_BACKREF = '<<';
 
 class Objectifier {
-  tokenSet;
+  anchors: Object;
 
-  constructor(tokenSet) {
-    this.tokenSet = tokenSet;
+  constructor(anchors: Object) {
+    this.anchors = anchors;
   }
 
-  getTokenValue(token, raw: boolean = false): any {
+  getTokenValue(token: AnyToken, raw: boolean = false): any {
     if (token == null) {
       return null;
     }
@@ -93,12 +93,12 @@ class Objectifier {
     return result;
   }
 
-  getCollection(token: TokenCollection): Array {
+  getCollection(token: TokenCollection): Array<any> {
     return token.items.map(t => this.getTokenValue(t));
   }
 
   getReference(token: TokenReference): any {
-    const refToken = this.tokenSet.anchors[token.referencesAnchor];
+    const refToken = this.anchors[token.referencesAnchor];
     return this.getTokenValue(refToken);
   }
 }

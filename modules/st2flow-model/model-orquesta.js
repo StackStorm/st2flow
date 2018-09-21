@@ -18,6 +18,21 @@ class OrquestaModel implements ModelInterface {
     }
   }
 
+  fromYAML(yaml: string): void {
+    try {
+      const oldData = this.tokenSet;
+      this.tokenSet = new TokenSet(yaml);
+      this.emitChange(oldData, this.tokenSet);
+    }
+    catch (ex) {
+      this.emitter.emit('error', ex);
+    }
+  }
+
+  toYAML(): string {
+    return this.tokenSet.toYAML();
+  }
+
   on(event: string, callback: Function) {
     this.emitter.on(event, callback);
   }
@@ -34,21 +49,6 @@ class OrquestaModel implements ModelInterface {
     if (deltas.length) {
       this.emitter.emit('change', deltas, this.tokenSet.toYAML());
     }
-  }
-
-  fromYAML(yaml: string): void {
-    try {
-      const oldData = this.tokenSet;
-      this.tokenSet = new TokenSet(yaml);
-      this.emitChange(oldData, this.tokenSet);
-    }
-    catch (ex) {
-      this.emitter.emit('error', ex);
-    }
-  }
-
-  toYAML(): string {
-    return this.tokenSet.toYAML();
   }
 
   get version() {
@@ -99,7 +99,6 @@ class OrquestaModel implements ModelInterface {
   deleteTask(ref: TaskRefInterface) {
     throw new Error('Not yet implemented');
   }
-
 
   addTransition(opts: TransitionInterface) {
     throw new Error('Not yet implemented');

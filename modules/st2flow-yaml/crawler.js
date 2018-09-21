@@ -1,7 +1,8 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken } from './types';
 
+import factory from './token-factory';
 import TokenSet from './token-set';
 import { get } from './util';
 
@@ -22,30 +23,27 @@ import { get } from './util';
  * "task1" token within the given branch. This method is recursive, and generally
  * the starting branch should always be the root node: tokenSet.tree.
  */
-function getTokenByKey(branch, key: string | Array): Array {
+function getTokenByKey(branch: AnyToken, key: string | Array<string | number>): AnyToken {
   if (!branch) {
     return undefined;
   }
 
-  if(typeof key === 'string') {
-    // TODO: handle keys with dots
-    key = key.split('.').filter(Boolean);
-  }
+  const keyArr = typeof key === 'string' ? key.split('.').filter(Boolean) : key;
 
-  if(!key.length) {
+  if(!keyArr.length) {
     return branch;
   }
 
   if(branch.kind === 0) {
     // The following mimicks the behavior of reading normal JS objects
-    if(key.length === 1) {
+    if(keyArr.length === 1) {
       return undefined;
     }
 
-    throw new Error(`Cannot read property ${key[1]} of undefined.`);
+    throw new Error(`Cannot read property ${keyArr[1]} of undefined.`);
   }
 
-  const segment = key.shift();
+  const segment = keyArr.shift();
 
   switch(branch.kind) {
     case 2: {
@@ -57,49 +55,43 @@ function getTokenByKey(branch, key: string | Array): Array {
         return undefined;
       }
 
-      return getTokenByKey(key.length ? kvToken.value : kvToken.key, key);
+      return getTokenByKey(keyArr.length ? kvToken.value : kvToken.key, keyArr);
     }
 
     case 3:
-      return getTokenByKey(branch.items[segment], key);
+      return getTokenByKey(branch.items[segment], keyArr);
 
     default:
-      throw new Error(`Error looking up token for "${segment}.${key.join('.')} on branch kind: ${branch.kind}`);
+      throw new Error(`Error looking up token for "${segment}.${keyArr.join('.')} on branch kind: ${branch.kind}`);
   }
 }
 
 /**
- * Given a key, returns the token value and verifies it's the expected kind.
+ * Given a key such as "tasks.foo", returns the value as a token and
+ * verifies it's the expected kind.
  */
-function getTokenValueByKey(tokenSet: TokenSet, key: string | Array, kind: number) {
+function getTokenValueByKey(tokenSet: TokenSet, key: string | Array<string | number>, kind?: number): AnyToken {
   const token = getTokenByKey(tokenSet.tree, key);
 
   if (!token) {
-    throw new Error(`Could not find token for path: ${key}`);
+    throw new Error(`Could not find token for path: ${key.toString()}`);
   }
 
-  const parentToken = getTokenParent(tokenSet, token);
-
-  let valueToken;
-  switch(parentToken.kind) {
-    case 1:
-      valueToken = parentToken.value;
-      break;
-
-    default:
-      valueToken = token;
-      break;
-  }
+  const parentToken: AnyToken = getTokenParent(tokenSet, token);
+  const valueToken: AnyToken = parentToken.kind === 1 ? parentToken.value : token;
 
   if (typeof kind !== 'undefined' && valueToken.kind !== kind) {
-    throw new Error(`Value token is not of kind "${kind}" at path: ${key}`);
+    throw new Error(`Value token is not of kind "${kind}" at path: ${key.toString()}`);
   }
 
   return valueToken;
 }
 
-function getTokenParent(tokenSet: TokenSet, token) {
-  const result = get(tokenSet.tree, token.jpath.slice(0, -1));
+/**
+ * Given a token, returns the parent token from the AST.
+ */
+function getTokenParent(tokenSet: TokenSet, token): AnyToken {
+  const result: AnyToken | Array<AnyToken> = get(tokenSet.tree, token.jpath.slice(0, -1));
 
   if(Array.isArray(result) || !result.hasOwnProperty('kind')) {
     return get(tokenSet.tree, token.jpath.slice(0, -2));
@@ -140,25 +132,25 @@ const crawler = {
    *   }
    * }
    */
-  replaceTokenValue(tokenSet: TokenSet, key: string | Array, value: any) {
-    const valueToken = getTokenValueByKey(tokenSet, key);
-    const parentToken = getTokenParent(tokenSet, valueToken);
+  replaceTokenValue(tokenSet: TokenSet, key: string | Array<string | number>, value: any): void {
+    const valueToken: AnyToken = getTokenValueByKey(tokenSet, key);
+    const parentToken: TokenKeyValue | TokenCollection = getTokenParent(tokenSet, valueToken);
 
     switch(parentToken.kind) {
       case 1:
-        parentToken.value = tokenSet.createToken(value);
+        parentToken.value = factory.createToken(value);
         tokenSet.refineTree();
         break;
 
       case 3: {
         const index = valueToken.jpath.slice(-1)[0];
-        parentToken.items.splice(index, 1, tokenSet.createToken(value));
+        parentToken.items.splice(index, 1, factory.createToken(value));
         tokenSet.refineTree();
         break;
       }
 
       default:
-        throw new Error(`Cannot update token of kind ${valueToken.kind} at path: ${key}`);
+        throw new Error(`Cannot update token of kind ${valueToken.kind} at path: ${key.toString()}`);
     }
   },
 
@@ -192,9 +184,9 @@ const crawler = {
    *   }
    * }
    */
-  addMappingItem(tokenSet: TokenSet, targetKey: string | Array, key: string, val: any) {
+  addMappingItem(tokenSet: TokenSet, targetKey: string | Array<string | number>, key: string, val: any) {
     const token: TokenMapping = getTokenValueByKey(tokenSet, targetKey, 2);
-    const kvToken: TokenKeyValue = tokenSet.createKeyValueToken(key, val);
+    const kvToken: TokenKeyValue = factory.createKeyValueToken(key, val);
 
     token.mappings.push(kvToken);
     tokenSet.refineTree();
@@ -215,11 +207,11 @@ const crawler = {
    * crawler.deleteMappingItem(tokenSet, 'version');
    * crawler.deleteMappingItem(tokenSet, 'tasks.task1');
    */
-  deleteMappingItem(tokenSet: TokenSet, key: string | Array) {
+  deleteMappingItem(tokenSet: TokenSet, key: string | Array<string | number>) {
     const token: TokenRawValue = getTokenByKey(tokenSet.tree, key);
 
     if (!token) {
-      throw new Error(`Could not find token for path: ${key}`);
+      throw new Error(`Could not find token for path: ${key.toString()}`);
     }
 
     const parentKvToken: TokenKeyValue = getTokenParent(tokenSet, token);
@@ -255,9 +247,9 @@ const crawler = {
    *   - item 3
    * }
    */
-  spliceCollection(tokenSet: TokenSet, targetKey: string | Array, start: string, deleteCount: number, ...items) {
+  spliceCollection(tokenSet: TokenSet, targetKey: string | Array<string | number>, start: string, deleteCount: number, ...items: Array<AnyToken>) {
     const token: TokenCollection = getTokenValueByKey(tokenSet, targetKey, 3);
-    const tokens = items.map(item => tokenSet.createToken(item));
+    const tokens = items.map(item => factory.createToken(item));
 
     token.items.splice(start, deleteCount, ...tokens);
     tokenSet.refineTree();
