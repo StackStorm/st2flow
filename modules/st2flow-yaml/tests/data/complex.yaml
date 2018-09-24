@@ -9,6 +9,9 @@ dedoo: multiline
 enabled: true
 double: 0.5
 explicit_string: !!str 0.5
+key.with.dot: is_valid
+nested:
+  key.with.dot: is_valid
 
 this:
   is:

@@ -22,12 +22,7 @@ const factory = {
       data = null;
     }
 
-    // Date, new String(), new Number(), et al
-    if(typeof data === 'object') {
-      return this.createRawValueToken(JSON.stringify(data), data);
-    }
-
-    return this.createRawValueToken(`${data}`, data);
+    return this.createRawValueToken(JSON.stringify(data), data);
   },
 
   /**

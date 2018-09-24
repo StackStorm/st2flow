@@ -4,7 +4,7 @@ import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyTo
 
 import factory from './token-factory';
 import TokenSet from './token-set';
-import { get } from './util';
+import { get, splitKey } from './util';
 
 /**
  * TokenSet consumers will often work with the "objectified" version
@@ -28,7 +28,7 @@ function getTokenByKey(branch: AnyToken, key: string | Array<string | number>): 
     return undefined;
   }
 
-  const keyArr = typeof key === 'string' ? key.split('.').filter(Boolean) : key;
+  const keyArr: Array<string | number> = splitKey(key);
 
   if(!keyArr.length) {
     return branch;
@@ -101,7 +101,7 @@ function getTokenParent(tokenSet: TokenSet, token): AnyToken {
 }
 
 const crawler = {
-  getValueByKey(tokenSet: TokenSet, key: string | number): any {
+  getValueByKey(tokenSet: TokenSet, key: string | Array<string | number>): any {
     if(tokenSet) {
       return get(tokenSet.toObject(), key);
     }
@@ -132,7 +132,7 @@ const crawler = {
    *   }
    * }
    */
-  replaceTokenValue(tokenSet: TokenSet, key: string | Array<string | number>, value: any): void {
+  replaceTokenValue(tokenSet: TokenSet, key: string | Array<string | number>, value: any) {
     const valueToken: AnyToken = getTokenValueByKey(tokenSet, key);
     const parentToken: TokenKeyValue | TokenCollection = getTokenParent(tokenSet, valueToken);
 
@@ -184,9 +184,26 @@ const crawler = {
    *   }
    * }
    */
-  addMappingItem(tokenSet: TokenSet, targetKey: string | Array<string | number>, key: string, val: any) {
-    const token: TokenMapping = getTokenValueByKey(tokenSet, targetKey, 2);
-    const kvToken: TokenKeyValue = factory.createKeyValueToken(key, val);
+  assignMappingItem(tokenSet: TokenSet, targetKey: string | Array<string | number>, val: any) {
+    const targKey: Array<string | number> = splitKey(targetKey);
+
+    if(!targKey.length) {
+      throw new Error(`Cannot add a key to a blank target: ${targKey.join('.')}`);
+    }
+
+    let token: TokenMapping;
+    let newKey: string | number;
+
+    if(targKey.length === 1) {
+      token = tokenSet.tree;
+      newKey = targKey[0];
+    } else {
+      const parentObjKey: Array<string | number> = targKey.slice(0, -1);
+      token = getTokenValueByKey(tokenSet, parentObjKey, 2);
+      newKey = targKey.slice(-1)[0];
+    }
+
+    const kvToken = factory.createKeyValueToken(`${newKey}`, val);
 
     token.mappings.push(kvToken);
     tokenSet.refineTree();

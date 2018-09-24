@@ -85,12 +85,12 @@ export default class Canvas extends Component {
   }
 
   handleModelChange = (deltas, yaml) => {
+    // TODO: find a better way
     this.forceUpdate();
   }
 
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
-
   scale = 0;
 
   render() {
