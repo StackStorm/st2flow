@@ -24,6 +24,11 @@ describe('Token Set Crawler', () => {
     expect(crawler.getValueByKey(set, 'this.is.b.0.some_array.value')).to.equal('awesome');
   });
 
+  it('can look up keys with dots in them (MUST use the array syntax)', () => {
+    expect(crawler.getValueByKey(set, ['key.with.dot'])).to.equal('is_valid');
+    expect(crawler.getValueByKey(set, ['nested', 'key.with.dot'])).to.equal('is_valid');
+  });
+
   it('recognizes different flavors of null values', () => {
     const nulls = crawler.getValueByKey(set, 'nulls');
     nulls.forEach(n => expect(n).to.equal(null));
@@ -179,20 +184,24 @@ describe('Token Set Crawler', () => {
     });
   });
 
-  describe('addMappingItem', () => {
+  describe('assignMappingItem', () => {
     let set;
 
     beforeEach(() => {
       set = new TokenSet(yaml);
     });
 
-    it('throws if the path is not found', () => {
-      expect(() => crawler.addMappingItem(set, 'asdhrtdvaget')).to.throw('Could not find token');
+    it('throws if no path is specified', () => {
+      expect(() => crawler.assignMappingItem(set, '')).to.throw('Cannot add a key to a blank target');
     });
 
-    it('throws if the target token is not a mapping token', () => {
-      expect(() => crawler.addMappingItem(set, 'version')).to.throw('token is not of kind "2"');
-      expect(() => crawler.addMappingItem(set, 'nulls')).to.throw('token is not of kind "2"');
+    it('throws if the path is not found', () => {
+      expect(() => crawler.assignMappingItem(set, 'asdhrtdvaget.asdfasdf')).to.throw('Could not find token');
+    });
+
+    it('throws if the parent token is not a mapping token', () => {
+      expect(() => crawler.assignMappingItem(set, 'version.foo')).to.throw('token is not of kind "2"');
+      expect(() => crawler.assignMappingItem(set, 'nulls.foo')).to.throw('token is not of kind "2"');
     });
 
     [ 'scalar', 1234, true, new Date(), null, { a: 'mapping' }, [ 'an', {'array': 'item'}]].forEach(val => {
@@ -201,14 +210,14 @@ describe('Token Set Crawler', () => {
           Object.prototype.toString.call(val) : typeof val;
 
       it(`can add add and retrieve ${type} values`, () => {
-        crawler.addMappingItem(set, 'data', 'aNewItem', val);
+        crawler.assignMappingItem(set, 'data.aNewItem', val);
         expect(crawler.getValueByKey(set, 'data.aNewItem')).to.deep.equal(val);
       });
     });
 
     it('can add root level items', () => {
       const val = Math.random();
-      crawler.addMappingItem(set, '', 'aRandomValue', val);
+      crawler.assignMappingItem(set, 'aRandomValue', val);
 
       expect(crawler.getValueByKey(set, 'aRandomValue')).to.equal(val);
     });

@@ -16,6 +16,7 @@ class Refinery {
   indent: string;
 
   constructor(yaml: string, head: string, tail: string) {
+    // The following fields are required for this module to work properly
     this.yaml = yaml;
     this.head = head;
     this.tail = tail;
@@ -24,15 +25,23 @@ class Refinery {
     this.indent = match ? match[1] : DEFAULT_INDENT;
   }
 
+  // This is the only method anybody should care about
   refineTree(tree: TokenMapping): Refinement {
     const newTree: TokenMapping = this.refineToken(tree, this.head.length, 0, tree.jpath);
 
     return {
       tree: newTree,
+      head: this.head,
       tail: this.tail,
     };
   }
 
+
+  /**
+   * Given a token, refines the token
+   *
+   * NOTE: this causes side effects on the token!! OMG!!!
+   */
   refineToken(startToken: AnyToken, startPos: number, depth: number, jpath: Array<string | number>): AnyToken {
     startToken.jpath = jpath;
 
@@ -198,7 +207,7 @@ class Refinery {
 
           // only add the dash if it's not already there
           if(token.prefix.every(t => t.value.indexOf('- ') === -1)) {
-            token.prefix.unshift(factory.createToken(`\n${this.indent.repeat(depth)} - `));
+            token.prefix.unshift(factory.createToken(`\n${this.indent.repeat(depth + 1)}- `));
           }
 
           // the fist item in a collection should have a colon prefix

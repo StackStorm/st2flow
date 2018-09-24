@@ -47,5 +47,6 @@ export type AnyToken = TokenRawValue | TokenKeyValue | TokenMapping | TokenColle
 
 export type Refinement = {
   tree: TokenMapping,
+  head: string,
   tail: string,
 }

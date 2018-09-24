@@ -44,25 +44,33 @@ input:
   - which
 
 tasks:
-  task1:
+  t1:
     action: core.local
-    coord: { x: 120, y: 100 }
-
-  task2:
+    input:
+      cmd: printf <% $.which %>
+    next:
+      - when: <% succeeded() and result().stdout = 'a' %>
+        publish: path=<% result().stdout %>
+        do:
+          - a
+          - b
+      - when: <% succeeded() and result().stdout = 'b' %>
+        publish: path=<% result().stdout %>
+        do: b
+      - when: <% succeeded() and not result().stdout in list(a, b) %>
+        publish: path=<% result().stdout %>
+        do: c
+  a:
     action: core.local cmd="echo 'Took path A.'"
-    coord: { x: 210, y: 100 }
-
-  task3:
+  b:
     action: core.local cmd="echo 'Took path B.'"
-    coord: { x: 100, y: 250 }
-
-  task4:
+    next:
+      - do: 'foobar'
+  c:
     action: core.local cmd="echo 'Took path C.'"
-    coord: { x: 200, y: 230 }
+  foobar:
+    action: core.local
 
-  task5:
-    action: core.local cmd="echo 'Took path D.'"
-    coord: { x: 300, y: 300 }
 `;
 
     this.model = new OrquestaModel(tmpYAML);

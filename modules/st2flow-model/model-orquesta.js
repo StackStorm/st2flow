@@ -42,6 +42,7 @@ class OrquestaModel implements ModelInterface {
   }
 
   emitChange(oldData: Object, newData: Object): void {
+    // TODO: add schema checks before emitting change event
     const obj1 = oldData ? oldData : {};
     const obj2 = newData ? newData : {};
     const deltas = diff(obj1, obj2) || [];
@@ -62,6 +63,12 @@ class OrquestaModel implements ModelInterface {
   get tasks(): Array<TaskInterface> {
     const tasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
+    if(!tasks) {
+      // TODO: make part of schema validation
+      this.emitter.emit('error', new Error('No tasks found.'));
+      return [];
+    }
+
     return tasks.__keys.map(name =>
       Object.assign({}, {
         name,
@@ -70,9 +77,41 @@ class OrquestaModel implements ModelInterface {
     );
   }
 
-  // Transitions are any task with a "next" property
   get transitions(): Array<TransitionInterface> {
-    return this.tasks.filter(task => task.hasOwnProperty('next'));
+    return this.tasks.reduce((arr, task) => {
+      if(task.hasOwnProperty('next')) {
+        task.next.forEach((nxt, i) => {
+          let to;
+
+          // nxt.do can be a string, comma delimited string, or array
+          if(typeof nxt.do === 'string') {
+            to = nxt.do.split(',').map(name => name.trim());
+          }
+          else if(Array.isArray(nxt.do)) {
+            to = nxt.do;
+          }
+          else {
+            this.emitter.emit('error', new Error(`Task "${task.name}" transition #${i + 1} must define the "do" property.`));
+          }
+
+          to.forEach(name => {
+            const transition: TransitionInterface = {
+              from: { name: task.name },
+              to: { name },
+            };
+
+            if(nxt.when) {
+              transition.condition = nxt.when;
+            }
+
+            // TODO: figure out how to compute transition.type?
+            arr.push(transition);
+          });
+        });
+      }
+
+      return arr;
+    }, []);
   }
 
   applyDelta(delta: DeltaInterface, yaml: string) {
