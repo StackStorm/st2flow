@@ -10,6 +10,7 @@ export interface CanvasPoint {
 export interface TaskInterface {
     name: string;
     action: string;
+    input?: Object;
 
     coords: CanvasPoint;
 }
@@ -37,7 +38,13 @@ export interface ModelInterface {
     +tasks: Array<TaskInterface>;
     +transitions: Array<TransitionInterface>;
 
+    // These intentionally return void to prevent chaining
+    // Consumers are responsible for cleaning up after themselves
+    on(event: string, callback: Function): void;
+    removeListener(event: string, callback: Function): void;
+
     constructor(yaml: string): void;
+    fromYAML(): void;
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;

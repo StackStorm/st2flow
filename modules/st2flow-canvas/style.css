@@ -3,8 +3,6 @@
 }
 
 .component {
-  grid-area: canvas;
-
   background-color: white;
 
   overflow: auto;

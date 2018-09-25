@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import Task from './task';
 import Transition from './transition';
@@ -10,6 +11,7 @@ import style from './style.css';
 
 export default class Canvas extends Component {
   static propTypes = {
+    className: PropTypes.string,
     model: PropTypes.object.isRequired,
     selected: PropTypes.string,
   }
@@ -179,7 +181,7 @@ export default class Canvas extends Component {
 
     return (
       <div
-        className={this.style.component}
+        className={cx(this.props.className, this.style.component)}
         ref={this.canvasRef}
         onClick={e => this.handleCanvasClick(e)}
       >
@@ -209,11 +211,19 @@ export default class Canvas extends Component {
             {
               model.transitions
                 .map((transition) => {
+                  const from = {
+                    task: model.tasks.find(({ name }) => name === transition.from.name),
+                    anchor: 'bottom',
+                  };
+                  const to = {
+                    task: model.tasks.find(({ name }) => name === transition.to.name),
+                    anchor: 'top',
+                  };
                   return (
                     <Transition
-                      key={`${transition.from.name}-${transition.to.name}`}
-                      from={transition.from}
-                      to={transition.to}
+                      key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`}
+                      from={from}
+                      to={to}
                     />
                   );
                 })

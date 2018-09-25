@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import Action from './action';
 
@@ -7,6 +8,7 @@ import style from './style.css';
 
 export default class Palette extends Component {
   static propTypes = {
+    className: PropTypes.string,
     actions: PropTypes.array,
   }
 
@@ -15,7 +17,15 @@ export default class Palette extends Component {
     packs: {},
   }
 
-  style = style
+  // addTask = () => {
+  //   this.props.model.addTask({
+  //     name: `doSomething ${Math.random()}`,
+  //     action: 'some.action',
+  //     anobject: { foo: 'bar' },
+  //     next: [ 'taboot', 'taboot' ],
+  //     coord: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
+  //   });
+  // }
 
   handleSearch(e) {
     this.setState({ search: e.target.value });
@@ -31,12 +41,14 @@ export default class Palette extends Component {
     this.setState({ packs });
   }
 
+  style = style
+
   render() {
     const { actions } = this.props;
     const { search, packs } = this.state;
 
     return (
-      <div className={this.style.component}>
+      <div className={cx(this.props.className, this.style.component)}>
         <div className={this.style.search}>
           <input
             type="text"

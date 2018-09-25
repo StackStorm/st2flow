@@ -254,6 +254,7 @@ class Panel extends Component {
 
 export default class Details extends Component {
   static propTypes = {
+    className: PropTypes.string,
     model: PropTypes.object.isRequired,
     selected: PropTypes.string,
   }
@@ -295,7 +296,7 @@ export default class Details extends Component {
     const task = taskSelected && model.tasks.find(task => task.name === taskSelected);
 
     return (
-      <div className={this.style.component}>
+      <div className={cx(this.props.className, this.style.component)}>
         <Toolbar>
           {
             sections.map(section => {

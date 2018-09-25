@@ -1,7 +1,5 @@
 .component {
-  grid-area: header;
-
-  height: 50px;
+  height: 100%;
   padding: 10px;
   box-sizing: border-box;
 

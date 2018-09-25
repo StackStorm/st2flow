@@ -1,12 +1,9 @@
 {
-  "name": "@stackstorm/st2flow-yaml",
+  "name": "@stackstorm/st2flow-perf",
   "version": "1.0.0-pre.5",
-  "description": "",
+  "description": "A small performance library using the performance API and some extra smartness",
   "private": true,
   "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -19,7 +16,6 @@
     "babelify": "^8.0.0"
   },
   "dependencies": {
-    "yaml-ast-parser": "0.0.40",
-    "@stackstorm/st2flow-perf": "1.0.0-pre.5"
+    "debug": "^4.0.1"
   }
 }

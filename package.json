@@ -32,21 +32,22 @@
           "inject": "insert-css",
           "modularize": false,
           "plugin": [
-            "postcss-import"
+            "postcss-import",
+            "postcss-nested",
+            "postcss-preset-env"
           ]
         }
       ]
     ]
   },
   "dependencies": {
+    "@stackstorm/st2-style": "2.0.0",
     "@stackstorm/st2flow-canvas": "1.0.0",
     "@stackstorm/st2flow-details": "1.0.0",
     "@stackstorm/st2flow-header": "1.0.0",
     "@stackstorm/st2flow-model": "1.0.0-pre.5",
     "@stackstorm/st2flow-palette": "1.0.0",
-    "@stackstorm/st2-style": "2.0.0",
     "classnames": "^2.2.5",
-    "flow-bin": "^0.72.0",
     "insert-css": "^2.0.0",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
@@ -77,6 +78,7 @@
     "chai": "^4.1.2",
     "eslint": "^4.14.0",
     "eslint-plugin-react": "^7.5.1",
+    "flow-bin": "^0.72.0",
     "gulp": "github:gulpjs/gulp#d8f5c90a0622d19ef1943a2a3d02dc50e3c853e7",
     "ignore-styles": "^5.0.1",
     "lerna": "^3.0.0-rc.0",

@@ -23,7 +23,7 @@ const CONTROLS = {
 
 const CONTROL_SIZE = 100;
 
-export default class Task extends Component {
+export default class Transition extends Component {
   static propTypes = {
     from: PropTypes.object.isRequired,
     to: PropTypes.object.isRequired,
