@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { PropTypes } from 'prop-types';
 import ReactDOM from 'react-dom';
 
 import {
@@ -96,8 +95,6 @@ tasks:
   style = style
 
   render() {
-    // const { match: { path, params: { ref } } } = this.props;
-
     const { actions } = this.state;
 
     return (
