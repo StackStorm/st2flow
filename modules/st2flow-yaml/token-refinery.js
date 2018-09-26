@@ -1,6 +1,7 @@
 // @flow
 
 import type { TokenRawValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
+import crawler from './crawler';
 import factory from './token-factory';
 
 const DEFAULT_INDENT = '  ';
@@ -124,29 +125,6 @@ class Refinery {
     startToken.endPosition = lastToken.endPosition;
   }
 
-  /**
-   * Recursively finds the first token of type 0 or 4
-   */
-  findFirstValueToken(token: AnyToken): TokenRawValue {
-    switch(token.kind) {
-      case 0:
-      case 4:
-        return token;
-
-      case 1:
-        return this.findFirstValueToken(token.key);
-
-      case 2:
-        return this.findFirstValueToken(token.mappings[0]);
-
-      case 3:
-        return this.findFirstValueToken(token.items[0]);
-
-      default:
-        throw new Error(`Unrecognized token kind: ${token.kind}`);
-    }
-  }
-
   addKeyPrefix(token: TokenRawValue | TokenCollection, depth: number, jpath: Array<string | number>): void {
     if(!token.prefix) {
       token.prefix = [];
@@ -181,7 +159,8 @@ class Refinery {
         return;
 
       case 2: {
-        const rawToken = this.findFirstValueToken(token);
+        const rawToken: TokenRawValue = crawler.findFirstValueToken(token);
+
         if(!rawToken.prefix) {
           rawToken.prefix = [];
         }
@@ -196,23 +175,24 @@ class Refinery {
 
       case 3:
         token.items.forEach((t, i) => {
-          if(!t) {
+          const rawToken: TokenRawValue = crawler.findFirstValueToken(t);
+
+          if(!rawToken) {
             return; // continue
           }
 
-          const token = this.findFirstValueToken(t);
-          if(!token.prefix) {
-            token.prefix = [];
+          if(!rawToken.prefix) {
+            rawToken.prefix = [];
           }
 
           // only add the dash if it's not already there
-          if(token.prefix.every(t => t.value.indexOf('- ') === -1)) {
-            token.prefix.unshift(factory.createToken(`\n${this.indent.repeat(depth + 1)}- `));
+          if(rawToken.prefix.every(t => t.value.indexOf('- ') === -1)) {
+            rawToken.prefix.unshift(factory.createToken(`\n${this.indent.repeat(depth + 1)}- `));
           }
 
           // the fist item in a collection should have a colon prefix
-          if(i === 0 && token.prefix[0].value.indexOf(':') === -1) {
-            token.prefix.unshift(factory.createToken(':'));
+          if(i === 0 && rawToken.prefix[0].value.indexOf(':') === -1) {
+            rawToken.prefix.unshift(factory.createToken(':'));
           }
         });
 

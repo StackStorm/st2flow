@@ -1,8 +1,42 @@
 // @flow
 
 import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken } from './types';
+import crawler from './crawler';
 
 const STR_BACKREF = '<<';
+const REG_COMMENT = /^\s+#/;
+
+const defineExpando = (obj, key, value): void => {
+  Object.defineProperty(obj, key, {
+    value,
+    writable: false,
+    configurable: false,
+    enumerable: false,
+  });
+}
+
+const getTokenComments = (token: AnyToken): string => {
+  let comments;
+  let firstToken: TokenRawValue = crawler.findFirstValueToken(token);
+
+  if(level === 1) {
+    console.log(firstToken);
+  }
+
+  if(firstToken) {
+    comments = firstToken.prefix.reduce((str, token) => {
+      if(REG_COMMENT.test(token)) {
+        str += `${token.rawValue.replace(REG_COMMENT, '')}\n`;
+      }
+      return str;
+    }, '');
+  }
+
+  return comments;
+}
+
+// DELETE THIS
+let level = 0;
 
 class Objectifier {
   anchors: Object;
@@ -68,9 +102,9 @@ class Objectifier {
       if (key === STR_BACKREF) {
         // This object is extending (merging) another object, the value of
         // which has already been assigned to the "<<" property by
-        // the time we get here. "value" might be an array objects.
+        // the time we get here. "value" might be an array objects which to extend.
         [].concat(value).forEach(v => {
-          keys.unshift(...v.__keys);
+          keys.unshift(...v.__meta.keys);
           obj = Object.assign({}, v, obj);
         });
       }
@@ -82,19 +116,32 @@ class Objectifier {
       return obj;
     }, {});
 
-    // Don't let anybody mess with this
-    Object.defineProperty(result, '__keys', {
-      value: keys,
-      writable: false,
-      enumerable: false,
-      configurable: false,
+    const comments = getTokenComments(token);
+    if(level++ === 0) {
+
+      console.log('LEVEL 0', comments);
+    }
+
+    // Expand some useful info
+    defineExpando(result, '__meta', {
+      keys,
+      comments: getTokenComments(token),
+      jpath: token.jpath,
     });
 
     return result;
   }
 
   getCollection(token: TokenCollection): Array<any> {
-    return token.items.map(t => this.getTokenValue(t));
+    const result = token.items.map(t => this.getTokenValue(t));
+
+    // Expand some useful info
+    defineExpando(result, '__meta', {
+      comments: getTokenComments(token),
+      jpath: token.jpath,
+    });
+
+    return result;
   }
 
   getReference(token: TokenReference): any {

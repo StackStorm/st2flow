@@ -125,7 +125,7 @@ class TokenSet {
     }
   }
 
-  parseMapping(kvToken: TokenKeyValue, jpath: Array<string | number> = []): TokenKeyValue {
+  parseMapping(kvToken: TokenKeyValue, jpath: Array<string | number>): TokenKeyValue {
     if (kvToken.errors.length) {
       throw kvToken.errors;
     }

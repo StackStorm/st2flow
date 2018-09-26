@@ -13,12 +13,15 @@ key.with.dot: is_valid
 nested:
   key.with.dot: is_valid
 
-this:
+# { foo1: bar1 }
+this_example:
   is:
+    # { foo2: bar2 }
     a:
       deep:
         value: yay!!
     b:
+      # { foo3: bar3 }
       - some_array:
           value: awesome
 
