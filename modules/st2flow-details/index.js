@@ -4,12 +4,14 @@ import cx from 'classnames';
 
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
+import Parameter from './parameter';
+import Button from '@stackstorm/module-forms/button.component';
 
 import style from './style.css';
 
 class Meta extends Component {
   static propTypes = {
-    model: PropTypes.object.isRequired,
+    metaModel: PropTypes.object.isRequired,
   }
 
   spec = {
@@ -43,14 +45,14 @@ class Meta extends Component {
   }
 
   render() {
-    const { model } = this.props;
+    const { metaModel } = this.props;
 
     return (
       <Panel>
         <AutoForm
           spec={this.spec}
-          data={model.meta}
-          onChange={v => model.setMeta({ ...model.meta, ...v })}
+          data={metaModel.meta}
+          onChange={v => metaModel.update({ ...metaModel.meta, ...v })}
         />
       </Panel>
     );
@@ -59,17 +61,40 @@ class Meta extends Component {
 
 class Parameters extends Component {
   static propTypes = {
-    model: PropTypes.object.isRequired,
+    metaModel: PropTypes.object.isRequired,
+  }
+
+
+  componentDidMount() {
+    this.props.metaModel.on('update', this.update);
+  }
+
+  componentWillUnmount() {
+    this.props.metaModel.removeEventListener('update', this.update);
+  }
+
+  update = () => this.forceUpdate()
+
+  handleDelete(name) {
+    this.props.metaModel.unsetParameter(name);
   }
 
   render() {
-    const { model } = this.props;
+    const { metaModel } = this.props;
 
     return (
       <Panel>
         {
-          (model.meta.parameters || []).map(parameter => <div key={parameter.name} >{ parameter.name }</div>)
+          metaModel.parameters.map(parameter => (
+            <Parameter
+              key={parameter.name}
+              name={parameter.name}
+              parameter={parameter}
+              onDelete={() => this.handleDelete(parameter.name)}
+            />
+          ))
         }
+        <Button value="Add parameter" />
       </Panel>
     );
   }
@@ -256,7 +281,9 @@ export default class Details extends Component {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object.isRequired,
+    metaModel: PropTypes.object.isRequired,
     selected: PropTypes.string,
+    onSelect: PropTypes.func.isRequired,
   }
 
   state = {}
@@ -268,11 +295,11 @@ export default class Details extends Component {
   }
 
   handleTaskSelect(task) {
-    this.props.model.selectTask(task.name);
+    this.props.onSelect(task.name);
   }
 
   handleBack() {
-    this.props.model.selectTask();
+    this.props.onSelect();
   }
 
   render() {
@@ -290,7 +317,7 @@ export default class Details extends Component {
       className: cx(style.code, 'icon-code'),
     }];
 
-    const { model, selected: taskSelected } = this.props;
+    const { model, metaModel, selected: taskSelected } = this.props;
     const { selected = 'metadata' } = this.state;
 
     const task = taskSelected && model.tasks.find(task => task.name === taskSelected);
@@ -311,10 +338,10 @@ export default class Details extends Component {
           }
         </Toolbar>
         {
-          selected === 'metadata' && <Meta model={model} />
+          selected === 'metadata' && <Meta metaModel={metaModel} />
         }
         {
-          selected === 'parameters' && <Parameters model={model} />
+          selected === 'parameters' && <Parameters metaModel={metaModel} />
         }
         {
           selected === 'execution' && (

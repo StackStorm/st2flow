@@ -116,6 +116,12 @@ class OrquestaModel implements ModelInterface {
     }, []);
   }
 
+  get lastTaskIndex() {
+    return crawler.getValueByKey(this.tokenSet, 'tasks').__keys
+      .map(item => (item.match(/task(\d+)/) || [])[1])
+      .reduce((acc, item) => Math.max(acc, item || 0), 0);
+  }
+
   applyDelta(delta: DeltaInterface, yaml: string) {
     // Preliminary tests show that parsing of long/complex YAML files
     // takes less than ~20ms (almost always less than 5ms) - so doing full
@@ -127,7 +133,7 @@ class OrquestaModel implements ModelInterface {
   addTask(task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, ...data } = task;
-    crawler.addMappingItem(this.tokenSet, 'tasks', name, data);
+    crawler.assignMappingItem(this.tokenSet, `tasks.${name}`, data);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);

@@ -14,6 +14,7 @@ export default class Canvas extends Component {
     className: PropTypes.string,
     model: PropTypes.object.isRequired,
     selected: PropTypes.string,
+    onSelect: PropTypes.func,
   }
 
   state = {
@@ -146,6 +147,7 @@ export default class Canvas extends Component {
     const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle));
 
     this.props.model.addTask({
+      name: `task${this.props.model.lastTaskIndex + 1}`,
       action: action.ref,
       coords, 
     });
@@ -158,7 +160,7 @@ export default class Canvas extends Component {
   }
 
   handleTaskSelect(task) {
-    this.props.model.selectTask(task.name);
+    this.props.onSelect(task.name);
   }
 
   handleCanvasClick(e) {

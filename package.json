@@ -48,6 +48,7 @@
     "@stackstorm/st2flow-model": "1.0.0-pre.5",
     "@stackstorm/st2flow-palette": "1.0.0",
     "classnames": "^2.2.5",
+    "eventemitter3": "^3.1.0",
     "insert-css": "^2.0.0",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",

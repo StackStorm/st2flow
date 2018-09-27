@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 
+import EventEmitter from 'eventemitter3';
+
 import {
   Router,
   Route,
@@ -18,6 +20,57 @@ import Details from '@stackstorm/st2flow-details';
 import style from './style.css';
 
 const history = window.routerHistory = createHashHistory({});
+
+class MetaModel extends EventEmitter {
+  meta = {
+    name: '',
+    runner_type: 'orquesta',
+    description: '',
+    enable: false,
+    entry_point: '',
+    parameters: {
+      register: {
+        type: 'string',
+        default: 'all',
+        description: 'Possible options are all, sensors, actions, rules, aliases, runners, triggers, rule_types, policiy_types, policies, configs.',
+      },
+      packs: {
+        type: 'array',
+        description: 'A list of packs to register / load resources from.',
+        items: {
+          type: 'string',
+        },
+      },
+      timeout: {
+        type: 'integer',
+        default: 300,
+        description: 'Make sure that all pack content is loaded within specified timeout',
+      },
+    },
+  }
+
+  update(meta) {
+    this.meta = meta;
+  }
+
+  get parameters() {
+    return Object.keys(this.meta.parameters)
+      .map(name => ({
+        name,
+        ...this.meta.parameters[name],
+      })) ;
+  }
+
+  setParameter(name, opts) {
+    this.meta.parameters[name] = opts;
+    this.emit('update');
+  }
+
+  unsetParameter(name) {
+    delete this.meta.parameters[name];
+    this.emit('update');
+  }
+}
 
 class Window extends Component {
   constructor(props) {
@@ -80,16 +133,23 @@ tasks:
 
     this.model = new OrquestaModel(tmpYAML);
     this.model.on('change', () => this.forceUpdate());
+
+    this.metaModel = new MetaModel();
   }
 
   state = {
     actions: [],
+    selected: undefined,
   }
 
   async componentDidMount() {
     const res = await fetch('/actions.json');
 
     this.setState({ actions: await res.json() });
+  }
+
+  handleSelect(name) {
+    this.setState({ selected: name });
   }
 
   style = style
@@ -101,8 +161,8 @@ tasks:
       <div className="component" >
         <Header className="header" />
         <Palette className="palette" actions={actions} />
-        <Canvas className="canvas" model={this.model} selected={this.model.selected} />
-        <Details className="details" actions={actions} model={this.model} selected={this.model.selected} />
+        <Canvas className="canvas" model={this.model} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
+        <Details className="details" actions={actions} model={this.model} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} metaModel={this.metaModel} />
       </div>
     );
   }

@@ -69,6 +69,9 @@ export default class Task extends Component {
       if (this.props.onMove) {
         const { coords } = this.props.task;
         const { x, y } = this.state.delta;
+        if ( x === 0 && y === 0) {
+          return false;
+        }
         this.props.onMove({
           x: coords.x + x / scale,
           y: coords.y + y / scale,
