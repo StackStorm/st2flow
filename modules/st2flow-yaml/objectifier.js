@@ -2,9 +2,10 @@
 
 import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken } from './types';
 import crawler from './crawler';
+import { isPlainObject } from './util';
 
 const STR_BACKREF = '<<';
-const REG_COMMENT = /^\s+#/;
+const REG_COMMENT = /^\s+#(?:\s+)?/;
 
 const defineExpando = (obj, key, value): void => {
   Object.defineProperty(obj, key, {
@@ -16,16 +17,12 @@ const defineExpando = (obj, key, value): void => {
 }
 
 const getTokenComments = (token: AnyToken): string => {
-  let comments;
+  let comments = '';
   let firstToken: TokenRawValue = crawler.findFirstValueToken(token);
-
-  if(level === 1) {
-    console.log(firstToken);
-  }
 
   if(firstToken) {
     comments = firstToken.prefix.reduce((str, token) => {
-      if(REG_COMMENT.test(token)) {
+      if(REG_COMMENT.test(token.rawValue)) {
         str += `${token.rawValue.replace(REG_COMMENT, '')}\n`;
       }
       return str;
@@ -34,9 +31,6 @@ const getTokenComments = (token: AnyToken): string => {
 
   return comments;
 }
-
-// DELETE THIS
-let level = 0;
 
 class Objectifier {
   anchors: Object;
@@ -94,40 +88,38 @@ class Objectifier {
    * the __keys property when order matters.
    */
   getMapping(token: TokenMapping): Object {
-    const keys = [];
-    const result = token.mappings.reduce((obj, t) => {
-      const key = this.getMappingKey(t.key);
-      const value = this.getTokenValue(t.value);
+    const meta = {
+      keys: [],
+      jpath: token.jpath,
+    };
+
+    const result = token.mappings.reduce((obj, kvToken, i) => {
+      const key = this.getMappingKey(kvToken.key);
+      const value = this.getTokenValue(kvToken.value);
 
       if (key === STR_BACKREF) {
         // This object is extending (merging) another object, the value of
         // which has already been assigned to the "<<" property by
         // the time we get here. "value" might be an array objects which to extend.
         [].concat(value).forEach(v => {
-          keys.unshift(...v.__meta.keys);
+          meta.keys.unshift(...v.__meta.keys);
           obj = Object.assign({}, v, obj);
         });
       }
       else {
-        keys.push(key);
+        meta.keys.push(key);
         obj[key] = value;
+      }
+
+      if(isPlainObject(value)) {
+        value.__meta.comments = getTokenComments(kvToken.key);
       }
 
       return obj;
     }, {});
 
-    const comments = getTokenComments(token);
-    if(level++ === 0) {
-
-      console.log('LEVEL 0', comments);
-    }
-
     // Expand some useful info
-    defineExpando(result, '__meta', {
-      keys,
-      comments: getTokenComments(token),
-      jpath: token.jpath,
-    });
+    defineExpando(result, '__meta', meta);
 
     return result;
   }

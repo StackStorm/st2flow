@@ -10,8 +10,9 @@ export interface CanvasPoint {
 export interface TaskInterface {
     name: string;
     action: string;
-    input?: Object;
+    transitions: Array<TransitionInterface>;
 
+    input?: Object;
     coord: CanvasPoint;
 }
 
@@ -44,7 +45,7 @@ export interface ModelInterface {
     removeListener(event: string, callback: Function): void;
 
     constructor(yaml: string): void;
-    fromYAML(): void;
+    fromYAML(yaml: string): void;
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;

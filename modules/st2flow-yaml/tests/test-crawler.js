@@ -94,19 +94,16 @@ describe('Token Set Crawler', () => {
     })
   });
 
-  it.only('provides __meta.comments property with parsable comments ', () => {
-    console.log('start');
+  it('provides __meta.comments property with parsable comments ', () => {
     const obj = crawler.getValueByKey(set, 'this_example');
     const obj2 = obj['is']['a'];
     const arr = obj['is']['b'];
-    console.log(obj);
 
-    [obj/*, obj2, arr*/].forEach((o, i) => {
-      console.log('===', obj.__meta.comments, '===')
-      const data = JSON.parse(obj.__meta.comments);
+    [obj, obj2, arr].forEach((o, i) => {
+      const data = JSON.parse(o.__meta.comments);
 
       expect(typeof data).to.equal('object');
-      expect(data[`foo${i}`]).to.equal(`bar${i}`);
+      expect(data[`foo${i + 1}`]).to.equal(`bar${i + 1}`);
     });
   });
 

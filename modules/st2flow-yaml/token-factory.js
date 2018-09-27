@@ -1,6 +1,7 @@
 // @flow
 
 import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken } from './types';
+import { isPlainObject } from './util';
 
 /**
  * Factory used to create tokens from raw data.
@@ -14,7 +15,7 @@ const factory = {
       return this.createCollectionToken(data);
     }
 
-    if(Object.prototype.toString.call(data) === '[object Object]') {
+    if(isPlainObject(data)) {
       return this.createMappingToken(data);
     }
 
