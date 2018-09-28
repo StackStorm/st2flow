@@ -70,7 +70,7 @@ class Parameters extends Component {
   }
 
   componentWillUnmount() {
-    this.props.metaModel.removeEventListener('update', this.update);
+    this.props.metaModel.removeListener('update', this.update);
   }
 
   update = () => this.forceUpdate()

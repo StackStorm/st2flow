@@ -72,7 +72,7 @@ class OrquestaModel implements ModelInterface {
     return tasks.__keys.map(name =>
       Object.assign({}, {
         name,
-        size: { x: 120, y: 48 },
+        size: { x: 120, y: 44 },
       }, tasks[name], {
         coords: { x: 0, y: 0, ...tasks[name].coords },
       })

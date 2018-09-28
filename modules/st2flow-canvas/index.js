@@ -166,7 +166,7 @@ export default class Canvas extends Component {
   handleCanvasClick(e) {
     e.stopPropagation();
 
-    this.props.model.selectTask();
+    this.props.onSelect();
   }
 
   style = style
