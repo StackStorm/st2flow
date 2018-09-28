@@ -122,7 +122,8 @@ class OrquestaModel implements ModelInterface {
       return {
         name: taskName,
         action: task.action,
-        coord: { x: 0, y: 0 },
+        size: { x: 120, y: 48 },
+        coords: { x: 0, y: 0, ...task.coords },
         transitions,
       };
     });

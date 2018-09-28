@@ -1,7 +1,11 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import Task from './task';
+import Transition from './transition';
+import Vector from './vector';
+import Toolbar from './toolbar';
 
 import style from './style.css';
 
@@ -9,6 +13,11 @@ export default class Canvas extends Component {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object.isRequired,
+    selected: PropTypes.string,
+  }
+
+  state = {
+    scale: 0,
   }
 
   componentDidMount() {
@@ -16,33 +25,68 @@ export default class Canvas extends Component {
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleMouseWheel = this.handleMouseWheel.bind(this);
+    this.handleDragOver = this.handleDragOver.bind(this);
+    this.handleDrop = this.handleDrop.bind(this);
 
     const el = this.canvasRef.current;
     el.addEventListener('wheel', this.handleMouseWheel);
     el.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
+    el.addEventListener('dragover', this.handleDragOver);
+    el.addEventListener('drop', this.handleDrop);
 
-    const { model } = this.props;
-    model.on('change', this.handleModelChange);
+    this.handleUpdate();
+  }
+
+  componentDidUpdate() {
+    this.handleUpdate();
   }
 
   componentWillUnmount() {
     const el = this.canvasRef.current;
-    const { model } = this.props;
     el.removeEventListener('wheel', this.handleMouseWheel);
     el.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
-    model.removeListener('change', this.handleModelChange);
+    el.removeEventListener('dragover', this.handleDragOver);
+    el.removeEventListener('drop', this.handleDrop);
+  }
+
+  handleUpdate() {
+    const { model } = this.props;
+    const { width, height } = this.canvasRef.current.getBoundingClientRect();
+
+    const scale = Math.E ** this.state.scale;
+
+    this.size = model.tasks.reduce((acc, item) => {
+      const coords = new Vector(item.coords);
+      const size = new Vector(item.size);
+      const { x, y } = coords.add(size).add(50);
+
+      return {
+        x: Math.max(x, acc.x),
+        y: Math.max(y, acc.y), 
+      };
+    }, {
+      x: width / scale,
+      y: height / scale,
+    });
+
+    this.surfaceRef.current.style.width = `${this.size.x}px`;
+    this.surfaceRef.current.style.height = `${this.size.y}px`;
   }
 
   handleMouseWheel(e) {
     e.preventDefault();
     e.stopPropagation();
 
-    this.scale += e.wheelDelta / 1200;
-    this.surfaceRef.current.style.transform = `scale(${Math.E ** this.scale})`;
+    const { scale } = this.state;
+    this.setState({
+      scale: scale + e.wheelDelta / 1200,
+    });
+
+    this.handleUpdate();
 
     return false;
   }
@@ -84,26 +128,107 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleModelChange = (deltas, yaml) => {
-    // TODO: find a better way
-    this.forceUpdate();
+  handleDragOver(e) {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+
+    e.dataTransfer.dropEffect = 'copy';
   }
 
+  handleDrop(e) {
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    const { action, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
+
+    const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle));
+
+    this.props.model.addTask({
+      action: action.ref,
+      coords, 
+    });
+
+    return false;
+  }
+
+  handleTaskMove(task, coords) {
+    this.props.model.updateTask(task.name, { coords });
+  }
+
+  handleTaskSelect(task) {
+    this.props.model.selectTask(task.name);
+  }
+
+  handleCanvasClick(e) {
+    e.stopPropagation();
+
+    this.props.model.selectTask();
+  }
+
+  style = style
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
-  scale = 0;
 
   render() {
-    const { model } = this.props;
+    const { model, selected } = this.props;
+    const { scale } = this.state;
+
+    const surfaceStyle = {
+      transform: `scale(${Math.E ** scale})`,
+    };
 
     return (
-      <div className={`${this.props.className} ${style.component}`} ref={this.canvasRef}>
-        <div className={style.surface} ref={this.surfaceRef}>
+      <div
+        className={cx(this.props.className, this.style.component)}
+        ref={this.canvasRef}
+        onClick={e => this.handleCanvasClick(e)}
+      >
+        <Toolbar>
+          <div key="undo" icon="icon-redirect" onClick={() => console.log('undo')} />
+          <div key="redo" icon="icon-redirect2" onClick={() => console.log('redo')} />
+          <div key="rearrange" icon="icon-arrange" onClick={() => console.log('rearrange')} />
+          <div key="save" icon="icon-save" onClick={() => console.log('save')} />
+          <div key="run" icon="icon-play" onClick={() => console.log('run')} />
+        </Toolbar>
+        <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
           {
             model.tasks.map((task) => {
-              return <Task key={task.name} task={task} />;
+              return (
+                <Task
+                  key={task.name}
+                  task={task}
+                  selected={task.name === selected}
+                  scale={scale}
+                  onMove={(...a) => this.handleTaskMove(task, ...a)}
+                  onClick={() => this.handleTaskSelect(task)}
+                />
+              );
             })
           }
+          <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+            {
+              model.transitions
+                .map((transition) => {
+                  const from = {
+                    task: model.tasks.find(({ name }) => name === transition.from.name),
+                    anchor: 'bottom',
+                  };
+                  const to = {
+                    task: model.tasks.find(({ name }) => name === transition.to.name),
+                    anchor: 'top',
+                  };
+                  return (
+                    <Transition
+                      key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`}
+                      from={from}
+                      to={to}
+                    />
+                  );
+                })
+            }
+          </svg>
         </div>
       </div>
     );

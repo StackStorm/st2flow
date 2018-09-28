@@ -1,0 +1,84 @@
+{
+  "tasks": [{
+    "name": "task1",
+    "action": "core.local",
+    "coords": {
+      "x": 120,
+      "y": 100
+    }
+  }, {
+    "name": "task2",
+    "action": "core.remote",
+    "coords": {
+      "x": 260,
+      "y": 100
+    }
+  }, {
+    "name": "task3",
+    "action": "csv.parse",
+    "coords": {
+      "x": 50,
+      "y": 250
+    }
+  }, {
+    "name": "task4",
+    "action": "core.local",
+    "coords": {
+      "x": 200,
+      "y": 230
+    }
+  }, {
+    "name": "task5",
+    "action": "core.local",
+    "coords": {
+      "x": 500,
+      "y": 200
+    }
+  }],
+  "transitions": [{
+    "from": {
+      "task": "task2",
+      "anchor": "right"
+    },
+    "to": {
+      "task": "task4",
+      "anchor": "right"
+    }
+  }, {
+    "from": {
+      "task": "task1",
+      "anchor": "right"
+    },
+    "to": {
+      "task": "task2",
+      "anchor": "left"
+    }
+  }, {
+    "from": {
+      "task": "task2",
+      "anchor": "top"
+    },
+    "to": {
+      "task": "task5",
+      "anchor": "right"
+    }
+  }, {
+    "from": {
+      "task": "task1",
+      "anchor": "left"
+    },
+    "to": {
+      "task": "task3",
+      "anchor": "left"
+    }
+  }, {
+    "from": {
+      "task": "task1",
+      "anchor": "bottom"
+    },
+    "to": {
+      "task": "task4",
+      "anchor": "top"
+    }
+  }]
+}
