@@ -25,8 +25,8 @@ describe('Token Set Crawler', () => {
   });
 
   it('can look up keys with dots in them (MUST use the array syntax)', () => {
-    expect(crawler.getValueByKey(set, ['key.with.dot'])).to.equal('is_valid');
-    expect(crawler.getValueByKey(set, ['nested', 'key.with.dot'])).to.equal('is_valid');
+    expect(crawler.getValueByKey(set, [ 'key.with.dot' ])).to.equal('is_valid');
+    expect(crawler.getValueByKey(set, [ 'nested', 'key.with.dot' ])).to.equal('is_valid');
   });
 
   it('recognizes different flavors of null values', () => {

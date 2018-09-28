@@ -12,7 +12,7 @@ export interface TaskInterface {
     action: string;
     input?: Object;
 
-    coord: CanvasPoint;
+    coords: CanvasPoint;
 }
 
 export interface TaskRefInterface {

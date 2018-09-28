@@ -197,7 +197,8 @@ const crawler = {
     if(targKey.length === 1) {
       token = tokenSet.tree;
       newKey = targKey[0];
-    } else {
+    }
+    else {
       const parentObjKey: Array<string | number> = targKey.slice(0, -1);
       token = getTokenValueByKey(tokenSet, parentObjKey, 2);
       newKey = targKey.slice(-1)[0];

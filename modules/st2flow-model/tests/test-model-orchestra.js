@@ -69,8 +69,8 @@ describe.skip('st2flow-model: Orchestra Model', () => {
       const task = model.tasks[0];
       expect(task).to.have.property('name', 'foo');
       expect(task).to.have.property('action', 'bar');
-      expect(task).to.have.nested.property('coord.x', 0);
-      expect(task).to.have.nested.property('coord.y', 0);
+      expect(task).to.have.nested.property('coords.x', 0);
+      expect(task).to.have.nested.property('coords.y', 0);
     });
 
     it('updates basic.yaml with task/transition updates', () => {

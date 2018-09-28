@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import ace from 'brace';
 import 'brace/ext/language_tools';
@@ -77,17 +78,18 @@ export default class Editor extends Component {
   }
 
   deltaTimer = 0; // debounce timer
+  style = style
 
   render() {
     return (
-      <div className={`${this.props.className} ${style.component}`}>
+      <div className={cx(this.props.className, this.style.component)}>
         <div
           id={editorId}
-          className={style.editor}
+          className={this.style.editor}
         />
         {!this.state.error ?
           null : (
-            <div className={style['yaml-error']}>
+            <div className={this.style['yaml-error']}>
               {this.state.error}
             </div>
           )}

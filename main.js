@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { PropTypes } from 'prop-types';
 import ReactDOM from 'react-dom';
 
 import {
@@ -14,23 +13,13 @@ import { OrquestaModel } from '@stackstorm/st2flow-model';
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
-import Editor from '@stackstorm/st2flow-editor';
+import Details from '@stackstorm/st2flow-details';
 
 import style from './style.css';
 
 const history = window.routerHistory = createHashHistory({});
 
 class Window extends Component {
-  static propTypes = {
-    match: PropTypes.shape({
-      url: PropTypes.string.isRequired,
-      path: PropTypes.string.isRequired,
-      params: PropTypes.shape({
-        ref: PropTypes.string,
-      }).isRequired,
-    }).isRequired,
-  };
-
   constructor(props) {
     super(props);
     const tmpYAML = `---
@@ -48,6 +37,9 @@ tasks:
     action: core.local
     input:
       cmd: printf <% $.which %>
+    coords:
+      x: 100
+      y: 200
     next:
       - when: <% succeeded() and result().stdout = 'a' %>
         publish: path=<% result().stdout %>
@@ -62,29 +54,55 @@ tasks:
         do: c
   a:
     action: core.local cmd="echo 'Took path A.'"
+    coords:
+      x: 200
+      y: 300
   b:
     action: core.local cmd="echo 'Took path B.'"
+    coords:
+      x: 10
+      y: 300
     next:
       - do: 'foobar'
   c:
     action: core.local cmd="echo 'Took path C.'"
+    coords:
+      x: 100
+      y: 500
+
   foobar:
     action: core.local
+    coords:
+      x: 300
+      y: 400
 
 `;
 
     this.model = new OrquestaModel(tmpYAML);
+    this.model.on('change', () => this.forceUpdate());
   }
 
+  state = {
+    actions: [],
+  }
+
+  async componentDidMount() {
+    const res = await fetch('/actions.json');
+
+    this.setState({ actions: await res.json() });
+  }
+
+  style = style
+
   render() {
-    // const { match: { path, params: { ref } } } = this.props;
+    const { actions } = this.state;
 
     return (
-      <div className={style.component} >
-        <Header className={style.header} matchedRoute={this.props.match} />
-        <Palette className={style.palette} model={this.model} />
-        <Canvas className={style.canvas} model={this.model} />
-        <Editor className={style.details} model={this.model} />
+      <div className="component" >
+        <Header className="header" />
+        <Palette className="palette" actions={actions} />
+        <Canvas className="canvas" model={this.model} selected={this.model.selected} />
+        <Details className="details" actions={actions} model={this.model} selected={this.model.selected} />
       </div>
     );
   }
@@ -125,4 +143,4 @@ export class Container extends Component {
   }
 }
 
-ReactDOM.render(<Container className={style.container} />, document.querySelector('#container'));
+ReactDOM.render(<Container className="container" />, document.querySelector('#container'));

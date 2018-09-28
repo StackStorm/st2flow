@@ -30,9 +30,7 @@
             ".css"
           ],
           "inject": "insert-css",
-          "modularize": {
-            "capitalize": true
-          },
+          "modularize": false,
           "plugin": [
             "postcss-import",
             "postcss-nested",
@@ -45,7 +43,7 @@
   "dependencies": {
     "@stackstorm/st2-style": "2.0.0",
     "@stackstorm/st2flow-canvas": "1.0.0",
-    "@stackstorm/st2flow-editor": "1.0.0",
+    "@stackstorm/st2flow-details": "1.0.0",
     "@stackstorm/st2flow-header": "1.0.0",
     "@stackstorm/st2flow-model": "1.0.0-pre.5",
     "@stackstorm/st2flow-palette": "1.0.0",
