@@ -188,7 +188,7 @@ const crawler = {
     const targKey: Array<string | number> = splitKey(targetKey);
 
     if(!targKey.length) {
-      throw new Error(`Cannot add a key to a blank target: ${targKey.join('.')}`);
+      throw new Error(`Cannot add a key to a blank target: ${targetKey.toString()}`);
     }
 
     let token: TokenMapping;
@@ -201,7 +201,7 @@ const crawler = {
     else {
       const parentObjKey: Array<string | number> = targKey.slice(0, -1);
       token = getTokenValueByKey(tokenSet, parentObjKey, 2);
-      newKey = targKey.slice(-1)[0];
+      newKey = targKey[targKey.length - 1];
     }
 
     const kvToken = factory.createKeyValueToken(`${newKey}`, val);

@@ -87,19 +87,19 @@ describe('Token Set Crawler', () => {
     const obj = crawler.getValueByKey(set, 'this_example');
     const arr = crawler.getValueByKey(set, 'a_sequence');
 
-    [obj, arr].forEach(o => {
+    [ obj, arr ].forEach(o => {
       expect(typeof o.__meta).to.equal('object');
       expect(o.__meta.hasOwnProperty('comments')).to.equal(true);
       expect(o.__meta.hasOwnProperty('jpath')).to.equal(true);
-    })
+    });
   });
 
   it('provides __meta.comments property with parsable comments ', () => {
     const obj = crawler.getValueByKey(set, 'this_example');
-    const obj2 = obj['is']['a'];
-    const arr = obj['is']['b'];
+    const obj2 = obj.is.a;
+    const arr = obj.is.b;
 
-    [obj, obj2, arr].forEach((o, i) => {
+    [ obj, obj2, arr ].forEach((o, i) => {
       const data = JSON.parse(o.__meta.comments);
 
       expect(typeof data).to.equal('object');

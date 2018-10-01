@@ -100,7 +100,7 @@ tasks:
     return (
       <div className="component" >
         <Header className="header" />
-        <Palette className="palette" actions={actions} />
+        <Palette className="palette" actions={actions} model={this.model} />
         <Canvas className="canvas" model={this.model} selected={this.model.selected} />
         <Details className="details" actions={actions} model={this.model} selected={this.model.selected} />
       </div>

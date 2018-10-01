@@ -14,11 +14,11 @@ const defineExpando = (obj, key, value): void => {
     configurable: false,
     enumerable: false,
   });
-}
+};
 
 const getTokenComments = (token: AnyToken): string => {
   let comments = '';
-  let firstToken: TokenRawValue = crawler.findFirstValueToken(token);
+  const firstToken: TokenRawValue = crawler.findFirstValueToken(token);
 
   if(firstToken) {
     comments = firstToken.prefix.reduce((str, token) => {
@@ -30,7 +30,7 @@ const getTokenComments = (token: AnyToken): string => {
   }
 
   return comments;
-}
+};
 
 class Objectifier {
   anchors: Object;

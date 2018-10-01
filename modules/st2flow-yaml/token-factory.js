@@ -19,6 +19,10 @@ const factory = {
       return this.createMappingToken(data);
     }
 
+    if(typeof data === 'string' || data instanceof String) {
+      return this.createRawValueToken(data);
+    }
+
     if(data === null || typeof data === 'undefined') {
       data = null;
     }

@@ -1,11 +1,13 @@
 // @flow
 
-import type { TokenRawValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
+import type { TokenRawValue, TokenKeyValuePair, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
 import crawler from './crawler';
 import factory from './token-factory';
 
 const DEFAULT_INDENT = '  ';
+const DEFAULT_TAIL = '\n';
 const REG_INDENT = /\n( +)\S/;
+const REG_ALL_WHITESPACE = /^\s+$/;
 
 /**
  * Class for refining tokens whenever mutations are made to the AST.
@@ -67,17 +69,20 @@ class Refinery {
         if(startToken.value !== null) {
           this.refineToken(startToken.value, startToken.key.endPosition, depth + 1, jpath.concat('value'));
           startToken.endPosition = startToken.value.endPosition;
-          this.addValuePrefix(startToken.value, depth);
+
+          if(startToken.value.kind !== 3) {
+            this.addValuePrefix(startToken.value, depth);
+          }
         }
 
         break;
 
       case 2:
-        this.refineCollection(startToken, 'mappings', startPos, depth, jpath);
+        this.refineMapping(startToken, startPos, depth, jpath);
         break;
 
       case 3:
-        this.refineCollection(startToken, 'items', startPos, depth, jpath);
+        this.refineCollection(startToken, startPos, depth, jpath);
         break;
 
       case 4:
@@ -100,22 +105,23 @@ class Refinery {
    * Given an array of tokens, refines each token in the array.
    * This is used for refining mappings and collections.
    */
-  refineCollection(startToken: TokenMapping | TokenCollection, key: string, startPos: number, depth: number, jpath: Array<string | number>) {
+  refineMapping(startToken: TokenMapping, startPos: number, depth: number, jpath: Array<string | number>) {
     let lastToken: AnyToken;
 
-    startToken[key].reduce((pos, token, i) => {
-      if (token !== null) {
-        this.refineToken(token, pos, depth, jpath.concat(key, i));
-
-        if(!lastToken) {
-          startToken.startPosition = token.startPosition;
-        }
-
-        lastToken = token;
-        return token.endPosition;
+    startToken.mappings.reduce((pos, token, i) => {
+      if (token === null) {
+        return pos;
       }
 
-      return pos;
+      this.refineToken(token, pos, (token.kind === 2 ? depth + 1 : depth), jpath.concat('mappings', i));
+
+      if(!lastToken) {
+        startToken.startPosition = token.startPosition;
+      }
+
+      lastToken = token;
+
+      return token.endPosition;
     }, startPos);
 
     if (!lastToken) {
@@ -125,6 +131,96 @@ class Refinery {
     startToken.endPosition = lastToken.endPosition;
   }
 
+  refineCollection(startToken: TokenCollection, startPos: number, depth: number, jpath: Array<string | number>) {
+    let lastToken: AnyToken;
+
+    console.log('BEGIN', startToken.startPosition, startToken.endPosition);
+    startToken.items.reduce((pos, token, i) => {
+      if(token === null) {
+        return pos;
+      }
+
+      this.refineToken(token, startPos, depth + 1, jpath.concat('items', i));
+
+      if(!lastToken) {
+        startToken.startPosition = token.startPosition;
+      }
+
+      lastToken = token;
+
+      const rawToken: TokenRawValue = crawler.findFirstValueToken(token);
+
+      if(!rawToken.prefix) {
+        rawToken.prefix = [];
+      }
+
+      let dashIndex = rawToken.prefix.findIndex(t => t.value.indexOf('- ') !== -1);
+
+      // if it's already there, no need to go further .
+      if(dashIndex !== -1) {
+        return token.endPosition;
+      }
+
+      // First remove any whitespace tokens at the top of the prefix
+      let posChange = 0;
+      let pre = rawToken.prefix[++dashIndex];
+      while(pre && REG_ALL_WHITESPACE.test(pre.rawValue)) {
+        posChange -= pre.rawValue.length;
+        rawToken.prefix.splice(dashIndex, 1);
+        pre = rawToken.prefix[dashIndex];
+      }
+
+      // For every instance of ["next", \d] near the top of the jpath,
+      // add an indent + dash. So for values like this:
+      //   foo: [ [ [ 'bar' ] ] ]
+      // the jpath for "bar" will look something like this:
+      //   ['mappings', 3, 'value', 'items', 0, 'items', 0, 'items', 0]
+      // For values like this:
+      //   foo: [ [ [ { bing: 'bar' } ] ] ]
+      // the jpath for "bing" will look something like this:
+      //   ['mappings', 3, 'value', 'items', 0, 'items', 0, 'items', 0, 'mappings', 0, 'key']
+      let itemsIdx = rawToken.jpath.lastIndexOf('items');
+      let nesting = 0;
+      let lastTwo = rawToken.jpath.slice(itemsIdx, itemsIdx + 2);
+      const firstIndex = lastTwo[1];
+
+      while(lastTwo[0] === 'items' && lastTwo[1] === firstIndex) {
+        nesting++;
+        itemsIdx -= 2;
+        lastTwo = rawToken.jpath.slice(itemsIdx, itemsIdx + 2);
+      }
+
+      for(let i = 0; i < nesting; i++) {
+        let prefix = `\n${this.indent.repeat(depth - i)}- `;
+        posChange += prefix.length;
+        rawToken.prefix.unshift(factory.createToken(prefix));
+      }
+
+      // the fist item in a collection should have a colon prefix
+      if(i === 0 && rawToken.prefix[0].value.indexOf(':') === -1) {
+        posChange += 1;
+        rawToken.prefix.unshift(factory.createToken(':'));
+      }
+
+      rawToken.startPosition += posChange;
+      rawToken.endPosition += posChange;
+
+      if(token !== rawToken) {
+        token.startPosition += posChange;
+        token.endPosition += posChange;
+      }
+
+      return token.endPosition;
+    }, startPos);
+
+    if (!lastToken) {
+      throw new Error('Expected lastToken not to be null. This is likely an edge case that needs to be fixed.');
+    }
+
+    startToken.endPosition = lastToken.endPosition;
+    console.log('END', startToken.startPosition, startToken.endPosition);
+  }
+
   addKeyPrefix(token: TokenRawValue | TokenCollection, depth: number, jpath: Array<string | number>): void {
     if(!token.prefix) {
       token.prefix = [];
@@ -132,13 +228,19 @@ class Refinery {
 
     // If there is no prefix AND this is not the first key/value token.
     if(!token.prefix.length && jpath.join('.') !== 'mappings.0') {
-      token.prefix.unshift(factory.createToken(`${this.indent.repeat(depth)}`));
+      const indent = this.indent.repeat(depth);
+      token.prefix.unshift(factory.createToken(indent));
+      token.startPosition += indent.length;
+      token.endPosition += indent.length;
 
       // Detect if this token was inserted at the end of the tree.
       // If so, the old tail should become a prefix.
+      console.log(token, token.startPosition, this.yaml.length, this.tail.length);
       if(token.startPosition >= this.yaml.length - this.tail.length) {
         token.prefix.unshift(factory.createToken(`${this.tail}`));
-        this.tail = '\n';
+        token.startPosition += this.tail.length;
+        token.endPosition += this.tail.length;
+        this.tail = DEFAULT_TAIL;
       }
     }
   }
@@ -168,35 +270,15 @@ class Refinery {
         // only add the colon if it does not yet exist
         if(rawToken.prefix.every(t => t.value.indexOf(':') === -1)) {
           rawToken.prefix.unshift(factory.createToken(':'));
+          rawToken.startPosition += 1;
+          rawToken.endPosition += 1;
         }
 
         return;
       }
 
       case 3:
-        token.items.forEach((t, i) => {
-          const rawToken: TokenRawValue = crawler.findFirstValueToken(t);
-
-          if(!rawToken) {
-            return; // continue
-          }
-
-          if(!rawToken.prefix) {
-            rawToken.prefix = [];
-          }
-
-          // only add the dash if it's not already there
-          if(rawToken.prefix.every(t => t.value.indexOf('- ') === -1)) {
-            rawToken.prefix.unshift(factory.createToken(`\n${this.indent.repeat(depth + 1)}- `));
-          }
-
-          // the fist item in a collection should have a colon prefix
-          if(i === 0 && rawToken.prefix[0].value.indexOf(':') === -1) {
-            rawToken.prefix.unshift(factory.createToken(':'));
-          }
-        });
-
-        return;
+        throw new Error('Must use addDashPrefix method');
 
       default:
         throw new Error(`Cannot add value prefix to token of kind: ${token.kind}`);

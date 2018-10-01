@@ -160,7 +160,7 @@ class OrquestaModel implements ModelInterface {
   addTask(task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, ...data } = task;
-    crawler.assignMappingItem(this.tokenSet, `tasks.${name}`, data);
+    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
@@ -169,7 +169,7 @@ class OrquestaModel implements ModelInterface {
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, ...data } = task;
-    crawler.replaceTokenValue(this.tokenSet, `tasks.${name}`, data);
+    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
@@ -178,7 +178,7 @@ class OrquestaModel implements ModelInterface {
   deleteTask(ref: TaskRefInterface) {
     const oldData = this.tokenSet.toObject();
     const { name } = ref;
-    crawler.deleteMappingItem(this.tokenSet, `tasks.${name}`);
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', name ]);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
@@ -208,7 +208,7 @@ class OrquestaModel implements ModelInterface {
     next.push(nextItem);
 
     // TODO: this can be replaced by a more generic "set" method
-    crawler[hasNext ? 'replaceTokenValue' : 'assignMappingItem'](this.tokenSet, `tasks.${from.name}.next`, next);
+    crawler[hasNext ? 'replaceTokenValue' : 'assignMappingItem'](this.tokenSet, [ 'tasks', from.name, 'next' ], next);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);

@@ -10,6 +10,7 @@ export default class Palette extends Component {
   static propTypes = {
     className: PropTypes.string,
     actions: PropTypes.array,
+    model: PropTypes.object, // temporary
   }
 
   state = {
@@ -17,15 +18,17 @@ export default class Palette extends Component {
     packs: {},
   }
 
-  // addTask = () => {
-  //   this.props.model.addTask({
-  //     name: `doSomething ${Math.random()}`,
-  //     action: 'some.action',
-  //     anobject: { foo: 'bar' },
-  //     next: [ 'taboot', 'taboot' ],
-  //     coord: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
-  //   });
-  // }
+  addTask = () => {
+    this.props.model.addTask({
+      name: `doSomething ${Math.random()}`,
+      action: 'some.action',
+      anobject: { foo: 'bar' },
+      next: [{ do: 'llama', when: 'depress' }, { do: [ 'taboot', 'taboot' ], when: 'depress depress' }],
+      arr: [[[ { 'asdf': 'boo', 'qwer': 'reqw' }, 'snarf' ], 'wombat']],
+      arr2: [[[ 'boo' ], 'booboo' ]],
+      coord: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
+    });
+  }
 
   handleSearch(e) {
     this.setState({ search: e.target.value });
@@ -56,6 +59,9 @@ export default class Palette extends Component {
             onChange={e => this.handleSearch(e)}
             placeholder="Library"
           />
+        </div>
+        <div className="temporary delete-me-eventually">
+          <button onClick={this.addTask}>Add Task</button>
         </div>
         <div className={this.style.list}>
           {
