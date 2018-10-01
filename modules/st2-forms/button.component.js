@@ -25,7 +25,7 @@ export class Toggle extends React.Component {
       <div className="st2-forms__switch">
         <input id={this._id} type="checkbox" checked={value || false} onChange={({ target: { checked } }) => this.handleChange(checked)} />
         <label htmlFor={this._id} />
-        <label htmlFor={this._id} className="st2-forms__switch-title">{ title }</label>
+        { title && <label htmlFor={this._id} className="st2-forms__switch-title">{ title }</label> }
       </div>
     );
   }

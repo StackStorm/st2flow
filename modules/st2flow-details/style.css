@@ -19,21 +19,33 @@
   display: flex;
 
   &.secondary {
-    Background-color: #d8d8d8;
-    color: #888;
+    background-color: #d8d8d8;
+    color: #222;
+    border-bottom: 1px solid #f8f8f8;
+  }
+
+  .task {
+    border-bottom: none;
   }
 }
 
 .toolbar-button {
   padding: 15px;
   
-  font-size: 20px;
-
   cursor: pointer;
 
   &.selected {
     background-color: #333;
     color: #ff921a;
+  }
+
+  &.stretch {
+    flex: 1;
+    text-align: center;
+  }
+
+  &:before {
+    font-size: 20px;
   }
 }
 
@@ -121,5 +133,76 @@
   &.active {
     background-color: #ccc;
     color: white
+  }
+}
+
+.property {
+  display: grid;
+
+  grid-template-columns: auto 50px;
+  grid-template-rows: auto auto auto;
+
+  grid-template-areas: 
+    "name toggle"
+    "description toggle"
+    "content content";
+  
+  padding: 10px 0;
+  border-bottom: 1px solid #ccc;
+
+  &-name {
+    grid-area: name;
+
+    font-weight: bold;
+  }
+
+  &-description {
+    grid-area: description;
+  }
+
+  &-toggle {
+    grid-area: toggle;
+
+    padding: 10px;
+  }
+}
+
+.transition {
+  display: grid;
+  
+  grid-template-columns: auto 1fr auto;
+  grid-auto-rows: 36px;
+  grid-gap: 12px;
+
+  align-items: center;
+
+  border-bottom: 1px solid #ccc;
+  padding: 0 10px 20px;
+
+  & + & {
+    margin-top: 20px;
+  }
+
+  &-line {
+    display: contents;
+  }
+
+  &-label {
+    grid-column: 1;
+  }
+
+  &-field {
+    grid-column: 2;
+  }
+
+  &-button {
+    grid-column: 3;
+
+    font-size: 17px;
+  }
+
+  &-info {
+    color: #888;
+    margin-top: 20px;
   }
 }
