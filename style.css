@@ -18,7 +18,7 @@
 
 .palette {
   grid-area: palette;
-  height: 100%;
+  overflow: hidden;
 }
 
 .canvas {
