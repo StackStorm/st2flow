@@ -164,6 +164,16 @@ class Transition extends Component {
             <Toggle />
           </div>
         </div>
+        { transition.publish && (
+          <div className={this.style.transitionLine} >
+            <div className={this.style.transitionField}>
+              <StringField /><StringField />
+            </div>
+            <div className={this.style.transitionField}>
+              <i className="icon-plus2" />
+            </div>
+          </div>
+        )}
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
             Do
@@ -222,15 +232,15 @@ class TaskDetails extends Component {
         <Task task={task} />
       </Toolbar>,
       <Toolbar key="subtoolbar" secondary={true} >
-        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('task')}>Task</ToolbarButton>
-        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('input')}>Input</ToolbarButton>
-        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('properties')}>Properties</ToolbarButton>
-        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('transitions')}>Transitions</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('task')} selected={section === 'task'}>Task</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('input')} selected={section === 'input'}>Input</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('properties')} selected={section === 'properties'}>Properties</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('transitions')} selected={section === 'transitions'}>Transitions</ToolbarButton>
       </Toolbar>,
       section === 'task' && (
         <Panel key="task">
-          <StringField name="name" value={task.name} onChange={a => console.log(a)}/>
-          <StringField name="action" value={task.action} onChange={a => console.log(a)}/>
+          <StringField name="name" value={task.name} onChange={a => console.log(a)} />
+          <StringField name="action" value={task.action} onChange={a => console.log(a)} />
         </Panel>
       ),
       section === 'input' && (
@@ -349,14 +359,15 @@ class ToolbarButton extends Component {
     className: PropTypes.string,
     children: PropTypes.node,
     stretch: PropTypes.bool,
+    selected: PropTypes.bool,
   }
 
   style = style
 
   render() {
-    const { className, stretch, ...props } = this.props;
+    const { className, stretch, selected, ...props } = this.props;
     return (
-      <div className={cx(this.style.toolbarButton, className, stretch && this.style.stretch)} {...props} >
+      <div className={cx(this.style.toolbarButton, className, stretch && this.style.stretch, selected && this.style.selected)} {...props} >
         { this.props.children }
       </div>
     );
@@ -436,7 +447,8 @@ export default class Details extends Component {
               return (
                 <ToolbarButton
                   key={section.title}
-                  className={cx(section.className, selected === section.title && this.style.selected)}
+                  className={section.className}
+                  selected={selected === section.title}
                   onClick={() => this.handleSectionSelect(section)}
                 />
               );

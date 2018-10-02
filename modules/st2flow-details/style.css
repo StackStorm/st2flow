@@ -18,6 +18,13 @@
     background-color: #d8d8d8;
     color: #222;
     border-bottom: 1px solid #f8f8f8;
+
+    .toolbar-button.selected {
+      background-color: transparent;
+      color: inherit;
+
+      border-color: #ff921a;
+    }
   }
 
   .task {
@@ -26,9 +33,13 @@
 }
 
 .toolbar-button {
-  padding: 15px;
+  padding: 15px 15px 10px;
+  border-bottom: 5px solid transparent;
 
   cursor: pointer;
+  user-select: none;
+
+  text-transform: uppercase;
 
   &.selected {
     background-color: #333;
