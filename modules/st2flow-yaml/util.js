@@ -2,6 +2,10 @@
 
 // Some lodashy (and other) functions without all the dashy
 
+function isPlainObject(data) {
+  return Object.prototype.toString.call(data) === '[object Object]';
+}
+
 function pick(obj: Object, ...keys: Array<string| number>): Object {
   return keys.reduce((o, key) => {
     o[key] = obj[key];
@@ -30,6 +34,7 @@ function splitKey(key: string | Array<string | number>): Array<any> {
 }
 
 export {
+  isPlainObject,
   pick,
   omit,
   get,

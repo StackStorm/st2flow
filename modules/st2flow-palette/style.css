@@ -1,8 +1,4 @@
 .component {
-  grid-area: palette;
-
-  min-height: 100%;
-
   background-color: #fff;
 
   display: flex;
