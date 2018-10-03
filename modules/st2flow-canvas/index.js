@@ -184,7 +184,6 @@ export default class Canvas extends Component {
     return (
       <div
         className={cx(this.props.className, this.style.component)}
-        ref={this.canvasRef}
         onClick={e => this.handleCanvasClick(e)}
       >
         <Toolbar>
@@ -194,43 +193,45 @@ export default class Canvas extends Component {
           <div key="save" icon="icon-save" onClick={() => console.log('save')} />
           <div key="run" icon="icon-play" onClick={() => console.log('run')} />
         </Toolbar>
-        <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
-          {
-            model.tasks.map((task) => {
-              return (
-                <Task
-                  key={task.name}
-                  task={task}
-                  selected={task.name === selected}
-                  scale={scale}
-                  onMove={(...a) => this.handleTaskMove(task, ...a)}
-                  onClick={() => this.handleTaskSelect(task)}
-                />
-              );
-            })
-          }
-          <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+        <div className={this.style.canvas} ref={this.canvasRef}>
+          <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
             {
-              model.transitions
-                .map((transition) => {
-                  const from = {
-                    task: model.tasks.find(({ name }) => name === transition.from.name),
-                    anchor: 'bottom',
-                  };
-                  const to = {
-                    task: model.tasks.find(({ name }) => name === transition.to.name),
-                    anchor: 'top',
-                  };
-                  return (
-                    <Transition
-                      key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`}
-                      from={from}
-                      to={to}
-                    />
-                  );
-                })
+              model.tasks.map((task) => {
+                return (
+                  <Task
+                    key={task.name}
+                    task={task}
+                    selected={task.name === selected}
+                    scale={scale}
+                    onMove={(...a) => this.handleTaskMove(task, ...a)}
+                    onClick={() => this.handleTaskSelect(task)}
+                  />
+                );
+              })
             }
-          </svg>
+            <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+              {
+                model.transitions
+                  .map((transition) => {
+                    const from = {
+                      task: model.tasks.find(({ name }) => name === transition.from.name),
+                      anchor: 'bottom',
+                    };
+                    const to = {
+                      task: model.tasks.find(({ name }) => name === transition.to.name),
+                      anchor: 'top',
+                    };
+                    return (
+                      <Transition
+                        key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`}
+                        from={from}
+                        to={to}
+                      />
+                    );
+                  })
+              }
+            </svg>
+          </div>
         </div>
       </div>
     );
