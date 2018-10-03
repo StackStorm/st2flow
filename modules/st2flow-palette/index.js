@@ -23,10 +23,10 @@ export default class Palette extends Component {
       name: `doSomething ${Math.random()}`,
       action: 'some.action',
       anobject: { foo: 'bar' },
-      next: [{ do: 'llama', when: 'depress' }, { do: [ 'taboot', 'taboot' ], when: 'depress depress' }],
+      nerxt: [{ do: 'llama', when: 'depress' }, { do: [ 'taboot', 'tabooot' ], when: 'depress depress' }],
       arr: [[[ { 'asdf': 'boo', 'qwer': 'reqw' }, 'snarf' ], 'wombat']],
       arr2: [[[ 'boo' ], 'booboo' ]],
-      coord: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
+      coords: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
     });
   }
 

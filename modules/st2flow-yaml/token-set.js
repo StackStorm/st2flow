@@ -223,19 +223,18 @@ class TokenSet {
    * paremeters and can simply call the method.
    */
   refineTree() {
-    perf.start('refineTree');
 
     this.objectified = null;
     this.stringified = null;
 
+    perf.start('refineTree');
     const refinery = new Refinery(this.yaml, this.head, this.tail);
     const { tree, tail } = refinery.refineTree(this.tree);
+    perf.stop('refineTree');
 
     this.tree = tree;
     this.tail = tail;
     this.yaml = this.toYAML();
-
-    perf.stop('refineTree');
   }
 
   /**
@@ -246,8 +245,10 @@ class TokenSet {
    */
   toObject(): Object {
     if (!this.objectified) {
+      perf.start('tree.toObject()');
       const objectifier = new Objectifier(this.anchors);
       this.objectified = objectifier.getTokenValue(this.tree);
+      perf.stop('tree.toObject()');
     }
 
     return this.objectified;
@@ -258,7 +259,9 @@ class TokenSet {
    */
   toYAML(): string {
     if(!this.stringified) {
+      perf.start('tree.toYAML()');
       this.stringified = this.head + this.stringifyToken(this.tree) + this.tail;
+      perf.stop('tree.toYAML()');
     }
 
     return this.stringified;
