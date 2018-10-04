@@ -1,11 +1,12 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValuePair, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
+import type { TokenRawValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
 import crawler from './crawler';
 import factory from './token-factory';
 
 const DEFAULT_INDENT = '  ';
 const DEFAULT_TAIL = '\n';
+const STR_COLON = ':';
 const REG_INDENT = /\n( +)\S/;
 const REG_ALL_WHITESPACE = /^\s+$/;
 
@@ -80,6 +81,9 @@ class Refinery {
     }
   }
 
+  /**
+   * Adds the prefix to "key" tokens in a mapping. This is mostly whitespace.
+   */
   prefixKey(token: TokenRawValue | TokenCollection, depth: number, jpath: Array<string | number>): void {
     const rawToken: TokenRawValue = crawler.findFirstValueToken(token);
 
@@ -95,16 +99,15 @@ class Refinery {
   }
 
   /**
-   * Adds the prefix to "value" tokens. Most of the time this will
-   * include a colon and white space. For collections, this will also
-   * include the dash.
+   * Adds the prefix to "value" tokens in a mapping. Most of the time
+   * this will include a colon and white space.
    */
   prefixValue(token: AnyToken, depth: number): void {
     switch(token.kind) {
       case 0:
       case 4:
         if (!token.prefix || !token.prefix.length) {
-          token.prefix = [ factory.createToken(': ') ];
+          token.prefix = [ factory.createToken(`${STR_COLON} `) ];
         }
 
         return;
@@ -117,8 +120,8 @@ class Refinery {
         }
 
         // only add the colon if it does not yet exist
-        if(rawToken.prefix.every(t => t.value.indexOf(':') === -1)) {
-          rawToken.prefix.unshift(factory.createToken(':'));
+        if(rawToken.prefix.every(t => t.value.indexOf(STR_COLON) === -1)) {
+          rawToken.prefix.unshift(factory.createToken(STR_COLON));
         }
 
         return;
@@ -133,8 +136,7 @@ class Refinery {
   }
 
   /**
-   * Given an array of tokens, refines each token in the array.
-   * This is used for refining mappings and collections.
+   * Given a TokenMapping (kind: 2), refines each token in the mappings array.
    */
   prefixMapping(startToken: TokenMapping, depth: number, jpath: Array<string | number>) {
     startToken.mappings.forEach((token, i) => {
@@ -146,6 +148,9 @@ class Refinery {
     });
   }
 
+  /**
+   * Given a TokenCollection (kind: 3), refines each token in the items array.
+   */
   prefixCollection(startToken: TokenCollection, depth: number, jpath: Array<string | number>) {
     startToken.items.forEach((token, i) => {
       if(token === null) {
@@ -160,11 +165,11 @@ class Refinery {
         rawToken.prefix = [];
       }
 
-      let dashIndex = rawToken.prefix.findIndex(t => t.value.indexOf('- ') !== -1);
+      let dashIndex: number = rawToken.prefix.findIndex(t => t.value.indexOf('- ') !== -1);
 
       // if it's already there, no need to go further .
       if(dashIndex !== -1) {
-        return token.endPosition;
+        return;
       }
 
       // First remove any whitespace tokens at the top of the prefix
@@ -190,21 +195,21 @@ class Refinery {
       let lastTwo = rawToken.jpath.slice(itemsIdx, itemsIdx + 2);
       const firstIndex = lastTwo[1];
 
-      while(lastTwo[0] === 'items' && lastTwo[1] === firstIndex) {
-        nesting++;
+      while(lastTwo[0] === 'items' && lastTwo[1] >= firstIndex) {
+        const prefix = `\n${this.indent.repeat(depth - nesting)}- `;
+        rawToken.prefix.unshift(factory.createToken(prefix));
+
+        if(++nesting > 0 && firstIndex > 0) {
+          break;
+        }
+
         itemsIdx -= 2;
         lastTwo = rawToken.jpath.slice(itemsIdx, itemsIdx + 2);
       }
 
-      for(let n = 0; n < nesting; n++) {
-        let prefix = `\n${this.indent.repeat(depth - n)}- `;
-        rawToken.prefix.unshift(factory.createToken(prefix));
-      }
-
       // the fist item in a collection should have a colon prefix
-      if(i === 0 && rawToken.prefix[0].value.indexOf(':') === -1) {
-        console.log('First', rawToken.value);
-        rawToken.prefix.unshift(factory.createToken(':'));
+      if(i === 0 && rawToken.jpath[itemsIdx + 3] === 0) {
+        rawToken.prefix.unshift(factory.createToken(STR_COLON));
       }
     });
   }
@@ -227,7 +232,11 @@ class Refinery {
         // If so, the old tail should become a prefix.
         if(token.key.startPosition >= this.yaml.length - this.tail.length) {
           const rawToken: TokenRawValue = crawler.findFirstValueToken(token.key);
-          rawToken.prefix.unshift(factory.createToken(`${this.tail}`));
+          const idx = rawToken.prefix[0].rawValue.indexOf(STR_COLON) === -1 ? 0 : 1;
+
+          // Remove any leading newlines from the insertion point
+          rawToken.prefix[idx].value = rawToken.prefix[idx].rawValue = rawToken.prefix[idx].rawValue.replace(DEFAULT_TAIL, '');
+          rawToken.prefix.splice(idx, 0, factory.createToken(`${this.tail}`));
           this.tail = DEFAULT_TAIL;
         }
 
@@ -248,7 +257,7 @@ class Refinery {
         }, startPos);
         break;
 
-      case 4:
+      default:
         throw new Error(`Unknown token kind: ${token.kind}`);
     }
 

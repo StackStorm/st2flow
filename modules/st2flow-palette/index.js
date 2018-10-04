@@ -23,9 +23,9 @@ export default class Palette extends Component {
       name: `doSomething ${Math.random()}`,
       action: 'some.action',
       anobject: { foo: 'bar' },
-      nerxt: [{ do: 'llama', when: 'depress' }, { do: [ 'taboot', 'tabooot' ], when: 'depress depress' }],
-      arr: [[[ { 'asdf': 'boo', 'qwer': 'reqw' }, 'snarf' ], 'wombat']],
-      arr2: [[[ 'boo' ], 'booboo' ]],
+      nerxt: [{ do: 'llama', when: 'depress' }, { dodo: [ 'taboot', [ 'tabooot', 'taboooot' ]], when: 'depress depress' }],
+      arr: [[[{ 'asdf': [ 'boo' ], 'qwer': 'reqw', 'uiop': [ 'hjkl' ]}, 'snarf' ], 'wombat' ]],
+      arr2: [[[ 'boohoo' ], 'booboo' ]],
       coords: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
     });
   }

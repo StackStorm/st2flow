@@ -34,7 +34,7 @@ export default class Editor extends Component {
       mode: 'ace/mode/yaml',
       tabSize: 2,
       useSoftTabs: true,
-      showPrintMargin: false
+      showPrintMargin: false,
     });
     this.editor.setValue(model.tokenSet.yaml, -1);
     this.editor.on('change', this.handleEditorChange);
