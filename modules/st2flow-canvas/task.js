@@ -21,24 +21,32 @@ export default class Task extends Component {
   }
 
   componentDidMount() {
-    this.handleMouseDown = this.handleMouseDown.bind(this);
-    this.handleMouseMove = this.handleMouseMove.bind(this);
-    this.handleMouseUp = this.handleMouseUp.bind(this);
+    const task = this.taskRef.current;
+    const handle = this.handleRef.current;
 
-    const el = this.taskRef.current;
-    el.addEventListener('mousedown', this.handleMouseDown);
+    task.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
+
+    handle.addEventListener('dragstart', this.handleDragStartHandle);
+    task.addEventListener('dragover', this.handleDragOver);
+    task.addEventListener('drop', this.handleDrop);
   }
 
   componentWillUnmount() {
-    const el = this.taskRef.current;
-    el.removeEventListener('mousedown', this.handleMouseDown);
+    const task = this.taskRef.current;
+    const handle = this.handleRef.current;
+
+    task.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
+
+    handle.removeEventListener('dragstart', this.handleDragStartHandle);
+    task.removeEventListener('dragover', this.handleDragOver);
+    task.removeEventListener('drop', this.handleDrop);
   }
 
-  handleMouseDown(e) {
+  handleMouseDown = (e) => {
     // Drag should only work on left button press
     if (e.button !== 0) {
       return true;
@@ -57,39 +65,41 @@ export default class Task extends Component {
     return false;
   }
 
-  handleMouseUp(e) {
+  handleMouseUp = (e) => {
+    if (!this.drag) {
+      return true;
+    }
+
     e.preventDefault();
     e.stopPropagation();
 
-    if (this.drag) {
-      this.drag = false;
+    this.drag = false;
 
-      const scale = Math.E ** this.props.scale;
+    const scale = Math.E ** this.props.scale;
 
-      if (this.props.onMove) {
-        const { coords } = this.props.task;
-        const { x, y } = this.state.delta;
-        if ( x === 0 && y === 0) {
-          return false;
-        }
-        this.props.onMove({
-          x: coords.x + x / scale,
-          y: coords.y + y / scale,
-        });
+    if (this.props.onMove) {
+      const { coords } = this.props.task;
+      const { x, y } = this.state.delta;
+      if ( x === 0 && y === 0) {
+        return false;
       }
-      
-      this.setState({
-        delta: {
-          x: 0,
-          y: 0,
-        },
+      this.props.onMove({
+        x: coords.x + x / scale,
+        y: coords.y + y / scale,
       });
     }
+    
+    this.setState({
+      delta: {
+        x: 0,
+        y: 0,
+      },
+    });
 
     return false;
   }
 
-  handleMouseMove(e) {
+  handleMouseMove = (e) => {
     if (!this.drag) {
       return true;
     }
@@ -107,7 +117,7 @@ export default class Task extends Component {
     return false;
   }
 
-  handleClick(e) {
+  handleClick = (e) => {
     e.stopPropagation();
 
     if (this.props.onClick) {
@@ -115,8 +125,46 @@ export default class Task extends Component {
     }
   }
 
+  handleDragStartHandle = (e, handle) => {
+    e.stopPropagation();
+
+    this.style.opacity = '0.4';
+
+    const { task } = this.props;
+
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      task,
+      handle,
+    }));
+  }
+
+  handleDragOver = (e) => {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  handleDrop = (e) => {
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    const { task, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
+
+    console.log(task, handle);
+
+    return false;
+  }
+
   style = style
   taskRef = React.createRef();
+  handleRef = React.createRef();
 
   render() {
     const { task, selected } = this.props;
@@ -124,23 +172,31 @@ export default class Task extends Component {
 
     const scale = Math.E ** this.props.scale;
 
-    const additionalStyles = {
-      width: task.size.x,
-      height: task.size.y,
-      transform: `translate(${task.coords.x + delta.x / scale}px, ${task.coords.y + delta.y / scale}px)`,
-    };
-
     return (
       <div
         className={cx(this.style.task, selected && this.style.selected)}
-        style={additionalStyles}
-        ref={this.taskRef}
+        style={{
+          transform: `translate(${task.coords.x + delta.x / scale}px, ${task.coords.y + delta.y / scale}px)`,
+        }}
         onClick={e => this.handleClick(e)}
       >
-        <div className={cx(this.style.taskName)}>{task.name}</div>
-        <div className={cx(this.style.taskAction)}>{task.action}</div>
+        <div
+          className={cx(this.style.taskBody)}
+          style={{
+            width: task.size.x,
+            height: task.size.y,
+          }}
+          ref={this.taskRef}
+        >
+          <div className={cx(this.style.taskName)}>{task.name}</div>
+          <div className={cx(this.style.taskAction)}>{task.action}</div>
+        </div>
         <div className={cx(this.style.taskButton, this.style.edit, 'icon-edit')} />
         <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} />
+        <div className={this.style.taskHandle} style={{ top: '50%', left: 0 }} draggable ref={this.handleRef} />
+        <div className={this.style.taskHandle} style={{ top: 0, left: '50%' }}  draggable ref={this.handleRef} />
+        <div className={this.style.taskHandle} style={{ top: '50%', left: '100%' }}  draggable ref={this.handleRef} />
+        <div className={this.style.taskHandle} style={{ top: '100%', left: '50%' }}  draggable ref={this.handleRef} />
       </div>
     );
   }

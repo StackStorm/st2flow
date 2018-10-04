@@ -22,13 +22,6 @@ export default class Canvas extends Component {
   }
 
   componentDidMount() {
-    this.handleMouseDown = this.handleMouseDown.bind(this);
-    this.handleMouseMove = this.handleMouseMove.bind(this);
-    this.handleMouseUp = this.handleMouseUp.bind(this);
-    this.handleMouseWheel = this.handleMouseWheel.bind(this);
-    this.handleDragOver = this.handleDragOver.bind(this);
-    this.handleDrop = this.handleDrop.bind(this);
-
     const el = this.canvasRef.current;
     el.addEventListener('wheel', this.handleMouseWheel);
     el.addEventListener('mousedown', this.handleMouseDown);
@@ -78,7 +71,7 @@ export default class Canvas extends Component {
     this.surfaceRef.current.style.height = `${this.size.y}px`;
   }
 
-  handleMouseWheel(e) {
+  handleMouseWheel = (e) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -92,7 +85,11 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleMouseDown(e) {
+  handleMouseDown = (e) => {
+    if (e.target !== this.surfaceRef.current) {
+      return true;
+    }
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -105,7 +102,11 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleMouseUp(e) {
+  handleMouseUp = (e) => {
+    if (!this.drag) {
+      return true;
+    }
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -114,7 +115,7 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleMouseMove(e) {
+  handleMouseMove = (e) => {
     if (!this.drag) {
       return true;
     }
@@ -129,15 +130,21 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleDragOver(e) {
+  handleDragOver = (e) => {
+    if (e.target !== this.surfaceRef.current) {
+      return true;
+    }
+
     if (e.preventDefault) {
       e.preventDefault();
     }
 
     e.dataTransfer.dropEffect = 'copy';
+
+    return false;
   }
 
-  handleDrop(e) {
+  handleDrop = (e) => {
     if (e.stopPropagation) {
       e.stopPropagation();
     }
@@ -155,15 +162,15 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleTaskMove(task, coords) {
+  handleTaskMove = (task, coords) => {
     this.props.model.updateTask(task.name, { coords });
   }
 
-  handleTaskSelect(task) {
+  handleTaskSelect = (task) => {
     this.props.onSelect(task.name);
   }
 
-  handleCanvasClick(e) {
+  handleCanvasClick = (e) => {
     e.stopPropagation();
 
     this.props.onSelect();
