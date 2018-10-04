@@ -174,8 +174,10 @@ class OrquestaModel implements ModelInterface {
 
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { name, ...data } = task;
-    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+    const { coords } = task;
+    if (coords) {
+      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'coords' ], coords);
+    }
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);

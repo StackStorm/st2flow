@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import { connect } from '@stackstorm/st2flow-model';
+
 import ace from 'brace';
 import 'brace/ext/language_tools';
 import 'brace/mode/yaml';
@@ -10,10 +12,11 @@ import style from './style.css';
 
 const editorId = 'editor_mount_point';
 
+@connect
 export default class Editor extends Component {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
   }
 
   constructor(...args) {

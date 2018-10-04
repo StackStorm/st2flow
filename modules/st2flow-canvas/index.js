@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import { connect } from '@stackstorm/st2flow-model';
+
 import Task from './task';
 import Transition from './transition';
 import Vector from './vector';
@@ -9,10 +11,11 @@ import Toolbar from './toolbar';
 
 import style from './style.css';
 
+@connect
 export default class Canvas extends Component {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
     selected: PropTypes.string,
     onSelect: PropTypes.func,
   }

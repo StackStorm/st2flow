@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import { connect } from '@stackstorm/st2flow-model';
+
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
 import Parameter from './parameter';
@@ -275,9 +277,10 @@ class TaskDetails extends Component {
   }
 }
 
+@connect
 class TaskList extends Component {
   static propTypes = {
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
     onSelect: PropTypes.func.isRequired,
   }
 
@@ -392,10 +395,11 @@ class Panel extends Component {
   }
 }
 
+@connect
 export default class Details extends Component {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
     metaModel: PropTypes.object.isRequired,
     actions: PropTypes.array,
     selected: PropTypes.string,
@@ -465,7 +469,7 @@ export default class Details extends Component {
           selected === 'execution' && (
             task && 
               <TaskDetails onBack={() => this.handleBack()} task={task} transitions={transitions} actions={actions} /> ||
-              <TaskList onSelect={task => this.handleTaskSelect(task)} model={model} />
+              <TaskList onSelect={task => this.handleTaskSelect(task)} />
           )
         }
         {

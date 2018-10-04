@@ -10,7 +10,7 @@ import {
 } from 'react-router-dom';
 import createHashHistory from 'history/createHashHistory';
 
-import { OrquestaModel } from '@stackstorm/st2flow-model';
+import { connect } from '@stackstorm/st2flow-model';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -72,67 +72,10 @@ class MetaModel extends EventEmitter {
   }
 }
 
+@connect
 class Window extends Component {
   constructor(props) {
     super(props);
-    const tmpYAML = `---
-version: 1.0
-
-description: >
-  A sample workflow that demonstrates how to use conditions
-  to determine which path in the workflow to take.
-
-input:
-  - which
-
-tasks:
-  t1:
-    action: core.local
-    input:
-      cmd: printf <% $.which %>
-    coords:
-      x: 100
-      y: 200
-    next:
-      - when: <% succeeded() and result().stdout = 'a' %>
-        publish: path=<% result().stdout %>
-        do:
-          - a
-          - b
-      - when: <% succeeded() and result().stdout = 'b' %>
-        publish: path=<% result().stdout %>
-        do: b
-      - when: <% succeeded() and not result().stdout in list(a, b) %>
-        publish: path=<% result().stdout %>
-        do: c
-  a:
-    action: core.local cmd="echo 'Took path A.'"
-    coords:
-      x: 200
-      y: 300
-  b:
-    action: core.local cmd="echo 'Took path B.'"
-    coords:
-      x: 10
-      y: 300
-    next:
-      - do: 'foobar'
-  c:
-    action: core.local cmd="echo 'Took path C.'"
-    coords:
-      x: 100
-      y: 500
-
-  foobar:
-    action: core.local
-    coords:
-      x: 300
-      y: 400
-
-`;
-
-    this.model = new OrquestaModel(tmpYAML);
-    this.model.on('change', () => this.forceUpdate());
 
     this.metaModel = new MetaModel();
   }
@@ -161,8 +104,8 @@ tasks:
       <div className="component" >
         <Header className="header" />
         <Palette className="palette" actions={actions} />
-        <Canvas className="canvas" model={this.model} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
-        <Details className="details" actions={actions} model={this.model} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} metaModel={this.metaModel} />
+        <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
+        <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} metaModel={this.metaModel} />
       </div>
     );
   }
