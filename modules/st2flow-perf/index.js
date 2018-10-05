@@ -1,16 +1,17 @@
-const debug = require('debug')('st2flow.perf');
-const IS_NODE = typeof process === 'object' && Object.prototype.toString.call(process) === '[object process]';
+import debugModule from 'debug';
 
-if (IS_NODE) {
-  module.exports = {
-    start() {},
-    stop() {},
-  };
-}
-else {
+const IS_NODE = typeof process === 'object' && Object.prototype.toString.call(process) === '[object process]';
+const debug = debugModule('st2flow.perf');
+
+let perf = {
+  start() {},
+  stop() {},
+};
+
+if(!IS_NODE) {
   performance.setResourceTimingBufferSize(150);
 
-  module.exports = {
+  perf = {
     start(name) {
       performance.mark(`${name}-start`);
     },
@@ -28,3 +29,4 @@ else {
   };
 }
 
+export default perf;
