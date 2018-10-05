@@ -1,6 +1,7 @@
 {
   "packages": [
-    "modules/**",
+    "../st2web/modules/*",
+    "modules/*",
     "."
   ],
   "version": "0.0.0"

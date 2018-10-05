@@ -80,7 +80,9 @@ class OrquestaModel implements ModelInterface {
   }
 
   get transitions(): Array<TransitionInterface> {
-    return this.tasks.reduce((arr, task) => {
+    const tasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+
+    return tasks.reduce((arr, task) => {
       if(task.hasOwnProperty('next')) {
         task.next.forEach((nxt, i) => {
           let to;
@@ -93,6 +95,7 @@ class OrquestaModel implements ModelInterface {
             to = nxt.do;
           }
           else {
+            to = [];
             this.emitter.emit('error', new Error(`Task "${task.name}" transition #${i + 1} must define the "do" property.`));
           }
 
@@ -127,7 +130,7 @@ class OrquestaModel implements ModelInterface {
   addTask(task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, ...data } = task;
-    crawler.addMappingItem(this.tokenSet, 'tasks', name, data);
+    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
