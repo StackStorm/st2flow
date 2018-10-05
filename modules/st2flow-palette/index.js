@@ -10,24 +10,11 @@ export default class Palette extends Component {
   static propTypes = {
     className: PropTypes.string,
     actions: PropTypes.array,
-    model: PropTypes.object, // temporary
   }
 
   state = {
     search: '',
     packs: {},
-  }
-
-  addTask = () => {
-    this.props.model.addTask({
-      name: `doSomething ${Math.random()}`,
-      action: 'some.action',
-      anobject: { foo: 'bar' },
-      nerxt: [{ do: 'llama', when: 'depress' }, { dodo: [ 'taboot', [ 'tabooot', 'taboooot' ]], when: 'depress depress' }],
-      arr: [[[{ 'asdf': [ 'boo' ], 'qwer': 'reqw', 'uiop': [ 'hjkl' ]}, 'snarf' ], 'wombat' ]],
-      arr2: [[[ 'boohoo' ], 'booboo' ]],
-      coords: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
-    });
   }
 
   handleSearch(e) {
@@ -59,9 +46,6 @@ export default class Palette extends Component {
             onChange={e => this.handleSearch(e)}
             placeholder="Library"
           />
-        </div>
-        <div className="temporary delete-me-eventually">
-          <button onClick={this.addTask}>Add Task</button>
         </div>
         <div className={this.style.list}>
           {

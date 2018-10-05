@@ -33,13 +33,11 @@ input:
   - which
 
 tasks:
+  # [100, 200]
   t1:
     action: core.local
     input:
       cmd: printf <% $.which %>
-    coords:
-      x: 100
-      y: 200
     next:
       - when: <% succeeded() and result().stdout = 'a' %>
         publish: path=<% result().stdout %>
@@ -52,29 +50,20 @@ tasks:
       - when: <% succeeded() and not result().stdout in list(a, b) %>
         publish: path=<% result().stdout %>
         do: c
+  # [200, 300]
   a:
     action: core.local cmd="echo 'Took path A.'"
-    coords:
-      x: 200
-      y: 300
+  # [10, 300]
   b:
     action: core.local cmd="echo 'Took path B.'"
-    coords:
-      x: 10
-      y: 300
     next:
       - do: 'foobar'
+  # [100, 500]
   c:
     action: core.local cmd="echo 'Took path C.'"
-    coords:
-      x: 100
-      y: 500
-
+  # [300, 400]
   foobar:
     action: core.local
-    coords:
-      x: 300
-      y: 400
 
 `;
 
@@ -100,7 +89,7 @@ tasks:
     return (
       <div className="component" >
         <Header className="header" />
-        <Palette className="palette" actions={actions} model={this.model} />
+        <Palette className="palette" actions={actions} />
         <Canvas className="canvas" model={this.model} selected={this.model.selected} />
         <Details className="details" actions={actions} model={this.model} selected={this.model.selected} />
       </div>
