@@ -251,7 +251,7 @@ class TokenSet {
       perf.stop('tree.toObject()');
     }
 
-    return this.objectified;
+    return this.objectified || {};
   }
 
   /**
@@ -264,7 +264,7 @@ class TokenSet {
       perf.stop('tree.toYAML()');
     }
 
-    return this.stringified;
+    return this.stringified || '';
   }
 
   /**

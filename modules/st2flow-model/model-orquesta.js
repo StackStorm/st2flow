@@ -6,7 +6,7 @@ import { diff } from 'deep-diff';
 import EventEmitter from 'eventemitter3';
 import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
 
-type Next = {
+type NextItem = {
   do: string | Array<string>,
   when?: string,
 };
@@ -14,7 +14,8 @@ type Next = {
 type RawTask = {
   action: string,
   input?: Object,
-  next?: Array<Next>,
+  next?: Array<NextItem>,
+  coords?: Object,
 };
 
 class OrquestaModel implements ModelInterface {
@@ -188,16 +189,16 @@ class OrquestaModel implements ModelInterface {
     const { from, to } = transition;
     const oldData = this.tokenSet.toObject();
     const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
-    const task = rawTasks[from.name];
+    const task: RawTask = rawTasks[from.name];
 
     if(!task) {
       throw new Error(`No task found with name "${from.name}"`);
     }
 
     const hasNext = task.hasOwnProperty('next');
-    const next = hasNext ? task.next : [];
+    const next = hasNext && task.next || [];
 
-    const nextItem = {
+    const nextItem: NextItem = {
       do: to.name,
     };
 

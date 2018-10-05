@@ -2,7 +2,7 @@
 
 // Some lodashy (and other) functions without all the dashy
 
-function isPlainObject(data) {
+function isPlainObject(data: any) {
   return Object.prototype.toString.call(data) === '[object Object]';
 }
 

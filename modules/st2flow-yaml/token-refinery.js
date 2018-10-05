@@ -215,13 +215,17 @@ class Refinery {
   }
 
   reIndexToken(token: AnyToken, startPos: number): number {
+    if(token === null) {
+      return startPos;
+    }
+
     switch(token.kind) {
       case 0:
       case 4:
         token.startPosition = token.prefix.reduce((pos, prefix) => {
           return pos + prefix.rawValue.length;
         }, startPos);
-        token.endPosition = token.startPosition + token.rawValue.length;
+        token.endPosition = token.startPosition + (token.rawValue || token.value).length;
         break;
 
       case 1:
