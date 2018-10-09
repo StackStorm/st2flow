@@ -13,7 +13,7 @@ export interface TaskInterface {
     transitions: Array<TransitionInterface>;
 
     input?: Object;
-    coord: CanvasPoint;
+    coords: CanvasPoint;
 }
 
 export interface TaskRefInterface {

@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken } from './types';
+import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken, TokenMeta } from './types';
 import crawler from './crawler';
 import { isPlainObject } from './util';
 
@@ -88,9 +88,10 @@ class Objectifier {
    * the __keys property when order matters.
    */
   getMapping(token: TokenMapping): Object {
-    const meta = {
+    const meta: TokenMeta = {
       keys: [],
       jpath: token.jpath,
+      comments: '',
     };
 
     const result = token.mappings.reduce((obj, kvToken, i) => {
@@ -112,6 +113,7 @@ class Objectifier {
       }
 
       if(isPlainObject(value)) {
+        // value will already have a __meta property
         value.__meta.comments = getTokenComments(kvToken.key);
       }
 
@@ -129,8 +131,8 @@ class Objectifier {
 
     // Expand some useful info
     defineExpando(result, '__meta', {
-      comments: getTokenComments(token),
       jpath: token.jpath,
+      comments: getTokenComments(token),
     });
 
     return result;

@@ -5,16 +5,27 @@ import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterfa
 import { diff } from 'deep-diff';
 import EventEmitter from 'eventemitter3';
 import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
+import type { TokenMeta } from '@stackstorm/st2flow-yaml';
 
-type Next = {
+const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
+
+// The following types are specific to Orquesta
+type NextItem = {
   do: string | Array<string>,
   when?: string,
 };
 
 type RawTask = {
+  __meta: TokenMeta,
   action: string,
   input?: Object,
-  next?: Array<Next>,
+  next?: Array<NextItem>,
+  coords?: Object,
+};
+
+type RawTasks = {
+  __meta: TokenMeta,
+  [string]: RawTask,
 };
 
 class OrquestaModel implements ModelInterface {
@@ -71,8 +82,9 @@ class OrquestaModel implements ModelInterface {
     return crawler.getValueByKey(this.tokenSet, 'description');
   }
 
+  // TODO: cache the result - this property is accessed a lot
   get tasks(): Array<TaskInterface> {
-    const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const rawTasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
     if(!rawTasks) {
       // TODO: make part of schema validation
@@ -83,13 +95,13 @@ class OrquestaModel implements ModelInterface {
     // Normalize task data.
     //  - ensure all tasks have a normalized transitions collection
     return rawTasks.__meta.keys.map(taskName => {
-      const task: RawTask = rawTasks[taskName];
+      const rawTask: RawTask = rawTasks[taskName];
 
-      if (!task.next) {
-        task.next = [];
+      if (!rawTask.next) {
+        rawTask.next = [];
       }
 
-      const transitions: Array<TransitionInterface> = task.next.reduce((arr, nxt, i) => {
+      const transitions: Array<TransitionInterface> = rawTask.next.reduce((arr, nxt, i) => {
         let to: Array<string>;
 
         // nxt.do can be a string, comma delimited string, or array
@@ -109,8 +121,10 @@ class OrquestaModel implements ModelInterface {
           base.condition = nxt.when;
         }
 
+        // TODO: figure out "type" property
         const transitions = to.map(name =>
           Object.assign({
+            // type: 'success|error|complete',
             from: { name: taskName },
             to: { name },
           }, base)
@@ -119,13 +133,20 @@ class OrquestaModel implements ModelInterface {
         return arr.concat(transitions);
       }, []);
 
-      return {
+      let coords;
+      if(REG_COORDS.test(rawTask.__meta.comments)) {
+        coords = JSON.parse(rawTask.__meta.comments.replace(REG_COORDS, '{ "x": $1, "y": $2 }'));
+      }
+
+      const task: TaskInterface = {
         name: taskName,
-        action: task.action,
+        action: rawTask.action,
         size: { x: 120, y: 44 },
-        coords: { x: 0, y: 0, ...task.coords },
+        coords: { x: 0, y: 0, ...coords},
         transitions,
       };
+
+      return task;
     });
   }
 
@@ -196,16 +217,16 @@ class OrquestaModel implements ModelInterface {
     const { from, to } = transition;
     const oldData = this.tokenSet.toObject();
     const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
-    const task = rawTasks[from.name];
+    const task: RawTask = rawTasks[from.name];
 
     if(!task) {
       throw new Error(`No task found with name "${from.name}"`);
     }
 
     const hasNext = task.hasOwnProperty('next');
-    const next = hasNext ? task.next : [];
+    const next = hasNext && task.next || [];
 
-    const nextItem = {
+    const nextItem: NextItem = {
       do: to.name,
     };
 

@@ -167,7 +167,7 @@ const crawler = {
    * }
    *
    * crawler.addMappingItem(tokenSet, 'tasks.task2', { action: 'core.local' });
-   * crawler.addMappingItem(tokenSet, 'tasks.task2.input', { cmd: 'echo "Hello World"' });
+   * crawler.addMappingItem(tokenSet, ['tasks', 'task2', 'input'], { cmd: 'echo "Hello World"' });
    *
    * {
    *   version: 1,
