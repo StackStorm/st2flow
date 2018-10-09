@@ -37,9 +37,6 @@ tasks:
     action: core.local
     input:
       cmd: printf <% $.which %>
-    coords:
-      x: 100
-      y: 200
     next:
       - when: <% succeeded() and result().stdout = 'a' %>
         publish: path=<% result().stdout %>
@@ -54,27 +51,15 @@ tasks:
         do: c
   a:
     action: core.local cmd="echo 'Took path A.'"
-    coords:
-      x: 200
-      y: 300
   b:
     action: core.local cmd="echo 'Took path B.'"
-    coords:
-      x: 10
-      y: 300
     next:
       - do: 'foobar'
   c:
     action: core.local cmd="echo 'Took path C.'"
-    coords:
-      x: 100
-      y: 500
 
   foobar:
     action: core.local
-    coords:
-      x: 300
-      y: 400
 
 `;
 

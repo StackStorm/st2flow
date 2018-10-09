@@ -1,0 +1,163 @@
+{
+  "NOTE": "This schema was handcrafted from the python definitions here: https://github.com/StackStorm/orquesta/blob/master/orquesta/specs/native/v1/models.py",
+  "NOTE2": "This will be replaced by a generated definition from the python lib/spec",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/product.schema.json",
+  "title": "Product",
+  "description": "A product in the catalog",
+  "type": "object",
+  "properties": {
+    "version": {
+      "enum": ["1.0", 1.0]
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "vars": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "minProperties": 1,
+        "maxProperties": 1,
+        "patternProperties": {
+          "^\\w+$": {
+            "anyOf": [
+              {"type": "null"},
+              {"type": "array"},
+              {"type": "boolean"},
+              {"type": "integer"},
+              {"type": "number"},
+              {"type": "object"},
+              {"type": "string"}
+            ]
+          }
+        }
+      }
+    },
+    "input": {
+      "type": "array",
+      "uniqueItems": true,
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "type": "string", "minLength": 1 },
+          {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1,
+            "patternProperties": {
+              "^\\w+$": {
+                "anyOf": [
+                  {"type": "null"},
+                  {"type": "array"},
+                  {"type": "boolean"},
+                  {"type": "integer"},
+                  {"type": "number"},
+                  {"type": "object"},
+                  {"type": "string"}
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^\\w+$": {
+          "type": "object",
+          "properties": {
+            "join": {
+              "oneOf": [
+                { "enum": [ "all" ] },
+                { "type": "integer", "minimum": 0 }
+              ]
+            },
+            "action": {
+              "type": "string"
+            },
+            "input": {
+              "type": "object",
+              "minProperties": 1,
+              "patternProperties": {
+                "^\\w+$": {
+                  "anyOf": [
+                    {"type": "null"},
+                    {"type": "array"},
+                    {"type": "boolean"},
+                    {"type": "integer"},
+                    {"type": "number"},
+                    {"type": "object"},
+                    {"type": "string"}
+                  ]
+                }
+              }
+            },
+            "next": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "when": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "publish": {
+                    "oneOf": [
+                      { "type": "string", "minLength": 1 },
+                      { "type": "array", "uniqueItems": true, "minItems": 1, "items": {
+                        "type": "object",
+                        "minProperties": 1,
+                        "maxProperties": 1,
+                        "patternProperties": {
+                          "^\\w+$": {
+                            "anyOf": [
+                              {"type": "null"},
+                              {"type": "array"},
+                              {"type": "boolean"},
+                              {"type": "integer"},
+                              {"type": "number"},
+                              {"type": "object"},
+                              {"type": "string"}
+                            ]
+                          }
+                        }
+                      } }
+                    ]
+                  },
+                  "do": {
+                    "oneOf": [
+                      { "type": "string", "minLength": 1 },
+                      { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "required": [ "tasks" ]
+}

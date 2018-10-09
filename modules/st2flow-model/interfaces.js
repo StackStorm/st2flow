@@ -44,7 +44,7 @@ export interface ModelInterface {
     removeListener(event: string, callback: Function): void;
 
     constructor(yaml: string): void;
-    fromYAML(): void;
+    fromYAML(yaml: string): void;
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;
@@ -67,3 +67,14 @@ export interface DeltaInterface {
     action: 'insert' | 'remove';
     lines: Array<string>;
 }
+
+export interface AjvError {
+  dataPath: string,
+  keyword: string,
+  message: string,
+  params: Object
+};
+
+export interface GenericError {
+  message: string
+};
