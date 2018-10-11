@@ -1,16 +1,12 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 
-import EventEmitter from 'eventemitter3';
-
 import {
   Router,
   Route,
   Switch,
 } from 'react-router-dom';
 import createHashHistory from 'history/createHashHistory';
-
-import { connect } from '@stackstorm/st2flow-model';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -21,65 +17,7 @@ import style from './style.css';
 
 const history = window.routerHistory = createHashHistory({});
 
-class MetaModel extends EventEmitter {
-  meta = {
-    name: '',
-    runner_type: 'orquesta',
-    description: '',
-    enable: false,
-    entry_point: '',
-    parameters: {
-      register: {
-        type: 'string',
-        default: 'all',
-        description: 'Possible options are all, sensors, actions, rules, aliases, runners, triggers, rule_types, policiy_types, policies, configs.',
-      },
-      packs: {
-        type: 'array',
-        description: 'A list of packs to register / load resources from.',
-        items: {
-          type: 'string',
-        },
-      },
-      timeout: {
-        type: 'integer',
-        default: 300,
-        description: 'Make sure that all pack content is loaded within specified timeout',
-      },
-    },
-  }
-
-  update(meta) {
-    this.meta = meta;
-  }
-
-  get parameters() {
-    return Object.keys(this.meta.parameters)
-      .map(name => ({
-        name,
-        ...this.meta.parameters[name],
-      })) ;
-  }
-
-  setParameter(name, opts) {
-    this.meta.parameters[name] = opts;
-    this.emit('update');
-  }
-
-  unsetParameter(name) {
-    delete this.meta.parameters[name];
-    this.emit('update');
-  }
-}
-
-@connect
 class Window extends Component {
-  constructor(props) {
-    super(props);
-
-    this.metaModel = new MetaModel();
-  }
-
   state = {
     actions: [],
     selected: undefined,
@@ -105,7 +43,7 @@ class Window extends Component {
         <Header className="header" />
         <Palette className="palette" actions={actions} />
         <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
-        <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} metaModel={this.metaModel} />
+        <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
       </div>
     );
   }

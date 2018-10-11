@@ -69,11 +69,15 @@ class MetaModel implements ModelInterface {
 
   set(path, value) {
     const oldData = this.tokenSet.toObject();
-    crawler.assignMappingItem(this.tokenSet, path, value);
+    if (crawler.getValueByKey(this.tokenSet, path) === undefined) {
+      crawler.assignMappingItem(this.tokenSet, path, value);
+    }
+    else {
+      crawler.replaceTokenValue(this.tokenSet, path, value);
+    }
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
   }
-
 }
 
 export default MetaModel;

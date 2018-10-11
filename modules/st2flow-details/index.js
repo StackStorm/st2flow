@@ -6,8 +6,8 @@ import { connect } from '@stackstorm/st2flow-model';
 
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
-import Parameter from './parameter';
-import Button, { Toggle } from '@stackstorm/module-forms/button.component';
+import { Toggle } from '@stackstorm/module-forms/button.component';
+import { Panel, Toolbar, ToolbarButton } from './layout';
 
 import ArrayField from '@stackstorm/module-auto-form/fields/array';
 import NumberField from '@stackstorm/module-auto-form/fields/number';
@@ -18,98 +18,12 @@ import ObjectField from '@stackstorm/module-auto-form/fields/object';
 import PasswordField from '@stackstorm/module-auto-form/fields/password';
 import EnumField from '@stackstorm/module-auto-form/fields/enum';
 
+import Meta from './meta-panel';
+import Parameters from './parameters-panel';
+
 import style from './style.css';
 
-class Meta extends Component {
-  static propTypes = {
-    metaModel: PropTypes.object.isRequired,
-  }
 
-  spec = {
-    type: 'object',
-    properties: {
-      pack: {
-        position: 1,
-        enum: [
-          'some',
-          'thing',
-          'else',
-        ],
-      },
-      name: {
-        position: 2,
-        type: 'string',
-      },
-      description: {
-        position: 3,
-        type: 'string',
-      },
-      enable: {
-        position: 4,
-        type: 'boolean',
-      },
-      entry_point: {
-        position: 5,
-        type: 'string',
-      },
-    },
-  }
-
-  render() {
-    const { metaModel } = this.props;
-
-    return (
-      <Panel>
-        <AutoForm
-          spec={this.spec}
-          data={metaModel.meta}
-          onChange={v => metaModel.update({ ...metaModel.meta, ...v })}
-        />
-      </Panel>
-    );
-  }
-}
-
-class Parameters extends Component {
-  static propTypes = {
-    metaModel: PropTypes.object.isRequired,
-  }
-
-
-  componentDidMount() {
-    this.props.metaModel.on('update', this.update);
-  }
-
-  componentWillUnmount() {
-    this.props.metaModel.removeListener('update', this.update);
-  }
-
-  update = () => this.forceUpdate()
-
-  handleDelete(name) {
-    this.props.metaModel.unsetParameter(name);
-  }
-
-  render() {
-    const { metaModel } = this.props;
-
-    return (
-      <Panel>
-        {
-          metaModel.parameters.map(parameter => (
-            <Parameter
-              key={parameter.name}
-              name={parameter.name}
-              parameter={parameter}
-              onDelete={() => this.handleDelete(parameter.name)}
-            />
-          ))
-        }
-        <Button value="Add parameter" />
-      </Panel>
-    );
-  }
-}
 
 class Property extends Component {
   static propTypes = {
@@ -277,7 +191,7 @@ class TaskDetails extends Component {
   }
 }
 
-@connect
+@connect(({ model }) => ({ model }))
 class TaskList extends Component {
   static propTypes = {
     model: PropTypes.object,
@@ -339,68 +253,11 @@ class Task extends Component {
   }
 }
 
-class Toolbar extends Component {
-  static propTypes = {
-    secondary: PropTypes.bool,
-    children: PropTypes.node,
-  }
-
-  style = style
-
-  render() {
-    const { secondary } = this.props;
-    return (
-      <div className={cx(this.style.toolbar, secondary && this.style.secondary)} >
-        { this.props.children }
-      </div>
-    );
-  }
-}
-
-class ToolbarButton extends Component {
-  static propTypes = {
-    className: PropTypes.string,
-    children: PropTypes.node,
-    stretch: PropTypes.bool,
-    selected: PropTypes.bool,
-  }
-
-  style = style
-
-  render() {
-    const { className, stretch, selected, ...props } = this.props;
-    return (
-      <div className={cx(this.style.toolbarButton, className, stretch && this.style.stretch, selected && this.style.selected)} {...props} >
-        { this.props.children }
-      </div>
-    );
-  }
-}
-
-class Panel extends Component {
-  static propTypes = {
-    className: PropTypes.string,
-    children: PropTypes.node,
-  }
-
-  style = style
-
-  render() {
-    const { className } = this.props;
-    return (
-      <div className={cx(this.style.panel, className)} >
-        { this.props.children }
-      </div>
-    );
-  }
-}
-
-@connect
+@connect(({ model }) => ({ model }))
 export default class Details extends Component {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
-    metaModel: PropTypes.object.isRequired,
     actions: PropTypes.array,
     selected: PropTypes.string,
     onSelect: PropTypes.func.isRequired,
@@ -437,7 +294,7 @@ export default class Details extends Component {
       className: cx(style.code, 'icon-code'),
     }];
 
-    const { model, metaModel, selected: taskSelected, actions } = this.props;
+    const { model, selected: taskSelected, actions } = this.props;
     const { selected = 'metadata' } = this.state;
 
     const task = taskSelected && model.tasks.find(task => task.name === taskSelected);
@@ -460,10 +317,10 @@ export default class Details extends Component {
           }
         </Toolbar>
         {
-          selected === 'metadata' && <Meta metaModel={metaModel} />
+          selected === 'metadata' && <Meta />
         }
         {
-          selected === 'parameters' && <Parameters metaModel={metaModel} />
+          selected === 'parameters' && <Parameters />
         }
         {
           selected === 'execution' && (

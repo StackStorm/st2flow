@@ -11,7 +11,7 @@ import Toolbar from './toolbar';
 
 import style from './style.css';
 
-@connect
+@connect(({ model }) => ({ model }))
 export default class Canvas extends Component {
   static propTypes = {
     className: PropTypes.string,

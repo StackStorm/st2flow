@@ -12,7 +12,7 @@ import style from './style.css';
 
 const editorId = 'editor_mount_point';
 
-@connect
+@connect(({ model }) => ({ model }))
 export default class Editor extends Component {
   static propTypes = {
     className: PropTypes.string,
