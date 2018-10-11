@@ -5,6 +5,28 @@ import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterfa
 import { diff } from 'deep-diff';
 import EventEmitter from 'eventemitter3';
 import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
+import type { TokenMeta } from '@stackstorm/st2flow-yaml';
+
+const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
+
+// The following types are specific to Orquesta
+type NextItem = {
+  do: string | Array<string>,
+  when?: string,
+};
+
+type RawTask = {
+  __meta: TokenMeta,
+  action: string,
+  input?: Object,
+  next?: Array<NextItem>,
+  coords?: Object,
+};
+
+type RawTasks = {
+  __meta: TokenMeta,
+  [string]: RawTask,
+};
 
 class OrquestaModel implements ModelInterface {
   tokenSet: TokenSet;
@@ -60,58 +82,94 @@ class OrquestaModel implements ModelInterface {
     return crawler.getValueByKey(this.tokenSet, 'description');
   }
 
+  // TODO: cache the result - this property is accessed a lot
   get tasks(): Array<TaskInterface> {
-    const tasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const rawTasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
-    if(!tasks) {
+    if(!rawTasks) {
       // TODO: make part of schema validation
       this.emitter.emit('error', new Error('No tasks found.'));
       return [];
     }
 
-    return tasks.__keys.map(name =>
-      Object.assign({}, {
-        name,
-        size: { x: 120, y: 48 },
-      }, tasks[name], {
-        coords: { x: 0, y: 0, ...tasks[name].coords },
-      })
-    );
-  }
+    // Normalize task data.
+    //  - ensure all tasks have a normalized transitions collection
+    return rawTasks.__meta.keys.map(taskName => {
+      const rawTask: RawTask = rawTasks[taskName];
 
-  get transitions(): Array<TransitionInterface> {
-    return this.tasks.reduce((arr, task) => {
-      if(task.hasOwnProperty('next')) {
-        task.next.forEach((nxt, i) => {
-          let to;
-
-          // nxt.do can be a string, comma delimited string, or array
-          if(typeof nxt.do === 'string') {
-            to = nxt.do.split(',').map(name => name.trim());
-          }
-          else if(Array.isArray(nxt.do)) {
-            to = nxt.do;
-          }
-          else {
-            this.emitter.emit('error', new Error(`Task "${task.name}" transition #${i + 1} must define the "do" property.`));
-          }
-
-          to.forEach(name => {
-            const transition: TransitionInterface = {
-              from: { name: task.name },
-              to: { name },
-            };
-
-            if(nxt.when) {
-              transition.condition = nxt.when;
-            }
-
-            // TODO: figure out how to compute transition.type?
-            arr.push(transition);
-          });
-        });
+      if (!rawTask.next) {
+        rawTask.next = [];
       }
 
+      const transitions: Array<TransitionInterface> = rawTask.next.reduce((arr, nxt, i) => {
+        let to: Array<string>;
+
+        // nxt.do can be a string, comma delimited string, or array
+        if(typeof nxt.do === 'string') {
+          to = nxt.do.split(',').map(name => name.trim());
+        }
+        else if(Array.isArray(nxt.do)) {
+          to = nxt.do;
+        }
+        else {
+          to = [];
+          this.emitter.emit('error', new Error(`Task "${taskName}" transition #${i + 1} must define the "do" property.`));
+        }
+
+        const base: Object = {};
+        if(nxt.when) {
+          base.condition = nxt.when;
+        }
+
+        // TODO: figure out "type" property
+        const transitions = to.map(name =>
+          Object.assign({
+            // type: 'success|error|complete',
+            from: { name: taskName },
+            to: { name },
+          }, base)
+        );
+
+        return arr.concat(transitions);
+      }, []);
+
+      let coords;
+      if(REG_COORDS.test(rawTask.__meta.comments)) {
+        coords = JSON.parse(rawTask.__meta.comments.replace(REG_COORDS, '{ "x": $1, "y": $2 }'));
+      }
+      else {
+        // TODO: better defaults
+        coords = { x: 0, y: 0 };
+      }
+
+      const task: TaskInterface = {
+        name: taskName,
+        action: rawTask.action,
+        size: { x: 120, y: 48 },
+        coords,
+        transitions,
+      };
+
+      return task;
+    });
+  }
+
+  /*
+    [
+      {
+        type: 'fail',
+        from: { name: task1 },
+        to: { name: task2 },
+      }, {
+        type: 'success',
+        from: { name: task2 },
+        to: { name: task3 },
+      }
+    ]
+   */
+  get transitions(): Array<TransitionInterface> {
+    return this.tasks.reduce((arr, task) => {
+      arr.push(...task.transitions);
       return arr;
     }, []);
   }
@@ -127,25 +185,61 @@ class OrquestaModel implements ModelInterface {
   addTask(task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, ...data } = task;
-    crawler.addMappingItem(this.tokenSet, 'tasks', name, data);
+    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
   }
 
-  updateTask(ref: TaskRefInterface, opts: TaskInterface) {
-    throw new Error('Not yet implemented');
+  updateTask(ref: TaskRefInterface, task: TaskInterface) {
+    const oldData = this.tokenSet.toObject();
+    const { name, ...data } = task;
+    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+
+    const newData = this.tokenSet.toObject();
+    this.emitChange(oldData, newData);
   }
 
   deleteTask(ref: TaskRefInterface) {
-    throw new Error('Not yet implemented');
+    const oldData = this.tokenSet.toObject();
+    const { name } = ref;
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', name ]);
+
+    const newData = this.tokenSet.toObject();
+    this.emitChange(oldData, newData);
   }
 
-  addTransition(opts: TransitionInterface) {
-    throw new Error('Not yet implemented');
+  addTransition(transition: TransitionInterface) {
+    const { from, to } = transition;
+    const oldData = this.tokenSet.toObject();
+    const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const task: RawTask = rawTasks[from.name];
+
+    if(!task) {
+      throw new Error(`No task found with name "${from.name}"`);
+    }
+
+    const hasNext = task.hasOwnProperty('next');
+    const next = hasNext && task.next || [];
+
+    const nextItem: NextItem = {
+      do: to.name,
+    };
+
+    if(transition.condition) {
+      nextItem.when = transition.condition;
+    }
+
+    next.push(nextItem);
+
+    // TODO: this can be replaced by a more generic "set" method
+    crawler[hasNext ? 'replaceTokenValue' : 'assignMappingItem'](this.tokenSet, [ 'tasks', from.name, 'next' ], next);
+
+    const newData = this.tokenSet.toObject();
+    this.emitChange(oldData, newData);
   }
 
-  updateTransition(ref: TransitionRefInterface, opts: TransitionInterface) {
+  updateTransition(ref: TransitionRefInterface, transition: TransitionInterface) {
     throw new Error('Not yet implemented');
   }
 

@@ -49,4 +49,15 @@ export type Refinement = {
   tree: TokenMapping,
   head: string,
   tail: string,
-}
+};
+
+/**
+ * This information is exposed during "objectification" and provides
+ * metatdata about the original YAML tokens.
+ */
+export type TokenMeta = {
+  jpath: Array<string>, // provides the jpath to the token
+  comments: string, // provides any comments associated with the token
+
+  keys?: Array<string>, // for mappings (objects), provides the keys in YAML source order
+};

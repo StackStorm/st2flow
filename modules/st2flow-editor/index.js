@@ -30,10 +30,11 @@ export default class Editor extends Component {
 
     this.editor = ace.edit(editorId);
     this.editor.$blockScrolling = Infinity;
-    this.editor.getSession().setOptions({
+    this.editor.setOptions({
       mode: 'ace/mode/yaml',
       tabSize: 2,
       useSoftTabs: true,
+      showPrintMargin: false,
     });
     this.editor.setValue(model.tokenSet.yaml, -1);
     this.editor.on('change', this.handleEditorChange);
