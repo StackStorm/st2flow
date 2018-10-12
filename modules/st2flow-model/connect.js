@@ -76,7 +76,7 @@ parameters:
 `;
 
   window.model = model = model || new OrquestaModel(tmpYAML);
-  window.metaModel = metaModel = metaModel || new MetaModel(tmpMeta); 
+  window.metaModel = metaModel = metaModel || new MetaModel(tmpMeta);
 
   const props = transform({ model, metaModel });
 
@@ -92,8 +92,8 @@ parameters:
 
       componentWillUnmount() {
         for (const key of Object.keys(props)) {
-          if (props[key].removeEventListener) {
-            props[key].removeEventListener('change', this.update);
+          if (props[key].removeListener) {
+            props[key].removeListener('change', this.update);
           }
         }
       }

@@ -8,6 +8,7 @@ import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
 import { Toggle } from '@stackstorm/module-forms/button.component';
 import { Panel, Toolbar, ToolbarButton } from './layout';
+import Property from './property';
 
 import ArrayField from '@stackstorm/module-auto-form/fields/array';
 import NumberField from '@stackstorm/module-auto-form/fields/number';
@@ -19,35 +20,10 @@ import PasswordField from '@stackstorm/module-auto-form/fields/password';
 import EnumField from '@stackstorm/module-auto-form/fields/enum';
 
 import Meta from './meta-panel';
-import Parameters from './parameters-panel';
 
 import style from './style.css';
 
 
-
-class Property extends Component {
-  static propTypes = {
-    name: PropTypes.string.isRequired,
-    description: PropTypes.string.isRequired,
-    value: PropTypes.bool,
-    onChange: PropTypes.func,
-  }
-
-  style = style
-
-  render() {
-    const { name, description, value, onChange } = this.props;
-    return (
-      <div className={this.style.property}>
-        <div className={this.style.propertyName}>{ name }</div>
-        <div className={this.style.propertyDescription}>{ description }</div>
-        <div className={this.style.propertyToggle}>
-          <Toggle value={value} onChange={onChange} />
-        </div>
-      </div>
-    );
-  }
-}
 
 class Transition extends Component {
   static propTypes = {
@@ -114,10 +90,11 @@ class Transition extends Component {
   }
 }
 
+@connect(({ model }) => ({ model }))
 class TaskDetails extends Component {
   static propTypes = {
-    task: PropTypes.object.isRequired,
-    transitions: PropTypes.array.isRequired,
+    model: PropTypes.object,
+    selected: PropTypes.string,
     actions: PropTypes.array,
     onBack: PropTypes.func.isRequired,
   }
@@ -133,8 +110,11 @@ class TaskDetails extends Component {
   style = style
 
   render() {
-    const { task, transitions, onBack, actions } = this.props;
+    const { model, selected, onBack, actions } = this.props;
     const { section = 'task' } = this.state;
+
+    const task = selected && model.tasks.find(task => task.name === selected);
+    const transitions = selected && model.transitions.filter(transition => transition.from.name === task.name);
 
     const [ actionRef ] = task.action.split(' ');
     const action = actions.find(({ref}) => ref === actionRef);
@@ -155,7 +135,7 @@ class TaskDetails extends Component {
       </Toolbar>,
       section === 'task' && (
         <Panel key="task">
-          <StringField name="name" value={task.name} onChange={a => console.log(a)} />
+          <StringField name="name" value={task.name} onChange={name => model.updateTask(task.name, { name })} />
           <StringField name="action" value={task.action} onChange={a => console.log(a)} />
         </Panel>
       ),
@@ -253,11 +233,12 @@ class Task extends Component {
   }
 }
 
-@connect(({ model }) => ({ model }))
+@connect(({ model, metaModel }) => ({ model, metaModel }))
 export default class Details extends Component {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
+    metaModel: PropTypes.object,
     actions: PropTypes.array,
     selected: PropTypes.string,
     onSelect: PropTypes.func.isRequired,
@@ -284,21 +265,12 @@ export default class Details extends Component {
       title: 'metadata',
       className: 'icon-gear',
     }, {
-      title: 'parameters',
-      className: 'icon-wrench',
-    }, {
       title: 'execution',
       className: 'icon-lan',
-    }, {
-      title: 'code',
-      className: cx(style.code, 'icon-code'),
     }];
 
-    const { model, selected: taskSelected, actions } = this.props;
-    const { selected = 'metadata' } = this.state;
-
-    const task = taskSelected && model.tasks.find(task => task.name === taskSelected);
-    const transitions = taskSelected && model.transitions.filter(transition => transition.from.name === task.name);
+    const { selected: taskSelected, actions } = this.props;
+    const { selected = 'metadata', asCode } = this.state;
 
     return (
       <div className={cx(this.props.className, this.style.component)}>
@@ -315,23 +287,22 @@ export default class Details extends Component {
               );
             })
           }
+          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => this.setState({ asCode: !asCode })} />
         </Toolbar>
         {
-          selected === 'metadata' && <Meta />
-        }
-        {
-          selected === 'parameters' && <Parameters />
-        }
-        {
-          selected === 'execution' && (
-            task && 
-              <TaskDetails onBack={() => this.handleBack()} task={task} transitions={transitions} actions={actions} /> ||
-              <TaskList onSelect={task => this.handleTaskSelect(task)} />
+          selected === 'metadata' && (
+            asCode
+              && <Editor model={this.props.metaModel} />
+              || <Meta />
           )
         }
         {
-          selected === 'code' && (
-            <Editor {...this.props} />
+          selected === 'execution' && (
+            asCode
+              && <Editor model={this.props.model} />
+              || taskSelected
+                && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} />
+                || <TaskList onSelect={task => this.handleTaskSelect(task)} />
           )
         }
       </div>

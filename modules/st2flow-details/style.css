@@ -113,8 +113,8 @@
 }
 
 .parameter-name {
-  font-weight: bold;
-  margin: 5px;
+  font-size: 15px;
+  margin: 10px 0;
 }
 
 .parameter-description {
@@ -160,7 +160,8 @@
   &-name {
     grid-area: name;
 
-    font-weight: bold;
+    font-size: 15px;
+    line-height: 18px;
   }
 
   &-description {
@@ -211,5 +212,16 @@
   &-info {
     color: #888;
     margin-top: 20px;
+  }
+}
+
+.editor {
+  &-title {
+    font-size: 20px;
+    margin: 0 0 20px;
+  }
+
+  &-footer {
+    margin: 20px 0;
   }
 }

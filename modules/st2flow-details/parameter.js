@@ -2,9 +2,20 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import ParameterEditor from './parameter-editor';
+
 import style from './style.css';
 
-const specialProperties = [ 'required', 'immutable', 'secret' ];
+export const specialProperties = [{
+  name: 'required',
+  description: 'The parameter could not be ommited',
+}, {
+  name: 'immutable',
+  description: 'Prevent parameter from being overritten',
+}, {
+  name: 'secret',
+  description: 'Mark parameter value as sensitive',
+}];
 
 export default class Parameter extends Component {
   static propTypes = {
@@ -13,29 +24,20 @@ export default class Parameter extends Component {
       type: PropTypes.string,
       description: PropTypes.string,
     }),
-    onUpdate: PropTypes.func,
+    onEdit: PropTypes.func,
     onDelete: PropTypes.func,
   }
 
-  state = {};
+  handleEdit(e) {
+    e.stopPropagation();
 
-  handleEdit() {
-    this.setState({ edit: !this.state.edit });
+    this.props.onEdit();
   }
 
   handleDelete(e) {
-    e.preventDefault();
+    e.stopPropagation();
 
-    this.props.onDelete(this.state.parameter);
-  }
-
-  handleUpdate(parameter) {
-    this.props.onUpdate(parameter);
-    this.setState({ edit: false });
-  }
-
-  handleCancel() {
-    this.setState({ edit: false });
+    this.props.onDelete();
   }
 
   style = style
@@ -53,16 +55,11 @@ export default class Parameter extends Component {
         <div className={this.style.parameterDescription}>{ parameter.description }</div>
         <div className={this.style.parameterTokens}>
           {
-            specialProperties.map((name) =>
+            specialProperties.map(({ name }) =>
               <div key={name} className={cx(this.style.parameterToken, parameter[name] && this.style.active)}>{ name }</div>
             )
           }
         </div>
-        {
-          // this.state.edit && <ParameterEditor name={name} parameter={parameter}
-          //     onSubmit={ this.handleUpdate.bind(this) }
-          //     onCancel={ this.handleCancel.bind(this) }/>
-        }
       </div>
     );
   }
