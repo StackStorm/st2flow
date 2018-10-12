@@ -1,6 +1,8 @@
 {
   "packages": [
     "modules/**",
+    "../st2web/tasks",
+    "../st2web/modules/st2-test-utils",
     "."
   ],
   "version": "0.0.0"

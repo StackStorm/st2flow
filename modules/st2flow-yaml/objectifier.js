@@ -2,19 +2,10 @@
 
 import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken, TokenMeta } from './types';
 import crawler from './crawler';
-import { isPlainObject } from './util';
+import { isPlainObject, defineExpando } from './util';
 
 const STR_BACKREF = '<<';
 const REG_COMMENT = /^\s+#(?:\s+)?/;
-
-const defineExpando = (obj, key, value): void => {
-  Object.defineProperty(obj, key, {
-    value,
-    writable: false,
-    configurable: false,
-    enumerable: false,
-  });
-};
 
 const getTokenComments = (token: AnyToken): string => {
   let comments = '';
