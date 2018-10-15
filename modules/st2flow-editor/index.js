@@ -13,7 +13,7 @@ const editorId = 'editor_mount_point';
 export default class Editor extends Component {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
   }
 
   constructor(...args) {

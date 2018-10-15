@@ -137,16 +137,12 @@ class OrquestaModel implements ModelInterface {
       if(REG_COORDS.test(rawTask.__meta.comments)) {
         coords = JSON.parse(rawTask.__meta.comments.replace(REG_COORDS, '{ "x": $1, "y": $2 }'));
       }
-      else {
-        // TODO: better defaults
-        coords = { x: 0, y: 0 };
-      }
 
       const task: TaskInterface = {
         name: taskName,
         action: rawTask.action,
-        size: { x: 120, y: 48 },
-        coords,
+        size: { x: 120, y: 44 },
+        coords: { x: 0, y: 0, ...coords},
         transitions,
       };
 
@@ -174,6 +170,12 @@ class OrquestaModel implements ModelInterface {
     }, []);
   }
 
+  get lastTaskIndex() {
+    return crawler.getValueByKey(this.tokenSet, 'tasks').__keys
+      .map(item => (item.match(/task(\d+)/) || [])[1])
+      .reduce((acc, item) => Math.max(acc, item || 0), 0);
+  }
+
   applyDelta(delta: DeltaInterface, yaml: string) {
     // Preliminary tests show that parsing of long/complex YAML files
     // takes less than ~20ms (almost always less than 5ms) - so doing full
@@ -193,8 +195,10 @@ class OrquestaModel implements ModelInterface {
 
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { name, ...data } = task;
-    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+    const { coords } = task;
+    if (coords) {
+      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'coords' ], coords);
+    }
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
