@@ -24,7 +24,7 @@ export type TokenRawValue = BaseToken & {
 export type TokenKeyValue = BaseToken & {
 	// kind = 1
 	key: TokenRawValue | TokenCollection,
-	value: TokenRawValue | TokenCollection,
+	value: AnyToken,
 };
 
 export type TokenMapping = BaseToken & {

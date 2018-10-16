@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
@@ -14,6 +14,7 @@ const REG_LEADING_SPACE = /$\s+/;
 const REG_ALL_WHITESPACE = /^\s+$/;
 const REG_COMMENT = /^\s*#(?:\s*)?/;
 const REG_JSON_START = /^\s*(?:[-:] )?[{[]/;
+const REG_JSON_END = /^\s*?[}\]]/;
 
 /**
  * Class for refining tokens whenever mutations are made to the AST.
@@ -23,6 +24,9 @@ class Refinery {
   indent: string;
   tree: TokenMapping;
   lastToken: TokenRawValue;
+
+  // some stateful properties used while refining the tree
+  jsonDepth: number = -1;
 
   constructor(tree: TokenMapping, oldYaml: string = '') {
     const match = oldYaml.match(REG_INDENT);
@@ -47,6 +51,7 @@ class Refinery {
    * Given a token, refines the token
    */
   prefixToken(startToken: AnyToken, depth: number, jpath: Array<string | number>): AnyToken {
+    debugger;
     startToken.jpath = jpath;
 
     switch(startToken.kind) {
@@ -56,18 +61,15 @@ class Refinery {
         return startToken;
 
       case 1:
-        if(!startToken.key) {
-          console.log(JSON.stringify(startToken, null, '  '));
-        }
-        this.prefixToken(startToken.key, depth + 1, jpath.concat('key'));
+        // if(startToken.key.kind === 3) {
+        //   this.prefixToken(startToken.key, depth + 1, jpath.concat('key'));
+        // }
+
         this.prefixKey(startToken.key, depth, jpath);
 
         if(startToken.value !== null) {
-          this.prefixToken(startToken.value, depth + 1, jpath.concat('value'));
-
-          if(startToken.value.kind !== 3) {
-            this.prefixValue(startToken.value, depth);
-          }
+          // this.prefixToken(startToken.value, depth + 1, jpath.concat('value'))
+          this.prefixValue(startToken.value, depth, jpath);
         }
 
         return startToken;
@@ -91,6 +93,17 @@ class Refinery {
   prefixKey(token: TokenRawValue | TokenCollection, depth: number, jpath: Array<string | number>): void {
     const rawToken: TokenRawValue = crawler.findFirstValueToken(token);
 
+    // Only the LAST token in a tree should have a suffix
+    // If new tokens are inserted AFTER the last token, then
+    // shift the suffix down.
+    if(this.lastToken && this.lastToken.suffix) {
+      console.log('FOUND suffix', this.lastToken.suffix, this.lastToken.value);
+      rawToken.suffix = this.lastToken.suffix;
+      delete this.lastToken.suffix;
+    }
+
+    this.prefixToken(token, depth + 1, jpath.concat('key'));
+
     if(!rawToken.prefix) {
       rawToken.prefix = [];
     }
@@ -100,18 +113,14 @@ class Refinery {
       depth--;
     }
 
-    // Only the LAST token in a tree should have a suffix
-    // If new tokens are inserted AFTER the previously last token,
-    // then the suffix becomes a prefix for the following token.
-    if(this.lastToken && this.lastToken.suffix) {
-      rawToken.prefix.unshift(factory.createToken(this.lastToken.suffix));
-      delete this.lastToken.suffix;
-    }
-
     // TODO: smarter indentation detection per token
     // (using depth and leading whitespace in prefix)
     const indent = this.indent.repeat(depth);
     const missingIndent = prefix.every(t => !REG_ALL_WHITESPACE.test(t.rawValue) && t.value.indexOf(indent) === -1);
+
+    if(rawToken.value === 'buzz') {
+      console.log('BUZZ KEY', missingIndent, prefix, this.jsonDepth, depth);
+    }
 
     // If there is no indent prefix AND this is not the very first key/value token.
     if(missingIndent && jpath.join('.') !== STR_FIRST_TOKEN) {
@@ -122,7 +131,8 @@ class Refinery {
       });
 
       if(!prefix.length || prefix[prefix.length - 1].rawValue.indexOf(STR_DASH) === -1) {
-        prefix.push(factory.createToken(`\n${indent}`));
+        const comma = this.jsonDepth <= depth && !prefix.find(t => REG_JSON_START.test(t.value));
+        prefix.push(factory.createToken(`${comma ? ',' : ''}\n${indent}`));
       }
     }
   }
@@ -131,8 +141,10 @@ class Refinery {
    * Adds the prefix to "value" tokens in a mapping. Most of the time
    * this will include a colon and white space.
    */
-  prefixValue(token: AnyToken, depth: number): void {
+  prefixValue(token: AnyToken, depth: number, jpath: Array<string | number>): void {
     let rawToken: TokenRawValue;
+
+    this.prefixToken(token, depth + 1, jpath.concat('value'));
 
     switch(token.kind) {
       case 0:
@@ -146,7 +158,7 @@ class Refinery {
       }
 
       case 3:
-        throw new Error('Must use addDashPrefix method');
+        break;
 
       default:
         throw new Error(`Cannot add value prefix to token of kind: ${token.kind}`);
@@ -160,6 +172,14 @@ class Refinery {
 
     if(!rawToken.prefix) {
       rawToken.prefix = [];
+    }
+
+    if(rawToken.value === 'buzz') {
+      console.log('BUZZ VALUE', this.lastToken.value, JSON.stringify(rawToken.prefix, null, '  '));
+    }
+
+    if(this.jsonDepth <= depth && token.kind === 2 && !rawToken.prefix.find(t => REG_JSON_START.test(t.value))) {
+      rawToken.prefix.unshift(factory.createToken('{\n'));
     }
 
     this.addColonPrefix(rawToken.prefix);
@@ -184,24 +204,29 @@ class Refinery {
    * Given a TokenMapping (kind: 2), refines each token in the mappings array.
    */
   prefixMapping(startToken: TokenMapping, depth: number, jpath: Array<string | number>) {
-    startToken.mappings.some((token, i) => {
+    let firstToken: TokenRawValue;
+
+    startToken.mappings.forEach((token: TokenKeyValue, i) => {
       if (token === null) {
-        return false;
-      }
-
-      const rawToken: TokenRawValue = crawler.findFirstValueToken(startToken);
-      const jsonIndex: number = rawToken.prefix && rawToken.prefix.findIndex(t => REG_JSON_START.test(t.value));
-
-      if(jsonIndex !== -1) {
-        // The array is a JSON-style array: [foo, bar]
-        // The tokens are already prefixed - no need to continue
-        return true; // break
+        return;
       }
 
       this.prefixToken(token, (token.kind === 2 ? depth + 1 : depth), jpath.concat('mappings', i));
 
-      return false;
+      if(!firstToken) {
+        firstToken = crawler.findFirstValueToken(token);
+
+        if(firstToken.prefix.find(t => REG_JSON_START.test(t.value))) {
+          // The object is a JSON-style object: { foo: bar }
+          this.jsonDepth = depth;
+        }
+      }
     });
+
+    // reset it back
+    if(this.jsonDepth === depth) {
+      this.jsonDepth = -1;
+    }
   }
 
   /**
