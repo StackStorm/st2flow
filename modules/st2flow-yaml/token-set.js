@@ -4,6 +4,7 @@ import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, Token
 import { load } from 'yaml-ast-parser';
 import { pick, omit } from './util';
 import Objectifier from './objectifier';
+import stringifier from './stringifier';
 import Refinery from './token-refinery';
 import perf from '@stackstorm/st2flow-perf';
 
@@ -17,8 +18,6 @@ const OMIT_FIELDS = [ 'errors', 'parent', 'mappings', 'items' ];
 
 class TokenSet {
   yaml: string;                 // The full YAML file
-  head: string;                 // Content before the first token
-  tail: string;                 // Content after the last token
   tree: TokenMapping;           // All of the parsed tokens
   lastToken: TokenRawValue;     // The last "value" token (kind: 0) that was processed
   anchors: Object;              // Map of anchor IDs to the original token
@@ -45,8 +44,9 @@ class TokenSet {
     this.objectified = null;
     this.stringified = null;
     this.tree = this.parseNode(rootNode);
-    this.head = this.yaml.slice(0, this.tree.startPosition);
-    this.tail = this.yaml.slice(this.lastToken.endPosition);
+    // IMPORTANT: Only the lastToken has a suffix!
+    // This is crucial for the refinery and stringifier.
+    this.lastToken.suffix = this.yaml.slice(this.lastToken.endPosition);
     perf.stop('parseYAML');
     // debug(JSON.stringify(this.tree, null, '  '));
   }
@@ -169,16 +169,11 @@ class TokenSet {
    */
   parsePrefix(token: TokenRawValue): Array<TokenRawValue> {
     const prev = this.lastToken;
-    this.lastToken = token;
-
-    if (!prev) {
-      return [];
-    }
-
-    let startIdx = prev.endPosition;
+    let startIdx  = prev ? prev.endPosition : 0;
     const gap = this.yaml.slice(startIdx, token.startPosition);
 
     token.isTag = REG_TAG.test(gap);
+    this.lastToken = token;
 
     return gap.split(REG_NEWLINE).map((item, i) => ({
       kind: 0,
@@ -186,7 +181,6 @@ class TokenSet {
       rawValue: (i > 0 ? '\n' : '') + item,
       startPosition: startIdx,
       endPosition: (startIdx += item.length + (i > 0 ? 1 : 0)),
-      isComment: item.indexOf('#') !== -1,
     })).filter(item => !!item.rawValue);
   }
 
@@ -223,18 +217,16 @@ class TokenSet {
    * paremeters and can simply call the method.
    */
   refineTree() {
-
     this.objectified = null;
     this.stringified = null;
 
     perf.start('refineTree');
-    const refinery = new Refinery(this.yaml, this.head, this.tail);
-    const { tree, tail } = refinery.refineTree(this.tree);
+    const refinery = new Refinery(this.tree, this.yaml);
+    const { tree, yaml } = refinery.refineTree();
     perf.stop('refineTree');
 
     this.tree = tree;
-    this.tail = tail;
-    this.yaml = this.toYAML();
+    this.yaml = this.stringified = yaml;
   }
 
   /**
@@ -260,46 +252,11 @@ class TokenSet {
   toYAML(): string {
     if(!this.stringified) {
       perf.start('tree.toYAML()');
-      this.stringified = this.head + this.stringifyToken(this.tree) + this.tail;
+      this.stringified = stringifier.stringifyToken(this.tree);
       perf.stop('tree.toYAML()');
     }
 
     return this.stringified || '';
-  }
-
-  /**
-   * Recursively stringifies tokens into YAML.
-   */
-  stringifyToken(token: AnyToken, str: string = ''): string {
-    if(!token) {
-      return str;
-    }
-
-    switch(token.kind) {
-      case 0:
-        token.prefix.forEach(pre => str += pre.rawValue);
-        str += token.rawValue;
-        break;
-
-      case 1:
-        str += this.stringifyToken(token.key) + this.stringifyToken(token.value);
-        break;
-
-      case 2:
-        str += token.mappings.reduce((s, t) => this.stringifyToken(t, s), '');
-        break;
-
-      case 3:
-        str += token.items.reduce((s, t) => this.stringifyToken(t, s), '');
-        break;
-
-      case 4:
-        token.prefix.forEach(pre => str += pre.rawValue);
-        str += token.referencesAnchor;
-        break;
-    }
-
-    return str;
   }
 }
 

@@ -124,7 +124,12 @@ data:
 
 ? - Manchester United
   - Real Madrid
-: [ 2001-01-01, 2002-02-02 ]
+: - foo # comment with [ { json-y } ] stuff
+  - bar
+  # comment
+  - [ # another comment
+  2001-01-01,
+2002-02-02 ]
 
 anchored_content: &anchor_name This is a referencable value.
 other_anchor: *anchor_name
@@ -172,4 +177,4 @@ set:
   ? item1
   ? item2
   ? item3
-or: {item1, item2, item3}
+or: {item1, item2, "item3": [ "item4" ]}

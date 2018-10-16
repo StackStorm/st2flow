@@ -86,22 +86,30 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   addTask(task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { name, ...data } = task;
-    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
+    const { name, coords, ...data } = task;
 
-    const newData = this.tokenSet.toObject();
-    this.emitChange(oldData, newData);
+    if(coords) {
+      util.defineExpando(data, '__meta', {
+        comments: `[${coords.x}, ${coords.y}]`,
+      });
+    }
+
+    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
+    this.emitChange(oldData, this.tokenSet.toObject());
   }
 
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { coords } = task;
-    if (coords) {
-      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'coords' ], coords);
+    const { name, coords, ...data } = task;
+
+    if(coords) {
+      util.defineExpando(data, '__meta', {
+        comments: `[${coords.x}, ${coords.y}]`,
+      });
     }
 
-    const newData = this.tokenSet.toObject();
-    this.emitChange(oldData, newData);
+    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+    this.emitChange(oldData, this.tokenSet.toObject());
   }
 
   deleteTask(ref: TaskRefInterface) {
@@ -150,6 +158,36 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   deleteTransition(ref: TransitionRefInterface) {
     throw new Error('Not yet implemented');
   }
+}
+
+function reduceTransitions(arr, nxt, i): Array<TransitionInterface> {
+  let to: Array<string>;
+
+  // nxt.do can be a string, comma delimited string, or array
+  if(typeof nxt.do === 'string') {
+    to = nxt.do.split(',').map(name => name.trim());
+  }
+  else if(Array.isArray(nxt.do)) {
+    to = nxt.do;
+  }
+  else {
+    return arr;
+  }
+
+  const base: Object = {};
+  if(nxt.when) {
+    base.condition = nxt.when;
+  }
+
+  to.forEach(name =>
+    arr.push(Object.assign({
+      // TODO: figure out "type" property
+      // type: 'success|error|complete',
+      to: { name },
+    }, base))
+  );
+
+  return arr;
 }
 
 export default OrquestaModel;

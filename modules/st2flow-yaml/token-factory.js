@@ -3,6 +3,8 @@
 import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken } from './types';
 import { isPlainObject } from './util';
 
+const REG_NEWLINE = /\n/;
+
 /**
  * Factory used to create tokens from raw data.
  */
@@ -23,7 +25,7 @@ const factory = {
       return this.createRawValueToken(data);
     }
 
-    if(data === null || typeof data === 'undefined') {
+    if(typeof data === 'undefined') {
       data = null;
     }
 
@@ -46,8 +48,8 @@ const factory = {
       plainScalar: true,
       startPosition: 0,
       endPosition: val.length,
-      jpath: [ /* keep this empty */ ],
-      prefix: [ /* keep this empty */ ],
+      jpath: [],
+      prefix: [],
     };
 
     if(typeof valObj !== 'undefined' && val !== valObj) {
@@ -62,11 +64,17 @@ const factory = {
    * The value can be any type.
    */
   createKeyValueToken(key: string, val: any): TokenKeyValue {
-    return {
+    const token = {
       kind: 1,
       key: this.createToken(key),
       value: this.createToken(val),
     };
+
+    if(isPlainObject(val) && val.__meta && val.__meta.comments) {
+      this.addTokenComments(token.key, val.__meta.comments);
+    }
+
+    return token;
   },
 
   /**
@@ -96,6 +104,10 @@ const factory = {
       kind: 3,
       items,
     };
+  },
+
+  addTokenComments(token: TokenRawValue, comments: string): void {
+    token.prefix = token.prefix.concat(comments.split(REG_NEWLINE).map(c => this.createToken(`# ${c}\n`)));
   },
 };
 

@@ -1,3 +1,5 @@
+import '@stackstorm/module-test-utils/bootstrap/misc';
+import '@stackstorm/module-test-utils/bootstrap/events';
 import { ReactTester } from '@stackstorm/module-test-utils';
 
 export class TestComponent {
