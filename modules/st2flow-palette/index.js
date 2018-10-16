@@ -17,16 +17,6 @@ export default class Palette extends Component {
     packs: {},
   }
 
-  // addTask = () => {
-  //   this.props.model.addTask({
-  //     name: `doSomething ${Math.random()}`,
-  //     action: 'some.action',
-  //     anobject: { foo: 'bar' },
-  //     next: [ 'taboot', 'taboot' ],
-  //     coord: { x: Math.round(Math.random() * 800), y: Math.round(Math.random() * 800) },
-  //   });
-  // }
-
   handleSearch(e) {
     this.setState({ search: e.target.value });
   }

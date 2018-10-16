@@ -11,10 +11,12 @@
     }
   }
 
+  &__line + &__line {
+    margin-top: 12px;
+  }
+
   &__label {
     display: block;
-
-    margin-bottom: 12px;
   }
 
   &__title {
@@ -289,7 +291,7 @@
   }
 
   &__description {
-    margin-top: -5px;
+    margin-top: 7px;
 
     opacity: .7;
     color: var(--grey-darken-1);

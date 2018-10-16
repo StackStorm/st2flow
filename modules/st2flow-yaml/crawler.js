@@ -166,8 +166,8 @@ const crawler = {
    *   }
    * }
    *
-   * crawler.addMappingItem(tokenSet, 'tasks', 'task2', { action: 'core.local' });
-   * crawler.addMappingItem(tokenSet, 'tasks.task2', 'input', { cmd: 'echo "Hello World"' });
+   * crawler.addMappingItem(tokenSet, 'tasks.task2', { action: 'core.local' });
+   * crawler.addMappingItem(tokenSet, ['tasks', 'task2', 'input'], { cmd: 'echo "Hello World"' });
    *
    * {
    *   version: 1,
@@ -188,7 +188,7 @@ const crawler = {
     const targKey: Array<string | number> = splitKey(targetKey);
 
     if(!targKey.length) {
-      throw new Error(`Cannot add a key to a blank target: ${targKey.join('.')}`);
+      throw new Error(`Cannot add a key to a blank target: ${targetKey.toString()}`);
     }
 
     let token: TokenMapping;
@@ -201,7 +201,7 @@ const crawler = {
     else {
       const parentObjKey: Array<string | number> = targKey.slice(0, -1);
       token = getTokenValueByKey(tokenSet, parentObjKey, 2);
-      newKey = targKey.slice(-1)[0];
+      newKey = targKey[targKey.length - 1];
     }
 
     const kvToken = factory.createKeyValueToken(`${newKey}`, val);
@@ -271,6 +271,33 @@ const crawler = {
 
     token.items.splice(start, deleteCount, ...tokens);
     tokenSet.refineTree();
+  },
+
+  /**
+   * Recursively finds the first token of type 0 or 4
+   */
+  findFirstValueToken(token: AnyToken): TokenRawValue {
+    if(token === null || typeof token === 'undefined') {
+      return null;
+    }
+
+    switch(token.kind) {
+      case 0:
+      case 4:
+        return token;
+
+      case 1:
+        return this.findFirstValueToken(token.key);
+
+      case 2:
+        return this.findFirstValueToken(token.mappings[0]);
+
+      case 3:
+        return this.findFirstValueToken(token.items[0]);
+
+      default:
+        throw new Error(`Unrecognized token kind: ${token.kind}`);
+    }
   },
 };
 

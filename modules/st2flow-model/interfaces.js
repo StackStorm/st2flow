@@ -10,8 +10,9 @@ export interface CanvasPoint {
 export interface TaskInterface {
     name: string;
     action: string;
-    input?: Object;
+    transitions: Array<TransitionInterface>;
 
+    input?: Object;
     coords: CanvasPoint;
 }
 

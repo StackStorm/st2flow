@@ -14,6 +14,9 @@ const ANCHORS = {
   right: new Vector(1, .5),
 };
 
+const HORISONTAL_MASK = new Vector(1, 0);
+const VERTICAL_MASK = new Vector(0, 1);
+
 const CONTROLS = {
   top: new Vector(0, -1),
   left: new Vector(-1, 0),
@@ -21,7 +24,16 @@ const CONTROLS = {
   right: new Vector(1, 0),
 };
 
-const CONTROL_SIZE = 100;
+const ORBIT_DISTANCE = 20;
+const APPROACH_DISTANCE = 10;
+
+function roundCorner(from, origin, to) {
+  return {
+    origin,
+    approach: from.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
+    departure: to.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
+  };
+}
 
 export default class Transition extends Component {
   static propTypes = {
@@ -42,24 +54,39 @@ export default class Transition extends Component {
     const fromSize = new Vector(from.task.size);
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
-    const fromControlPoint = fromControl.multiply(CONTROL_SIZE).add(fromPoint);
-
-    path.push(`M ${fromPoint.x} ${fromPoint.y}`);
-    path.push(`C ${fromControlPoint.x} ${fromControlPoint.y},`);
+    const fromOrbit = fromControl.multiply(ORBIT_DISTANCE).add(fromPoint);
 
     const toAnchor = ANCHORS[to.anchor];
     const toControl = CONTROLS[to.anchor];
     const toCoords = new Vector(to.task.coords);
     const toSize = new Vector(to.task.size);
 
-    // Compensating for the arrow
-    const toRealPoint = toSize.multiply(toAnchor).add(toCoords);
+    const arrowCompensation = toControl.multiply(10);
+    const toPoint = toSize.multiply(toAnchor).add(toCoords).add(arrowCompensation);
+    const toOrbit = toControl.multiply(ORBIT_DISTANCE).add(toPoint);
 
-    const toControlPoint = toControl.multiply(CONTROL_SIZE).add(toRealPoint);
-    const toPoint = toControl.multiply(10).add(toRealPoint);
+    const lagrangePoint = toOrbit.subtract(fromOrbit).divide(2);  
+    const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
+    const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-    path.push(`${toControlPoint.x} ${toControlPoint.y},`);
-    path.push(`${toPoint.x} ${toPoint.y}`);
+    const fromOrbitCorner = roundCorner(fromPoint, fromOrbit, fromLagrange);
+    const fromLagrangeCorner = roundCorner(fromOrbit, fromLagrange, toLagrange);
+    const toLagrangeCorner = roundCorner(fromLagrange, toLagrange, toOrbit);
+    const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
+
+    path.push(`M ${fromPoint.x} ${fromPoint.y}`);
+    path.push(`L ${fromOrbitCorner.approach.x} ${fromOrbitCorner.approach.y}`);
+    path.push(`Q ${fromOrbitCorner.origin.x} ${fromOrbitCorner.origin.y}, ${fromOrbitCorner.departure.x} ${fromOrbitCorner.departure.y}`);
+
+    path.push(`L ${fromLagrangeCorner.approach.x} ${fromLagrangeCorner.approach.y}`);
+    path.push(`Q ${fromLagrangeCorner.origin.x} ${fromLagrangeCorner.origin.y}, ${fromLagrangeCorner.departure.x} ${fromLagrangeCorner.departure.y}`);
+
+    path.push(`L ${toLagrangeCorner.approach.x} ${toLagrangeCorner.approach.y}`);
+    path.push(`Q ${toLagrangeCorner.origin.x} ${toLagrangeCorner.origin.y}, ${toLagrangeCorner.departure.x} ${toLagrangeCorner.departure.y}`);
+
+    path.push(`L ${toOrbitCorner.approach.x} ${toOrbitCorner.approach.y}`);
+    path.push(`Q ${toOrbitCorner.origin.x} ${toOrbitCorner.origin.y}, ${toOrbitCorner.departure.x} ${toOrbitCorner.departure.y}`);
+    path.push(`L ${toPoint.x} ${toPoint.y}`);
 
     return path.join(' ');
   }

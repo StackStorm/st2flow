@@ -20,8 +20,8 @@ describe('Token Set Crawler', () => {
   });
 
   it('can use deep.dot.syntax for item lookup', () => {
-    expect(crawler.getValueByKey(set, 'this.is.a.deep.value')).to.equal('yay!!');
-    expect(crawler.getValueByKey(set, 'this.is.b.0.some_array.value')).to.equal('awesome');
+    expect(crawler.getValueByKey(set, 'this_example.is.a.deep.value')).to.equal('yay!!');
+    expect(crawler.getValueByKey(set, 'this_example.is.b.0.some_array.value')).to.equal('awesome');
   });
 
   it('can look up keys with dots in them (MUST use the array syntax)', () => {
@@ -83,9 +83,33 @@ describe('Token Set Crawler', () => {
     expect(Array.isArray(val)).to.equal(true);
   });
 
-  it('returns object with special __keys representing the corrent order', () => {
+  it('provides expected __meta property for object and array values', () => {
+    const obj = crawler.getValueByKey(set, 'this_example');
+    const arr = crawler.getValueByKey(set, 'a_sequence');
+
+    [ obj, arr ].forEach(o => {
+      expect(typeof o.__meta).to.equal('object');
+      expect(o.__meta.hasOwnProperty('comments')).to.equal(true);
+      expect(o.__meta.hasOwnProperty('jpath')).to.equal(true);
+    });
+  });
+
+  it('provides __meta.comments property with parsable comments ', () => {
+    const obj = crawler.getValueByKey(set, 'this_example');
+    const obj2 = obj.is.a;
+    const arr = obj.is.b;
+
+    [ obj, obj2, arr ].forEach((o, i) => {
+      const data = JSON.parse(o.__meta.comments);
+
+      expect(typeof data).to.equal('object');
+      expect(data[`foo${i + 1}`]).to.equal(`bar${i + 1}`);
+    });
+  });
+
+  it('returns objects with special __meta.keys array representing the source order of keys', () => {
     const obj = crawler.getValueByKey(set, 'data');
-    expect(obj.__keys).to.deep.equal([
+    expect(obj.__meta.keys).to.deep.equal([
       'foo', 'bing', 'booz', 'nothing', 'scalar',
       'angle_clip', 'angle_strip', 'angle_keep',
       'pipe_clip', 'pipe_strip', 'pipe_keep',
