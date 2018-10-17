@@ -75,13 +75,17 @@ arr2:
     - booboo`;
 
 const jsonInYaml = `---
+plain: yaml
 foo: {
-  bar: baz
+  bar: baz,
+  bar2: baz2
 }`;
 
 const expectedJsonInYaml = `---
+plain: yaml
 foo: {
   bar: baz,
+  bar2: baz2,
   bing: {
     buzz: bam
   }
@@ -95,7 +99,7 @@ describe('Token Refinery', () => {
     expect(yaml).to.equal(complexYaml);
   });
 
-  it.only('refines JSON data embedded in yaml', () => {
+  it/*.only*/('refines JSON data embedded in yaml', () => {
     const set = new TokenSet(jsonInYaml);
     crawler.assignMappingItem(set, 'foo.bing', { buzz: 'bam' });
     // console.log(JSON.stringify(set.tree, null, '  '));

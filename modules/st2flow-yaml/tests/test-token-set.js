@@ -5,7 +5,7 @@ import TokenSet from '../token-set';
 
 describe('TokenSet', () => {
   [ 'basic', 'simple', 'long', 'complex' ].forEach(file => {
-    describe('Conentional YAML', () => {
+    describe('Conventional YAML', () => {
       const yaml = fs.readFileSync(path.join(__dirname, 'data', `${file}.yaml`), 'utf-8');
 
       it(`stringification maintains source identity with ${file}.yaml`, () => {
