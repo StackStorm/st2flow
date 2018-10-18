@@ -2,6 +2,14 @@
 
 import { AnyToken } from './types';
 
+const strReducer = (str, token) => str + token.rawValue;
+
+const buildString = (value, prefix = [], suffix = []) => {
+  let str = prefix.reduce(strReducer, '');
+  str += value;
+  return suffix.reduce(strReducer, str);
+}
+
 const stringifier = {
   /**
    * Recursively stringifies tokens into YAML.
@@ -13,8 +21,7 @@ const stringifier = {
 
     switch(token.kind) {
       case 0:
-        token.prefix.forEach(pre => str += pre.rawValue);
-        str += token.rawValue + (token.suffix || '');
+        str += buildString(token.rawValue, token.prefix, token.suffix);
         break;
 
       case 1:
@@ -23,15 +30,16 @@ const stringifier = {
 
       case 2:
         str += token.mappings.reduce((s, t) => this.stringifyToken(t, s), '');
+        str += token.suffix ? token.suffix.reduce(strReducer, '') : '';
         break;
 
       case 3:
         str += token.items.reduce((s, t) => this.stringifyToken(t, s), '');
+        str += token.suffix ? token.suffix.reduce(strReducer, '') : '';
         break;
 
       case 4:
-        token.prefix.forEach(pre => str += pre.rawValue);
-        str += token.referencesAnchor + (token.suffix || '');
+        str += buildString(token.referencesAnchor, token.prefix, token.suffix);
         break;
     }
 

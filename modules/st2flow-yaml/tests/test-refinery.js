@@ -78,18 +78,30 @@ const jsonInYaml = `---
 plain: yaml
 foo: {
   bar: baz,
-  bar2: baz2
-}`;
+  bar2: baz2,
+  existing: [ array ]
+}
+more:
+  plain: yaml`;
 
 const expectedJsonInYaml = `---
 plain: yaml
 foo: {
   bar: baz,
   bar2: baz2,
+  existing: [ array ],
   bing: {
-    buzz: bam
+    bar3: {
+      buzz3: bar3
+    },
+    buzz: bam,
+    boo: [
+      boom
+    ]
   }
-}`;
+}
+more:
+  plain: yaml`;
 
 describe('Token Refinery', () => {
   it('refines data into the correct yaml format', () => {
@@ -99,12 +111,16 @@ describe('Token Refinery', () => {
     expect(yaml).to.equal(complexYaml);
   });
 
-  it/*.only*/('refines JSON data embedded in yaml', () => {
+  it('refines JSON data embedded in yaml', () => {
     const set = new TokenSet(jsonInYaml);
-    crawler.assignMappingItem(set, 'foo.bing', { buzz: 'bam' });
-    // console.log(JSON.stringify(set.tree, null, '  '));
-    const refinery = new TokenRefinery(set.tree, '');
-    const { yaml } = refinery.refineTree();
-    expect(yaml).to.equal(expectedJsonInYaml);
+
+    // The crawler calls `set.refineTree()` internally
+    crawler.assignMappingItem(set, 'foo.bing', {
+      bar3: { buzz3: 'bar3' },
+      buzz: 'bam',
+      boo: [ 'boom' ],
+    });
+
+    expect(set.toYAML()).to.equal(expectedJsonInYaml);
   });
 });
