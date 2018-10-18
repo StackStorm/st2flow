@@ -232,6 +232,10 @@ const crawler = {
 
     let token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
 
+    if(!token) {
+      throw new Error(`Could not find token: ${targetKey.toString()}`);
+    }
+
     updateTokenValue(token, val);
     tokenSet.refineTree();
   },

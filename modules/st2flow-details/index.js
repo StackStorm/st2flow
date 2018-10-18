@@ -2,118 +2,122 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import { connect } from '@stackstorm/st2flow-model';
+
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
+import { Toggle } from '@stackstorm/module-forms/button.component';
+import { Panel, Toolbar, ToolbarButton } from './layout';
+import Property from './property';
+
+import ArrayField from '@stackstorm/module-auto-form/fields/array';
+import NumberField from '@stackstorm/module-auto-form/fields/number';
+import IntegerField from '@stackstorm/module-auto-form/fields/integer';
+import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
+import StringField from '@stackstorm/module-auto-form/fields/string';
+import ObjectField from '@stackstorm/module-auto-form/fields/object';
+import PasswordField from '@stackstorm/module-auto-form/fields/password';
+import EnumField from '@stackstorm/module-auto-form/fields/enum';
+
+import Meta from './meta-panel';
 
 import style from './style.css';
 
-class Meta extends Component {
+
+
+class Transition extends Component {
   static propTypes = {
-    model: PropTypes.object.isRequired,
+    transition: PropTypes.object.isRequired,
   }
 
-  spec = {
-    type: 'object',
-    properties: {
-      pack: {
-        position: 1,
-        enum: [
-          'some',
-          'thing',
-          'else',
-        ],
-      },
-      name: {
-        position: 2,
-        type: 'string',
-      },
-      description: {
-        position: 3,
-        type: 'string',
-      },
-      enable: {
-        position: 4,
-        type: 'boolean',
-      },
-      entry_point: {
-        position: 5,
-        type: 'string',
-      },
-    },
-  }
+  style = style
 
   render() {
-    const { model } = this.props;
-
+    const { transition } = this.props;
+    
     return (
-      <Panel>
-        <AutoForm
-          spec={this.spec}
-          data={model.meta}
-          onChange={v => model.setMeta({ ...model.meta, ...v })}
-        />
-      </Panel>
+      <div className={this.style.transition} >
+        <div className={this.style.transitionLine} >
+          <div className={this.style.transitionLabel}>
+            When
+          </div>
+          <div className={this.style.transitionField}>
+            <StringField value={transition.condition} />
+          </div>
+          <div className={this.style.transitionButton}>
+            <i className="icon-cross" />
+          </div>
+        </div>
+        <div className={this.style.transitionLine} >
+          <div className={this.style.transitionLabel}>
+            Publish
+          </div>
+          <div className={this.style.transitionField}>
+            <Toggle />
+          </div>
+        </div>
+        { transition.publish && (
+          <div className={this.style.transitionLine} >
+            <div className={this.style.transitionField}>
+              <StringField /><StringField />
+            </div>
+            <div className={this.style.transitionField}>
+              <i className="icon-plus2" />
+            </div>
+          </div>
+        )}
+        <div className={this.style.transitionLine} >
+          <div className={this.style.transitionLabel}>
+            Do
+          </div>
+          <div className={this.style.transitionField}>
+            <StringField />
+          </div>
+          <div className={this.style.transitionButton}>
+            <i className="icon-plus2" />
+          </div>
+        </div>
+        <div className={this.style.transitionLine} >
+          <div className={this.style.transitionLabel}>
+            Color
+          </div>
+          <div className={this.style.transitionField}>
+            <StringField />
+          </div>
+        </div>
+      </div>
     );
   }
 }
 
-class Parameters extends Component {
-  static propTypes = {
-    model: PropTypes.object.isRequired,
-  }
-
-  render() {
-    const { model } = this.props;
-
-    return (
-      <Panel>
-        {
-          (model.meta.parameters || []).map(parameter => <div key={parameter.name} >{ parameter.name }</div>)
-        }
-      </Panel>
-    );
-  }
-}
-
+@connect(({ model }) => ({ model }))
 class TaskDetails extends Component {
   static propTypes = {
-    task: PropTypes.object.isRequired,
+    model: PropTypes.object,
+    selected: PropTypes.string,
+    actions: PropTypes.array,
     onBack: PropTypes.func.isRequired,
   }
 
-  state = {}
+  state = {
+    section: undefined,
+  }
+
+  handleSectionSwitch(section) {
+    this.setState({ section });
+  }
+
+  style = style
 
   render() {
-    const { task, onBack } = this.props;
+    const { model, selected, onBack, actions } = this.props;
+    const { section = 'task' } = this.state;
 
-    const action = {
-      parameters: {
-        pack: {
-          position: 1,
-          enum: [
-            'some',
-            'thing',
-            'else',
-          ],
-        },
-        name: {
-          position: 2,
-          type: 'string',
-        },
-        description: {
-          position: 3,
-          type: 'string',
-        },
-        enable: {
-          position: 4,
-          type: 'boolean',
-        },
-        entry_point: {
-          position: 5,
-          type: 'string',
-        },
-      },
-    };
+    const task = selected && model.tasks.find(task => task.name === selected);
+    const transitions = selected && model.transitions.filter(transition => transition.from.name === task.name);
+
+    const [ actionRef ] = task.action.split(' ');
+    const action = actions.find(({ref}) => ref === actionRef);
 
     return ([
       <Toolbar key="toolbar" secondary={true} >
@@ -123,23 +127,54 @@ class TaskDetails extends Component {
         />
         <Task task={task} />
       </Toolbar>,
-      <Panel key="panel">
-        <AutoForm
-          spec={{
-            type: 'object',
-            properties: action.parameters,
-          }}
-          data={this.state.runValue}
-          onChange={(runValue) => this.setState({ runValue })}
-        />
-      </Panel>,
+      <Toolbar key="subtoolbar" secondary={true} >
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('task')} selected={section === 'task'}>Task</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('input')} selected={section === 'input'}>Input</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('properties')} selected={section === 'properties'}>Properties</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('transitions')} selected={section === 'transitions'}>Transitions</ToolbarButton>
+      </Toolbar>,
+      section === 'task' && (
+        <Panel key="task">
+          <StringField name="name" value={task.name} onChange={name => model.updateTask(task.name, { name })} />
+          <StringField name="action" value={task.action} onChange={a => console.log(a)} />
+        </Panel>
+      ),
+      section === 'input' && (
+        <Panel key="input">
+          <AutoForm
+            spec={{
+              type: 'object',
+              properties: action.parameters,
+            }}
+            data={this.state.runValue}
+            onChange={(runValue) => this.setState({ runValue })}
+          />
+        </Panel>
+      ),
+      section === 'properties' && (
+        <Panel key="properties">
+          <Property name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data." onChange={a => console.log(a)} />
+          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={true} onChange={a => console.log(a)} />
+        </Panel>
+      ),
+      section === 'transitions' && (
+        <Panel key="transitions">
+          {
+            transitions.map(transition => <Transition key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`} transition={transition} />)
+          }
+          <div className={this.style.transitionInfo}>
+            To add a transition, hover over a task box and drag the connector to the desired task box you want to transition to.
+          </div>
+        </Panel>
+      ),
     ]);
   }
 }
 
+@connect(({ model }) => ({ model }))
 class TaskList extends Component {
   static propTypes = {
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
     onSelect: PropTypes.func.isRequired,
   }
 
@@ -198,65 +233,15 @@ class Task extends Component {
   }
 }
 
-class Toolbar extends Component {
-  static propTypes = {
-    secondary: PropTypes.bool,
-    children: PropTypes.node,
-  }
-
-  style = style
-
-  render() {
-    const { secondary } = this.props;
-    return (
-      <div className={cx(this.style.toolbar, secondary && this.style.secondary)} >
-        { this.props.children }
-      </div>
-    );
-  }
-}
-
-class ToolbarButton extends Component {
-  static propTypes = {
-    className: PropTypes.string,
-    children: PropTypes.node,
-  }
-
-  style = style
-
-  render() {
-    const { className, ...props } = this.props;
-    return (
-      <div className={cx(this.style.toolbarButton, className)} {...props} >
-        { this.props.children }
-      </div>
-    );
-  }
-}
-
-class Panel extends Component {
-  static propTypes = {
-    className: PropTypes.string,
-    children: PropTypes.node,
-  }
-
-  style = style
-
-  render() {
-    const { className } = this.props;
-    return (
-      <div className={cx(this.style.panel, className)} >
-        { this.props.children }
-      </div>
-    );
-  }
-}
-
+@connect(({ model, metaModel }) => ({ model, metaModel }))
 export default class Details extends Component {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object.isRequired,
+    model: PropTypes.object,
+    metaModel: PropTypes.object,
+    actions: PropTypes.array,
     selected: PropTypes.string,
+    onSelect: PropTypes.func.isRequired,
   }
 
   state = {}
@@ -268,11 +253,11 @@ export default class Details extends Component {
   }
 
   handleTaskSelect(task) {
-    this.props.model.selectTask(task.name);
+    this.props.onSelect(task.name);
   }
 
   handleBack() {
-    this.props.model.selectTask();
+    this.props.onSelect();
   }
 
   render() {
@@ -280,20 +265,12 @@ export default class Details extends Component {
       title: 'metadata',
       className: 'icon-gear',
     }, {
-      title: 'parameters',
-      className: 'icon-wrench',
-    }, {
       title: 'execution',
       className: 'icon-lan',
-    }, {
-      title: 'code',
-      className: cx(style.code, 'icon-code'),
     }];
 
-    const { model, selected: taskSelected } = this.props;
-    const { selected = 'metadata' } = this.state;
-
-    const task = taskSelected && model.tasks.find(task => task.name === taskSelected);
+    const { selected: taskSelected, actions } = this.props;
+    const { selected = 'metadata', asCode } = this.state;
 
     return (
       <div className={cx(this.props.className, this.style.component)}>
@@ -303,29 +280,29 @@ export default class Details extends Component {
               return (
                 <ToolbarButton
                   key={section.title}
-                  className={cx(section.className, selected === section.title && this.style.selected)}
+                  className={section.className}
+                  selected={selected === section.title}
                   onClick={() => this.handleSectionSelect(section)}
                 />
               );
             })
           }
+          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => this.setState({ asCode: !asCode })} />
         </Toolbar>
         {
-          selected === 'metadata' && <Meta model={model} />
-        }
-        {
-          selected === 'parameters' && <Parameters model={model} />
-        }
-        {
-          selected === 'execution' && (
-            task && 
-              <TaskDetails onBack={() => this.handleBack()} task={task} /> ||
-              <TaskList onSelect={task => this.handleTaskSelect(task)} model={model} />
+          selected === 'metadata' && (
+            asCode
+              && <Editor model={this.props.metaModel} />
+              || <Meta />
           )
         }
         {
-          selected === 'code' && (
-            <Editor {...this.props} />
+          selected === 'execution' && (
+            asCode
+              && <Editor model={this.props.model} />
+              || taskSelected
+                && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} />
+                || <TaskList onSelect={task => this.handleTaskSelect(task)} />
           )
         }
       </div>

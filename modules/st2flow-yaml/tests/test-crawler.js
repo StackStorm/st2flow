@@ -247,7 +247,7 @@ describe('Token Set Crawler', () => {
     });
   });
 
-  describe('renameMappingItem', () => {
+  describe('renameMappingKey', () => {
     let set;
 
     beforeEach(() => {
@@ -255,11 +255,11 @@ describe('Token Set Crawler', () => {
     });
 
     it('throws if no path is specified', () => {
-      expect(() => crawler.renameMappingItem(set, '')).to.throw('Cannot rename a key on a blank target');
+      expect(() => crawler.renameMappingKey(set, '')).to.throw('Cannot rename a key on a blank target');
     });
 
     it('throws if the path is not found', () => {
-      expect(() => crawler.assignMappingItem(set, 'asdhrtdvaget.asdfasdf')).to.throw('Could not find token');
+      expect(() => crawler.renameMappingKey(set, 'asdhrtdvaget.asdfasdf')).to.throw('Could not find token');
     });
 
     it('can rename a mapping key', () => {

@@ -113,16 +113,12 @@ class OrquestaModel implements ModelInterface {
       if(REG_COORDS.test(rawTask.__meta.comments)) {
         coords = JSON.parse(rawTask.__meta.comments.replace(REG_COORDS, '{ "x": $1, "y": $2 }'));
       }
-      else {
-        // TODO: better defaults
-        coords = { x: 0, y: 0 };
-      }
 
       const task: TaskInterface = {
         name: taskName,
         action: rawTask.action,
-        size: { x: 120, y: 48 },
-        coords,
+        size: { x: 120, y: 44 },
+        coords: { x: 0, y: 0, ...coords},
         transitions,
       };
 
@@ -148,6 +144,12 @@ class OrquestaModel implements ModelInterface {
       arr.push(...task.transitions);
       return arr;
     }, []);
+  }
+
+  get lastTaskIndex() {
+    return crawler.getValueByKey(this.tokenSet, 'tasks').__keys
+      .map(item => (item.match(/task(\d+)/) || [])[1])
+      .reduce((acc, item) => Math.max(acc, item || 0), 0);
   }
 
   applyDelta(delta: DeltaInterface, yaml: string) {
