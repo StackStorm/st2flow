@@ -223,6 +223,24 @@ const crawler = {
     tokenSet.refineTree();
   },
 
+  /**
+   * Renames the `targetKey` to the specified `val`
+   *
+   * {
+   *   tasks: {
+   *     task1: { ... }
+   *   }
+   * }
+   *
+   * crawler.renameMappingKey(tokenSet, 'tasks.task1', 'task2');
+   *
+   * {
+   *   tasks: {
+   *     task2: { ... }
+   *   }
+   * }
+   *
+   */
   renameMappingKey(tokenSet: TokenSet, targetKey: string | Array<string | number>, val: string) {
     const targKey: Array<string | number> = splitKey(targetKey);
 
