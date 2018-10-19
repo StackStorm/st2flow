@@ -100,6 +100,19 @@ function getTokenParent(tokenSet: TokenSet, token): AnyToken {
   return result;
 }
 
+function updateTokenValue(token: TokenRawValue, value: string) {
+  let rawValue = value;
+
+  if(token.singleQuoted) {
+    rawValue = `'${rawValue}'`;
+  }
+  else if(token.doubleQuoted) {
+    rawValue = `"${rawValue}"`;
+  }
+
+  Object.assign(token, { value, rawValue })
+}
+
 const crawler = {
   getValueByKey(tokenSet: TokenSet, key: string | Array<string | number>): any {
     if(tokenSet) {
@@ -207,6 +220,41 @@ const crawler = {
     const kvToken = factory.createKeyValueToken(`${newKey}`, val);
 
     token.mappings.push(kvToken);
+    tokenSet.refineTree();
+  },
+
+  /**
+   * Renames the `targetKey` to the specified `val`
+   *
+   * {
+   *   tasks: {
+   *     task1: { ... }
+   *   }
+   * }
+   *
+   * crawler.renameMappingKey(tokenSet, 'tasks.task1', 'task2');
+   *
+   * {
+   *   tasks: {
+   *     task2: { ... }
+   *   }
+   * }
+   *
+   */
+  renameMappingKey(tokenSet: TokenSet, targetKey: string | Array<string | number>, val: string) {
+    const targKey: Array<string | number> = splitKey(targetKey);
+
+    if(!targKey.length) {
+      throw new Error(`Cannot rename a key on a blank target: ${targetKey.toString()}`);
+    }
+
+    let token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
+
+    if(!token) {
+      throw new Error(`Could not find token: ${targetKey.toString()}`);
+    }
+
+    updateTokenValue(token, val);
     tokenSet.refineTree();
   },
 

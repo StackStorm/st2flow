@@ -44,11 +44,13 @@ class TokenSet {
     this.objectified = null;
     this.stringified = null;
     this.tree = this.parseNode(rootNode);
+
     // IMPORTANT: Only the lastToken has a suffix!
     // This is crucial for the refinery and stringifier.
-    this.lastToken.suffix = this.yaml.slice(this.lastToken.endPosition);
+    const endPos = this.lastToken.endPosition;
+    this.tree.suffix = this.tokenizeString(this.yaml.slice(endPos), endPos);
     perf.stop('parseYAML');
-    // debug(JSON.stringify(this.tree, null, '  '));
+    // console.log(JSON.stringify(this.tree, null, '  '));
   }
 
   parseNode(node: Object, jpath: Array<string | number> = [], isKey: boolean = false): AnyToken {
@@ -175,12 +177,19 @@ class TokenSet {
     token.isTag = REG_TAG.test(gap);
     this.lastToken = token;
 
-    return gap.split(REG_NEWLINE).map((item, i) => ({
+    return this.tokenizeString(gap, startIdx);
+  }
+
+  /**
+   * Splits a string into tokens for every line.
+   */
+  tokenizeString(str: string, startPos: number): Array<TokenRawValue> {
+    return str.split(REG_NEWLINE).map((item, i) => ({
       kind: 0,
       value: item,
       rawValue: (i > 0 ? '\n' : '') + item,
-      startPosition: startIdx,
-      endPosition: (startIdx += item.length + (i > 0 ? 1 : 0)),
+      startPosition: startPos,
+      endPosition: (startPos += item.length + (i > 0 ? 1 : 0)),
     })).filter(item => !!item.rawValue);
   }
 
@@ -210,11 +219,11 @@ class TokenSet {
    * Should be called any time a mutation is made to the tree.
    * This will reindex all tokens, ensure proper jpaths and prefixes,
    * reset any internal caches, and otherwise *refresh* the state of
-   * things after any mutations are made (see the crawler).
+   * things after any mutations are made (see the crawler for usage).
    *
    * IMPORTANT: it is the responsibility of consumers to call this method
-   * any time a mutation is made! Consumers should not have to pass any
-   * paremeters and can simply call the method.
+   * any time a mutation is made! In general, the crawler should be
+   * the only thing that needs to call this method.
    */
   refineTree() {
     this.objectified = null;

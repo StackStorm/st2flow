@@ -108,6 +108,10 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       });
     }
 
+    if(ref.name !== name) {
+      crawler.renameMappingKey(this.tokenSet, ['tasks', ref.name ], name);
+    }
+
     crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
     this.emitChange(oldData, this.tokenSet.toObject());
   }

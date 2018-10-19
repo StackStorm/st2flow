@@ -247,6 +247,34 @@ describe('Token Set Crawler', () => {
     });
   });
 
+  describe('renameMappingKey', () => {
+    let set;
+
+    beforeEach(() => {
+      set = new TokenSet(yaml);
+    });
+
+    it('throws if no path is specified', () => {
+      expect(() => crawler.renameMappingKey(set, '')).to.throw('Cannot rename a key on a blank target');
+    });
+
+    it('throws if the path is not found', () => {
+      expect(() => crawler.renameMappingKey(set, 'asdhrtdvaget.asdfasdf')).to.throw('Could not find token');
+    });
+
+    it('can rename a mapping key', () => {
+      const val = crawler.getValueByKey(set, 'data.foo');
+      crawler.renameMappingKey(set, 'data.foo', 'some_new_key');
+      expect(crawler.getValueByKey(set, 'data.some_new_key')).to.equal(val);
+    });
+
+    it('can rename root level items', () => {
+      const val = crawler.getValueByKey(set, [ 'key.with.dot' ]);
+      crawler.renameMappingKey(set, [ 'key.with.dot' ], 'some_new_key');
+      expect(crawler.getValueByKey(set, 'some_new_key')).to.equal(val);
+    });
+  });
+
   describe('deleteMappingItem', () => {
     let set;
 
