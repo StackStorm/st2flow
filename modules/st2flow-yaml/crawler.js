@@ -37,6 +37,7 @@ function getTokenByKey(branch: AnyToken, key: string | Array<string | number>): 
   if(branch.kind === 0) {
     // The following mimicks the behavior of reading normal JS objects
     if(keyArr.length === 1) {
+      // Trying to read a property on a scalar value - not possible.
       return undefined;
     }
 
@@ -110,7 +111,7 @@ function updateTokenValue(token: TokenRawValue, value: string) {
     rawValue = `"${rawValue}"`;
   }
 
-  Object.assign(token, { value, rawValue })
+  Object.assign(token, { value, rawValue });
 }
 
 const crawler = {
@@ -248,7 +249,7 @@ const crawler = {
       throw new Error(`Cannot rename a key on a blank target: ${targetKey.toString()}`);
     }
 
-    let token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
+    const token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
 
     if(!token) {
       throw new Error(`Could not find token: ${targetKey.toString()}`);

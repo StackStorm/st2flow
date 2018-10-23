@@ -6,8 +6,16 @@ import TokenSet from '../token-set';
 import crawler from '../crawler';
 
 describe('Token Set Crawler', () => {
-  const yaml = fs.readFileSync(path.join(__dirname, 'data/complex.yaml'), 'utf-8');
-  const set = new TokenSet(yaml);
+  let yaml;
+  let set;
+
+  before(() => {
+    yaml = fs.readFileSync(path.join(__dirname, 'data/complex.yaml'), 'utf-8');
+  });
+
+  beforeEach(() => {
+    set = new TokenSet(yaml);
+  });
 
   it('returns simple key value pairs', () => {
     expect(crawler.getValueByKey(set, 'version')).to.equal(1);
@@ -209,12 +217,6 @@ describe('Token Set Crawler', () => {
   });
 
   describe('assignMappingItem', () => {
-    let set;
-
-    beforeEach(() => {
-      set = new TokenSet(yaml);
-    });
-
     it('throws if no path is specified', () => {
       expect(() => crawler.assignMappingItem(set, '')).to.throw('Cannot add a key to a blank target');
     });
@@ -248,12 +250,6 @@ describe('Token Set Crawler', () => {
   });
 
   describe('renameMappingKey', () => {
-    let set;
-
-    beforeEach(() => {
-      set = new TokenSet(yaml);
-    });
-
     it('throws if no path is specified', () => {
       expect(() => crawler.renameMappingKey(set, '')).to.throw('Cannot rename a key on a blank target');
     });
@@ -276,12 +272,6 @@ describe('Token Set Crawler', () => {
   });
 
   describe('deleteMappingItem', () => {
-    let set;
-
-    beforeEach(() => {
-      set = new TokenSet(yaml);
-    });
-
     it('throws if the path is not found', () => {
       expect(() => crawler.deleteMappingItem(set, 'asdhrtdvaget')).to.throw('Could not find token');
     });
@@ -312,12 +302,6 @@ describe('Token Set Crawler', () => {
   });
 
   describe('spliceCollection', () => {
-    let set;
-
-    beforeEach(() => {
-      set = new TokenSet(yaml);
-    });
-
     it('throws if the path is not found', () => {
       expect(() => crawler.spliceCollection(set, 'asdhrtdvaget')).to.throw('Could not find token');
     });

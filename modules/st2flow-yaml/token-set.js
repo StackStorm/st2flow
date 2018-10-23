@@ -1,11 +1,12 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, AnyToken } from './types';
+import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, AnyToken } from './types';
 import { load } from 'yaml-ast-parser';
-import { pick, omit } from './util';
+import { pick, omit, get } from './util';
 import Objectifier from './objectifier';
 import stringifier from './stringifier';
 import Refinery from './token-refinery';
+import factory from './token-factory';
 import perf from '@stackstorm/st2flow-perf';
 
 const REG_CARRIAGE = /\r/g;
@@ -14,6 +15,7 @@ const REG_TAG = /:\s+!!?[\w]*\s?/;
 const REG_BOOL_TRUE = /^(?:y(?:es)?|on)$/i; // y yes on
 const REG_BOOL_FALSE = /^(?:no?|off)$/i; // n no off
 const REG_FORMATTED_NUMBER = /^[+-]?[\d,_]*(?:\.[\d]*)?(?:e[+-]?\d+)?$/;
+const REG_JSON_END = /^[^#}\]]*[}\]]/;
 const OMIT_FIELDS = [ 'errors', 'parent', 'mappings', 'items' ];
 
 class TokenSet {
@@ -23,6 +25,11 @@ class TokenSet {
   anchors: Object;              // Map of anchor IDs to the original token
   objectified: ?Object;         // POJO representation of the token tree
   stringified: ?string;         // Stringified YAML
+
+  // After parsing the node tree, certain mapping and collection tokens
+  // will need a suffix. The suffix is only used to close JS-like data
+  // within YAML (closing curly and square braces).
+  tokensWithSuffix: Map<JPath, Array<TokenRawValue>> = new Map();
 
   constructor(yaml: string) {
     this.parseYAML(yaml);
@@ -45,15 +52,20 @@ class TokenSet {
     this.stringified = null;
     this.tree = this.parseNode(rootNode);
 
-    // IMPORTANT: Only the lastToken has a suffix!
-    // This is crucial for the refinery and stringifier.
-    const endPos = this.lastToken.endPosition;
-    this.tree.suffix = this.tokenizeString(this.yaml.slice(endPos), endPos);
+    const tail = tokenizeUnparsedData(this.yaml.slice(this.lastToken.endPosition), this.lastToken, this.tokensWithSuffix);
+
+    this.tokensWithSuffix.forEach((tokens, jpath) => {
+      const token = get(this.tree, jpath);
+      token.suffix = tokens;
+    });
+
+    this.tree.suffix = (this.tree.suffix || []).concat(tail);
+
     perf.stop('parseYAML');
     // console.log(JSON.stringify(this.tree, null, '  '));
   }
 
-  parseNode(node: Object, jpath: Array<string | number> = [], isKey: boolean = false): AnyToken {
+  parseNode(node: Object, jpath: JPath = []): AnyToken {
     if(node === null || typeof node === 'undefined') {
       return null;
     }
@@ -70,9 +82,12 @@ class TokenSet {
         token.prefix = this.parsePrefix(token);
         token.rawValue = this.yaml.slice(token.startPosition, token.endPosition);
 
+        // Don't parse mapping keys for special values.
         // This MUST happen after parsePrefix
+        const len = jpath.length;
+        const isKey = len > 2 && jpath[len - 1] === 'key' && jpath[len - 3] === 'mappings';
         if (!isKey) {
-          const special = this.parseSpecialValue(token);
+          const special = parseSpecialValue(token);
           if (special !== undefined) {
             token.valueObject = special;
           }
@@ -81,6 +96,34 @@ class TokenSet {
         if(token.anchorId) {
           this.anchors[token.anchorId] = token;
         }
+
+        return token;
+      }
+
+      case 1: { // key/value pair
+        if (node.key.errors.length) {
+          throw node.key.errors;
+        }
+
+        // value can be null
+        if (node.value && node.value.errors.length) {
+          throw node.value.errors;
+        }
+
+        // Keys are normally scalar keys (foo: bar) but can an array
+        // See test files for examples of multiline keys.
+        if(node.key.kind !== 0 && node.key.kind !== 3) {
+          throw new Error(`Unexpected node key kind: ${node.key.kind}`);
+        }
+
+        if(node.key.value === 'empty_sequence') {
+          console.log(node);
+        }
+
+        const token: TokenKeyValue = pick(node, 'kind', 'startPosition', 'endPosition');
+        token.jpath = jpath;
+        token.key = this.parseNode(node.key, jpath.concat('key'));
+        token.value = this.parseNode(node.value, jpath.concat('value'));
 
         return token;
       }
@@ -94,9 +137,16 @@ class TokenSet {
           this.anchors[token.anchorId] = token;
         }
 
-        token.mappings = node.mappings.map((mapping, i) =>
-          this.parseMapping(mapping, jpath.concat('mappings', i))
+        token.mappings = node.mappings.map((kvPair, i) =>
+          this.parseNode(kvPair, jpath.concat('mappings', i))
         );
+
+        if(!token.mappings.length) {
+          // special handling for empty JS objects
+          const suffix = this.yaml.slice(this.lastToken.endPosition, token.endPosition);
+          token.suffix = [ createToken(suffix, this.lastToken.endPosition) ];
+          this.lastToken = token;
+        }
 
         return token;
       }
@@ -105,9 +155,17 @@ class TokenSet {
         const token: TokenCollection = omit(node, ...OMIT_FIELDS);
 
         token.jpath = jpath;
+
         token.items = node.items.map((item, i) => {
           return this.parseNode(item, jpath.concat('items', i));
         });
+
+        if(!token.items.length) {
+          // special handling for empty JS arrays
+          const suffix = this.yaml.slice(this.lastToken.endPosition, token.endPosition);
+          token.suffix = [ createToken(suffix, this.lastToken.endPosition) ];
+          this.lastToken = token;
+        }
 
         return token;
       }
@@ -127,43 +185,6 @@ class TokenSet {
     }
   }
 
-  parseMapping(kvToken: TokenKeyValue, jpath: Array<string | number>): TokenKeyValue {
-    if (kvToken.errors.length) {
-      throw kvToken.errors;
-    }
-
-    if (kvToken.kind !== 1) {
-      throw new Error(`Unexpected kvToken kind: ${kvToken.kind}`);
-    }
-
-    if (kvToken.key.errors.length) {
-      throw kvToken.key.errors;
-    }
-
-    // value can be null
-    if (kvToken.value && kvToken.value.errors.length) {
-      throw kvToken.value.errors;
-    }
-
-    const token: TokenKeyValue = pick(kvToken, 'kind', 'startPosition', 'endPosition');
-
-    // Keys are normally scalar keys (foo: bar) but can an array
-    // See test files for examples of multiline keys.
-    switch(kvToken.key.kind) {
-      case 0:
-      case 3:
-        token.jpath = jpath;
-        token.key = this.parseNode(kvToken.key, jpath.concat('key'), true);
-        token.value = this.parseNode(kvToken.value, jpath.concat('value'));
-        break;
-
-      default:
-        throw new Error(`Unexpected kvToken key kind: ${kvToken.key.kind}`);
-    }
-
-    return token;
-  }
-
   /**
    * Parses the space between the last token and the next one.
    * This includes whitespace, comments, colons, and other
@@ -171,48 +192,15 @@ class TokenSet {
    */
   parsePrefix(token: TokenRawValue): Array<TokenRawValue> {
     const prev = this.lastToken;
-    let startIdx  = prev ? prev.endPosition : 0;
+    const startIdx  = prev ? prev.endPosition : 0;
     const gap = this.yaml.slice(startIdx, token.startPosition);
 
     token.isTag = REG_TAG.test(gap);
     this.lastToken = token;
 
-    return this.tokenizeString(gap, startIdx);
-  }
+    // logIfValue(token, 'anchored_content', prev);
 
-  /**
-   * Splits a string into tokens for every line.
-   */
-  tokenizeString(str: string, startPos: number): Array<TokenRawValue> {
-    return str.split(REG_NEWLINE).map((item, i) => ({
-      kind: 0,
-      value: item,
-      rawValue: (i > 0 ? '\n' : '') + item,
-      startPosition: startPos,
-      endPosition: (startPos += item.length + (i > 0 ? 1 : 0)),
-    })).filter(item => !!item.rawValue);
-  }
-
-  /**
-   * Parses special values that [appear to be] standard YAML but
-   * not supported by the yaml-ast-parser for some reason.
-   *   - If the value uses a !!tag, we ignore it.
-   *   - If the value has the `valueObject` property, the parser
-   *     already recognized it - no need to process it.
-   */
-  parseSpecialValue(token: TokenRawValue): ?boolean | ?number {
-    if(!token.isTag && !token.hasOwnProperty('valueObject')) {
-      if(REG_BOOL_TRUE.test(token.value)) {
-        return true;
-      }
-      else if(REG_BOOL_FALSE.test(token.value)) {
-        return false;
-      }
-      else if(REG_FORMATTED_NUMBER.test(token.value)) {
-        return parseFloat(token.value.replace(/[,_]/g, ''));
-      }
-    }
-    return undefined;
+    return tokenizeUnparsedData(gap, prev, this.tokensWithSuffix);
   }
 
   /**
@@ -267,6 +255,90 @@ class TokenSet {
 
     return this.stringified || '';
   }
+}
+
+/**
+ * Splits an unparsed string into tokens for every line.
+ * If this detects the end of a JSON like object or array, then
+ * those tokens get appended to the end of the corresponding
+ * mapping or collection (respectively) in the form of a "suffix".
+ *
+ * For example, a string like this might exist:
+ *
+ * `
+ *     ]},
+ *   }
+ * `
+ *
+ * Based on the above, there is a JSON array and two JSON objects
+ * being closed. Those closing tokens are stored as a "suffix" on
+ * corresponding collection or mapping. This is crucial for the
+ * stringifier and token refinery.
+ */
+function tokenizeUnparsedData(str: string, lastToken: TokenRawValue, tokensWithSuffix): Array<TokenRawValue> {
+  const lines = str.split(REG_NEWLINE);
+  const tokens = [];
+  let startPos = lastToken ? lastToken.endPosition : 0;
+  let lastParentIndex = lastToken ? lastToken.jpath.length - 1 : 0;
+
+  lines.forEach(line => {
+    if(lastToken && REG_JSON_END.test(line)) {
+      const matches = line.match(/[^#}\]]*[}\]]/g) || [];
+
+      matches.forEach((match, n) => {
+        const parentKey = match[match.length - 1] === '}' ? 'mappings' : 'items';
+        lastParentIndex = lastToken.jpath.lastIndexOf(parentKey, lastParentIndex - 1);
+
+        const parentJpath: JPath = lastToken.jpath.slice(0, lastParentIndex);
+        const suffix: TokenRawValue = createToken(`${tokens.length && n === 0 ? '\n' : ''}${match}`, startPos);
+
+        tokensWithSuffix.set(parentJpath, tokens.splice(0, tokens.length).concat(suffix));
+        startPos = suffix.endPosition;
+        line = line.replace(match, '');
+      });
+    }
+
+    tokens.push(createToken(`${tokens.length === 0 ? '' : '\n'}${line}`, startPos));
+  });
+
+  // Ensure the first token doesn't start with a new line
+  tokens[0].value = tokens[0].rawValue = tokens[0].value.replace(/^\n/, '');
+
+  return tokens;
+}
+
+/**
+ * Creates a token with start and end positions defined.
+ */
+function createToken(str: string, startPos: number): TokenRawValue {
+  const token = factory.createToken(str);
+  token.startPosition = startPos;
+  token.endPosition = startPos + str.length;
+
+  return token;
+}
+
+/**
+ * Parses special values that [appear to be] standard YAML but
+ * not supported by the yaml-ast-parser for some reason.
+ *   - If the value uses a !!tag, we ignore it.
+ *   - If the value has the `valueObject` property, the parser
+ *     already recognized it - no need to process it.
+ */
+function parseSpecialValue(token: TokenRawValue): ?boolean | ?number {
+  if(!token.isTag && !token.hasOwnProperty('valueObject')) {
+    if(REG_BOOL_TRUE.test(token.value)) {
+      return true;
+    }
+    else if(REG_BOOL_FALSE.test(token.value)) {
+      return false;
+    }
+    else if(REG_FORMATTED_NUMBER.test(token.value)) {
+      return parseFloat(token.value.replace(/[,_]/g, ''));
+    }
+  }
+
+  return undefined;
 }
 
 export default TokenSet;

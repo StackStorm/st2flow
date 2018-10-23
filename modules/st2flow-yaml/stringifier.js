@@ -8,7 +8,7 @@ const buildString = (value, prefix = [], suffix = []) => {
   let str = prefix.reduce(strReducer, '');
   str += value;
   return suffix.reduce(strReducer, str);
-}
+};
 
 const stringifier = {
   /**
