@@ -110,7 +110,7 @@ function updateTokenValue(token: TokenRawValue, value: string) {
     rawValue = `"${rawValue}"`;
   }
 
-  Object.assign(token, { value, rawValue })
+  Object.assign(token, { value, rawValue });
 }
 
 const crawler = {
@@ -248,7 +248,7 @@ const crawler = {
       throw new Error(`Cannot rename a key on a blank target: ${targetKey.toString()}`);
     }
 
-    let token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
+    const token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
 
     if(!token) {
       throw new Error(`Could not find token: ${targetKey.toString()}`);

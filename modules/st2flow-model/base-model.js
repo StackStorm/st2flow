@@ -117,9 +117,10 @@ function formatAjvErrors(errors: Array<AjvError>): Array<GenericError> {
     case 'oneOf': {
       errors = errors.slice(0, -1);
       if(errors.every(err => err.keyword === 'type')) {
-        message += ` should be one of `;
+        message += ' should be one of ';
         message += errors.map(err => err.params.type).join(', ');
-      } else {
+      }
+      else {
         message += ' ';
         message += (errors.find(err => err.keyword !== 'type') || {}).message;
       }

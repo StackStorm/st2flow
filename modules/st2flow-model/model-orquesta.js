@@ -2,7 +2,7 @@
 
 import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
 
-import { crawler } from '@stackstorm/st2flow-yaml';
+import { crawler, util } from '@stackstorm/st2flow-yaml';
 import BaseModel, { STR_ERROR_SCHEMA }  from './base-model';
 
 const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
@@ -10,6 +10,45 @@ const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
 // TODO: replace with reference to generated schema in orquesta repo:
 // https://github.com/StackStorm/orquesta/blob/master/orquesta/specs/native/v1/models.py
 import schema from './schemas/orquesta.json';
+
+const REGEX_VALUE_IN_BRACKETS = '\\[.*\\]\\s*';
+const REGEX_VALUE_IN_QUOTES = '\\"[^\\"]*\\"\\s*';
+const REGEX_VALUE_IN_APOSTROPHES = '\'[^\']*\'\\s*';
+const REGEX_FLOATING_NUMBER = '[-]?\\d*\\.\\d+';
+const REGEX_INTEGER = '[-]?\\d+';
+const REGEX_TRUE = 'true';
+const REGEX_FALSE = 'false';
+const REGEX_NULL = 'null';
+const YQL_REGEX_PATTERN = '<%.*?%>';
+const JINJA_REGEX_PATTERN = '{{.*?}}';
+
+const REGEX_INLINE_PARAM_VARIATIONS = [
+  REGEX_VALUE_IN_BRACKETS,
+  REGEX_VALUE_IN_QUOTES,
+  REGEX_VALUE_IN_APOSTROPHES,
+  REGEX_FLOATING_NUMBER,
+  REGEX_INTEGER,
+  REGEX_TRUE,
+  REGEX_FALSE,
+  REGEX_NULL,
+  YQL_REGEX_PATTERN,
+  JINJA_REGEX_PATTERN,
+];
+
+const REGEX_INLINE_PARAMS = new RegExp(`([\\w]+)=(${REGEX_INLINE_PARAM_VARIATIONS.join('|')})(.*)`);
+
+function matchAll(str, regexp, accumulator={}) {
+  const match = str.match(regexp);
+  
+  if (!match) {
+    return accumulator;
+  }
+
+  const [ , key, value, rest ] = match;
+  accumulator[key] = value;
+
+  return matchAll(rest, regexp, accumulator);
+}
 
 class OrquestaModel extends BaseModel implements ModelInterface {
   constructor(yaml: ?string) {
@@ -27,16 +66,33 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     return tasks.__meta.keys.map(name => {
       let coords;
-      if(REG_COORDS.test(tasks[name].__meta.comments)) {
+      if(tasks[name].__meta && REG_COORDS.test(tasks[name].__meta.comments)) {
         coords = JSON.parse(tasks[name].__meta.comments.replace(REG_COORDS, '{ "x": $1, "y": $2 }'));
+      }
+
+      const { action='', input, 'with':_with } = tasks[name];
+      const [ actionRef, ...inputPartials ] = action.split(' ');
+
+      if (inputPartials.length) {
+        tasks[name].__meta.inlineInput = true;
+      }
+
+      if (typeof _with === 'string') {
+        tasks[name].__meta.withString = true;
       }
 
       return Object.assign({}, {
         name,
         size: { x: 120, y: 48 },
       }, tasks[name], {
+        action: actionRef,
+        input: {
+          ...input,
+          ...matchAll(inputPartials.join(' '), REGEX_INLINE_PARAMS),
+        },
         coords: { x: 0, y: 0, ...coords },
-      })
+        with: typeof _with === 'string' ? { items: _with } : _with,
+      });
     });
   }
 
@@ -100,19 +156,59 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { name, coords, ...data } = task;
+    const { name, coords, action, input } = task;
 
-    if(coords) {
-      util.defineExpando(data, '__meta', {
+    const taskValue = crawler.getValueByKey(this.tokenSet, [ 'tasks', ref ]);
+
+    if (ref.name !== name) {
+      crawler.renameMappingKey(this.tokenSet, [ 'tasks', ref ], name);
+      ref = name;
+    }
+
+    if (coords) {
+      util.defineExpando(taskValue, '__meta', {
         comments: `[${coords.x}, ${coords.y}]`,
       });
+      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref ], taskValue);
     }
 
-    if(ref.name !== name) {
-      crawler.renameMappingKey(this.tokenSet, ['tasks', ref.name ], name);
+    if (action) {
+      try {
+        crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'action' ], action);
+      }
+      catch (e) {
+        crawler.assignMappingItem(this.tokenSet, [ 'tasks', ref, 'action' ], action);
+      }
     }
 
-    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+    if (input) {
+      try {
+        crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'input' ], input);
+      }
+      catch (e) {
+        crawler.assignMappingItem(this.tokenSet, [ 'tasks', ref, 'input' ], input);
+      }
+    }
+
+    this.emitChange(oldData, this.tokenSet.toObject());
+  }
+
+  setTaskProperty(name, path, value) {
+    const oldData = this.tokenSet.toObject();
+    try {
+      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ].concat(path), value);
+    }
+    catch (e) {
+      crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ].concat(path), value);
+    }
+
+    this.emitChange(oldData, this.tokenSet.toObject());
+  }
+
+  deleteTaskProperty(name, path) {
+    const oldData = this.tokenSet.toObject();
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', name ].concat(path));
+
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
@@ -162,36 +258,6 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   deleteTransition(ref: TransitionRefInterface) {
     throw new Error('Not yet implemented');
   }
-}
-
-function reduceTransitions(arr, nxt, i): Array<TransitionInterface> {
-  let to: Array<string>;
-
-  // nxt.do can be a string, comma delimited string, or array
-  if(typeof nxt.do === 'string') {
-    to = nxt.do.split(',').map(name => name.trim());
-  }
-  else if(Array.isArray(nxt.do)) {
-    to = nxt.do;
-  }
-  else {
-    return arr;
-  }
-
-  const base: Object = {};
-  if(nxt.when) {
-    base.condition = nxt.when;
-  }
-
-  to.forEach(name =>
-    arr.push(Object.assign({
-      // TODO: figure out "type" property
-      // type: 'success|error|complete',
-      to: { name },
-    }, base))
-  );
-
-  return arr;
 }
 
 export default OrquestaModel;

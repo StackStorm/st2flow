@@ -1,14 +1,9 @@
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
-import cx from 'classnames';
 
 import ArrayField from '@stackstorm/module-auto-form/fields/array';
-import NumberField from '@stackstorm/module-auto-form/fields/number';
 import IntegerField from '@stackstorm/module-auto-form/fields/integer';
-import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
-import ObjectField from '@stackstorm/module-auto-form/fields/object';
-import PasswordField from '@stackstorm/module-auto-form/fields/password';
 import EnumField from '@stackstorm/module-auto-form/fields/enum';
 import Button from '@stackstorm/module-forms/button.component';
 
@@ -55,7 +50,7 @@ export default class ParameterEditor extends Component {
           { this.props.parameter ? 'Edit parameter' : 'New parameter' }
         </div>
         <StringField name="Name" spec={{ required: true }} value={parameter.name} onChange={value => this.handleChange('name', value)} />
-        <EnumField name="Type" spec={{ required: true , enum: ['a', 'b', 'c'] }} value={parameter.type} onChange={value => this.handleChange('type', value)} />
+        <EnumField name="Type" spec={{ required: true , enum: [ 'a', 'b', 'c' ] }} value={parameter.type} onChange={value => this.handleChange('type', value)} />
         <StringField name="Description" value={parameter.description} onChange={value => this.handleChange('description', value)} />
 
         <ArrayField name="Enum" value={parameter.enum} onChange={value => this.handleChange('enum', value)} />

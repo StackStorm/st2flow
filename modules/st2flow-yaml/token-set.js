@@ -171,7 +171,7 @@ class TokenSet {
    */
   parsePrefix(token: TokenRawValue): Array<TokenRawValue> {
     const prev = this.lastToken;
-    let startIdx  = prev ? prev.endPosition : 0;
+    const startIdx  = prev ? prev.endPosition : 0;
     const gap = this.yaml.slice(startIdx, token.startPosition);
 
     token.isTag = REG_TAG.test(gap);

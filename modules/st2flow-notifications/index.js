@@ -42,4 +42,4 @@ export default class Notifications extends Component {
       </div>
     );
   }
-};
+}

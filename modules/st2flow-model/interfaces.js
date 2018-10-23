@@ -74,8 +74,8 @@ export interface AjvError {
   keyword: string,
   message: string,
   params: Object
-};
+}
 
 export interface GenericError {
   message: string
-};
+}

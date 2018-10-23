@@ -4,7 +4,7 @@ import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyTo
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
-import { get } from './util';
+// import { get } from './util';
 
 const DEFAULT_INDENT = '  ';
 const STR_COLON = ':';
@@ -20,8 +20,8 @@ const REG_LEADING_SPACE = /$\s+/; // TODO: Can get rid of this?
 const REG_ALL_WHITESPACE = /^\s+$/;
 const REG_COMMENT = /^\s*#(?:\s*)?/;
 const REG_JSON_START = /^\s*(?:[-:] )?[{[]/;
-const REG_CLOSE_CURLY = /\s*}/;
-const REG_CLOSE_SQUARE = /\s*]/;
+// const REG_CLOSE_CURLY = /\s*}/;
+// const REG_CLOSE_SQUARE = /\s*]/;
 const REG_DASH = /^\s*-\s*/;
 const REG_COMMA = /^\s*(?::\s*[{[]\s*)?[}\]]?\s*,\s*/;
 

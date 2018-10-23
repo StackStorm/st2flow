@@ -187,7 +187,7 @@ export default class Canvas extends Component {
     this.props.onSelect();
   }
 
-  handleModelError(err) {
+  handleModelError = (err) => {
     // error may or may not be an array
     this.setState({ errors: err && [].concat(err) || [] });
   }

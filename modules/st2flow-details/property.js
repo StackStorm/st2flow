@@ -11,12 +11,13 @@ export default class Property extends Component {
     description: PropTypes.string.isRequired,
     value: PropTypes.bool,
     onChange: PropTypes.func,
+    children: PropTypes.node,
   }
 
   style = style
 
   render() {
-    const { name, description, value, onChange } = this.props;
+    const { name, description, value, onChange, children } = this.props;
     return (
       <div className={this.style.property}>
         <div className={this.style.propertyName}>{ name }</div>
@@ -24,6 +25,7 @@ export default class Property extends Component {
         <div className={this.style.propertyToggle}>
           <Toggle value={value} onChange={onChange} />
         </div>
+        { children }
       </div>
     );
   }

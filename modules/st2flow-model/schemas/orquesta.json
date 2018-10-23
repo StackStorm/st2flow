@@ -85,12 +85,6 @@
         "^\\w+$": {
           "type": "object",
           "properties": {
-            "join": {
-              "oneOf": [
-                { "enum": [ "all" ] },
-                { "type": "integer", "minimum": 0 }
-              ]
-            },
             "action": {
               "type": "string"
             },
@@ -154,7 +148,7 @@
               }
             }
           },
-          "additionalProperties": false
+          "additionalProperties": true
         }
       }
     }

@@ -1,21 +1,10 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface, DeltaInterface } from './interfaces';
+import type { ModelInterface } from './interfaces';
 
 import { diff } from 'deep-diff';
 import EventEmitter from 'eventemitter3';
 import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
-
-type Next = {
-  do: string | Array<string>,
-  when?: string,
-};
-
-type RawTask = {
-  action: string,
-  input?: Object,
-  next?: Array<Next>,
-};
 
 class MetaModel implements ModelInterface {
   tokenSet: TokenSet;
