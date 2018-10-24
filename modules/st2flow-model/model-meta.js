@@ -1,23 +1,11 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface, DeltaInterface } from './interfaces';
-
 import { diff } from 'deep-diff';
 import EventEmitter from 'eventemitter3';
 import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
 
-type Next = {
-  do: string | Array<string>,
-  when?: string,
-};
-
-type RawTask = {
-  action: string,
-  input?: Object,
-  next?: Array<Next>,
-};
-
-class MetaModel implements ModelInterface {
+class MetaModel {
+  yaml: string;
   tokenSet: TokenSet;
   emitter: EventEmitter;
 
@@ -30,14 +18,18 @@ class MetaModel implements ModelInterface {
   }
 
   fromYAML(yaml: string): void {
+    const oldData = this.tokenSet;
+    this.yaml = yaml;
+
     try {
-      const oldData = this.tokenSet;
       this.tokenSet = new TokenSet(yaml);
-      this.emitChange(oldData, this.tokenSet);
     }
     catch (ex) {
       this.emitter.emit('error', ex);
+      return;
     }
+
+    this.emitChange(oldData, this.tokenSet);
   }
 
   toYAML(): string {
@@ -63,11 +55,11 @@ class MetaModel implements ModelInterface {
     }
   }
 
-  get(path) {
+  get(path: string) {
     return crawler.getValueByKey(this.tokenSet, path);
   }
 
-  set(path, value) {
+  set(path: string, value: any) {
     const oldData = this.tokenSet.toObject();
     if (crawler.getValueByKey(this.tokenSet, path) === undefined) {
       crawler.assignMappingItem(this.tokenSet, path, value);

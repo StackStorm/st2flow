@@ -192,7 +192,7 @@ export default class Canvas extends Component {
     this.setState({ errors: err && [].concat(err) || [] });
   }
 
-  handleNotificationRemove(notification) {
+  handleNotificationRemove = (notification) => {
     switch(notification.type) {
       case 'error':
         this.setState({

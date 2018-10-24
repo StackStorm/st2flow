@@ -2,35 +2,9 @@
 
 import type { TokenRawValue, TokenMapping, TokenCollection, TokenReference, AnyToken, TokenMeta } from './types';
 import crawler from './crawler';
-import { isPlainObject } from './util';
+import { isPlainObject, defineExpando } from './util';
 
 const STR_BACKREF = '<<';
-const REG_COMMENT = /^\s+#(?:\s+)?/;
-
-const defineExpando = (obj, key, value): void => {
-  Object.defineProperty(obj, key, {
-    value,
-    writable: false,
-    configurable: false,
-    enumerable: false,
-  });
-};
-
-const getTokenComments = (token: AnyToken): string => {
-  let comments = '';
-  const firstToken: TokenRawValue = crawler.findFirstValueToken(token);
-
-  if(firstToken) {
-    comments = firstToken.prefix.reduce((str, token) => {
-      if(REG_COMMENT.test(token.rawValue)) {
-        str += `${token.rawValue.replace(REG_COMMENT, '')}\n`;
-      }
-      return str;
-    }, '');
-  }
-
-  return comments;
-};
 
 class Objectifier {
   anchors: Object;
@@ -114,7 +88,7 @@ class Objectifier {
 
       if(isPlainObject(value)) {
         // value will already have a __meta property
-        value.__meta.comments = getTokenComments(kvToken.key);
+        value.__meta.comments = crawler.getTokenComments(kvToken.key);
       }
 
       return obj;
@@ -132,7 +106,7 @@ class Objectifier {
     // Expand some useful info
     defineExpando(result, '__meta', {
       jpath: token.jpath,
-      comments: getTokenComments(token),
+      comments: crawler.getTokenComments(token),
     });
 
     return result;

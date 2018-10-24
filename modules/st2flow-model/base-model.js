@@ -13,6 +13,7 @@ const STR_ERROR_YAML = 'yaml-error';
 const STR_ERROR_SCHEMA = 'schema-error';
 
 class BaseModel {
+  yaml: string;
   modelName: string;
   tokenSet: TokenSet;
   emitter: EventEmitter;
@@ -36,21 +37,21 @@ class BaseModel {
   }
 
   fromYAML(yaml: string): void {
-    try {
-      const oldData = this.tokenSet;
-      this.tokenSet = new TokenSet(yaml);
-      this.emitter.emit(STR_ERROR_YAML, [/* clear any yaml errors */]);
+    const oldData = this.tokenSet;
+    this.yaml = yaml;
 
-      if(oldData) {
-        this.emitChange(oldData.toObject(), this.tokenSet.toObject());
-      }
+    try {
+      this.tokenSet = new TokenSet(yaml);
     }
     catch (ex) {
       // The parser is overly verbose on certain errors, so
       // just grab the relevant parts. Also normalize it to an array.
       const exception = ex.length > 2 ? ex.slice(0, 2) : [].concat(ex);
       this.emitter.emit(STR_ERROR_YAML, exception);
+      return;
     }
+
+    this.emitChange(oldData && oldData.toObject() || {}, this.tokenSet.toObject());
   }
 
   toYAML(): string {
@@ -72,7 +73,7 @@ class BaseModel {
     }
 
     const deltas = diff(oldData, newData) || [];
-    this.emitter.emit(STR_ERROR_SCHEMA, [/* clear any schema errors */]);
+    // this.emitter.emit(STR_ERROR_SCHEMA, [/* clear any schema errors */]);
 
     if (deltas.length) {
       this.emitter.emit('change', deltas, this.tokenSet.toYAML());
@@ -116,9 +117,10 @@ function formatAjvErrors(errors: Array<AjvError>): Array<GenericError> {
     case 'oneOf': {
       errors = errors.slice(0, -1);
       if(errors.every(err => err.keyword === 'type')) {
-        message += ` should be one of `;
+        message += ' should be one of ';
         message += errors.map(err => err.params.type).join(', ');
-      } else {
+      }
+      else {
         message += ' ';
         message += (errors.find(err => err.keyword !== 'type') || {}).message;
       }
