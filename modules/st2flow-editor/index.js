@@ -43,6 +43,7 @@ export default class Editor extends Component {
       useSoftTabs: true,
       showPrintMargin: false,
     });
+
     this.editor.setValue(model.tokenSet.yaml, -1);
     this.editor.on('change', this.handleEditorChange);
 

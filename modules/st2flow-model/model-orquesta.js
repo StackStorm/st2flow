@@ -20,8 +20,6 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     const tasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
     if(!tasks) {
-      // TODO: make part of schema validation
-      this.emitter.emit(STR_ERROR_SCHEMA, new Error('No tasks found.'));
       return [];
     }
 

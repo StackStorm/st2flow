@@ -4,7 +4,7 @@ import type { DeltaInterface, AjvError, GenericError } from './interfaces';
 
 import Ajv from 'ajv';
 import { diff } from 'deep-diff';
-import EventEmitter from 'eventemitter3';
+import EventEmitter from './event-emitter';
 
 import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
 
@@ -17,7 +17,7 @@ class BaseModel {
   tokenSet: TokenSet;
   emitter: EventEmitter;
 
-  constructor(schema: Object, yaml: ?string) {
+  constructor(schema: Object, yaml: ?string): void {
     this.modelName = this.constructor.name; // OrquestaModel, MistralModel
     this.emitter = new EventEmitter();
     ajv.addSchema(schema, this.modelName);
@@ -27,11 +27,11 @@ class BaseModel {
     }
   }
 
-  on(event: string, callback: Function) {
+  on(event: string, callback: Function): void {
     this.emitter.on(event, callback);
   }
 
-  removeListener(event: string, callback: Function) {
+  removeListener(event: string, callback: Function): void {
     this.emitter.removeListener(event, callback);
   }
 
@@ -57,7 +57,7 @@ class BaseModel {
     return this.tokenSet.toYAML();
   }
 
-  applyDelta(delta: DeltaInterface, yaml: string) {
+  applyDelta(delta: DeltaInterface, yaml: string): void {
     // Preliminary tests show that parsing of long/complex YAML files
     // takes less than ~20ms (almost always less than 5ms) - so doing full
     // parsing often is very cheap. In the future we can maybe look into applying
@@ -67,7 +67,6 @@ class BaseModel {
 
   emitChange(oldData: Object = {}, newData: Object = {}): void {
     if(!ajv.validate(this.modelName, newData)) {
-      console.log(ajv.errors);
       this.emitter.emit(STR_ERROR_SCHEMA, formatAjvErrors(ajv.errors));
       return;
     }
@@ -98,7 +97,7 @@ class BaseModel {
 }
 
 function formatAjvErrors(errors: Array<AjvError>): Array<GenericError> {
-  let message = errors[0].dataPath;
+  let message: string = errors[0].dataPath;
 
   switch(errors[errors.length - 1].keyword) {
     case 'type':
@@ -129,7 +128,7 @@ function formatAjvErrors(errors: Array<AjvError>): Array<GenericError> {
 
     default:
       return errors.map(err => ({
-        message: `${errors[0].dataPath} ${errors[0].message}`,
+        message: `${message} ${errors[0].message}`,
       }));
   }
 }
