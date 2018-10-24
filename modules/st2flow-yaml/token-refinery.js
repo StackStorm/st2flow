@@ -1,10 +1,9 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
+import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken, Refinement } from './types';
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
-// import { get } from './util';
 
 const DEFAULT_INDENT = '  ';
 const STR_COLON = ':';
@@ -16,12 +15,10 @@ const STR_OPEN_SQUARE = '[';
 const STR_CLOSE_SQUARE = ']';
 const STR_FIRST_TOKEN = 'mappings.0';
 const REG_INDENT = /\n( +)\S/;
-const REG_LEADING_SPACE = /$\s+/; // TODO: Can get rid of this?
+const REG_LEADING_SPACE = /^\s*/;
 const REG_ALL_WHITESPACE = /^\s+$/;
 const REG_COMMENT = /^\s*#(?:\s*)?/;
 const REG_JSON_START = /^\s*(?:[-:] )?[{[]/;
-// const REG_CLOSE_CURLY = /\s*}/;
-// const REG_CLOSE_SQUARE = /\s*]/;
 const REG_DASH = /^\s*-\s*/;
 const REG_COMMA = /^\s*(?::\s*[{[]\s*)?[}\]]?\s*,\s*/;
 
@@ -38,6 +35,10 @@ class Refinery {
   jsonDepth: number = -1;
 
   constructor(tree: TokenMapping, oldYaml: string = '') {
+    if(tree.kind !== 2) {
+      throw new Error('Tree argument must be a mapping token');
+    }
+
     const match = oldYaml.match(REG_INDENT);
     this.indent = match ? match[1] : DEFAULT_INDENT;
     this.tree = tree;
@@ -59,7 +60,7 @@ class Refinery {
   /**
    * Given a token, refines the token
    */
-  prefixToken(startToken: AnyToken, depth: number, jpath: Array<string | number>): AnyToken {
+  prefixToken(startToken: AnyToken, depth: number, jpath: JPath): AnyToken {
     startToken.jpath = jpath;
 
     switch(startToken.kind) {
@@ -93,7 +94,7 @@ class Refinery {
   /**
    * Adds the prefix to "key" tokens in a mapping. This is mostly whitespace.
    */
-  prefixKey(token: TokenRawValue | TokenCollection, depth: number, jpath: Array<string | number>): void {
+  prefixKey(token: TokenRawValue | TokenCollection, depth: number, jpath: JPath): void {
     this.prefixToken(token, depth + 1, jpath.concat('key'));
 
     const rawToken: TokenRawValue = crawler.findFirstValueToken(token);
@@ -119,13 +120,17 @@ class Refinery {
     else {
       const isFirstKey = rawToken.jpath[rawToken.jpath.length - 2] === 0;
       const hasJsonStart = isFirstKey && prefix.some(t => REG_JSON_START.test(t.value));
-      const hasComma = prefix.some(t => REG_COMMA.test(t.value));
+      const commaIndex = prefix.findIndex(t => REG_COMMA.test(t.value));
 
-      if(!isFirstKey && !hasComma) {
+      if(commaIndex === 0) {
+        prefix[0].value = prefix[0].rawValue = prefix[0].rawValue.replace(REG_LEADING_SPACE, '');
+      }
+
+      if(!isFirstKey && commaIndex === -1) {
         prefix.push(factory.createToken(STR_COMMA));
       }
 
-      missingIndent = !hasComma && !hasJsonStart;
+      missingIndent = commaIndex === -1 && !hasJsonStart;
     }
 
     // If there is no indent prefix AND this is not the very first key/value token.
@@ -146,7 +151,7 @@ class Refinery {
    * Adds the prefix to "value" tokens in a mapping. Most of the time
    * this will include a colon and white space.
    */
-  prefixValue(token: AnyToken, depth: number, jpath: Array<string | number>): void {
+  prefixValue(token: AnyToken, depth: number, jpath: JPath): void {
     this.prefixToken(token, depth + 1, jpath.concat('value'));
 
     const rawToken: TokenRawValue = crawler.findFirstValueToken(token);
@@ -182,7 +187,7 @@ class Refinery {
   /**
    * Given a TokenMapping (kind: 2), refines each token in the mappings array.
    */
-  prefixMapping(startToken: TokenMapping, depth: number, jpath: Array<string | number>) {
+  prefixMapping(startToken: TokenMapping, depth: number, jpath: JPath) {
     let isJSON: boolean = false;
     let firstToken: TokenRawValue;
     let mapNeedsClosing: boolean = false;
@@ -233,7 +238,7 @@ class Refinery {
   /**
    * Given a TokenCollection (kind: 3), refines each token in the items array.
    */
-  prefixCollection(startToken: TokenCollection, depth: number, jpath: Array<string | number>) {
+  prefixCollection(startToken: TokenCollection, depth: number, jpath: JPath) {
     let isJSON: boolean = false;
     let firstToken: TokenRawValue;
     let itemsNeedsClosing: boolean = false;
@@ -337,7 +342,7 @@ class Refinery {
       if(!startToken.suffix) {
         startToken.suffix = [];
       }
-      console.log('CLOSING', JSON.stringify(startToken, null, '  '));
+
       startToken.suffix.unshift(factory.createToken(`\n${this.indent.repeat(depth - 1)}${STR_CLOSE_SQUARE}`));
     }
 

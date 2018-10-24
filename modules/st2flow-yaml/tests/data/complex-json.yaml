@@ -93,7 +93,7 @@
     [
       ['Nested sequence indicators',
         'can be collapsed',
-        'This is a referencable value.'
+        'This is a referencable value arr.'
       ]
     ]
   ],
@@ -132,5 +132,11 @@
     item1: null,
     item2: null,
     item3: ['item4']
-  }
+  },
+  empty_objects: {
+    foo: {},
+    bar: { baz: []}},
+  empty_arrays: [
+    [ { foo: [] } ]
+  ]
 }

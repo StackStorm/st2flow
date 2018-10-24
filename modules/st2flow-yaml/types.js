@@ -1,13 +1,15 @@
 type Kind = 0 | 1 | 2 | 3 | 4;
 
+type JPath = Array<string | number>;
+
 type BaseToken = {
 	startPosition: number,
   endPosition: number,
   kind: Kind,
-  jpath: Array<string | number>,
+  jpath: JPath,
 };
 
-export type TokenRawValue = BaseToken & {
+type TokenRawValue = BaseToken & {
 	// kind = 0
 	value: string,
   rawValue: string,
@@ -21,31 +23,31 @@ export type TokenRawValue = BaseToken & {
   isTag?: boolean,
 };
 
-export type TokenKeyValue = BaseToken & {
+type TokenKeyValue = BaseToken & {
 	// kind = 1
 	key: TokenRawValue | TokenCollection,
 	value: AnyToken,
 };
 
-export type TokenMapping = BaseToken & {
+type TokenMapping = BaseToken & {
 	// kind = 2
   mappings: Array<TokenKeyValue>,
 };
 
-export type TokenCollection = BaseToken & {
+type TokenCollection = BaseToken & {
 	// kind = 3
   items: Array,
 };
 
-export type TokenReference = BaseToken & {
+type TokenReference = BaseToken & {
 	// kind = 4
   referencesAnchor: string,
   value: BaseToken,
 };
 
-export type AnyToken = TokenRawValue | TokenKeyValue | TokenMapping | TokenCollection | TokenReference;
+type AnyToken = TokenRawValue | TokenKeyValue | TokenMapping | TokenCollection | TokenReference;
 
-export type Refinement = {
+type Refinement = {
   tree: TokenMapping,
   head: string,
   tail: string,
@@ -55,9 +57,21 @@ export type Refinement = {
  * This information is exposed during "objectification" and provides
  * metatdata about the original YAML tokens.
  */
-export type TokenMeta = {
+type TokenMeta = {
   jpath: Array<string>, // provides the jpath to the token
   comments: string, // provides any comments associated with the token
 
   keys?: Array<string>, // for mappings (objects), provides the keys in YAML source order
+};
+
+export type {
+  JPath,
+  TokenRawValue,
+  TokenKeyValue,
+  TokenMapping,
+  TokenCollection,
+  TokenReference,
+  AnyToken,
+  Refinement,
+  TokenMeta,
 };
