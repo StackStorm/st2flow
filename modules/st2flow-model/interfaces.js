@@ -68,3 +68,14 @@ export interface DeltaInterface {
     action: 'insert' | 'remove';
     lines: Array<string>;
 }
+
+export interface AjvError {
+  dataPath: string,
+  keyword: string,
+  message: string,
+  params: Object
+}
+
+export interface GenericError {
+  message: string
+}

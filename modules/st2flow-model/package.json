@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@stackstorm/st2flow-yaml": "1.0.0-pre.5",
+    "ajv": "^6.5.4",
     "deep-diff": "^1.0.2",
     "eventemitter3": "^3.1.0"
   },

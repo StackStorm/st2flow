@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import Notifications from '@stackstorm/st2flow-notifications';
 import { connect } from '@stackstorm/st2flow-model';
 
 import Task from './task';
@@ -22,6 +23,7 @@ export default class Canvas extends Component {
 
   state = {
     scale: 0,
+    errors: [],
   }
 
   componentDidMount() {
@@ -32,6 +34,9 @@ export default class Canvas extends Component {
     window.addEventListener('mouseup', this.handleMouseUp);
     el.addEventListener('dragover', this.handleDragOver);
     el.addEventListener('drop', this.handleDrop);
+
+    const { model } = this.props;
+    model.on('schema-error', this.handleModelError);
 
     this.handleUpdate();
   }
@@ -48,6 +53,9 @@ export default class Canvas extends Component {
     window.removeEventListener('mouseup', this.handleMouseUp);
     el.removeEventListener('dragover', this.handleDragOver);
     el.removeEventListener('drop', this.handleDrop);
+
+    const { model } = this.props;
+    model.removeListener('schema-error', this.handleModelError);
   }
 
   handleUpdate() {
@@ -63,7 +71,7 @@ export default class Canvas extends Component {
 
       return {
         x: Math.max(x, acc.x),
-        y: Math.max(y, acc.y), 
+        y: Math.max(y, acc.y),
       };
     }, {
       x: width / scale,
@@ -159,7 +167,7 @@ export default class Canvas extends Component {
     this.props.model.addTask({
       name: `task${this.props.model.lastTaskIndex + 1}`,
       action: action.ref,
-      coords, 
+      coords,
     });
 
     return false;
@@ -177,6 +185,28 @@ export default class Canvas extends Component {
     e.stopPropagation();
 
     this.props.onSelect();
+  }
+
+  handleModelError = (err) => {
+    // error may or may not be an array
+    this.setState({ errors: err && [].concat(err) || [] });
+  }
+
+  handleNotificationRemove = (notification) => {
+    switch(notification.type) {
+      case 'error':
+        this.setState({
+          errors: this.state.errors.filter(err => err.message !== notification.message),
+        });
+        break;
+    }
+  }
+
+  get notifications() {
+    return this.state.errors.map(err => ({
+      type: 'error',
+      message: err.message,
+    }));
   }
 
   style = style
@@ -243,6 +273,7 @@ export default class Canvas extends Component {
             </svg>
           </div>
         </div>
+        <Notifications position="top" notifications={this.notifications} onRemove={this.handleNotificationRemove} />
       </div>
     );
   }

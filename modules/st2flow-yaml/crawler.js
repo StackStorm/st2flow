@@ -383,9 +383,9 @@ const crawler = {
     if(firstToken) {
       comments = firstToken.prefix.filter(
         t => REG_COMMENT.test(t.rawValue)
-      ).reduce((str, token, i) =>
-        str + `${i === 0 ? '' : '\n'}${token.rawValue.replace(REG_COMMENT, '').trim()}`
-      , '');
+      ).reduce((str, token, i) => {
+        return str += `${i === 0 ? '' : '\n'}${token.rawValue.replace(REG_COMMENT, '').trim()}`;
+      }, '');
     }
 
     return comments;

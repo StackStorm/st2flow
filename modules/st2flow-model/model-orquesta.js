@@ -1,13 +1,14 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface, DeltaInterface } from './interfaces';
-
-import { diff } from 'deep-diff';
-import EventEmitter from 'eventemitter3';
-import { TokenSet, crawler, util } from '@stackstorm/st2flow-yaml';
+import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
 import type { TokenMeta } from '@stackstorm/st2flow-yaml';
 
-const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
+import { crawler, util } from '@stackstorm/st2flow-yaml';
+import BaseModel from './base-model';
+
+// TODO: replace with reference to generated schema in orquesta repo:
+// https://github.com/StackStorm/orquesta/blob/master/orquesta/specs/native/v1/models.py
+import schema from './schemas/orquesta.json';
 
 // The following types are specific to Orquesta
 type NextItem = {
@@ -28,67 +29,17 @@ type RawTasks = {
   [string]: RawTask,
 };
 
-class OrquestaModel implements ModelInterface {
-  tokenSet: TokenSet;
-  emitter: EventEmitter;
+const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
 
+class OrquestaModel extends BaseModel implements ModelInterface {
   constructor(yaml: ?string) {
-    this.emitter = new EventEmitter();
-
-    if (yaml) {
-      this.fromYAML(yaml);
-    }
+    super(schema, yaml);
   }
 
-  fromYAML(yaml: string): void {
-    try {
-      const oldData = this.tokenSet;
-      this.tokenSet = new TokenSet(yaml);
-      this.emitChange(oldData, this.tokenSet);
-    }
-    catch (ex) {
-      this.emitter.emit('error', ex);
-    }
-  }
-
-  toYAML(): string {
-    return this.tokenSet.toYAML();
-  }
-
-  on(event: string, callback: Function) {
-    this.emitter.on(event, callback);
-  }
-
-  removeListener(event: string, callback: Function) {
-    this.emitter.removeListener(event, callback);
-  }
-
-  emitChange(oldData: Object, newData: Object): void {
-    // TODO: add schema checks before emitting change event
-    const obj1 = oldData ? oldData : {};
-    const obj2 = newData ? newData : {};
-    const deltas = diff(obj1, obj2) || [];
-
-    if (deltas.length) {
-      this.emitter.emit('change', deltas, this.tokenSet.toYAML());
-    }
-  }
-
-  get version() {
-    return crawler.getValueByKey(this.tokenSet, 'version');
-  }
-
-  get description() {
-    return crawler.getValueByKey(this.tokenSet, 'description');
-  }
-
-  // TODO: cache the result - this property is accessed a lot
   get tasks(): Array<TaskInterface> {
     const rawTasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
     if(!rawTasks) {
-      // TODO: make part of schema validation
-      this.emitter.emit('error', new Error('No tasks found.'));
       return [];
     }
 
@@ -126,19 +77,6 @@ class OrquestaModel implements ModelInterface {
     });
   }
 
-  /*
-    [
-      {
-        type: 'fail',
-        from: { name: task1 },
-        to: { name: task2 },
-      }, {
-        type: 'success',
-        from: { name: task2 },
-        to: { name: task3 },
-      }
-    ]
-   */
   get transitions(): Array<TransitionInterface> {
     return this.tasks.reduce((arr, task) => {
       arr.push(...task.transitions);
@@ -147,17 +85,9 @@ class OrquestaModel implements ModelInterface {
   }
 
   get lastTaskIndex() {
-    return crawler.getValueByKey(this.tokenSet, 'tasks').__keys
+    return crawler.getValueByKey(this.tokenSet, 'tasks').__meta.keys
       .map(item => (item.match(/task(\d+)/) || [])[1])
       .reduce((acc, item) => Math.max(acc, item || 0), 0);
-  }
-
-  applyDelta(delta: DeltaInterface, yaml: string) {
-    // Preliminary tests show that parsing of long/complex YAML files
-    // takes less than ~20ms (almost always less than 5ms) - so doing full
-    // parsing often is very cheap. In the future we can maybe look into applying
-    // only the deltas to the AST, though this will likely not be trivial.
-    this.fromYAML(yaml);
   }
 
   addTask(task: TaskInterface) {

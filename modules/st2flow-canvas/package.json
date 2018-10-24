@@ -45,6 +45,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@stackstorm/st2flow-notifications": "^1.0.0",
     "insert-css": "2.0.0"
   },
   "devDependencies": {

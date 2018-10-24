@@ -5,10 +5,12 @@ import cx from 'classnames';
 import ace from 'brace';
 import 'brace/ext/language_tools';
 import 'brace/mode/yaml';
+import Notifications from '@stackstorm/st2flow-notifications';
 
 import style from './style.css';
 
 const editorId = 'editor_mount_point';
+const DELTA_DEBOUNCE = 300; // ms
 
 export default class Editor extends Component {
   static propTypes = {
@@ -18,14 +20,19 @@ export default class Editor extends Component {
 
   constructor(...args) {
     super(...args);
+
     this.state = {
-      error: null,
+      errors: [],
     };
   }
 
   componentDidMount() {
-    const { model } = this.props;
+    this.handleEditorChange = this.handleEditorChange.bind(this);
+    this.handleModelChange = this.handleModelChange.bind(this);
+    this.handleModelError = this.handleModelError.bind(this);
+    this.handleNotificationRemove = this.handleNotificationRemove.bind(this);
 
+    const { model } = this.props;
     ace.acequire('ace/ext/language_tools');
 
     this.editor = ace.edit(editorId);
@@ -36,35 +43,36 @@ export default class Editor extends Component {
       useSoftTabs: true,
       showPrintMargin: false,
     });
-    this.editor.setValue(model.tokenSet.yaml, -1);
+
+    this.editor.setValue(model.yaml, -1);
     this.editor.on('change', this.handleEditorChange);
 
     model.on('change', this.handleModelChange);
-    model.on('error', this.handleModelError);
+    model.on('yaml-error', this.handleModelError);
   }
 
   componentWillUnmount() {
-    const { model } = this.props;
-
     clearTimeout(this.deltaTimer);
     this.editor.removeListener('change', this.handleEditorChange);
+
+    const { model } = this.props;
     model.removeListener('change', this.handleModelChange);
-    model.removeListener('error', this.handleModelError);
+    model.removeListener('yaml-error', this.handleModelError);
   }
 
-  handleEditorChange = (delta) => {
+  handleEditorChange(delta) {
     clearTimeout(this.deltaTimer);
 
     // Only if the user is actually typing
     if(this.editor.isFocused()) {
       this.deltaTimer = setTimeout(() => {
         this.props.model.applyDelta(delta, this.editor.getValue());
-      }, 300);
+      }, DELTA_DEBOUNCE);
     }
   }
 
-  handleModelChange = (deltas, yaml) => {
-    this.setState({ error: null });
+  handleModelChange(deltas, yaml) {
+    this.setState({ errors: [] });
 
     if (yaml !== this.editor.getValue()) {
       // yaml was changed outside this editor
@@ -72,14 +80,30 @@ export default class Editor extends Component {
     }
   }
 
-  handleModelError = (err) => {
+  handleModelError(err) {
     // error may or may not be an array
-    const error = err && [].concat(err).reduce((str, e) => str += `${e.message}\n`, '');
-    this.setState({ error });
+    this.setState({ errors: err && [].concat(err) || [] });
+  }
+
+  handleNotificationRemove(notification) {
+    switch(notification.type) {
+      case 'error':
+        this.setState({
+          errors: this.state.errors.filter(err => err.message !== notification.message),
+        });
+        break;
+    }
+  }
+
+  get notifications() {
+    return this.state.errors.map(err => ({
+      type: 'error',
+      message: err.message,
+    }));
   }
 
   deltaTimer = 0; // debounce timer
-  style = style
+  style = style;
 
   render() {
     return (
@@ -88,11 +112,14 @@ export default class Editor extends Component {
           id={editorId}
           className={this.style.editor}
         />
-        {!this.state.error ?
+        {!this.notifications.length ?
           null : (
-            <div className={this.style['yaml-error']}>
-              {this.state.error}
-            </div>
+            <Notifications
+              className={style.notifications}
+              position="top"
+              notifications={this.notifications}
+              onRemove={this.handleNotificationRemove}
+            />
           )}
       </div>
     );
