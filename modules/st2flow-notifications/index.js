@@ -4,7 +4,7 @@ import cx from 'classnames';
 
 import style from './style.css';
 
-export default class Notifications extends Component {
+class Notifications extends Component {
   static propTypes = {
     className: PropTypes.string,
     onRemove: PropTypes.func,
@@ -43,3 +43,5 @@ export default class Notifications extends Component {
     );
   }
 }
+
+export default Notifications;

@@ -116,10 +116,6 @@ class TokenSet {
           throw new Error(`Unexpected node key kind: ${node.key.kind}`);
         }
 
-        if(node.key.value === 'empty_sequence') {
-          console.log(node);
-        }
-
         const token: TokenKeyValue = pick(node, 'kind', 'startPosition', 'endPosition');
         token.jpath = jpath;
         token.key = this.parseNode(node.key, jpath.concat('key'));

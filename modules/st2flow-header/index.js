@@ -20,12 +20,12 @@ export default class Header extends Component {
         <div className={this.style.logo}>Extreme</div>
         <div className={this.style.subtitle}>Workflow Designer</div>
         <div className={this.style.separator} />
-        { 
+        {
           api.token && api.server && ([
-            <div className={this.style.user} >
+            <div className={this.style.user} key="user-info" >
               { api.token.user }@{ url.parse(api.server.api).host }
             </div>,
-            <i className={cx('icon-user', this.style.icon)} />,
+            <i className={cx('icon-user', this.style.icon)}  key="user-icon" />,
           ])
         }
       </div>

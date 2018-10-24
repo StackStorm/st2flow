@@ -1,13 +1,13 @@
 // @flow
 
 import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
+import type { TokenMeta } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util } from '@stackstorm/st2flow-yaml';
-import BaseModel, { STR_ERROR_SCHEMA }  from './base-model';
+import BaseModel from './base-model';
 
-const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
-
-// TODO: replace with reference to generated schema in orquesta repo:
+// The model schema is generated in the orquesta repo. Do not update it manually!
+// https://github.com/StackStorm/orquesta/blob/master/docs/source/schemas/orquesta.json
 // https://github.com/StackStorm/orquesta/blob/master/orquesta/specs/native/v1/models.py
 import schema from './schemas/orquesta.json';
 
@@ -39,7 +39,7 @@ const REGEX_INLINE_PARAMS = new RegExp(`([\\w]+)=(${REGEX_INLINE_PARAM_VARIATION
 
 function matchAll(str, regexp, accumulator={}) {
   const match = str.match(regexp);
-  
+
   if (!match) {
     return accumulator;
   }
@@ -50,24 +50,45 @@ function matchAll(str, regexp, accumulator={}) {
   return matchAll(rest, regexp, accumulator);
 }
 
+// The following types are specific to Orquesta
+type NextItem = {
+  do: string | Array<string>,
+  when?: string,
+};
+
+type RawTask = {
+  __meta: TokenMeta,
+  action: string,
+  input?: Object,
+  next?: Array<NextItem>,
+  coords?: Object,
+};
+
+type RawTasks = {
+  __meta: TokenMeta,
+  [string]: RawTask,
+};
+
+const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
+
 class OrquestaModel extends BaseModel implements ModelInterface {
   constructor(yaml: ?string) {
     super(schema, yaml);
   }
 
   get tasks(): Array<TaskInterface> {
-    const tasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const tasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
     if(!tasks) {
-      // TODO: make part of schema validation
-      this.emitter.emit(STR_ERROR_SCHEMA, new Error('No tasks found.'));
       return [];
     }
 
     return tasks.__meta.keys.map(name => {
+      const task = tasks[name];
+
       let coords;
-      if(tasks[name].__meta && REG_COORDS.test(tasks[name].__meta.comments)) {
-        const match = tasks[name].__meta.comments.match(REG_COORDS);
+      if(task.__meta && REG_COORDS.test(task.__meta.comments)) {
+        const match = task.__meta.comments.match(REG_COORDS);
         if (match) {
           const [ , x, y ] = match;
           coords = {
@@ -77,21 +98,21 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action='', input, 'with':_with } = tasks[name];
+      const { action = '', input, 'with': _with } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       if (inputPartials.length) {
-        tasks[name].__meta.inlineInput = true;
+        task.__meta.inlineInput = true;
       }
 
       if (typeof _with === 'string') {
-        tasks[name].__meta.withString = true;
+        task.__meta.withString = true;
       }
 
-      return Object.assign({}, {
+      return Object.assign({
         name,
         size: { x: 120, y: 48 },
-      }, tasks[name], {
+      }, task, {
         action: actionRef,
         input: {
           ...input,
@@ -104,40 +125,22 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   }
 
   get transitions(): Array<TransitionInterface> {
-    return this.tasks.reduce((arr, task) => {
-      if(task.hasOwnProperty('next')) {
-        task.next.forEach((nxt, i) => {
-          let to;
+    const tasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
-          // nxt.do can be a string, comma delimited string, or array
-          if(typeof nxt.do === 'string') {
-            to = nxt.do.split(',').map(name => name.trim());
-          }
-          else if(Array.isArray(nxt.do)) {
-            to = nxt.do;
-          }
-          else {
-            to = [];
-            this.emitter.emit(STR_ERROR_SCHEMA, new Error(`Task "${task.name}" transition #${i + 1} must define the "do" property.`));
-          }
+    if(!tasks) {
+      return [];
+    }
 
-          to.forEach(name => {
-            const transition: TransitionInterface = {
-              from: { name: task.name },
-              to: { name },
-            };
+    return Object.keys(tasks).reduce((arr, name) => {
+      const task: RawTask = tasks[name];
+      const transitions: Array<TransitionInterface> = (task.next || [])
+        .reduce(reduceTransitions, [])
+        // remove transitions to tasks which don't exist
+        .filter(t => tasks.hasOwnProperty(t.to.name))
+        // add the common "from" to all transitions
+        .map(t => Object.assign(t, { from: { name } }));
 
-            if(nxt.when) {
-              transition.condition = nxt.when;
-            }
-
-            // TODO: figure out how to compute transition.type?
-            arr.push(transition);
-          });
-        });
-      }
-
-      return arr;
+      return arr.concat(transitions);
     }, []);
   }
 
@@ -231,7 +234,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     const { from, to } = transition;
     const oldData = this.tokenSet.toObject();
     const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
-    const task: TaskInterface = rawTasks[from.name];
+    const task: RawTask = rawTasks[from.name];
 
     if(!task) {
       throw new Error(`No task found with name "${from.name}"`);
@@ -240,7 +243,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     const hasNext = task.hasOwnProperty('next');
     const next = hasNext && task.next || [];
 
-    const nextItem = {
+    const nextItem: NextItem = {
       do: to.name,
     };
 
@@ -264,6 +267,36 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   deleteTransition(ref: TransitionRefInterface) {
     throw new Error('Not yet implemented');
   }
+}
+
+function reduceTransitions(arr, nxt, i): Array<TransitionInterface> {
+  let to: Array<string>;
+
+  // nxt.do can be a string, comma delimited string, or array
+  if(typeof nxt.do === 'string') {
+    to = nxt.do.split(',').map(name => name.trim());
+  }
+  else if(Array.isArray(nxt.do)) {
+    to = nxt.do;
+  }
+  else {
+    return arr;
+  }
+
+  const base: Object = {};
+  if(nxt.when) {
+    base.condition = nxt.when;
+  }
+
+  to.forEach(name =>
+    arr.push(Object.assign({
+      // TODO: figure out "type" property
+      // type: 'success|error|complete',
+      to: { name },
+    }, base))
+  );
+
+  return arr;
 }
 
 export default OrquestaModel;
