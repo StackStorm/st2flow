@@ -67,7 +67,14 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     return tasks.__meta.keys.map(name => {
       let coords;
       if(tasks[name].__meta && REG_COORDS.test(tasks[name].__meta.comments)) {
-        coords = JSON.parse(tasks[name].__meta.comments.replace(REG_COORDS, '{ "x": $1, "y": $2 }'));
+        const match = tasks[name].__meta.comments.match(REG_COORDS);
+        if (match) {
+          const [ , x, y ] = match;
+          coords = {
+            x: +x,
+            y: +y,
+          };
+        }
       }
 
       const { action='', input, 'with':_with } = tasks[name];
@@ -145,6 +152,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     const { name, coords, ...data } = task;
 
     if(coords) {
+
       util.defineExpando(data, '__meta', {
         comments: `[${coords.x}, ${coords.y}]`,
       });
@@ -166,10 +174,8 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }
 
     if (coords) {
-      util.defineExpando(taskValue, '__meta', {
-        comments: `[${coords.x}, ${coords.y}]`,
-      });
-      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref ], taskValue);
+      const comments = crawler.getCommentsForKey(this.tokenSet, [ 'tasks', ref ]);
+      crawler.setCommentForKey(this.tokenSet, [ 'tasks', ref ], comments.replace(REG_COORDS, `[${coords.x}, ${coords.y}]`));
     }
 
     if (action) {
