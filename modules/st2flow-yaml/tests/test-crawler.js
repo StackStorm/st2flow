@@ -331,4 +331,47 @@ describe('Token Set Crawler', () => {
     });
   });
 
+  describe('getCommentsForKey', () => {
+    it('gets comments for a given mapping key', () => {
+      const comments = crawler.getCommentsForKey(set, 'comments.allowed');
+      expect(comments).to.equal('deep comment');
+    });
+
+    it('gets comments for a given collection index', () => {
+      const comments = crawler.getCommentsForKey(set, 'comments.allowed.even.0');
+      expect(comments).to.equal('deep deep deep comment');
+    });
+
+    it('gets comments for a given scalar key', () => {
+      const comments = crawler.getCommentsForKey(set, 'comments.allowed.at');
+      expect(comments).to.equal('deep deep comment\nacross multiple lines');
+    });
+  });
+
+  describe('setCommentForKey', () => {
+    it('replaces comments for a given mapping key', () => {
+      const newComment = 'This is a new comment';
+      crawler.setCommentForKey(set, 'comments.allowed', newComment);
+
+      const comments = crawler.getCommentsForKey(set, 'comments.allowed');
+      expect(comments).to.equal(newComment);
+    });
+
+    it('replaces comments for a given collection index', () => {
+      const newComment = 'This is a new comment';
+      crawler.setCommentForKey(set, 'comments.allowed.even.0', newComment);
+
+      const comments = crawler.getCommentsForKey(set, 'comments.allowed.even.0');
+      expect(comments).to.equal(newComment);
+    });
+
+    it('can set root level comments', () => {
+      const newComment = 'This is a new comment';
+      crawler.setCommentForKey(set, 'comments', newComment);
+
+      const comments = crawler.getCommentsForKey(set, 'comments');
+      expect(comments).to.equal(newComment);
+    });
+  });
+
 });

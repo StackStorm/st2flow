@@ -25,6 +25,18 @@ this_example:
       - some_array:
           value: awesome
 
+# comment
+comments:
+  # deep comment
+  allowed:
+    # deep deep comment
+
+    # across multiple lines
+    at: any level
+    even:
+      # deep deep deep comment
+      - on array items
+
 nulls:
 - ~
 - null
