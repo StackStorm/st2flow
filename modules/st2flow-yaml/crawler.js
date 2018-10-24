@@ -6,6 +6,10 @@ import factory from './token-factory';
 import TokenSet from './token-set';
 import { get, splitKey } from './util';
 
+type JpathKey = string | Array<string | number>;
+
+const REG_COMMENT = /^\s*#/;
+
 /**
  * TokenSet consumers will often work with the "objectified" version
  * of the YAML file, which looks something like this:
@@ -23,7 +27,7 @@ import { get, splitKey } from './util';
  * "task1" token within the given branch. This method is recursive, and generally
  * the starting branch should always be the root node: tokenSet.tree.
  */
-function getTokenByKey(branch: AnyToken, key: string | Array<string | number>): AnyToken {
+function getTokenByKey(branch: AnyToken, key: JpathKey): AnyToken {
   if (!branch) {
     return undefined;
   }
@@ -37,6 +41,7 @@ function getTokenByKey(branch: AnyToken, key: string | Array<string | number>): 
   if(branch.kind === 0) {
     // The following mimicks the behavior of reading normal JS objects
     if(keyArr.length === 1) {
+      // Trying to read a property on a scalar value - not possible.
       return undefined;
     }
 
@@ -70,7 +75,7 @@ function getTokenByKey(branch: AnyToken, key: string | Array<string | number>): 
  * Given a key such as "tasks.foo", returns the value as a token and
  * verifies it's the expected kind.
  */
-function getTokenValueByKey(tokenSet: TokenSet, key: string | Array<string | number>, kind?: number): AnyToken {
+function getTokenValueByKey(tokenSet: TokenSet, key: JpathKey, kind?: number): AnyToken {
   const token = getTokenByKey(tokenSet.tree, key);
 
   if (!token) {
@@ -100,8 +105,21 @@ function getTokenParent(tokenSet: TokenSet, token): AnyToken {
   return result;
 }
 
+function updateTokenValue(token: TokenRawValue, value: string) {
+  let rawValue = value;
+
+  if(token.singleQuoted) {
+    rawValue = `'${rawValue}'`;
+  }
+  else if(token.doubleQuoted) {
+    rawValue = `"${rawValue}"`;
+  }
+
+  Object.assign(token, { value, rawValue });
+}
+
 const crawler = {
-  getValueByKey(tokenSet: TokenSet, key: string | Array<string | number>): any {
+  getValueByKey(tokenSet: TokenSet, key: JpathKey): any {
     if(tokenSet) {
       return get(tokenSet.toObject(), key);
     }
@@ -132,7 +150,7 @@ const crawler = {
    *   }
    * }
    */
-  replaceTokenValue(tokenSet: TokenSet, key: string | Array<string | number>, value: any) {
+  replaceTokenValue(tokenSet: TokenSet, key: JpathKey, value: any) {
     const valueToken: AnyToken = getTokenValueByKey(tokenSet, key);
     const parentToken: TokenKeyValue | TokenCollection = getTokenParent(tokenSet, valueToken);
 
@@ -184,7 +202,7 @@ const crawler = {
    *   }
    * }
    */
-  assignMappingItem(tokenSet: TokenSet, targetKey: string | Array<string | number>, val: any) {
+  assignMappingItem(tokenSet: TokenSet, targetKey: JpathKey, val: any) {
     const targKey: Array<string | number> = splitKey(targetKey);
 
     if(!targKey.length) {
@@ -211,6 +229,41 @@ const crawler = {
   },
 
   /**
+   * Renames the `targetKey` to the specified `val`
+   *
+   * {
+   *   tasks: {
+   *     task1: { ... }
+   *   }
+   * }
+   *
+   * crawler.renameMappingKey(tokenSet, 'tasks.task1', 'task2');
+   *
+   * {
+   *   tasks: {
+   *     task2: { ... }
+   *   }
+   * }
+   *
+   */
+  renameMappingKey(tokenSet: TokenSet, targetKey: JpathKey, val: string) {
+    const targKey: Array<string | number> = splitKey(targetKey);
+
+    if(!targKey.length) {
+      throw new Error(`Cannot rename a key on a blank target: ${targetKey.toString()}`);
+    }
+
+    const token: TokenRawValue = getTokenByKey(tokenSet.tree, targKey);
+
+    if(!token) {
+      throw new Error(`Could not find token: ${targetKey.toString()}`);
+    }
+
+    updateTokenValue(token, val);
+    tokenSet.refineTree();
+  },
+
+  /**
    * Deletes the given key (and its value) from a mapping.
    *
    * {
@@ -225,7 +278,7 @@ const crawler = {
    * crawler.deleteMappingItem(tokenSet, 'version');
    * crawler.deleteMappingItem(tokenSet, 'tasks.task1');
    */
-  deleteMappingItem(tokenSet: TokenSet, key: string | Array<string | number>) {
+  deleteMappingItem(tokenSet: TokenSet, key: JpathKey) {
     const token: TokenRawValue = getTokenByKey(tokenSet.tree, key);
 
     if (!token) {
@@ -265,11 +318,34 @@ const crawler = {
    *   - item 3
    * }
    */
-  spliceCollection(tokenSet: TokenSet, targetKey: string | Array<string | number>, start: string, deleteCount: number, ...items: Array<AnyToken>) {
+  spliceCollection(tokenSet: TokenSet, targetKey: JpathKey, start: string, deleteCount: number, ...items: Array<AnyToken>) {
     const token: TokenCollection = getTokenValueByKey(tokenSet, targetKey, 3);
     const tokens = items.map(item => factory.createToken(item));
 
     token.items.splice(start, deleteCount, ...tokens);
+    tokenSet.refineTree();
+  },
+
+  getCommentsForKey(tokenSet: TokenSet, key: JpathKey): string {
+    const token: TokenRawValue = getTokenByKey(tokenSet.tree, key);
+
+    if(!token) {
+      throw new Error(`Could not find token for path: ${key.toString()}`);
+    }
+
+    return this.getTokenComments(token);
+  },
+
+  setCommentForKey(tokenSet: TokenSet, key: JpathKey, comments: string) {
+    const token: TokenRawValue = getTokenByKey(tokenSet.tree, key);
+
+    if(!token) {
+      throw new Error(`Could not find token for path: ${key.toString()}`);
+    }
+
+    const tokens = comments.split(/\n/).map(comment => factory.createToken(`# ${comment}`));
+
+    token.prefix = token.prefix.filter(t => !REG_COMMENT.test(t.rawValue)).concat(tokens);
     tokenSet.refineTree();
   },
 
@@ -298,6 +374,21 @@ const crawler = {
       default:
         throw new Error(`Unrecognized token kind: ${token.kind}`);
     }
+  },
+
+  getTokenComments(token: AnyToken): string {
+    let comments = '';
+    const firstToken: TokenRawValue = this.findFirstValueToken(token);
+
+    if(firstToken) {
+      comments = firstToken.prefix.filter(
+        t => REG_COMMENT.test(t.rawValue)
+      ).reduce((str, token, i) =>
+        str + `${i === 0 ? '' : '\n'}${token.rawValue.replace(REG_COMMENT, '').trim()}`
+      , '');
+    }
+
+    return comments;
   },
 };
 

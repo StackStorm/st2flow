@@ -33,10 +33,20 @@ function splitKey(key: string | Array<string | number>): Array<any> {
   return arr.length === 1 && arr[0] === '' ? [] : arr;
 }
 
+function defineExpando(obj: Object, key: string, value: any): void {
+  Object.defineProperty(obj, key, {
+    value,
+    writable: false,
+    configurable: false,
+    enumerable: false,
+  });
+}
+
 export {
   isPlainObject,
   pick,
   omit,
   get,
   splitKey,
+  defineExpando,
 };

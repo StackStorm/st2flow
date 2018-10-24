@@ -4,7 +4,7 @@ import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterfa
 
 import { diff } from 'deep-diff';
 import EventEmitter from 'eventemitter3';
-import { TokenSet, crawler } from '@stackstorm/st2flow-yaml';
+import { TokenSet, crawler, util } from '@stackstorm/st2flow-yaml';
 import type { TokenMeta } from '@stackstorm/st2flow-yaml';
 
 const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
@@ -94,6 +94,7 @@ class OrquestaModel implements ModelInterface {
 
     // Normalize task data.
     //  - ensure all tasks have a normalized transitions collection
+    //  - parse comments for coords
     return rawTasks.__meta.keys.map(taskName => {
       const rawTask: RawTask = rawTasks[taskName];
 
@@ -101,37 +102,12 @@ class OrquestaModel implements ModelInterface {
         rawTask.next = [];
       }
 
-      const transitions: Array<TransitionInterface> = rawTask.next.reduce((arr, nxt, i) => {
-        let to: Array<string>;
-
-        // nxt.do can be a string, comma delimited string, or array
-        if(typeof nxt.do === 'string') {
-          to = nxt.do.split(',').map(name => name.trim());
-        }
-        else if(Array.isArray(nxt.do)) {
-          to = nxt.do;
-        }
-        else {
-          to = [];
-          this.emitter.emit('error', new Error(`Task "${taskName}" transition #${i + 1} must define the "do" property.`));
-        }
-
-        const base: Object = {};
-        if(nxt.when) {
-          base.condition = nxt.when;
-        }
-
-        // TODO: figure out "type" property
-        const transitions = to.map(name =>
-          Object.assign({
-            // type: 'success|error|complete',
-            from: { name: taskName },
-            to: { name },
-          }, base)
-        );
-
-        return arr.concat(transitions);
-      }, []);
+      const transitions: Array<TransitionInterface> = rawTask.next
+        .reduce(reduceTransitions, [])
+        // remove transitions to tasks which don't exist
+        .filter(t => rawTasks.hasOwnProperty(t.to.name))
+        // add the common "from" to all transitions
+        .map(t => Object.assign(t, { from: { name: taskName } }));
 
       let coords;
       if(REG_COORDS.test(rawTask.__meta.comments)) {
@@ -186,22 +162,34 @@ class OrquestaModel implements ModelInterface {
 
   addTask(task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { name, ...data } = task;
-    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
+    const { name, coords, ...data } = task;
 
-    const newData = this.tokenSet.toObject();
-    this.emitChange(oldData, newData);
+    if(coords) {
+      util.defineExpando(data, '__meta', {
+        comments: `[${coords.x}, ${coords.y}]`,
+      });
+    }
+
+    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
+    this.emitChange(oldData, this.tokenSet.toObject());
   }
 
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { coords } = task;
-    if (coords) {
-      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'coords' ], coords);
+    const { name, coords, ...data } = task;
+
+    if(coords) {
+      util.defineExpando(data, '__meta', {
+        comments: `[${coords.x}, ${coords.y}]`,
+      });
     }
 
-    const newData = this.tokenSet.toObject();
-    this.emitChange(oldData, newData);
+    if(ref.name !== name) {
+      crawler.renameMappingKey(this.tokenSet, [ 'tasks', ref.name ], name);
+    }
+
+    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+    this.emitChange(oldData, this.tokenSet.toObject());
   }
 
   deleteTask(ref: TaskRefInterface) {
@@ -250,6 +238,36 @@ class OrquestaModel implements ModelInterface {
   deleteTransition(ref: TransitionRefInterface) {
     throw new Error('Not yet implemented');
   }
+}
+
+function reduceTransitions(arr, nxt, i): Array<TransitionInterface> {
+  let to: Array<string>;
+
+  // nxt.do can be a string, comma delimited string, or array
+  if(typeof nxt.do === 'string') {
+    to = nxt.do.split(',').map(name => name.trim());
+  }
+  else if(Array.isArray(nxt.do)) {
+    to = nxt.do;
+  }
+  else {
+    return arr;
+  }
+
+  const base: Object = {};
+  if(nxt.when) {
+    base.condition = nxt.when;
+  }
+
+  to.forEach(name =>
+    arr.push(Object.assign({
+      // TODO: figure out "type" property
+      // type: 'success|error|complete',
+      to: { name },
+    }, base))
+  );
+
+  return arr;
 }
 
 export default OrquestaModel;

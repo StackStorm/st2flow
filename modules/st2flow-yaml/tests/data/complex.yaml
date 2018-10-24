@@ -25,6 +25,18 @@ this_example:
       - some_array:
           value: awesome
 
+# comment
+comments:
+  # deep comment
+  allowed:
+    # deep deep comment
+
+    # across multiple lines
+    at: any level
+    even:
+      # deep deep deep comment
+      - on array items
+
 nulls:
 - ~
 - null
@@ -83,7 +95,7 @@ specialKeys:
   no: false
   off: false
 
-# Tests expect this object to contain these values
+# Tests expect this object to contain these EXACT values (inlcuding whitespace)
 data:
   foo: 'barbar'
   bing: 222
@@ -91,7 +103,7 @@ data:
   nothing:
   scalar: firstline
     secondline
-  # foleded multiline strings
+  # folded multiline strings
   angle_clip: >
     line 1
     line 2
@@ -124,7 +136,12 @@ data:
 
 ? - Manchester United
   - Real Madrid
-: [ 2001-01-01, 2002-02-02 ]
+: - foo # comment with [ { json-y } ] stuff
+  - bar
+  # comment
+  - [ # another comment
+  2001-01-01,
+2002-02-02 ]
 
 anchored_content: &anchor_name This is a referencable value.
 other_anchor: *anchor_name
@@ -172,4 +189,4 @@ set:
   ? item1
   ? item2
   ? item3
-or: {item1, item2, item3}
+or: {item2-1, item2-2, "item2-3": [ "item2-4" ]}
