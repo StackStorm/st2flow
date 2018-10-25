@@ -100,7 +100,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       });
     }
 
-    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
+    crawler.set(this.tokenSet, [ 'tasks', name ], data);
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
@@ -118,7 +118,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       crawler.renameMappingKey(this.tokenSet, [ 'tasks', ref.name ], name);
     }
 
-    crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ], data);
+    crawler.set(this.tokenSet, [ 'tasks', name ], data);
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
@@ -141,8 +141,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       throw new Error(`No task found with name "${from.name}"`);
     }
 
-    const hasNext = task.hasOwnProperty('next');
-    const next = hasNext && task.next || [];
+    const next = task.hasOwnProperty('next') && task.next || [];
 
     const nextItem: NextItem = {
       do: to.name,
@@ -155,7 +154,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     next.push(nextItem);
 
     // TODO: this can be replaced by a more generic "set" method
-    crawler[hasNext ? 'replaceTokenValue' : 'assignMappingItem'](this.tokenSet, [ 'tasks', from.name, 'next' ], next);
+    crawler.set(this.tokenSet, [ 'tasks', from.name, 'next' ], next);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
