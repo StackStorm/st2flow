@@ -202,6 +202,14 @@ export default class Canvas extends Component {
     }
   }
 
+  handleTaskEdit = (task) => {
+    this.props.onSelect(task.name);
+  }
+
+  handleTaskDelete = (task) => {
+    this.props.model.deleteTask(task.name);
+  }
+
   get notifications() {
     return this.state.errors.map(err => ({
       type: 'error',
@@ -245,6 +253,8 @@ export default class Canvas extends Component {
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}
+                    onEdit={() => this.handleTaskEdit(task)}
+                    onDelete={() => this.handleTaskDelete(task)}
                   />
                 );
               })

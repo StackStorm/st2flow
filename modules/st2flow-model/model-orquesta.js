@@ -165,11 +165,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
-  updateTask(ref: TaskRefInterface, task: TaskInterface) {
+  updateTask(ref: string, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, coords, action, input } = task;
 
-    if (ref.name !== name) {
+    if (name && ref !== name) {
       crawler.renameMappingKey(this.tokenSet, [ 'tasks', ref ], name);
       ref = name;
     }
@@ -204,10 +204,9 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
-  deleteTask(ref: TaskRefInterface) {
+  deleteTask(ref: string) {
     const oldData = this.tokenSet.toObject();
-    const { name } = ref;
-    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', name ]);
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', ref ]);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);
