@@ -49,8 +49,8 @@ export interface ModelInterface {
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;
-    updateTask(ref: TaskRefInterface, opts: TaskInterface): void;
-    deleteTask(ref: TaskRefInterface): void;
+    updateTask(ref: string, opts: TaskInterface): void;
+    deleteTask(ref: string): void;
 
     addTransition(opts: TransitionInterface): void;
     updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;

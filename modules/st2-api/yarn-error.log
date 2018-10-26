@@ -1,0 +1,72 @@
+Arguments: 
+  /usr/local/bin/node /usr/local/bin/yarn publish --tag latest --new-version 2.0.0-pre.5
+
+PATH: 
+  /Volumes/StackStorm/st2web/modules/st2-api/node_modules/.bin:/Volumes/StackStorm/st2web/modules/node_modules/.bin:/Volumes/StackStorm/st2web/node_modules/.bin:/Volumes/StackStorm/node_modules/.bin:/Volumes/node_modules/.bin:/node_modules/.bin:/usr/local/bin:/Users/kizotov/.rvm/gems/ruby-2.3.3/bin:/Users/kizotov/.rvm/gems/ruby-2.3.3@global/bin:/Users/kizotov/.rvm/rubies/ruby-2.3.3/bin:/usr/local/opt/python/libexec/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/kizotov/.rvm/bin
+
+Yarn version: 
+  0.27.5
+
+Node version: 
+  10.2.1
+
+Platform: 
+  darwin x64
+
+npm manifest: 
+  {
+    "name": "@stackstorm/module-api",
+    "version": "2.0.0-pre.5",
+    "description": "",
+    "main": "api.js",
+    "directories": {
+      "test": "tests"
+    },
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/stackstorm/st2web.git"
+    },
+    "license": "Apache-2.0",
+    "bugs": {
+      "url": "https://github.com/stackstorm/st2web/issues"
+    },
+    "homepage": "https://github.com/stackstorm/st2web#readme",
+    "browserify": {
+      "transform": [
+        "babelify"
+      ]
+    },
+    "publishConfig": {
+      "access": "public"
+    },
+    "dependencies": {
+      "axios": "0.18.0"
+    },
+    "devDependencies": {
+      "@stackstorm/browserify-postcss": "0.3.4-patch.5",
+      "babelify": "^8.0.0",
+      "moxios": "^0.4.0"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
+
+Trace: 
+  Error: https://registry.npmjs.org/@stackstorm%2fmodule-api: You cannot publish over the previously published versions: 2.0.0-pre.5.
+      at Request.params.callback [as _callback] (/usr/local/lib/node_modules/yarn/lib/util/request-manager.js:326:18)
+      at Request.self.callback (/usr/local/lib/node_modules/yarn/node_modules/request/request.js:188:22)
+      at Request.emit (events.js:182:13)
+      at Request.<anonymous> (/usr/local/lib/node_modules/yarn/node_modules/request/request.js:1171:10)
+      at Request.emit (events.js:182:13)
+      at Gunzip.<anonymous> (/usr/local/lib/node_modules/yarn/node_modules/request/request.js:1091:12)
+      at Object.onceWrapper (events.js:273:13)
+      at Gunzip.emit (events.js:187:15)
+      at endReadableNT (_stream_readable.js:1090:12)
+      at process._tickCallback (internal/process/next_tick.js:63:19)

@@ -11,6 +11,8 @@ export default class Task extends Component {
     selected: PropTypes.bool,
     onMove: PropTypes.func,
     onClick: PropTypes.func,
+    onEdit: PropTypes.func,
+    onDelete: PropTypes.func,
   }
 
   state = {
@@ -167,7 +169,7 @@ export default class Task extends Component {
   handleRef = React.createRef();
 
   render() {
-    const { task, selected } = this.props;
+    const { task, selected, onEdit, onDelete } = this.props;
     const { delta } = this.state;
 
     const scale = Math.E ** this.props.scale;
@@ -191,8 +193,8 @@ export default class Task extends Component {
           <div className={cx(this.style.taskName)}>{task.name}</div>
           <div className={cx(this.style.taskAction)}>{task.action}</div>
         </div>
-        <div className={cx(this.style.taskButton, this.style.edit, 'icon-edit')} />
-        <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} />
+        <div className={cx(this.style.taskButton, this.style.edit, 'icon-edit')} onClick={() => onEdit()} />
+        <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} onClick={() => onDelete()} />
         <div className={this.style.taskHandle} style={{ top: '50%', left: 0 }} draggable ref={this.handleRef} />
         <div className={this.style.taskHandle} style={{ top: 0, left: '50%' }}  draggable ref={this.handleRef} />
         <div className={this.style.taskHandle} style={{ top: '50%', left: '100%' }}  draggable ref={this.handleRef} />

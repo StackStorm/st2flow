@@ -3,7 +3,7 @@
   box-sizing: border-box;
 
   display: flex;
-  align-items: baseline;
+  align-items: center;
 
   background: linear-gradient(3deg, #400099 0%, #bd5030 100%);
   color: white;
@@ -11,10 +11,26 @@
 
 .logo {
   font-size: 24px;
+  line-height: 28px;
 
   padding: 3px;
 }
 
 .subtitle {
   font-size: 12px;
+  padding-top: 6px;
+}
+
+.separator {
+  flex: 1;
+}
+
+.user {
+
+}
+
+.icon {
+  display: block;
+  font-size: 19px;
+  padding-left: 5px;
 }

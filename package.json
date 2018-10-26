@@ -47,6 +47,7 @@
     ]
   },
   "dependencies": {
+    "@stackstorm/module-api": "2.0.0",
     "@stackstorm/st2-style": "2.0.0",
     "@stackstorm/st2flow-canvas": "1.0.0",
     "@stackstorm/st2flow-details": "1.0.0",

@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
-import ParameterEditor from './parameter-editor';
-
 import style from './style.css';
 
 export const specialProperties = [{

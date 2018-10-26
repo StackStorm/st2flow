@@ -6,18 +6,11 @@ import { connect } from '@stackstorm/st2flow-model';
 
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
-import { Toggle } from '@stackstorm/module-forms/button.component';
+import Button, { Toggle } from '@stackstorm/module-forms/button.component';
 import { Panel, Toolbar, ToolbarButton } from './layout';
 import Property from './property';
 
-import ArrayField from '@stackstorm/module-auto-form/fields/array';
-import NumberField from '@stackstorm/module-auto-form/fields/number';
-import IntegerField from '@stackstorm/module-auto-form/fields/integer';
-import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
-import ObjectField from '@stackstorm/module-auto-form/fields/object';
-import PasswordField from '@stackstorm/module-auto-form/fields/password';
-import EnumField from '@stackstorm/module-auto-form/fields/enum';
 
 import Meta from './meta-panel';
 
@@ -99,8 +92,40 @@ class TaskDetails extends Component {
     onBack: PropTypes.func.isRequired,
   }
 
-  state = {
-    section: undefined,
+  constructor(props) {
+    super(props);
+    this.state = {
+      section: undefined,
+      name: props.selected,
+    };
+  }
+
+  handleNameChange(name) {
+    this.setState({ name });
+  }
+
+  handleTaskRename(ref, name) {
+    const { model, selected, onBack } = this.props;
+    model.updateTask(ref, { name });
+    if (selected === ref) {
+      onBack();
+    }
+  }
+
+  handleFieldChange(field, value) {
+    const { model, selected } = this.props;
+    model.updateTask(selected, { [field]: value });
+  }
+
+  handleProperty(name, value) {
+    const { model, selected } = this.props;
+
+    if (value) {
+      model.setTaskProperty(selected, name, value);
+    }
+    else {
+      model.deleteTaskProperty(selected, name);
+    }
   }
 
   handleSectionSwitch(section) {
@@ -108,16 +133,16 @@ class TaskDetails extends Component {
   }
 
   style = style
+  joinFieldRef = React.createRef();
 
   render() {
     const { model, selected, onBack, actions } = this.props;
-    const { section = 'task' } = this.state;
+    const { section = 'task', name } = this.state;
 
     const task = selected && model.tasks.find(task => task.name === selected);
     const transitions = selected && model.transitions.filter(transition => transition.from.name === task.name);
 
-    const [ actionRef ] = task.action.split(' ');
-    const action = actions.find(({ref}) => ref === actionRef);
+    const action = actions.find(({ref}) => ref === task.action);
 
     return ([
       <Toolbar key="toolbar" secondary={true} >
@@ -135,8 +160,19 @@ class TaskDetails extends Component {
       </Toolbar>,
       section === 'task' && (
         <Panel key="task">
-          <StringField name="name" value={task.name} onChange={name => model.updateTask(task.name, { name })} />
-          <StringField name="action" value={task.action} onChange={a => console.log(a)} />
+          <div className={this.style.combination}>
+            <div className={this.style.combinationField} >
+              <StringField name="name" value={name} onChange={name => this.handleNameChange(name)} />
+            </div>
+            {
+              task.name !== name && (
+                <div className={this.style.combinationButton} >
+                  <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename task" />
+                </div>
+              )
+            }
+          </div>
+          <StringField name="action" value={task.action} onChange={value => this.handleFieldChange('action', value)} />
         </Panel>
       ),
       section === 'input' && (
@@ -144,17 +180,39 @@ class TaskDetails extends Component {
           <AutoForm
             spec={{
               type: 'object',
-              properties: action.parameters,
+              properties: action && action.parameters || {},
             }}
-            data={this.state.runValue}
-            onChange={(runValue) => this.setState({ runValue })}
+            data={task.input}
+            onChange={(runValue) => this.handleFieldChange('input', { ...task.input, ...runValue })}
           />
         </Panel>
       ),
       section === 'properties' && (
         <Panel key="properties">
-          <Property name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data." onChange={a => console.log(a)} />
-          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={true} onChange={a => console.log(a)} />
+          <Property name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data."  value={!!task.join} onChange={value => this.handleProperty('join', value ? 'all' : false)}>
+            {
+              task.join && (
+                <div className={cx(this.style.propertyChild, this.style.radioGroup)}>
+                  <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleProperty('join', 'all')}>
+                    Join all tasks
+                  </div>
+                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleProperty('join', this.joinFieldRef.current.value)} >
+                    Join <input type="text" id="joinField" ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleProperty('join', e.target.value)} /> tasks
+                  </label>
+                </div>
+              )
+            }
+          </Property>
+          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleProperty('with', value ? { items: 'x in [1, 2, 3]' } : false)}>
+            {
+              task.with && (
+                <div className={this.style.propertyChild}>
+                  <StringField name="items" value={task.with.items} onChange={value => this.handleProperty([ 'with', 'items' ], value)} />
+                  <StringField name="concurrency" value={task.with.concurrency} onChange={value => this.handleProperty([ 'with', 'concurrency' ], value)} />
+                </div>
+              )
+            }
+          </Property>
         </Panel>
       ),
       section === 'transitions' && (

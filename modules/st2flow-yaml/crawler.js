@@ -286,9 +286,13 @@ const crawler = {
       throw new Error(`Could not find token for path: ${key.toString()}`);
     }
 
-    const tokens = comments.split(/\n/).map(comment => factory.createToken(`# ${comment}`));
+    const example = token.prefix.find(t => REG_COMMENT.test(t.rawValue));
+    const indent = example.rawValue.split('#')[0];
+    const tokens = comments.split(/\n/).map(comment => factory.createToken(`${indent}# ${comment}`));
 
-    token.prefix = token.prefix.filter(t => !REG_COMMENT.test(t.rawValue)).concat(tokens);
+    const lastToken = token.prefix.pop();
+
+    token.prefix = token.prefix.filter(t => !REG_COMMENT.test(t.rawValue)).concat(tokens).concat(lastToken);
     tokenSet.refineTree();
   },
 

@@ -18,7 +18,7 @@ input:
 
 tasks:
   # [100, 200]
-  t1:asdf
+  t1:
     action: core.local
     input:
       cmd: printf <% $.which %>
