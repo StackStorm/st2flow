@@ -161,15 +161,13 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       });
     }
 
-    crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ], data);
+    crawler.set(this.tokenSet, [ 'tasks', name ], data);
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
   updateTask(ref: TaskRefInterface, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
     const { name, coords, action, input } = task;
-
-    const taskValue = crawler.getValueByKey(this.tokenSet, [ 'tasks', ref ]);
 
     if (ref.name !== name) {
       crawler.renameMappingKey(this.tokenSet, [ 'tasks', ref ], name);
@@ -182,21 +180,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }
 
     if (action) {
-      try {
-        crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'action' ], action);
-      }
-      catch (e) {
-        crawler.assignMappingItem(this.tokenSet, [ 'tasks', ref, 'action' ], action);
-      }
+      crawler.set(this.tokenSet, [ 'tasks', ref, 'action' ], action);
     }
 
     if (input) {
-      try {
-        crawler.replaceTokenValue(this.tokenSet, [ 'tasks', ref, 'input' ], input);
-      }
-      catch (e) {
-        crawler.assignMappingItem(this.tokenSet, [ 'tasks', ref, 'input' ], input);
-      }
+      crawler.set(this.tokenSet, [ 'tasks', ref, 'input' ], input);
     }
 
     this.emitChange(oldData, this.tokenSet.toObject());
@@ -204,12 +192,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   setTaskProperty(name, path, value) {
     const oldData = this.tokenSet.toObject();
-    try {
-      crawler.replaceTokenValue(this.tokenSet, [ 'tasks', name ].concat(path), value);
-    }
-    catch (e) {
-      crawler.assignMappingItem(this.tokenSet, [ 'tasks', name ].concat(path), value);
-    }
+    crawler.set(this.tokenSet, [ 'tasks', name ].concat(path), value);
 
     this.emitChange(oldData, this.tokenSet.toObject());
   }
@@ -240,8 +223,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       throw new Error(`No task found with name "${from.name}"`);
     }
 
-    const hasNext = task.hasOwnProperty('next');
-    const next = hasNext && task.next || [];
+    const next = task.hasOwnProperty('next') && task.next || [];
 
     const nextItem: NextItem = {
       do: to.name,
@@ -254,7 +236,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     next.push(nextItem);
 
     // TODO: this can be replaced by a more generic "set" method
-    crawler[hasNext ? 'replaceTokenValue' : 'assignMappingItem'](this.tokenSet, [ 'tasks', from.name, 'next' ], next);
+    crawler.set(this.tokenSet, [ 'tasks', from.name, 'next' ], next);
 
     const newData = this.tokenSet.toObject();
     this.emitChange(oldData, newData);

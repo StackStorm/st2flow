@@ -29,7 +29,7 @@ function get(obj: Object, key: string | Array<string | number>) {
 }
 
 function splitKey(key: string | Array<string | number>): Array<any> {
-  const arr = typeof key === 'string' ? key.split('.') : key;
+  const arr = typeof key === 'string' ? key.split('.') : key.slice(0);
   return arr.length === 1 && arr[0] === '' ? [] : arr;
 }
 

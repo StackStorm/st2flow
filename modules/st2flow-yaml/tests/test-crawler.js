@@ -188,6 +188,49 @@ describe('Token Set Crawler', () => {
     expect(multibase).to.deep.equal({ name: 'Everyone has same name', email: 'foo@bar.com' });
   });
 
+  describe('set method', () => {
+    let set;
+
+    beforeEach(() => {
+      set = new TokenSet(yaml);
+    });
+
+    it('replaces existing mapping values', () => {
+      const newVal = { foo: 'bar' };
+
+      crawler.set(set, 'data.bing', newVal);
+
+      expect(crawler.getValueByKey(set, 'data.bing')).to.deep.equal(newVal);
+    });
+
+    it('replaces existing collection values', () => {
+      const newVal = { foo: 'bar' };
+
+      crawler.set(set, 'a_sequence.3', newVal);
+
+      expect(crawler.getValueByKey(set, 'a_sequence.3')).to.deep.equal(newVal);
+    });
+
+    it('can assign new mapping items', () => {
+      const newVal = Math.random();
+
+      crawler.set(set, 'aRandomValue', newVal);
+      crawler.set(set, 'data.brand_new_value', newVal);
+
+      expect(crawler.getValueByKey(set, 'aRandomValue')).to.equal(newVal);
+      expect(crawler.getValueByKey(set, 'data.brand_new_value')).to.equal(newVal);
+    });
+
+    it('can add new collection items', () => {
+      const newVal = Math.random();
+
+      // Using any non-number for the index will add the item to the end
+      crawler.set(set, 'a_sequence.#', newVal);
+
+      expect(crawler.getValueByKey(set, 'a_sequence').pop()).to.equal(newVal);
+    });
+  });
+
   describe('replaceTokenValue', () => {
     let set;
 
