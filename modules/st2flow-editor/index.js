@@ -44,7 +44,7 @@ export default class Editor extends Component {
       showPrintMargin: false,
     });
 
-    this.editor.setValue(model.yaml, -1);
+    this.editor.setValue(model.toYAML(), -1);
     this.editor.on('change', this.handleEditorChange);
 
     model.on('change', this.handleModelChange);
