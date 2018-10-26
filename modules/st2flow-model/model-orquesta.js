@@ -1,6 +1,6 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
+import type { ModelInterface, TaskInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
 import type { TokenMeta } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util } from '@stackstorm/st2flow-yaml';

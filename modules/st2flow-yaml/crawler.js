@@ -25,7 +25,8 @@ const crawler = {
 
     if(token) {
       this.replaceTokenValue(tokenSet, keyArr, value);
-    } else {
+    }
+    else {
       const parentPath = keyArr.slice(0, -1);
       const parentValue = getTokenValueByKey(tokenSet.tree, parentPath);
 
