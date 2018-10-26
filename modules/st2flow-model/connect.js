@@ -57,6 +57,7 @@ entry_point: workflows/build-controller.yaml
 name: build-controller
 pack: st2cicd
 runner_type: orquesta
+type: foo
 parameters:
   # build_num:
   #   required: true

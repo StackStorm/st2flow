@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Metadata Schema",
+  "description": "A schema describing the metadata for individual workflows.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tasks"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "enum": [
+        "2.0",
+        2.0
+      ],
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "minimum": 0.0,
+          "type": "number"
+        }
+      ]
+    },
+    "tags": {
+      "uniqueItems": true,
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array",
+      "minItems": 1
+    },
+    "input": {
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+              "minLength": 1,
+              "type": "string"
+          },
+          {
+            "maxProperties": 1,
+            "patternProperties": {
+              "^\\w+$": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "array"
+                  },
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "object"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "minProperties": 1,
+            "type": "object"
+          }
+        ]
+      },
+      "type": "array",
+      "minItems": 1
+    }
+  }
+}

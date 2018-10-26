@@ -42,6 +42,10 @@ function defineExpando(obj: Object, key: string, value: any): void {
   });
 }
 
+function deepClone(obj: Object): Object {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 export {
   isPlainObject,
   pick,
@@ -49,4 +53,5 @@ export {
   get,
   splitKey,
   defineExpando,
+  deepClone,
 };
