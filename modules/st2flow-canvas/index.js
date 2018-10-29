@@ -1,3 +1,8 @@
+//@flow
+
+import type { ModelInterface, CanvasPoint, TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -13,7 +18,15 @@ import Toolbar from './toolbar';
 import style from './style.css';
 
 @connect(({ model }) => ({ model }))
-export default class Canvas extends Component {
+export default class Canvas extends Component<{
+      className: string,
+      model: ModelInterface,
+      selected: string,
+      onSelect: Function,
+    }, {
+      scale: number,
+      errors: Array<Error>,
+    }> {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
@@ -28,6 +41,11 @@ export default class Canvas extends Component {
 
   componentDidMount() {
     const el = this.canvasRef.current;
+
+    if (!el) {
+      return;
+    }
+
     el.addEventListener('wheel', this.handleMouseWheel);
     el.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
@@ -47,6 +65,11 @@ export default class Canvas extends Component {
 
   componentWillUnmount() {
     const el = this.canvasRef.current;
+
+    if (!el) {
+      return;
+    }
+
     el.removeEventListener('wheel', this.handleMouseWheel);
     el.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
@@ -58,9 +81,21 @@ export default class Canvas extends Component {
     model.removeListener('schema-error', this.handleModelError);
   }
 
+  size: CanvasPoint
+  drag: boolean
+  startx: number
+  starty: number
+
   handleUpdate() {
-    const { model } = this.props;
-    const { width, height } = this.canvasRef.current.getBoundingClientRect();
+    const canvasEl = this.canvasRef.current;
+    const surfaceEl = this.surfaceRef.current;
+
+    if (!canvasEl || !surfaceEl) {
+      return;
+    }
+
+    const { model }: { model: ModelInterface } = this.props;
+    const { width, height } = canvasEl.getBoundingClientRect();
 
     const scale = Math.E ** this.state.scale;
 
@@ -78,17 +113,17 @@ export default class Canvas extends Component {
       y: height / scale,
     });
 
-    this.surfaceRef.current.style.width = `${this.size.x}px`;
-    this.surfaceRef.current.style.height = `${this.size.y}px`;
+    surfaceEl.style.width = `${this.size.x}px`;
+    surfaceEl.style.height = `${this.size.y}px`;
   }
 
-  handleMouseWheel = (e) => {
+  handleMouseWheel = (e: WheelEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { scale } = this.state;
+    const { scale }: { scale: number } = this.state;
     this.setState({
-      scale: scale + e.wheelDelta / 1200,
+      scale: scale + e.deltaY / 1200,
     });
 
     this.handleUpdate();
@@ -96,7 +131,7 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleMouseDown = (e) => {
+  handleMouseDown = (e: MouseEvent) => {
     if (e.target !== this.surfaceRef.current) {
       return true;
     }
@@ -107,13 +142,18 @@ export default class Canvas extends Component {
     this.drag = true;
 
     const el = this.canvasRef.current;
+
+    if (!el) {
+      return true;
+    }
+
     this.startx = e.clientX + el.scrollLeft;
     this.starty = e.clientY + el.scrollTop;
 
     return false;
   }
 
-  handleMouseUp = (e) => {
+  handleMouseUp = (e: MouseEvent) => {
     if (!this.drag) {
       return true;
     }
@@ -126,7 +166,7 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleMouseMove = (e) => {
+  handleMouseMove = (e: MouseEvent) => {
     if (!this.drag) {
       return true;
     }
@@ -135,13 +175,18 @@ export default class Canvas extends Component {
     e.stopPropagation();
 
     const el = this.canvasRef.current;
+
+    if (!el) {
+      return true;
+    }
+
     el.scrollLeft += (this.startx - (e.clientX + el.scrollLeft));
     el.scrollTop += (this.starty - (e.clientY + el.scrollTop));
 
     return false;
   }
 
-  handleDragOver = (e) => {
+  handleDragOver = (e: DragEvent) => {
     if (e.target !== this.surfaceRef.current) {
       return true;
     }
@@ -150,14 +195,20 @@ export default class Canvas extends Component {
       e.preventDefault();
     }
 
-    e.dataTransfer.dropEffect = 'copy';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
 
     return false;
   }
 
-  handleDrop = (e) => {
+  handleDrop = (e: DragEvent) => {
     if (e.stopPropagation) {
       e.stopPropagation();
+    }
+
+    if (!e.dataTransfer) {
+      return true;
     }
 
     const { action, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
@@ -173,26 +224,26 @@ export default class Canvas extends Component {
     return false;
   }
 
-  handleTaskMove = (task, coords) => {
+  handleTaskMove = (task: TaskRefInterface, coords: CanvasPoint) => {
     this.props.model.updateTask(task, { coords });
   }
 
-  handleTaskSelect = (task) => {
+  handleTaskSelect = (task: TaskRefInterface) => {
     this.props.onSelect(task.name);
   }
 
-  handleCanvasClick = (e) => {
+  handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
 
     this.props.onSelect();
   }
 
-  handleModelError = (err) => {
+  handleModelError = (e: Error) => {
     // error may or may not be an array
-    this.setState({ errors: err && [].concat(err) || [] });
+    this.setState({ errors: e && [].concat(e) || [] });
   }
 
-  handleNotificationRemove = (notification) => {
+  handleNotificationRemove = (notification: NotificationInterface) => {
     switch(notification.type) {
       case 'error':
         this.setState({
@@ -202,15 +253,15 @@ export default class Canvas extends Component {
     }
   }
 
-  handleTaskEdit = (task) => {
+  handleTaskEdit = (task: TaskRefInterface) => {
     this.props.onSelect(task.name);
   }
 
-  handleTaskDelete = (task) => {
+  handleTaskDelete = (task: TaskRefInterface) => {
     this.props.model.deleteTask(task);
   }
 
-  get notifications() {
+  get notifications() : Array<NotificationInterface> {
     return this.state.errors.map(err => ({
       type: 'error',
       message: err.message,

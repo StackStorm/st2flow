@@ -10,10 +10,11 @@ export interface CanvasPoint {
 export interface TaskInterface {
     name: string;
     action: string;
-    transitions: Array<TransitionInterface>;
+    transitions?: Array<TransitionInterface>;
 
     input?: Object;
     coords: CanvasPoint;
+    size?: CanvasPoint;
 }
 
 export interface TaskRefInterface {
@@ -40,6 +41,8 @@ export interface ModelInterface {
     +tasks: Array<TaskInterface>;
     +transitions: Array<TransitionInterface>;
 
+    +lastTaskIndex: number;
+
     // These intentionally return void to prevent chaining
     // Consumers are responsible for cleaning up after themselves
     on(event: string, callback: Function): void;
@@ -50,7 +53,7 @@ export interface ModelInterface {
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;
-    updateTask(ref: TaskRefInterface, opts: TaskInterface): void;
+    updateTask(ref: TaskRefInterface, opts: any): void;
     deleteTask(ref: TaskRefInterface): void;
 
     addTransition(opts: TransitionInterface): void;

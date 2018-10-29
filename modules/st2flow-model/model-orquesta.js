@@ -165,7 +165,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.emitChange(oldData, this.tokenSet);
   }
 
-  updateTask(ref: TaskRefInterface, task: TaskInterface) {
+  updateTask(ref: TaskRefInterface, task: any) {
     const oldData = this.tokenSet.toObject();
     const { name, coords, action, input } = task;
 
