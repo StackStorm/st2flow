@@ -61,7 +61,6 @@ type RawTask = {
   action: string,
   input?: Object,
   next?: Array<NextItem>,
-  coords?: Object,
 };
 
 type RawTasks = {
