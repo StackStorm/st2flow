@@ -174,7 +174,7 @@ export default class Canvas extends Component {
   }
 
   handleTaskMove = (task, coords) => {
-    this.props.model.updateTask(task.name, { coords });
+    this.props.model.updateTask(task, { coords });
   }
 
   handleTaskSelect = (task) => {
@@ -207,7 +207,7 @@ export default class Canvas extends Component {
   }
 
   handleTaskDelete = (task) => {
-    this.props.model.deleteTask(task.name);
+    this.props.model.deleteTask(task);
   }
 
   get notifications() {

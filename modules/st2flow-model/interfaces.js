@@ -31,6 +31,7 @@ export interface TransitionInterface {
 export interface TransitionRefInterface {
     from: TaskRefInterface;
     to: TaskRefInterface;
+    condition?: string,
 }
 
 export interface ModelInterface {
@@ -49,8 +50,8 @@ export interface ModelInterface {
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;
-    updateTask(ref: string, opts: TaskInterface): void;
-    deleteTask(ref: string): void;
+    updateTask(ref: TaskRefInterface, opts: TaskInterface): void;
+    deleteTask(ref: TaskRefInterface): void;
 
     addTransition(opts: TransitionInterface): void;
     updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;

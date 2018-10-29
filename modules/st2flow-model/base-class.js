@@ -40,7 +40,7 @@ class BaseClass {
   }
 
   fromYAML(yaml: string): void {
-    const { tree: oldTree, obj: oldObj } = cloneSet(this.tokenSet);
+    const { tree: oldTree } = cloneSet(this.tokenSet);
 
     try {
       this.tokenSet = new TokenSet(yaml);
@@ -56,7 +56,7 @@ class BaseClass {
       return;
     }
 
-    this.emitChange(oldTree, oldObj, this.tokenSet);
+    this.emitChange(oldTree, this.tokenSet);
   }
 
   toYAML(): string {
@@ -76,11 +76,11 @@ class BaseClass {
   }
 
   set(path: string | Array<string | number>, value: any) {
-    const { tree: oldTree, obj: oldObj } = cloneSet(this.tokenSet);
+    const { tree: oldTree } = cloneSet(this.tokenSet);
 
     crawler.set(this.tokenSet, path, value);
 
-    this.emitChange(oldTree, oldObj, this.tokenSet);
+    this.emitChange(oldTree, this.tokenSet);
   }
 
   applyDelta(delta: DeltaInterface, yaml: string): void {
@@ -91,7 +91,7 @@ class BaseClass {
     this.fromYAML(yaml);
   }
 
-  emitChange(oldTree: Object, oldObj: Object, tokenSet: TokenSet): void {
+  emitChange(oldTree: Object, tokenSet: TokenSet): void {
     if(!ajv.validate(this.modelName, tokenSet.toObject())) {
       this.emitter.emit(STR_ERROR_SCHEMA, formatAjvErrors(ajv.errors));
       return;

@@ -106,7 +106,7 @@ class TaskDetails extends Component {
 
   handleTaskRename(ref, name) {
     const { model, selected, onBack } = this.props;
-    model.updateTask(ref, { name });
+    model.updateTask({ name: ref }, { name });
     if (selected === ref) {
       onBack();
     }
@@ -114,7 +114,7 @@ class TaskDetails extends Component {
 
   handleFieldChange(field, value) {
     const { model, selected } = this.props;
-    model.updateTask(selected, { [field]: value });
+    model.updateTask({ name: selected }, { [field]: value });
   }
 
   handleProperty(name, value) {
@@ -124,7 +124,7 @@ class TaskDetails extends Component {
       model.setTaskProperty(selected, name, value);
     }
     else {
-      model.deleteTaskProperty(selected, name);
+      model.deleteTaskProperty({ name: selected }, name);
     }
   }
 
