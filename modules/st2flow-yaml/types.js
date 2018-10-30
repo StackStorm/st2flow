@@ -1,3 +1,5 @@
+// @flow
+
 type Kind = 0 | 1 | 2 | 3 | 4;
 
 type JPath = Array<string | number>;
@@ -36,7 +38,7 @@ type TokenMapping = BaseToken & {
 
 type TokenCollection = BaseToken & {
 	// kind = 3
-  items: Array,
+  items: Array<TokenRawValue | TokenMapping | TokenCollection | TokenReference>,
 };
 
 type TokenReference = BaseToken & {
@@ -62,6 +64,7 @@ type TokenMeta = {
   comments: string, // provides any comments associated with the token
 
   keys?: Array<string>, // for mappings (objects), provides the keys in YAML source order
+  inlineInput?: boolean, // whether or not "input" statements are declared inline
 };
 
 export type {

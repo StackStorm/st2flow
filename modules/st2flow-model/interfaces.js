@@ -68,13 +68,13 @@ export interface DeltaInterface {
     lines: Array<string>;
 }
 
-export interface AjvError {
+export type AjvError = {
   dataPath: string,
   keyword: string,
   message: string,
-  params: Object
+  params: Object,
 }
 
-export interface GenericError {
+export type GenericError = Error | {
   message: string
 }

@@ -51,7 +51,7 @@ class BaseClass {
       // just grab the relevant parts. Also normalize it to an array.
       const exception = ex.length > 2 ? ex.slice(0, 2) : [].concat(ex);
       this.yaml = yaml;
-      this.emitter.emit(STR_ERROR_YAML, exception);
+      this.emitError(exception, STR_ERROR_YAML);
 
       return;
     }
@@ -93,16 +93,19 @@ class BaseClass {
 
   emitChange(oldTree: Object, tokenSet: TokenSet): void {
     if(!ajv.validate(this.modelName, tokenSet.toObject())) {
-      this.emitter.emit(STR_ERROR_SCHEMA, formatAjvErrors(ajv.errors));
+      this.emitError(formatAjvErrors(ajv.errors), STR_ERROR_SCHEMA);
       return;
     }
 
     const deltas = diff(oldTree, tokenSet.tree) || [];
-    // this.emitter.emit(STR_ERROR_SCHEMA, [/* clear any schema errors */]);
 
     if (deltas.length) {
       this.emitter.emit('change', deltas, this.tokenSet.toYAML());
     }
+  }
+
+  emitError(error: GenericError | Array<GenericError>, type: string = 'error') {
+    this.emitter.emit(type, error);
   }
 }
 

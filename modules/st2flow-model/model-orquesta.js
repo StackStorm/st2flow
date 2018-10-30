@@ -166,25 +166,22 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   updateTask(ref: string, task: TaskInterface) {
     const oldData = this.tokenSet.toObject();
-    const { name, coords, action, input } = task;
+    const { name, coords, ...data } = task;
+    const key = [ 'tasks', ref ]
 
     if (name && ref !== name) {
-      crawler.renameMappingKey(this.tokenSet, [ 'tasks', ref ], name);
-      ref = name;
+      crawler.renameMappingKey(this.tokenSet, key, name);
+      key.splice(-1, 1, name);
     }
 
     if (coords) {
-      const comments = crawler.getCommentsForKey(this.tokenSet, [ 'tasks', ref ]);
-      crawler.setCommentForKey(this.tokenSet, [ 'tasks', ref ], comments.replace(REG_COORDS, `[${coords.x}, ${coords.y}]`));
+      const comments = crawler.getCommentsForKey(this.tokenSet, key);
+      crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${coords.x}, ${coords.y}]`));
     }
 
-    if (action) {
-      crawler.set(this.tokenSet, [ 'tasks', ref, 'action' ], action);
-    }
-
-    if (input) {
-      crawler.set(this.tokenSet, [ 'tasks', ref, 'input' ], input);
-    }
+    Object.keys(data).forEach(k => {
+      crawler.set(this.tokenSet, key.concat(k), data[k]);
+    });
 
     this.emitChange(oldData, this.tokenSet.toObject());
   }
