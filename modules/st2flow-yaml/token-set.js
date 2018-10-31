@@ -317,12 +317,13 @@ function createToken(str: string, startPos: number): TokenRawValue {
 /**
  * Parses special values that [appear to be] standard YAML but
  * not supported by the yaml-ast-parser for some reason.
+ *   - If the value is quoted, ignore it - it's a deliberate string
  *   - If the value uses a !!tag, we ignore it.
  *   - If the value has the `valueObject` property, the parser
  *     already recognized it - no need to process it.
  */
 function parseSpecialValue(token: TokenRawValue): ?boolean | ?number {
-  if(!token.isTag && !token.hasOwnProperty('valueObject')) {
+  if(!token.singleQuoted && !token.doubleQuoted && !token.isTag && !token.hasOwnProperty('valueObject')) {
     if(REG_BOOL_TRUE.test(token.value)) {
       return true;
     }

@@ -86,7 +86,7 @@ bools:
 - No
 - Off
 
-# After parsing, the left side should not equal the right
+# After parsing, the left side should NOT equal the right
 specialKeys:
   y: true
   Yes: true
@@ -94,6 +94,18 @@ specialKeys:
   n: false
   no: false
   off: false
+
+# The left side should equal the right
+quotedValues:
+  1.2: '1.2'
+  true: 'true'
+  y: 'y'
+  yes: 'yes'
+  n: 'n'
+  no: 'no'
+  null: 'null'
+  '~': '~'
+
 
 # Tests expect this object to contain these EXACT values (inlcuding whitespace)
 data:

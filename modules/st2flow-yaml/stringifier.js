@@ -39,7 +39,7 @@ const stringifier = {
         break;
 
       case 4:
-        str += buildString(token.referencesAnchor, token.prefix, token.suffix);
+        str += buildString(token.referencesAnchor, token.prefix);
         break;
     }
 

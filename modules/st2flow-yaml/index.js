@@ -1,4 +1,5 @@
 // @flow
+
 import * as util from './util';
 
 export { default as TokenSet } from './token-set';

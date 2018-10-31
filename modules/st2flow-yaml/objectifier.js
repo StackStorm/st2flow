@@ -49,7 +49,7 @@ class Objectifier {
         return this.getTokenValue(token);
 
       case 3: // multiline key
-        return token.items.map(t => this.getMappingKey(t)).join(',');
+        return crawler.buildArrayKey(token);
 
       default:
         throw new Error(`Unrecognized key kind: ${token.kind}`);
@@ -62,8 +62,9 @@ class Objectifier {
    * the __keys property when order matters.
    */
   getMapping(token: TokenMapping): Object {
+    const keys: Array<string> = [];
     const meta: TokenMeta = {
-      keys: [],
+      keys,
       jpath: token.jpath,
       comments: '',
     };
@@ -77,12 +78,12 @@ class Objectifier {
         // which has already been assigned to the "<<" property by
         // the time we get here. "value" might be an array objects which to extend.
         [].concat(value).forEach(v => {
-          meta.keys.unshift(...v.__meta.keys);
+          keys.unshift(...v.__meta.keys);
           obj = Object.assign({}, v, obj);
         });
       }
       else {
-        meta.keys.push(key);
+        keys.push(key);
         obj[key] = value;
       }
 

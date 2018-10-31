@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, ValueToken, AnyToken } from './types';
 import { isPlainObject } from './util';
 
 const REG_NEWLINE = /\n/;
@@ -12,7 +12,7 @@ const factory = {
   /**
    * Given any type of YAML compatable data, creates an AST token.
    */
-  createToken(data: any): AnyToken {
+  createToken(data: any): ValueToken {
     if(Array.isArray(data)) {
       return this.createCollectionToken(data);
     }
