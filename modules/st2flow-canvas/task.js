@@ -1,10 +1,24 @@
+//@flow
+
+import type { CanvasPoint, TaskInterface } from '@stackstorm/st2flow-model/interfaces';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import style from './style.css';
 
-export default class Task extends Component {
+export default class Task extends Component<{
+  task: TaskInterface,
+  scale: number,
+  selected: bool,
+  onMove: Function,
+  onClick: Function,
+  onEdit: Function,
+  onDelete: Function,
+}, {
+  delta: CanvasPoint
+}> {
   static propTypes = {
     task: PropTypes.object.isRequired,
     scale: PropTypes.number.isRequired,
@@ -26,6 +40,10 @@ export default class Task extends Component {
     const task = this.taskRef.current;
     const handle = this.handleRef.current;
 
+    if (!task || !handle) {
+      return;
+    }
+
     task.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
@@ -39,6 +57,10 @@ export default class Task extends Component {
     const task = this.taskRef.current;
     const handle = this.handleRef.current;
 
+    if (!task || !handle) {
+      return;
+    }
+
     task.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
@@ -48,7 +70,10 @@ export default class Task extends Component {
     task.removeEventListener('drop', this.handleDrop);
   }
 
-  handleMouseDown = (e) => {
+  drag: bool
+  start: CanvasPoint
+
+  handleMouseDown = (e: MouseEvent) => {
     // Drag should only work on left button press
     if (e.button !== 0) {
       return true;
@@ -67,7 +92,7 @@ export default class Task extends Component {
     return false;
   }
 
-  handleMouseUp = (e) => {
+  handleMouseUp = (e: MouseEvent) => {
     if (!this.drag) {
       return true;
     }
@@ -101,7 +126,7 @@ export default class Task extends Component {
     return false;
   }
 
-  handleMouseMove = (e) => {
+  handleMouseMove = (e: MouseEvent) => {
     if (!this.drag) {
       return true;
     }
@@ -119,7 +144,7 @@ export default class Task extends Component {
     return false;
   }
 
-  handleClick = (e) => {
+  handleClick = (e: MouseEvent) => {
     e.stopPropagation();
 
     if (this.props.onClick) {
@@ -127,29 +152,33 @@ export default class Task extends Component {
     }
   }
 
-  handleDragStartHandle = (e, handle) => {
+  handleDragStartHandle = (e: DragEvent, handle: string) => {
     e.stopPropagation();
 
     this.style.opacity = '0.4';
 
     const { task } = this.props;
 
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      task,
-      handle,
-    }));
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/json', JSON.stringify({
+        task,
+        handle,
+      }));
+    }
   }
 
-  handleDragOver = (e) => {
+  handleDragOver = (e: DragEvent) => {
     if (e.preventDefault) {
       e.preventDefault();
     }
 
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
   }
 
-  handleDrop = (e) => {
+  handleDrop = (e: DragEvent) => {
     if (e.preventDefault) {
       e.preventDefault();
     }
@@ -157,9 +186,11 @@ export default class Task extends Component {
       e.stopPropagation();
     }
 
-    const { task, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
+    if (e.dataTransfer) {
+      const { task, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
 
-    console.log(task, handle);
+      console.log(task, handle);
+    }
 
     return false;
   }
@@ -185,8 +216,8 @@ export default class Task extends Component {
         <div
           className={cx(this.style.taskBody)}
           style={{
-            width: task.size.x,
-            height: task.size.y,
+            width: task.size && task.size.x,
+            height: task.size && task.size.y,
           }}
           ref={this.taskRef}
         >

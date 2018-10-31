@@ -1,7 +1,9 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
-import { connect } from '@stackstorm/st2flow-model';
+import { connect, ModelInterface } from '@stackstorm/st2flow-model';
 
 import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
@@ -12,7 +14,11 @@ import Parameters from './parameters-panel';
 
 
 @connect(({ metaModel }) => ({ metaModel }))
-export default class Meta extends Component {
+export default class Meta extends Component<{
+  metaModel: ModelInterface,
+}, {
+  section?: string,
+}> {
   static propTypes = {
     metaModel: PropTypes.object,
   }
@@ -21,7 +27,7 @@ export default class Meta extends Component {
     section: undefined,
   }
 
-  handleSectionSwitch(section) {
+  handleSectionSwitch(section: string) {
     this.setState({ section });
   }
 
@@ -45,6 +51,7 @@ export default class Meta extends Component {
         </Panel>
       ),
       section === 'parameters' && (
+        //$FlowFixMe
         <Parameters key="parameters" />
       ),
     ]);

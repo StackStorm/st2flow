@@ -1,3 +1,5 @@
+//@flow
+
 import React, { Component } from 'react';
 import OrquestaModel from './model-orquesta';
 import MetaModel from './model-meta';
@@ -5,7 +7,7 @@ import MetaModel from './model-meta';
 let model;
 let metaModel;
 
-export function connect(transform) {
+export function connect(transform: Function) {
   const tmpYAML = `---
 version: 1.0
 
@@ -81,8 +83,8 @@ parameters:
 
   const props = transform({ model, metaModel });
 
-  return WrappedComponent => {
-    return class ModelWrapper extends Component {
+  return (WrappedComponent: any) => {
+    return class ModelWrapper extends Component<Object> {
       componentDidMount() {
         for (const key of Object.keys(props)) {
           if (props[key].on) {

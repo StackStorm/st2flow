@@ -1,3 +1,7 @@
+//@flow
+
+import type { ModelInterface, TaskInterface, TransitionInterface } from '@stackstorm/st2flow-model/interfaces';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -18,7 +22,9 @@ import style from './style.css';
 
 
 
-class Transition extends Component {
+class Transition extends Component<{
+  transition: TransitionInterface,
+}> {
   static propTypes = {
     transition: PropTypes.object.isRequired,
   }
@@ -84,7 +90,15 @@ class Transition extends Component {
 }
 
 @connect(({ model }) => ({ model }))
-class TaskDetails extends Component {
+class TaskDetails extends Component<{
+  model: ModelInterface,
+  selected: string,
+  actions: Array<Object>,
+  onBack: Function,
+}, {
+  section: string | void,
+  name: string,
+}> {
   static propTypes = {
     model: PropTypes.object,
     selected: PropTypes.string,
@@ -106,7 +120,7 @@ class TaskDetails extends Component {
 
   handleTaskRename(ref, name) {
     const { model, selected, onBack } = this.props;
-    model.updateTask({ name: ref }, { name });
+    model && model.updateTask({ name: ref }, { name });
     if (selected === ref) {
       onBack();
     }
@@ -121,7 +135,7 @@ class TaskDetails extends Component {
     const { model, selected } = this.props;
 
     if (value) {
-      model.setTaskProperty(selected, name, value);
+      model.setTaskProperty({ name: selected }, name, value);
     }
     else {
       model.deleteTaskProperty({ name: selected }, name);
@@ -140,7 +154,12 @@ class TaskDetails extends Component {
     const { section = 'task', name } = this.state;
 
     const task = selected && model.tasks.find(task => task.name === selected);
-    const transitions = selected && model.transitions.filter(transition => transition.from.name === task.name);
+
+    if (!task) {
+      return false;
+    }
+
+    const transitions = !!selected && model.transitions.filter(transition => transition.from.name === task.name);
 
     const action = actions.find(({ref}) => ref === task.action);
 
@@ -196,7 +215,7 @@ class TaskDetails extends Component {
                   <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleProperty('join', 'all')}>
                     Join all tasks
                   </div>
-                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleProperty('join', this.joinFieldRef.current.value)} >
+                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleProperty('join', (this.joinFieldRef.current || {}).value)} >
                     Join <input type="text" id="joinField" ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleProperty('join', e.target.value)} /> tasks
                   </label>
                 </div>
@@ -218,7 +237,7 @@ class TaskDetails extends Component {
       section === 'transitions' && (
         <Panel key="transitions">
           {
-            transitions.map(transition => <Transition key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`} transition={transition} />)
+            (transitions || []).map(transition => <Transition key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`} transition={transition} />)
           }
           <div className={this.style.transitionInfo}>
             To add a transition, hover over a task box and drag the connector to the desired task box you want to transition to.
@@ -230,7 +249,10 @@ class TaskDetails extends Component {
 }
 
 @connect(({ model }) => ({ model }))
-class TaskList extends Component {
+class TaskList extends Component<{
+  model: ModelInterface,
+  onSelect: Function,
+}> {
   static propTypes = {
     model: PropTypes.object,
     onSelect: PropTypes.func.isRequired,
@@ -257,7 +279,10 @@ class TaskList extends Component {
   }
 }
 
-class Task extends Component {
+class Task extends Component<{
+  task: TaskInterface,
+  onClick?: Function,
+}> {
   static propTypes = {
     task: PropTypes.object.isRequired,
     onClick: PropTypes.func,
@@ -266,13 +291,15 @@ class Task extends Component {
   style = style
 
   handleClick(e) {
-    if (!this.props.onClick) {
+    const { onClick } = this.props;
+
+    if (!onClick) {
       return;
     }
 
     e.stopPropagation();
 
-    this.props.onClick();
+    onClick();
   }
 
   render() {
@@ -292,7 +319,17 @@ class Task extends Component {
 }
 
 @connect(({ model, metaModel }) => ({ model, metaModel }))
-export default class Details extends Component {
+export default class Details extends Component<{
+  className?: string,
+  model: ModelInterface,
+  metaModel: ModelInterface,
+  actions: Array<Object>,
+  selected: string,
+  onSelect: Function,
+}, {
+  selected: string | void,
+  asCode: bool,
+}> {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
@@ -302,15 +339,18 @@ export default class Details extends Component {
     onSelect: PropTypes.func.isRequired,
   }
 
-  state = {}
+  state = {
+    selected: undefined,
+    asCode: false,
+  }
 
   style = style
 
-  handleSectionSelect(section) {
+  handleSectionSelect(section: { title: string }) {
     this.setState({ selected: section.title });
   }
 
-  handleTaskSelect(task) {
+  handleTaskSelect(task: TaskInterface) {
     this.props.onSelect(task.name);
   }
 
@@ -351,6 +391,7 @@ export default class Details extends Component {
           selected === 'metadata' && (
             asCode
               && <Editor model={this.props.metaModel} />
+              // $FlowFixMe Model is populated via decorator
               || <Meta />
           )
         }
@@ -359,7 +400,9 @@ export default class Details extends Component {
             asCode
               && <Editor model={this.props.model} />
               || taskSelected
+                // $FlowFixMe ^^
                 && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} />
+                // $FlowFixMe ^^
                 || <TaskList onSelect={task => this.handleTaskSelect(task)} />
           )
         }

@@ -1,4 +1,5 @@
 // @flow
+import type { JpathKey } from '@stackstorm/st2flow-yaml';
 
 export type TransitionType = 'Success' | 'Error' | 'Complete'
 
@@ -15,6 +16,12 @@ export interface TaskInterface {
     input?: Object;
     coords: CanvasPoint;
     size?: CanvasPoint;
+
+    with?: {
+        items: string,
+        concurrency?: string,
+    };
+    join?: string;
 }
 
 export interface TaskRefInterface {
@@ -27,6 +34,7 @@ export interface TransitionInterface {
     to: TaskRefInterface;
     type?: TransitionType;
     condition?: string;
+    publish?: Object;
 }
 
 export interface TransitionRefInterface {
@@ -55,6 +63,9 @@ export interface ModelInterface {
     addTask(opts: TaskInterface): void;
     updateTask(ref: TaskRefInterface, opts: any): void;
     deleteTask(ref: TaskRefInterface): void;
+
+    setTaskProperty(ref: TaskRefInterface, path: JpathKey , value: any): void;
+    deleteTaskProperty(ref: TaskRefInterface, path: JpathKey): void;
 
     addTransition(opts: TransitionInterface): void;
     updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;

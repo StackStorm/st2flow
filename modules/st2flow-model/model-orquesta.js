@@ -144,7 +144,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }, []);
   }
 
-  get lastTaskIndex() {
+  get lastTaskIndex(): number {
     return crawler.getValueByKey(this.tokenSet, 'tasks').__meta.keys
       .map(item => (item.match(/task(\d+)/) || [])[1])
       .reduce((acc, item) => Math.max(acc, item || 0), 0);

@@ -19,7 +19,7 @@ import style from './style.css';
 
 @connect(({ model }) => ({ model }))
 export default class Canvas extends Component<{
-      className: string,
+      className?: string,
       model: ModelInterface,
       selected: string,
       onSelect: Function,

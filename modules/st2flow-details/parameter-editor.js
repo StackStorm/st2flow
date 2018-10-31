@@ -1,3 +1,5 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
@@ -12,14 +14,20 @@ import { specialProperties } from './parameter';
 
 import style from './style.css';
 
-export default class ParameterEditor extends Component {
+export default class ParameterEditor extends Component<{
+  parameter: Object,
+  onChange: Function,
+  onCancel: Function,
+}, {
+  parameter: Object,
+}> {
   static propTypes = {
     parameter: PropTypes.object,
     onChange: PropTypes.func,
     onCancel: PropTypes.func,
   }
 
-  constructor(props) {
+  constructor(props: Object) {
     super(props);
 
     this.state = {
@@ -27,7 +35,7 @@ export default class ParameterEditor extends Component {
     };
   }
 
-  handleChange(key, value) {
+  handleChange(key: string, value: string) {
     const { parameter } = this.state;
 
     parameter[key] = value;

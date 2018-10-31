@@ -1,10 +1,17 @@
+//@flow
+
+import type { Node } from 'react';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import style from './style.css';
 
-export class Toolbar extends Component {
+export class Toolbar extends Component<{
+  secondary?: bool,
+  children?: Node,
+}> {
   static propTypes = {
     secondary: PropTypes.bool,
     children: PropTypes.node,
@@ -22,7 +29,12 @@ export class Toolbar extends Component {
   }
 }
 
-export class ToolbarButton extends Component {
+export class ToolbarButton extends Component<{
+  className?: string,
+  children?: Node,
+  stretch?: bool,
+  selected?: bool,
+}> {
   static propTypes = {
     className: PropTypes.string,
     children: PropTypes.node,
@@ -42,7 +54,10 @@ export class ToolbarButton extends Component {
   }
 }
 
-export class Panel extends Component {
+export class Panel extends Component<{
+  className?: string,
+  children?: Node,
+}> {
   static propTypes = {
     className: PropTypes.string,
     children: PropTypes.node,
