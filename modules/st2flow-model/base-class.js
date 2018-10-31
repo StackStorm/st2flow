@@ -40,7 +40,7 @@ class BaseClass {
   }
 
   fromYAML(yaml: string): void {
-    const oldTree = this.tokenSet ? util.deepClone(this.tokenSet.tree) : {};
+    const oldTree = this.startMutation();
 
     try {
       this.tokenSet = new TokenSet(yaml);
@@ -89,6 +89,20 @@ class BaseClass {
     // parsing often is very cheap. In the future we can maybe look into applying
     // only the deltas to the AST, though this will likely not be trivial.
     this.fromYAML(yaml);
+  }
+
+  startMutation(): Object {
+    return this.tokenSet ? {
+      oldTree: util.deepClone(this.tokenSet.tree),
+      oldData: this.tokenSet.toObject()
+    } : {
+      oldTree: {},
+      oldData: {}
+    };
+  }
+
+  endMutation(oldTree: Object): void {
+    this.emitChange(oldTree, this.tokenSet);
   }
 
   emitChange(oldTree: Object, tokenSet: TokenSet): void {

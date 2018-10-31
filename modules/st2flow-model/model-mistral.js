@@ -37,6 +37,26 @@ class MistralModel extends BaseModel implements ModelInterface {
     super(schema, yaml);
   }
 
+  get description() {
+    let val = super.description;
+
+    // If a root level description is not available,
+    // find one from one of the workflows.
+    if(!val) {
+      const workflows = getWorkflows(this.tokenSet);
+      Object.keys(workflows).some(wfName => {
+        const workflow = workflows[ wfName ];
+
+        if(workflow.description) {
+          val = workflow.description;
+          return true; // break
+        }
+      });
+    }
+
+    return val;
+  }
+
   get tasks() {
     const flatTasks = getRawTasks(this.tokenSet);
 
@@ -61,16 +81,15 @@ class MistralModel extends BaseModel implements ModelInterface {
       }
 
       return Object.assign({}, {
-        name: joinTaskName(key),
+        name: joinTaskName(key, this.tokenSet),
         size: { x: 120, y: 48 },
         action: '',
-        coords: { x: 0, y: 0 },
+        coords: { x: 0, y: 0, ...coords },
       }, task, {
         action: actionRef,
         input: {
           ...input
-        },
-        coords: { ...coords },
+        }
       });
     });
 
@@ -85,15 +104,15 @@ class MistralModel extends BaseModel implements ModelInterface {
     const transitions = [];
     getRawTasks(this.tokenSet).forEach((task, key) => {
       (task['on-success'] || EMPTY_ARRAY).forEach(next => {
-        transitions.push(makeTransition(next, key, 'Success'));
+        transitions.push(makeTransition(next, key, 'Success', this.tokenSet));
       });
 
       (task['on-error'] || EMPTY_ARRAY).forEach(next => {
-        transitions.push(makeTransition(next, key, 'Error'));
+        transitions.push(makeTransition(next, key, 'Error', this.tokenSet));
       });
 
       (task['on-complete'] || EMPTY_ARRAY).forEach(next => {
-        transitions.push(makeTransition(next, key, 'Complete'));
+        transitions.push(makeTransition(next, key, 'Complete', this.tokenSet));
       });
     });
 
@@ -101,7 +120,7 @@ class MistralModel extends BaseModel implements ModelInterface {
   }
 
   addTask(task: TaskInterface) {
-    const oldData = this.tokenSet.toObject();
+    const { oldData, oldTree } = this.startMutation();
     const { name, coords, ...data } = task;
 
     if(coords) {
@@ -118,11 +137,11 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     crawler.set(this.tokenSet, key, data);
-    this.emitChange(oldData, this.tokenSet.toObject());
+    this.endMutation(oldTree);
   }
 
   addTransition(transition: TransitionInterface) {
-    const oldData = this.tokenSet.toObject();
+    const { oldData, oldTree } = this.startMutation();
     const [ fromWorkflowName, fromTaskName ] = splitTaskName(transition.from.name, this.tokenSet);
     const [ toWorkflowName, toTaskName ] = splitTaskName(transition.to.name, this.tokenSet);
 
@@ -148,11 +167,11 @@ class MistralModel extends BaseModel implements ModelInterface {
       crawler.set(this.tokenSet, key, [ next ]);
     }
 
-    this.emitChange(oldData, this.tokenSet.toObject());
+    this.endMutation(oldTree);
   }
 
   updateTask(ref: string, task: TaskInterface) {
-    const oldData = this.tokenSet.toObject();
+    const { oldData, oldTree } = this.startMutation();
     const { name, coords, ...data } = task;
     const [ workflowName, oldTaskName ] = splitTaskName(ref, this.tokenSet);
     const key = [ workflowName, 'tasks', oldTaskName ];
@@ -175,31 +194,27 @@ class MistralModel extends BaseModel implements ModelInterface {
       crawler.set(this.tokenSet, key.concat(k), data[k]);
     });
 
-    this.emitChange(oldData, this.tokenSet.toObject());
+    this.endMutation(oldTree);
   }
 
-  updateTransition(ref: TransitionRefInterface, transition: TransitionInterface) {
-    const oldData = this.tokenSet.toObject();
-    const [ oldFromWorkflowName, oldFromTaskName ] = splitTaskName(ref.from.name, this.tokenSet);
-    const [ oldToWorkflowName, oldToTaskName ] = splitTaskName(ref.to.name, this.tokenSet);
-    const [ newFromWorkflowName, newFromTaskName ] = splitTaskName(transition.from.name, this.tokenSet);
-    const [ newToWorkflowName, newToTaskName ] = splitTaskName(transition.to.name, this.tokenSet);
-
-    if(newFromWorkflowName !== newToWorkflowName) {
-      this.emitError(new Error('Cannot create transitions between two different workflows'));
-      return;
-    }
-
-    const type = `on-${(transition.type || 'complete').toLowerCase()}`;
-    const oldKey = [ oldFromWorkflowName, 'tasks', oldFromTaskName, type ];
-    const newKey = [ newFromWorkflowName, 'tasks', newFromTaskName, type ];
+  updateTransition(oldTransition: TransitionInterface, newData: TransitionInterface) {
+    const { oldData, oldTree } = this.startMutation();
+    const { type: oldType, from: oldFrom, to: oldTo } = oldTransition;
+    const [ oldFromWorkflowName, oldFromTaskName ] = splitTaskName(oldFrom.name, this.tokenSet);
+    const [ oldToWorkflowName, oldToTaskName ] = splitTaskName(oldTo.name, this.tokenSet);
+    const oldKey = [ oldFromWorkflowName, 'tasks', oldFromTaskName, transitionTypeKey(oldType) ];
 
     if(oldData.workflows) {
       oldKey.unshift('workflows');
-      newKey.unshift('workflows');
     }
 
     const oldTransitions = util.get(oldData, oldKey);
+
+    if(!oldTransitions || !oldTransitions.length) {
+      this.emitError(new Error(`Could not find transition at path: ${oldKey.join('.')}`));
+      return;
+    }
+
     const oldIndex = oldTransitions.findIndex(t => {
       return typeof t === 'string' ? t === oldToTaskName : t.hasOwnProperty(oldToTaskName);
     });
@@ -209,30 +224,69 @@ class MistralModel extends BaseModel implements ModelInterface {
       return;
     }
 
+
+    const { type: newType, condition: newCondition, from: newFrom, to: newTo } = newData;
+    const [ newFromWorkflowName, newFromTaskName ] = newFrom ? splitTaskName(newFrom.name, this.tokenSet) : [ oldFromWorkflowName, oldFromTaskName ];
+    const [ newToWorkflowName, newToTaskName ] = newTo ? splitTaskName(newTo.name, this.tokenSet) : [ oldToWorkflowName, oldToTaskName ];
+
+    if(newFromWorkflowName !== newToWorkflowName) {
+      this.emitError(new Error('Cannot create transitions between two different workflows'));
+      return;
+    }
+
+    const newKey = [ newFromWorkflowName, 'tasks', newFromTaskName, transitionTypeKey(newType || oldType) ];
+
+    if(oldData.workflows) {
+      newKey.unshift('workflows');
+    }
+
+    let newIndex = oldIndex;
+    const next = newCondition ? { [newToTaskName]: newCondition } : newToTaskName;
     if(oldFromWorkflowName !== newFromWorkflowName || oldFromTaskName !== newFromTaskName) {
       // The transition moved to a new "from" task, delete the old one
       crawler.spliceCollection(this.tokenSet, oldKey, oldIndex, 1);
+      newIndex = '#'; // creates a new item in the new "from" task
     }
 
-    const next = transition.condition ? { [newToTaskName]: transition.condition } : newToTaskName;
+
     const existing = util.get(oldData, newKey);
     if(existing) {
-      // Add transition to existing list
-      crawler.set(this.tokenSet, newKey.concat('#'), next);
+      // Update existing list
+      console.log('HERE', newKey.concat(newIndex), next, oldTransition);
+      crawler.set(this.tokenSet, newKey.concat(newIndex), next);
     }
     else {
       crawler.set(this.tokenSet, newKey, [ next ]);
     }
 
+    this.endMutation(oldTree);
+  }
+
+  deleteTask(ref: string) {
+    const { oldData, oldTree } = this.startMutation();
+    const [ workflowName, taskName ] = splitTaskName(ref, this.tokenSet);
+    const key = [ workflowName, 'tasks', taskName ];
+
+    if(oldData.workflows) {
+      key.unshift('workflows');
+    }
+
+    crawler.deleteMappingItem(this.tokenSet, key);
     this.emitChange(oldData, this.tokenSet.toObject());
   }
 
-  deleteTask() {
+  deleteTransition(ref: TransitionRefInterface) {
+    const { oldData, oldTree } = this.startMutation();
+    const [ fromWorkflowName, fromTaskName ] = splitTaskName(ref.from.name, this.tokenSet);
+    const [ toWorkflowName, toTaskName ] = splitTaskName(ref.to.name, this.tokenSet);
 
-  }
+    const key = [ fromWorkflowName, 'tasks', fromTaskName ];
 
-  deleteTransition() {
+    if(oldData.workflows) {
+      key.unshift('workflows');
+    }
 
+    this.endMutation(oldTree);
   }
 }
 
@@ -258,12 +312,13 @@ function getWorkflows(tokenSet: TokenSet): Object {
   return data.workflows || util.omit(data, ...OMIT_KEYS);
 }
 
-function makeTransition(next: NextItem, fromKey: Array<string>, type: TransitionType): TransitionInterface {
+function makeTransition(next: NextItem, fromKey: Array<string>, type: TransitionType, tokenSet: TokenSet): TransitionInterface {
   const workflowName: string = fromKey[0];
   const transition: Object = {
     type,
+    condition: null,
     from: {
-      name: joinTaskName(fromKey),
+      name: joinTaskName(fromKey, tokenSet),
     },
     to: {},
   };
@@ -277,13 +332,22 @@ function makeTransition(next: NextItem, fromKey: Array<string>, type: Transition
     transition.condition = next[transition.to.name];
   }
 
-  transition.to.name = joinTaskName(toKey);
+  transition.to.name = joinTaskName(toKey, tokenSet);
 
   return transition;
 }
 
-function joinTaskName(key: Array<string>) {
-  return key.join(STR_KEY_SEPERATOR);
+function transitionTypeKey(type: TransitionType = 'Complete') {
+  return `on-${type.toLowerCase()}`;
+}
+
+function joinTaskName(key: Array<string>, tokenSet: TokenSet): string {
+  const workflows = getWorkflows(tokenSet);
+  const wfNames = Object.keys(workflows);
+
+  // If there are multiple workflows, prepend the task name with
+  // the workflow name. Otherwise, use just the task name.
+  return wfNames.length === 1 ? key[1] : key.join(STR_KEY_SEPERATOR);
 }
 
 function splitTaskName(name: string, tokenSet: TokenSet): Array<string> {

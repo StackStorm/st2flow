@@ -4,15 +4,18 @@ import path from 'path';
 
 import Model from '../model-mistral';
 
-describe.skip('st2flow-model: Mistral Model', () => {
+describe('st2flow-model: Mistral Model', () => {
   let raw = null;
   let model = null;
 
   describe('handles basic.yaml', () => {
-
     before(() => {
       raw = fs.readFileSync(path.join(__dirname, 'data', 'mistral-basic.yaml'), 'utf-8');
+    });
+
+    beforeEach(() => {
       model = new Model(raw);
+      expect(model).to.have.property('tokenSet');
     });
 
     it('reads metadata', () => {
@@ -24,10 +27,10 @@ describe.skip('st2flow-model: Mistral Model', () => {
       const tasks = model.tasks;
       expect(Object.keys(tasks)).to.have.property('length', 4);
 
-      for (const [ , value ] of tasks) {
-        expect(value).to.have.property('action');
-        expect(value).to.have.nested.property('coord.x');
-        expect(value).to.have.nested.property('coord.y');
+      for (const task of tasks) {
+        expect(task).to.have.property('action');
+        expect(task).to.have.nested.property('coords.x');
+        expect(task).to.have.nested.property('coords.y');
       }
     });
 
@@ -47,8 +50,20 @@ describe.skip('st2flow-model: Mistral Model', () => {
       expect(model.toYAML()).to.equal(raw);
     });
 
-    it('updates transitions', () => {
+    // it('updates tasks', () => {
+    //   model.updateTask(model.tasks[0], {
+    //     name: 'foo',
+    //     action: 'bar',
+    //   });
 
+    //   const task = model.tasks[0];
+    //   expect(task).to.have.property('name', 'foo');
+    //   expect(task).to.have.property('action', 'bar');
+    //   expect(task).to.have.nested.property('coords.x', 0);
+    //   expect(task).to.have.nested.property('coords.y', 0);
+    // });
+
+    it('updates transitions', () => {
       model.updateTransition(model.transitions[0], {
         condition: 'bar',
       });
@@ -60,45 +75,32 @@ describe.skip('st2flow-model: Mistral Model', () => {
       expect(transition).to.have.property('condition', 'bar');
     });
 
-    it('updates tasks', () => {
-      model.updateTask(model.tasks[0], {
-        name: 'foo',
-        action: 'bar',
-      });
+    // it('updates basic.yaml with task/transition updates', () => {
+    //   expect(model.toYAML()).to.equal(raw
+    //     .replace('<% state() = "succeeded" and result().stdout = \'a\' %>', 'bar')
+    //     .replace('core.local cmd="printf <% $.which %>"', 'bar')
+    //     .replace('t1:', 'foo:')
+    //   );
+    // });
 
-      const task = model.tasks[0];
-      expect(task).to.have.property('name', 'foo');
-      expect(task).to.have.property('action', 'bar');
-      expect(task).to.have.nested.property('coords.x', 0);
-      expect(task).to.have.nested.property('coords.y', 0);
-    });
+    // it('deletes transitions', () => {
+    //   expect(model.transitions).to.have.property('length', 4);
+    //   model.deleteTransition(model.transitions[0]);
+    //   expect(model.transitions).to.have.property('length', 3);
+    // });
 
-    it('updates basic.yaml with task/transition updates', () => {
-      expect(model.toYAML()).to.equal(raw
-        .replace('<% state() = "succeeded" and result().stdout = \'a\' %>', 'bar')
-        .replace('core.local cmd="printf <% $.which %>"', 'bar')
-        .replace('t1:', 'foo:')
-      );
-    });
+    // it('deletes tasks', () => {
+    //   expect(model.tasks).to.have.property('length', 4);
+    //   model.deleteTask(model.tasks[0]);
+    //   expect(model.tasks).to.have.property('length', 3);
+    // });
 
-    it('deletes transitions', () => {
-      expect(model.transitions).to.have.property('length', 4);
-      model.deleteTransition(model.transitions[0]);
-      expect(model.transitions).to.have.property('length', 3);
-    });
+    // it('updates basic.yaml with task/transition deletes', () => {
+    //   const lines = raw.split('\n');
+    //   lines.splice(10, 14);
 
-    it('deletes tasks', () => {
-      expect(model.tasks).to.have.property('length', 4);
-      model.deleteTask(model.tasks[0]);
-      expect(model.tasks).to.have.property('length', 3);
-    });
-
-    it('updates basic.yaml with task/transition deletes', () => {
-      const lines = raw.split('\n');
-      lines.splice(10, 14);
-
-      expect(model.toYAML()).to.equal(lines.join('\n'));
-    });
+    //   expect(model.toYAML()).to.equal(lines.join('\n'));
+    // });
 
   });
 

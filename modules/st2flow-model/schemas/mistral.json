@@ -50,14 +50,14 @@
       "type": "object",
       "patternProperties": {
         "^\\w+$": {
-          "$ref": "/#definitions/workflow"
+          "$ref": "#/definitions/workflow"
         }
       }
     }
   },
   "patternProperties": {
     "^\\w+$": {
-      "$ref": "/#definitions/workflow"
+      "$ref": "#/definitions/workflow"
     }
   },
   "definitions": {
