@@ -1,9 +1,13 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
 import style from './style.css';
 
-export default class Action extends Component {
+export default class Action extends Component<{
+  action: Object
+}> {
   static propTypes = {
     action: PropTypes.object.isRequired,
   }
@@ -12,27 +16,35 @@ export default class Action extends Component {
     this.handleDragStart = this.handleDragStart.bind(this);
 
     const el = this.actionRef.current;
+    if (!el) {
+      return;
+    }
     el.addEventListener('dragstart', this.handleDragStart);
   }
 
   componentWillUnmount() {
     const el = this.actionRef.current;
+    if (!el) {
+      return;
+    }
     el.removeEventListener('dragstart', this.handleDragStart);
   }
 
-  handleDragStart(e) {
+  handleDragStart = (e: DragEvent) => {
     this.style.opacity = '0.4';
 
     const { action } = this.props;
 
-    e.dataTransfer.effectAllowed = 'copy';
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      action,
-      handle: {
-        x: e.offsetX,
-        y: e.offsetY,
-      },
-    }));
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('application/json', JSON.stringify({
+        action,
+        handle: {
+          x: e.offsetX,
+          y: e.offsetY,
+        },
+      }));
+    }
   }
 
   style = style
