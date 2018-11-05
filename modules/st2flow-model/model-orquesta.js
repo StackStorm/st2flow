@@ -193,7 +193,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     if (coords) {
       const comments = crawler.getCommentsForKey(this.tokenSet, key);
-      crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${coords.x}, ${coords.y}]`));
+      crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${Math.round(coords.x)}, ${Math.round(coords.y)}]`));
     }
 
     Object.keys(data).forEach(k => {
