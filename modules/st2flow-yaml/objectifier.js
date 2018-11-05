@@ -13,8 +13,8 @@ class Objectifier {
     this.anchors = anchors;
   }
 
-  getTokenValue(token: AnyToken, raw: boolean = false): any {
-    if (token == null) {
+  getTokenValue(token: ?AnyToken, raw: boolean = false): any {
+    if (token === null || typeof token === 'undefined') {
       return null;
     }
 

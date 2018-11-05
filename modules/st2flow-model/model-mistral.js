@@ -170,17 +170,17 @@ class MistralModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  updateTask(ref: string, task: TaskInterface) {
+  updateTask(oldTask: TaskInterface, newData: TaskInterface) {
     const { oldData, oldTree } = this.startMutation();
-    const { name, coords, ...data } = task;
-    const [ workflowName, oldTaskName ] = splitTaskName(ref, this.tokenSet);
+    const { name, coords, ...data } = newData;
+    const [ workflowName, oldTaskName ] = splitTaskName(oldTask.name, this.tokenSet);
     const key = [ workflowName, 'tasks', oldTaskName ];
 
     if(oldData.workflows) {
       key.unshift('workflows');
     }
 
-    if (name && ref !== name) {
+    if (name && oldTask.name !== name) {
       crawler.renameMappingKey(this.tokenSet, key, name);
       key.splice(-1, 1, name);
     }
@@ -199,7 +199,7 @@ class MistralModel extends BaseModel implements ModelInterface {
 
   updateTransition(oldTransition: TransitionInterface, newData: TransitionInterface) {
     const { oldData, oldTree } = this.startMutation();
-    const { type: oldType, from: oldFrom, to: oldTo } = oldTransition;
+    const { type: oldType, condition: oldCondition, from: oldFrom, to: oldTo } = oldTransition;
     const [ oldFromWorkflowName, oldFromTaskName ] = splitTaskName(oldFrom.name, this.tokenSet);
     const [ oldToWorkflowName, oldToTaskName ] = splitTaskName(oldTo.name, this.tokenSet);
     const oldKey = [ oldFromWorkflowName, 'tasks', oldFromTaskName, transitionTypeKey(oldType) ];
@@ -241,7 +241,15 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     let newIndex = oldIndex;
-    const next = newCondition ? { [newToTaskName]: newCondition } : newToTaskName;
+
+    let next;
+    if(newData.hasOwnProperty('condition')) {
+      next = newCondition ? { [newToTaskName]: newCondition } : newToTaskName;
+    }
+    else {
+      next = oldCondition ? { [newToTaskName]: oldCondition } : newToTaskName;
+    }
+
     if(oldFromWorkflowName !== newFromWorkflowName || oldFromTaskName !== newFromTaskName) {
       // The transition moved to a new "from" task, delete the old one
       crawler.spliceCollection(this.tokenSet, oldKey, oldIndex, 1);
@@ -252,7 +260,6 @@ class MistralModel extends BaseModel implements ModelInterface {
     const existing = util.get(oldData, newKey);
     if(existing) {
       // Update existing list
-      console.log('HERE', newKey.concat(newIndex), next, oldTransition);
       crawler.set(this.tokenSet, newKey.concat(newIndex), next);
     }
     else {
@@ -262,9 +269,9 @@ class MistralModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  deleteTask(ref: string) {
+  deleteTask(task: TaskInterface) {
     const { oldData, oldTree } = this.startMutation();
-    const [ workflowName, taskName ] = splitTaskName(ref, this.tokenSet);
+    const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
     const key = [ workflowName, 'tasks', taskName ];
 
     if(oldData.workflows) {
@@ -272,18 +279,28 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     crawler.deleteMappingItem(this.tokenSet, key);
-    this.emitChange(oldData, this.tokenSet.toObject());
+    this.endMutation(oldTree);
   }
 
-  deleteTransition(ref: TransitionRefInterface) {
+  deleteTransition(transition: TransitionInterface) {
     const { oldData, oldTree } = this.startMutation();
-    const [ fromWorkflowName, fromTaskName ] = splitTaskName(ref.from.name, this.tokenSet);
-    const [ toWorkflowName, toTaskName ] = splitTaskName(ref.to.name, this.tokenSet);
+    const { to, from, type, condition } = transition;
+    const [ fromWorkflowName, fromTaskName ] = splitTaskName(from.name, this.tokenSet);
+    const [ toWorkflowName, toTaskName ] = splitTaskName(to.name, this.tokenSet);
 
-    const key = [ fromWorkflowName, 'tasks', fromTaskName ];
+    const key = [ fromWorkflowName, 'tasks', fromTaskName, transitionTypeKey(type)];
 
     if(oldData.workflows) {
       key.unshift('workflows');
+    }
+
+    const transitions = crawler.getValueByKey(this.tokenSet, key);
+    const index = transitions.findIndex((t, i) => {
+      return (typeof t === 'string' && t === to.name) || t[to.name] === condition;
+    });
+
+    if(index !== -1) {
+      crawler.spliceCollection(this.tokenSet, key, index, 1);
     }
 
     this.endMutation(oldTree);
@@ -328,8 +345,9 @@ function makeTransition(next: NextItem, fromKey: Array<string>, type: Transition
      toKey.push(next);
   }
   else {
-    toKey.push(Object.keys(next)[0]);
-    transition.condition = next[transition.to.name];
+    const toName = Object.keys(next)[0]
+    toKey.push(toName);
+    transition.condition = next[toName];
   }
 
   transition.to.name = joinTaskName(toKey, tokenSet);

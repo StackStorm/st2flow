@@ -1,6 +1,6 @@
 // @flow
 
-import { AnyToken } from './types';
+import type { AnyToken } from './types';
 
 const strReducer = (str, token) => str + token.rawValue;
 
@@ -21,7 +21,7 @@ const stringifier = {
 
     switch(token.kind) {
       case 0:
-        str += buildString(token.rawValue, token.prefix, token.suffix);
+        str += buildString(token.rawValue, token.prefix);
         break;
 
       case 1:

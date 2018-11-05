@@ -17,7 +17,7 @@ type TokenRawValue = BaseToken & {
   prefix: Array<TokenRawValue>,
 
   singleQuoted?: boolean,
-  valueObject?: string | number,
+  valueObject?: any,
   anchorId?: string,
   isTag?: boolean,
 };
@@ -25,13 +25,14 @@ type TokenRawValue = BaseToken & {
 type TokenKeyValue = BaseToken & {
 	kind: 1,
 	key: TokenRawValue | TokenCollection,
-	value: ValueToken,
+	value: ?ValueToken,
 };
 
 type TokenMapping = BaseToken & {
 	kind: 2,
   mappings: Array<TokenKeyValue>,
   suffix?: Array<TokenRawValue>,
+  anchorId?: string,
 };
 
 type TokenCollection = BaseToken & {
@@ -45,16 +46,16 @@ type TokenReference = BaseToken & {
   referencesAnchor: string,
   value: BaseToken,
   prefix: Array<TokenRawValue>,
+  isTag?: boolean,
 };
 
-type ParentToken = TokenKeyValue | TokenCollection;
+type ParentToken = TokenKeyValue | TokenMapping | TokenCollection;
 type ValueToken = TokenRawValue | TokenMapping | TokenCollection | TokenReference;
 type AnyToken = TokenRawValue | TokenKeyValue | TokenMapping | TokenCollection | TokenReference;
 
 type Refinement = {
   tree: TokenMapping,
-  head: string,
-  tail: string,
+  yaml: string
 };
 
 /**

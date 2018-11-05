@@ -48,12 +48,12 @@ export interface ModelInterface {
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;
-    updateTask(ref: string, opts: TaskInterface): void;
-    deleteTask(ref: string): void;
+    updateTask(oldTask: TaskInterface, newData: TaskInterface): void;
+    deleteTask(task: TaskInterface): void;
 
     addTransition(opts: TransitionInterface): void;
-    updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;
-    deleteTransition(ref: TransitionRefInterface): void;
+    updateTransition(oldTransition: TransitionInterface, newData: TransitionInterface): void;
+    deleteTransition(transition: TransitionInterface): void;
 }
 
 export interface EditorPoint {

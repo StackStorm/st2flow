@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ParentToken, ValueToken, AnyToken, JpathKey } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ParentToken, ValueToken, AnyToken, JPath, JpathKey } from './types';
 
 import factory from './token-factory';
 import TokenSet from './token-set';
@@ -18,15 +18,19 @@ const crawler = {
   },
 
   set(tokenSet: TokenSet, key: JpathKey, value: any) {
-    const keyArr: Array<string | number> = splitKey(key);
+    const keyArr: JPath = splitKey(key);
     const token: ?ValueToken = getTokenByKey(tokenSet.tree, keyArr);
 
     if(token) {
       this.replaceTokenValue(tokenSet, keyArr, value);
     }
     else {
-      const parentPath = keyArr.slice(0, -1);
-      const parentValue = getTokenValueByKey(tokenSet.tree, parentPath);
+      const parentPath: JPath = keyArr.slice(0, -1);
+      const parentValue: ?ValueToken = getTokenValueByKey(tokenSet.tree, parentPath);
+
+      if(!parentValue) {
+        return;
+      }
 
       switch(parentValue.kind) {
         case 2:
@@ -71,8 +75,14 @@ const crawler = {
    * }
    */
   replaceTokenValue(tokenSet: TokenSet, key: JpathKey, value: any) {
-    const valueToken: AnyToken = getTokenValueByKey(tokenSet.tree, key);
-    const parentToken: Object = getTokenParent(tokenSet.tree, valueToken);
+    const valueToken: ?ValueToken = getTokenByKey(tokenSet.tree, key);
+
+    if(!valueToken) {
+      throw new Error(`Could not find token for path: ${key.toString()}`);
+    }
+
+    // const valueToken: ?ValueToken = getTokenValueByKey(tokenSet.tree, key);
+    const parentToken: ParentToken = getTokenParent(tokenSet.tree, valueToken);
 
     switch(parentToken.kind) {
       case 1:
@@ -81,7 +91,7 @@ const crawler = {
         break;
 
       case 3: {
-        const index = valueToken.jpath[valueToken.jpath.length - 1];
+        const index = parseInt(valueToken.jpath[valueToken.jpath.length - 1], 10);
         parentToken.items.splice(index, 1, factory.createToken(value));
         tokenSet.refineTree();
         break;
@@ -276,7 +286,7 @@ const crawler = {
   setCommentForKey(tokenSet: TokenSet, key: JpathKey, comments: string) {
     const token: ?TokenRawValue = getRawTokenByKey(tokenSet.tree, key);
 
-    if(!token || !token.kind !== 0) {
+    if(!token) {
       throw new Error(`Could not find token for path: ${key.toString()}`);
     }
 
@@ -352,7 +362,7 @@ const crawler = {
  * "task1" token within the given branch. This method is recursive, and generally
  * the starting branch should always be the root node: tokenSet.tree.
  */
-function getTokenByKey(branch: ValueToken, key: JpathKey): ?ValueToken {
+function getTokenByKey(branch: ?ValueToken, key: JpathKey): ?ValueToken {
   if (!branch) {
     return undefined;
   }
@@ -397,7 +407,7 @@ function getTokenByKey(branch: ValueToken, key: JpathKey): ?ValueToken {
 }
 
 function getRawTokenByKey(branch: ValueToken, key: JpathKey): ?TokenRawValue {
-  const token = getTokenByKey(branch, key);
+  const token: ?ValueToken = getTokenByKey(branch, key);
 
   if(!token || token.kind !== 0) {
     return null;
@@ -410,7 +420,7 @@ function getRawTokenByKey(branch: ValueToken, key: JpathKey): ?TokenRawValue {
  * Given a key such as "tasks.foo", returns the value as a token and
  * verifies it's the expected kind.
  */
-function getTokenValueByKey(rootTree: TokenMapping, key: JpathKey): ValueToken {
+function getTokenValueByKey(rootTree: TokenMapping, key: JpathKey): ?ValueToken {
   const token: ?ValueToken = getTokenByKey(rootTree, key);
 
   if (!token) {
@@ -418,15 +428,15 @@ function getTokenValueByKey(rootTree: TokenMapping, key: JpathKey): ValueToken {
   }
 
   const parentToken: ParentToken = getTokenParent(rootTree, token);
-  const valueToken: ValueToken = parentToken.kind === 1 ? parentToken.value : token;
+  const valueToken: ?ValueToken = parentToken.kind === 1 ? parentToken.value : token;
 
   return valueToken;
 }
 
 function getMappingTokenByKey(rootTree: TokenMapping, key: JpathKey): TokenMapping {
-  const token: ValueToken = getTokenValueByKey(rootTree, key);
+  const token: ?ValueToken = getTokenValueByKey(rootTree, key);
 
-  if (token.kind !== 2) {
+  if (!token || token.kind !== 2) {
     throw new Error(`Could not find mapping token (kind: 2) for path: ${key.toString()}`);
   }
 
@@ -434,9 +444,9 @@ function getMappingTokenByKey(rootTree: TokenMapping, key: JpathKey): TokenMappi
 }
 
 function getCollectionTokenByKey(rootTree: TokenMapping, key: JpathKey): TokenCollection {
-  const token: ValueToken = getTokenValueByKey(rootTree, key);
+  const token: ?ValueToken = getTokenValueByKey(rootTree, key);
 
-  if (token.kind !== 3) {
+  if (!token || token.kind !== 3) {
     throw new Error(`Could not find collection token (kind: 3) for path: ${key.toString()}`);
   }
 
@@ -457,7 +467,7 @@ function getTokenParent(rootTree: TokenMapping, token: AnyToken): ParentToken {
 }
 
 function getParentKVToken(tokenSet: TokenSet, token): TokenKeyValue {
-  const kvToken: AnyToken = getTokenParent(tokenSet.tree, token);
+  const kvToken: ParentToken = getTokenParent(tokenSet.tree, token);
 
   if(kvToken.kind !== 1) {
     throw new Error('The key must point to a valid mapping token.');
@@ -466,8 +476,8 @@ function getParentKVToken(tokenSet: TokenSet, token): TokenKeyValue {
   return kvToken;
 }
 
-function getParentMappingToken(tokenSet: TokenSet, token): TokenMapping {
-  const mToken: AnyToken = getTokenParent(tokenSet.tree, token);
+function getParentMappingToken(tokenSet: TokenSet, token: TokenKeyValue): TokenMapping {
+  const mToken: ParentToken = getTokenParent(tokenSet.tree, token);
 
   if(mToken.kind !== 2) {
     throw new Error('The key must point to a valid mapping token.');
