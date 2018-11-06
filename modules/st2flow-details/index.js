@@ -1,6 +1,6 @@
 //@flow
 
-import type { ModelInterface, TaskInterface, TransitionInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { ModelInterface, TaskInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
@@ -10,84 +10,17 @@ import { connect } from '@stackstorm/st2flow-model';
 
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
-import Button, { Toggle } from '@stackstorm/module-forms/button.component';
+import Button from '@stackstorm/module-forms/button.component';
 import { Panel, Toolbar, ToolbarButton } from './layout';
 import Property from './property';
 
 import StringField from '@stackstorm/module-auto-form/fields/string';
 
 import Meta from './meta-panel';
+import Transition from './transition';
 
 import style from './style.css';
 
-
-
-class Transition extends Component<{
-  transition: TransitionInterface,
-}> {
-  static propTypes = {
-    transition: PropTypes.object.isRequired,
-  }
-
-  style = style
-
-  render() {
-    const { transition } = this.props;
-    
-    return (
-      <div className={this.style.transition} >
-        <div className={this.style.transitionLine} >
-          <div className={this.style.transitionLabel}>
-            When
-          </div>
-          <div className={this.style.transitionField}>
-            <StringField value={transition.condition} />
-          </div>
-          <div className={this.style.transitionButton}>
-            <i className="icon-cross" />
-          </div>
-        </div>
-        <div className={this.style.transitionLine} >
-          <div className={this.style.transitionLabel}>
-            Publish
-          </div>
-          <div className={this.style.transitionField}>
-            <Toggle />
-          </div>
-        </div>
-        { transition.publish && (
-          <div className={this.style.transitionLine} >
-            <div className={this.style.transitionField}>
-              <StringField /><StringField />
-            </div>
-            <div className={this.style.transitionField}>
-              <i className="icon-plus2" />
-            </div>
-          </div>
-        )}
-        <div className={this.style.transitionLine} >
-          <div className={this.style.transitionLabel}>
-            Do
-          </div>
-          <div className={this.style.transitionField}>
-            <StringField />
-          </div>
-          <div className={this.style.transitionButton}>
-            <i className="icon-plus2" />
-          </div>
-        </div>
-        <div className={this.style.transitionLine} >
-          <div className={this.style.transitionLabel}>
-            Color
-          </div>
-          <div className={this.style.transitionField}>
-            <StringField />
-          </div>
-        </div>
-      </div>
-    );
-  }
-}
 
 @connect(({ model }) => ({ model }))
 class TaskDetails extends Component<{
@@ -126,12 +59,12 @@ class TaskDetails extends Component<{
     }
   }
 
-  handleFieldChange(field, value) {
+  handleTaskFieldChange(field, value) {
     const { model, selected } = this.props;
     model.updateTask({ name: selected }, { [field]: value });
   }
 
-  handleProperty(name, value) {
+  handleTaskProperty(name, value) {
     const { model, selected } = this.props;
 
     if (value) {
@@ -139,6 +72,17 @@ class TaskDetails extends Component<{
     }
     else {
       model.deleteTaskProperty({ name: selected }, name);
+    }
+  }
+
+  handleTransitionProperty(transition, name, value) {
+    const { model } = this.props;
+
+    if (value) {
+      model.setTransitionProperty(transition, name, value);
+    }
+    else {
+      model.deleteTransitionProperty(transition, name);
     }
   }
 
@@ -159,7 +103,16 @@ class TaskDetails extends Component<{
       return false;
     }
 
-    const transitions = !!selected && model.transitions.filter(transition => transition.from.name === task.name);
+    const transitions = !!selected && model.transitions
+      .filter(transition => transition.from.name === task.name)
+      .reduce((acc, transition) => {
+        const t = acc.find(t => t.condition === transition.condition);
+        if (!t) {
+          return acc.concat({ ...transition, to: [ transition.to ] });
+        }
+        t.to = t.to.concat([ transition.to ]);
+        return acc;
+      }, []);
 
     const action = actions.find(({ref}) => ref === task.action);
 
@@ -191,7 +144,7 @@ class TaskDetails extends Component<{
               )
             }
           </div>
-          <StringField name="action" value={task.action} onChange={value => this.handleFieldChange('action', value)} />
+          <StringField name="action" value={task.action} onChange={value => this.handleTaskFieldChange('action', value)} />
         </Panel>
       ),
       section === 'input' && (
@@ -202,32 +155,32 @@ class TaskDetails extends Component<{
               properties: action && action.parameters || {},
             }}
             data={task.input}
-            onChange={(runValue) => this.handleFieldChange('input', { ...task.input, ...runValue })}
+            onChange={(runValue) => this.handleTaskFieldChange('input', { ...task.input, ...runValue })}
           />
         </Panel>
       ),
       section === 'properties' && (
         <Panel key="properties">
-          <Property name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data."  value={!!task.join} onChange={value => this.handleProperty('join', value ? 'all' : false)}>
+          <Property name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data."  value={!!task.join} onChange={value => this.handleTaskProperty('join', value ? 'all' : false)}>
             {
               task.join && (
                 <div className={cx(this.style.propertyChild, this.style.radioGroup)}>
-                  <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleProperty('join', 'all')}>
+                  <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleTaskProperty('join', 'all')}>
                     Join all tasks
                   </div>
-                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleProperty('join', (this.joinFieldRef.current || {}).value)} >
-                    Join <input type="text" id="joinField" ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleProperty('join', e.target.value)} /> tasks
+                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', (this.joinFieldRef.current || {}).value)} >
+                    Join <input type="text" id="joinField" ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', e.target.value)} /> tasks
                   </label>
                 </div>
               )
             }
           </Property>
-          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleProperty('with', value ? { items: 'x in [1, 2, 3]' } : false)}>
+          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in [1, 2, 3]' } : false)}>
             {
               task.with && (
                 <div className={this.style.propertyChild}>
-                  <StringField name="items" value={task.with.items} onChange={value => this.handleProperty([ 'with', 'items' ], value)} />
-                  <StringField name="concurrency" value={task.with.concurrency} onChange={value => this.handleProperty([ 'with', 'concurrency' ], value)} />
+                  <StringField name="items" value={task.with.items} onChange={value => this.handleTaskProperty([ 'with', 'items' ], value)} />
+                  <StringField name="concurrency" value={task.with.concurrency} onChange={value => this.handleTaskProperty([ 'with', 'concurrency' ], value)} />
                 </div>
               )
             }
@@ -237,7 +190,7 @@ class TaskDetails extends Component<{
       section === 'transitions' && (
         <Panel key="transitions">
           {
-            (transitions || []).map(transition => <Transition key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`} transition={transition} />)
+            (transitions || []).map((transition, index) => <Transition key={index} transition={transition} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />)
           }
           <div className={this.style.transitionInfo}>
             To add a transition, hover over a task box and drag the connector to the desired task box you want to transition to.

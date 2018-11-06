@@ -233,7 +233,6 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     next.push(nextItem);
 
-    // TODO: this can be replaced by a more generic "set" method
     crawler.set(this.tokenSet, [ 'tasks', from.name, 'next' ], next);
 
     this.emitChange(oldData, this.tokenSet);
@@ -241,6 +240,58 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   updateTransition(ref: TransitionRefInterface, transition: TransitionInterface) {
     throw new Error('Not yet implemented');
+  }
+
+  setTransitionProperty({ from, condition }: TransitionRefInterface, path: JpathKey, value: any) {
+    const oldData = this.tokenSet.toObject();
+    const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const task: RawTask = rawTasks[from.name];
+
+    if(!task || !task.next) {
+      throw new Error(`No transition found coming from task "${from.name}"`);
+    }
+
+    const transitionIndex = task.next.findIndex(transition => transition.when === condition);
+    const transition = task.next && task.next[transitionIndex];
+
+    if (!transition) {
+      if (condition) {
+        throw new Error(`No transition with condition "${condition}" found in task "${from.name}"`);
+      }
+      else {
+        throw new Error(`No transition with empty condition found in task "${from.name}"`);
+      }
+    }
+
+    crawler.set(this.tokenSet, [ 'tasks', from.name, 'next', transitionIndex ].concat(path), value);
+
+    this.emitChange(oldData, this.tokenSet);
+  }
+
+  deleteTransitionProperty({ from, condition }: TransitionRefInterface, path: JpathKey) {
+    const oldData = this.tokenSet.toObject();
+    const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const task: RawTask = rawTasks[from.name];
+
+    if(!task || !task.next) {
+      throw new Error(`No transition found coming from task "${from.name}"`);
+    }
+
+    const transitionIndex = task.next.findIndex(transition => transition.when === condition);
+    const transition = task.next && task.next[transitionIndex];
+
+    if (!transition) {
+      if (condition) {
+        throw new Error(`No transition with condition "${condition}" found in task "${from.name}"`);
+      }
+      else {
+        throw new Error(`No transition with empty condition found in task "${from.name}"`);
+      }
+    }
+
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', from.name, 'next', transitionIndex ].concat(path));
+
+    this.emitChange(oldData, this.tokenSet);
   }
 
   deleteTransition(ref: TransitionRefInterface) {

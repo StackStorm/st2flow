@@ -40,7 +40,7 @@ export interface TransitionInterface {
 export interface TransitionRefInterface {
     from: TaskRefInterface;
     to: TaskRefInterface;
-    condition?: string,
+    condition?: string;
 }
 
 export interface ModelInterface {
