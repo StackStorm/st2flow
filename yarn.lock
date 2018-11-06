@@ -2889,6 +2889,13 @@ d@1:
   dependencies:
     es5-ext "^0.10.9"
 
+dagre@0.8.2:
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/dagre/-/dagre-0.8.2.tgz#755b79f4d5499d63cf74c3368fb08add93eceafe"
+  dependencies:
+    graphlib "^2.1.5"
+    lodash "^4.17.4"
+
 dargs@^4.0.1:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/dargs/-/dargs-4.1.0.tgz#03a9dbb4b5c2f139bf14ae53f0b8a2a6a86f4e17"
@@ -4430,6 +4437,12 @@ graceful-fs@4.1.11, graceful-fs@4.X, graceful-fs@^4.0.0, graceful-fs@^4.1.11, gr
 "graceful-readlink@>= 1.0.0":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/graceful-readlink/-/graceful-readlink-1.0.1.tgz#4cafad76bc62f02fa039b2f94e9a3dd3a391a725"
+
+graphlib@^2.1.5:
+  version "2.1.5"
+  resolved "https://registry.yarnpkg.com/graphlib/-/graphlib-2.1.5.tgz#6afe1afcc5148555ec799e499056795bd6938c87"
+  dependencies:
+    lodash "^4.11.1"
 
 growl@1.10.5:
   version "1.10.5"
@@ -6057,7 +6070,7 @@ lodash@^3.10.1:
   version "3.10.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
 
-lodash@^4.13.1, lodash@^4.17.10, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0:
+lodash@^4.11.1, lodash@^4.13.1, lodash@^4.17.10, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0:
   version "4.17.11"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
 

@@ -8,7 +8,7 @@ import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import Notifications from '@stackstorm/st2flow-notifications';
-import { connect } from '@stackstorm/st2flow-model';
+import { connect, layout } from '@stackstorm/st2flow-model';
 
 import Task from './task';
 import Transition from './transition';
@@ -288,7 +288,7 @@ export default class Canvas extends Component<{
         <Toolbar>
           <div key="undo" icon="icon-redirect" onClick={() => console.log('undo')} />
           <div key="redo" icon="icon-redirect2" onClick={() => console.log('redo')} />
-          <div key="rearrange" icon="icon-arrange" onClick={() => console.log('rearrange')} />
+          <div key="rearrange" icon="icon-arrange" onClick={() => layout(model)} />
           <div key="save" icon="icon-save" onClick={() => console.log('save')} />
           <div key="run" icon="icon-play" onClick={() => console.log('run')} />
         </Toolbar>
