@@ -16,24 +16,22 @@ import Parameters from './parameters-panel';
 @connect(({ metaModel }) => ({ metaModel }))
 export default class Meta extends Component<{
   metaModel: ModelInterface,
-}, {
-  section?: string,
+  navigation: Object,
+  handleNavigationChange: Function,
 }> {
   static propTypes = {
     metaModel: PropTypes.object,
-  }
-
-  state = {
-    section: undefined,
+    navigation: PropTypes.object,
+    handleNavigationChange: PropTypes.func,
   }
 
   handleSectionSwitch(section: string) {
-    this.setState({ section });
+    this.props.handleNavigationChange({ section });
   }
 
   render() {
     const { metaModel } = this.props;
-    const { section = 'meta' } = this.state;
+    const { section = 'meta' } = this.props.navigation;
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >

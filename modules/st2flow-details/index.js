@@ -1,6 +1,6 @@
 //@flow
 
-import type { ModelInterface, TaskInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { ModelInterface, TaskInterface, TransitionRefInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
@@ -21,6 +21,11 @@ import Transition from './transition';
 
 import style from './style.css';
 
+type Navigation = {
+  type?: string,
+  section?: string,
+  asCode?: bool,
+}
 
 @connect(({ model }) => ({ model }))
 class TaskDetails extends Component<{
@@ -28,8 +33,9 @@ class TaskDetails extends Component<{
   selected: string,
   actions: Array<Object>,
   onBack: Function,
+  navigation: Navigation,
+  handleNavigationChange: Function,
 }, {
-  section: string | void,
   name: string,
 }> {
   static propTypes = {
@@ -37,12 +43,12 @@ class TaskDetails extends Component<{
     selected: PropTypes.string,
     actions: PropTypes.array,
     onBack: PropTypes.func.isRequired,
+    handleNavigationChange: PropTypes.func,
   }
 
   constructor(props) {
     super(props);
     this.state = {
-      section: undefined,
       name: props.selected,
     };
   }
@@ -75,7 +81,7 @@ class TaskDetails extends Component<{
     }
   }
 
-  handleTransitionProperty(transition, name, value) {
+  handleTransitionProperty(transition: TransitionRefInterface, name, value) {
     const { model } = this.props;
 
     if (value) {
@@ -87,7 +93,7 @@ class TaskDetails extends Component<{
   }
 
   handleSectionSwitch(section) {
-    this.setState({ section });
+    this.props.handleNavigationChange({ section });
   }
 
   style = style
@@ -95,7 +101,8 @@ class TaskDetails extends Component<{
 
   render() {
     const { model, selected, onBack, actions } = this.props;
-    const { section = 'task', name } = this.state;
+    const { section = 'task' } = this.props.navigation;
+    const { name } = this.state;
 
     const task = selected && model.tasks.find(task => task.name === selected);
 
@@ -280,8 +287,7 @@ export default class Details extends Component<{
   selected: string,
   onSelect: Function,
 }, {
-  selected: string | void,
-  asCode: bool,
+  navigation: Navigation,
 }> {
   static propTypes = {
     className: PropTypes.string,
@@ -293,14 +299,26 @@ export default class Details extends Component<{
   }
 
   state = {
-    selected: undefined,
-    asCode: false,
+    navigation: {
+      type: undefined,
+      asCode: false,
+    },
   }
 
   style = style
 
-  handleSectionSelect(section: { title: string }) {
-    this.setState({ selected: section.title });
+  handleNavigationChange(change: { type: string }) {
+    const { navigation } = this.state;
+
+    this.setState({ navigation: { ...navigation, ...change } });
+  }
+
+  handleCodeToggle() {
+    const { navigation } = this.state;
+
+    navigation.asCode = !navigation.asCode;
+
+    this.setState({ navigation });
   }
 
   handleTaskSelect(task: TaskInterface) {
@@ -321,7 +339,7 @@ export default class Details extends Component<{
     }];
 
     const { selected: taskSelected, actions } = this.props;
-    const { selected = 'metadata', asCode } = this.state;
+    const { type = 'metadata', asCode } = this.state.navigation;
 
     return (
       <div className={cx(this.props.className, this.style.component)}>
@@ -332,29 +350,29 @@ export default class Details extends Component<{
                 <ToolbarButton
                   key={section.title}
                   className={section.className}
-                  selected={selected === section.title}
-                  onClick={() => this.handleSectionSelect(section)}
+                  selected={type === section.title}
+                  onClick={() => this.handleNavigationChange({ type: section.title, section: undefined })}
                 />
               );
             })
           }
-          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => this.setState({ asCode: !asCode })} />
+          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => this.handleCodeToggle()} />
         </Toolbar>
         {
-          selected === 'metadata' && (
+          type === 'metadata' && (
             asCode
               && <Editor model={this.props.metaModel} />
               // $FlowFixMe Model is populated via decorator
-              || <Meta />
+              || <Meta navigation={this.state.navigation} handleNavigationChange={navigation => this.handleNavigationChange(navigation)} />
           )
         }
         {
-          selected === 'execution' && (
+          type === 'execution' && (
             asCode
               && <Editor model={this.props.model} />
               || taskSelected
                 // $FlowFixMe ^^
-                && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} />
+                && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} navigation={this.state.navigation} handleNavigationChange={navigation => this.handleNavigationChange(navigation)} />
                 // $FlowFixMe ^^
                 || <TaskList onSelect={task => this.handleTaskSelect(task)} />
           )

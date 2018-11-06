@@ -70,6 +70,12 @@ export interface ModelInterface {
     addTransition(opts: TransitionInterface): void;
     updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;
     deleteTransition(ref: TransitionRefInterface): void;
+
+    setTransitionProperty(ref: TransitionRefInterface, path: JpathKey , value: any): void;
+    deleteTransitionProperty(ref: TransitionRefInterface, path: JpathKey): void;
+
+    undo(): void;
+    redo(): void;
 }
 
 export interface EditorPoint {
