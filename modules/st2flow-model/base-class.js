@@ -40,7 +40,7 @@ class BaseClass {
   }
 
   fromYAML(yaml: string): void {
-    const { tree: oldTree } = cloneSet(this.tokenSet);
+    const oldTree = this.tokenSet ? util.deepClone(this.tokenSet.tree) : {};
 
     try {
       this.tokenSet = new TokenSet(yaml);
@@ -76,7 +76,7 @@ class BaseClass {
   }
 
   set(path: string | Array<string | number>, value: any) {
-    const { tree: oldTree } = cloneSet(this.tokenSet);
+    const oldTree = this.tokenSet ? util.deepClone(this.tokenSet.tree) : {};
 
     crawler.set(this.tokenSet, path, value);
 
@@ -142,13 +142,6 @@ function formatAjvErrors(errors: Array<AjvError>): Array<GenericError> {
         message: `${message} ${errors[0].message}`,
       }));
   }
-}
-
-function cloneSet(tokenSet: TokenSet) {
-  const tree = tokenSet ? util.deepClone(tokenSet.tree): {};
-  const obj = tokenSet ? tokenSet.toObject(): {};
-
-  return { tree, obj };
 }
 
 export default BaseClass;
