@@ -54,6 +54,8 @@ export default class Editor extends Component<{
 
     model.on('change', this.handleModelChange);
     model.on('yaml-error', this.handleModelError);
+    model.on('undo', this.undo);
+    model.on('redo', this.redo);
   }
 
   componentWillUnmount() {
@@ -63,10 +65,21 @@ export default class Editor extends Component<{
     const { model } = this.props;
     model.removeListener('change', this.handleModelChange);
     model.removeListener('yaml-error', this.handleModelError);
+    model.removeListener('undo', this.undo);
+    model.removeListener('redo', this.redo);
   }
 
   editor: any
   deltaTimer: number
+
+  undo = () => {
+    this.editor.undo();
+    this.props.model.fromYAML(this.editor.getValue());
+  }
+  redo = () => {
+    this.editor.redo();
+    this.props.model.fromYAML(this.editor.getValue());
+  }
 
   handleEditorChange = (delta: DeltaInterface) => {
     window.clearTimeout(this.deltaTimer);

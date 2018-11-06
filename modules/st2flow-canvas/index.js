@@ -286,8 +286,8 @@ export default class Canvas extends Component<{
         onClick={e => this.handleCanvasClick(e)}
       >
         <Toolbar>
-          <div key="undo" icon="icon-redirect" onClick={() => console.log('undo')} />
-          <div key="redo" icon="icon-redirect2" onClick={() => console.log('redo')} />
+          <div key="undo" icon="icon-redirect" onClick={() => model.undo()} />
+          <div key="redo" icon="icon-redirect2" onClick={() => model.redo()} />
           <div key="rearrange" icon="icon-arrange" onClick={() => layout(model)} />
           <div key="save" icon="icon-save" onClick={() => console.log('save')} />
           <div key="run" icon="icon-play" onClick={() => console.log('run')} />
