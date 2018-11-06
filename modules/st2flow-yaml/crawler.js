@@ -1,12 +1,10 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken, JpathKey } from './types';
 
 import factory from './token-factory';
 import TokenSet from './token-set';
 import { get, splitKey } from './util';
-
-type JpathKey = string | Array<string | number>;
 
 const REG_COMMENT = /^\s*#/;
 
@@ -240,7 +238,7 @@ const crawler = {
    *   - item 3
    * }
    */
-  spliceCollection(tokenSet: TokenSet, targetKey: JpathKey, start: string, deleteCount: number, ...items: Array<AnyToken>) {
+  spliceCollection(tokenSet: TokenSet, targetKey: JpathKey, start: string | number, deleteCount: number, ...items: Array<AnyToken>) {
     const token: TokenCollection = getTokenValueByKey(tokenSet.tree, targetKey, 3);
     const tokens = items.map(item => factory.createToken(item));
 

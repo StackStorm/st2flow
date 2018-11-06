@@ -1,4 +1,5 @@
 // @flow
+import type { JpathKey } from '@stackstorm/st2flow-yaml';
 
 export type TransitionType = 'Success' | 'Error' | 'Complete'
 
@@ -10,10 +11,17 @@ export interface CanvasPoint {
 export interface TaskInterface {
     name: string;
     action: string;
-    transitions: Array<TransitionInterface>;
+    transitions?: Array<TransitionInterface>;
 
     input?: Object;
     coords: CanvasPoint;
+    size?: CanvasPoint;
+
+    with?: {
+        items: string,
+        concurrency?: string,
+    };
+    join?: string;
 }
 
 export interface TaskRefInterface {
@@ -26,11 +34,13 @@ export interface TransitionInterface {
     to: TaskRefInterface;
     type?: TransitionType;
     condition?: string;
+    publish?: Object;
 }
 
 export interface TransitionRefInterface {
     from: TaskRefInterface;
     to: TaskRefInterface;
+    condition?: string;
 }
 
 export interface ModelInterface {
@@ -38,6 +48,8 @@ export interface ModelInterface {
     +description: string;
     +tasks: Array<TaskInterface>;
     +transitions: Array<TransitionInterface>;
+
+    +lastTaskIndex: number;
 
     // These intentionally return void to prevent chaining
     // Consumers are responsible for cleaning up after themselves
@@ -49,12 +61,21 @@ export interface ModelInterface {
     toYAML(): string;
 
     addTask(opts: TaskInterface): void;
-    updateTask(ref: string, opts: TaskInterface): void;
-    deleteTask(ref: string): void;
+    updateTask(ref: TaskRefInterface, opts: any): void;
+    deleteTask(ref: TaskRefInterface): void;
+
+    setTaskProperty(ref: TaskRefInterface, path: JpathKey , value: any): void;
+    deleteTaskProperty(ref: TaskRefInterface, path: JpathKey): void;
 
     addTransition(opts: TransitionInterface): void;
     updateTransition(ref: TransitionRefInterface, opts: TransitionInterface): void;
     deleteTransition(ref: TransitionRefInterface): void;
+
+    setTransitionProperty(ref: TransitionRefInterface, path: JpathKey , value: any): void;
+    deleteTransitionProperty(ref: TransitionRefInterface, path: JpathKey): void;
+
+    undo(): void;
+    redo(): void;
 }
 
 export interface EditorPoint {

@@ -1,3 +1,5 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -7,7 +9,9 @@ import api from '@stackstorm/module-api';
 
 import style from './style.css';
 
-export default class Header extends Component {
+export default class Header extends Component<{
+  className?: string,
+}> {
   static propTypes = {
     className: PropTypes.string,
   }

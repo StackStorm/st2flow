@@ -1,3 +1,5 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -15,7 +17,18 @@ export const specialProperties = [{
   description: 'Mark parameter value as sensitive',
 }];
 
-export default class Parameter extends Component {
+export default class Parameter extends Component<{
+  name: string,
+  parameter: {
+    type: string,
+    description: string,
+    immutable: bool,
+    required: bool,
+    secret: bool,
+  },
+  onEdit: Function,
+  onDelete: Function,
+}> {
   static propTypes = {
     name: PropTypes.string,
     parameter: PropTypes.shape({
@@ -26,13 +39,13 @@ export default class Parameter extends Component {
     onDelete: PropTypes.func,
   }
 
-  handleEdit(e) {
+  handleEdit(e: Event) {
     e.stopPropagation();
 
     this.props.onEdit();
   }
 
-  handleDelete(e) {
+  handleDelete(e: Event) {
     e.stopPropagation();
 
     this.props.onDelete();

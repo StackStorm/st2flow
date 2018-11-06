@@ -2,6 +2,8 @@ type Kind = 0 | 1 | 2 | 3 | 4;
 
 type JPath = Array<string | number>;
 
+type JpathKey = string | Array<string | number>;
+
 type BaseToken = {
 	startPosition: number,
   endPosition: number,

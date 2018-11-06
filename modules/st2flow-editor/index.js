@@ -1,3 +1,8 @@
+//@flow
+
+import type { ModelInterface, DeltaInterface } from '@stackstorm/st2flow-model';
+import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -12,13 +17,18 @@ import style from './style.css';
 const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
 
-export default class Editor extends Component {
+export default class Editor extends Component<{
+  className?: string,
+  model: ModelInterface,
+}, {
+  errors: Array<Error>
+}> {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
   }
 
-  constructor(...args) {
+  constructor(...args: any) {
     super(...args);
 
     this.state = {
@@ -27,11 +37,6 @@ export default class Editor extends Component {
   }
 
   componentDidMount() {
-    this.handleEditorChange = this.handleEditorChange.bind(this);
-    this.handleModelChange = this.handleModelChange.bind(this);
-    this.handleModelError = this.handleModelError.bind(this);
-    this.handleNotificationRemove = this.handleNotificationRemove.bind(this);
-
     const { model } = this.props;
     ace.acequire('ace/ext/language_tools');
 
@@ -49,29 +54,45 @@ export default class Editor extends Component {
 
     model.on('change', this.handleModelChange);
     model.on('yaml-error', this.handleModelError);
+    model.on('undo', this.undo);
+    model.on('redo', this.redo);
   }
 
   componentWillUnmount() {
-    clearTimeout(this.deltaTimer);
+    window.clearTimeout(this.deltaTimer);
     this.editor.removeListener('change', this.handleEditorChange);
 
     const { model } = this.props;
     model.removeListener('change', this.handleModelChange);
     model.removeListener('yaml-error', this.handleModelError);
+    model.removeListener('undo', this.undo);
+    model.removeListener('redo', this.redo);
   }
 
-  handleEditorChange(delta) {
-    clearTimeout(this.deltaTimer);
+  editor: any
+  deltaTimer: number
+
+  undo = () => {
+    this.editor.undo();
+    this.props.model.fromYAML(this.editor.getValue());
+  }
+  redo = () => {
+    this.editor.redo();
+    this.props.model.fromYAML(this.editor.getValue());
+  }
+
+  handleEditorChange = (delta: DeltaInterface) => {
+    window.clearTimeout(this.deltaTimer);
 
     // Only if the user is actually typing
     if(this.editor.isFocused()) {
-      this.deltaTimer = setTimeout(() => {
+      this.deltaTimer = window.setTimeout(() => {
         this.props.model.applyDelta(delta, this.editor.getValue());
       }, DELTA_DEBOUNCE);
     }
   }
 
-  handleModelChange(deltas, yaml) {
+  handleModelChange = (deltas: Array<DeltaInterface>, yaml: string) => {
     this.setState({ errors: [] });
 
     if (yaml !== this.editor.getValue()) {
@@ -80,12 +101,12 @@ export default class Editor extends Component {
     }
   }
 
-  handleModelError(err) {
+  handleModelError = (err: Error) => {
     // error may or may not be an array
     this.setState({ errors: err && [].concat(err) || [] });
   }
 
-  handleNotificationRemove(notification) {
+  handleNotificationRemove = (notification: NotificationInterface) => {
     switch(notification.type) {
       case 'error':
         this.setState({
