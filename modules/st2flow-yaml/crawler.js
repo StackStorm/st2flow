@@ -17,6 +17,11 @@ const crawler = {
     return undefined;
   },
 
+  /**
+   * Shorthand for setting a values on mappings or collections:
+   *   - creates or replaces mappings values
+   *   - pushes or splices collection values
+   */
   set(tokenSet: TokenSet, key: JpathKey, value: any) {
     const keyArr: JPath = splitKey(key);
     const token: ?ValueToken = getTokenByKey(tokenSet.tree, keyArr);
@@ -52,6 +57,66 @@ const crawler = {
   },
 
   /**
+   * Shorthand for deleting values from mappings or collections:
+   *   - deletes keys from mappings
+   *   - splices items out of collections
+   */
+  delete(tokenSet: TokenSet, key: JpathKey) {
+    const keyArr: JPath = splitKey(key);
+    const token: ?ValueToken = getTokenByKey(tokenSet.tree, keyArr);
+
+    if(!token) {
+      return;
+    }
+
+    const parentPath: JPath = keyArr.slice(0, -1);
+    const parentToken: ParentToken = getTokenParent(tokenSet.tree, token);
+
+    switch(parentToken.kind) {
+      case 1: {
+        this.deleteMappingItem(tokenSet, key);
+        tokenSet.refineTree();
+        break;
+      }
+
+      case 3: {
+        let index = parseInt(keyArr[keyArr.length - 1], 10);
+
+        if(isNaN(index) || index > parentToken.items.length) {
+          index = parentToken.items.length;
+        }
+
+        this.spliceCollection(tokenSet, parentPath, index, 1);
+        break;
+      }
+
+      default:
+        throw new Error(`Cannot delete token of kind ${parentToken.kind} at path: ${parentToken.jpath.toString()}`);
+    }
+  },
+
+  /**
+   * Moves a value from one key to another.
+   */
+  moveTokenValue(tokenSet: TokenSet, fromKey: JpathKey, toKey: JpathKey) {
+    const sourceKey = getTokenByKey(tokenSet.tree, fromKey);
+
+    if(!sourceKey) {
+      throw new Error(`Could not find token for source path: ${fromKey.toString()}`);
+    }
+
+    this.set(tokenSet, toKey, this.getValueByKey(tokenSet, fromKey));
+
+    const oldFirst = this.findFirstValueToken(sourceKey);
+    const destKey = getTokenByKey(tokenSet.tree, toKey);
+    const newFirst = this.findFirstValueToken(destKey);
+    this.delete(tokenSet, fromKey);
+
+    newFirst.prefix = oldFirst.prefix;
+    tokenSet.refineTree();
+  },
+
+  /**
    * Given a key and value, replaces the existing value with the new value.
    *
    * {
@@ -75,30 +140,40 @@ const crawler = {
    * }
    */
   replaceTokenValue(tokenSet: TokenSet, key: JpathKey, value: any) {
-    const valueToken: ?ValueToken = getTokenByKey(tokenSet.tree, key);
+    const keyToken: ?ValueToken = getTokenByKey(tokenSet.tree, key);
 
-    if(!valueToken) {
+    if(!keyToken) {
       throw new Error(`Could not find token for path: ${key.toString()}`);
     }
 
-    // const valueToken: ?ValueToken = getTokenValueByKey(tokenSet.tree, key);
-    const parentToken: ParentToken = getTokenParent(tokenSet.tree, valueToken);
+    const parentToken: ParentToken = getTokenParent(tokenSet.tree, keyToken);
+    let oldPrefix = [];
 
+    // Make sure to copy the old prefix
     switch(parentToken.kind) {
-      case 1:
+      case 1: {
+        const oldFirst = this.findFirstValueToken(parentToken.value);
         parentToken.value = factory.createToken(value);
+
+        const newFirst = this.findFirstValueToken(parentToken.value);
+        newFirst.prefix = oldFirst.prefix;
         tokenSet.refineTree();
         break;
+      }
 
       case 3: {
-        const index = parseInt(valueToken.jpath[valueToken.jpath.length - 1], 10);
+        const index = parseInt(keyToken.jpath[keyToken.jpath.length - 1], 10);
+        const oldFirst = this.findFirstValueToken(parentToken.items[index]);
         parentToken.items.splice(index, 1, factory.createToken(value));
+
+        const newFirst = this.findFirstValueToken(parentToken.items[index]);
+        newFirst.prefix = oldFirst.prefix;
         tokenSet.refineTree();
         break;
       }
 
       default:
-        throw new Error(`Cannot update token of kind ${valueToken.kind} at path: ${key.toString()}`);
+        throw new Error(`Cannot update token of kind ${parentToken.kind} at path: ${parentToken.jpath.toString()}`);
     }
   },
 
@@ -228,9 +303,9 @@ const crawler = {
    * {
    *   version: 1,
    *   items:
-   *   - item 1
-   *   - item 2
-   *   - item 3
+   *     - item 1
+   *     - item 2
+   *     - item 3
    * }
    *
    * crawler.spliceCollection(tokenSet, 'items', 1, 1, 'newItem');
@@ -238,9 +313,9 @@ const crawler = {
    * {
    *   version: 1,
    *   items:
-   *   - item 1
-   *   - newItem
-   *   - item 3
+   *     - item 1
+   *     - newItem
+   *     - item 3
    * }
    */
   spliceCollection(tokenSet: TokenSet, targetKey: JpathKey, start: number, deleteCount: number, ...items: Array<ValueToken>) {
@@ -486,6 +561,9 @@ function getParentMappingToken(tokenSet: TokenSet, token: TokenKeyValue): TokenM
   return mToken;
 }
 
+/**
+ * Sets the token value and rawValue, preserving quotes when necessary
+ */
 function updateTokenValue(token: TokenRawValue, value: string) {
   let rawValue = value;
 
@@ -499,13 +577,17 @@ function updateTokenValue(token: TokenRawValue, value: string) {
   Object.assign(token, { value, rawValue });
 }
 
+/**
+ * YAML allows mapping keys to be constructed from a collection (array) of values.
+ * The key is the result of Array.prototype.toString()
+ */
 function buildArrayKey(token: TokenCollection): string {
   return token.items.reduce((keys, t) => {
     if(t.kind === 0) {
       keys.push(t.value);
     };
     return keys;
-  }, []).join(',');
+  }, []).toString();
 }
 
 export default crawler;

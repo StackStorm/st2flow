@@ -73,7 +73,7 @@ class MistralModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action = '', input } = task;
+      const { action = '', input = [] } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       if (inputPartials.length) {
@@ -87,9 +87,9 @@ class MistralModel extends BaseModel implements ModelInterface {
         coords: { x: 0, y: 0, ...coords },
       }, task, {
         action: actionRef,
-        input: {
-          ...input
-        }
+        // input: {
+        //   ...input
+        // }
       });
     });
 
@@ -211,19 +211,18 @@ class MistralModel extends BaseModel implements ModelInterface {
     const oldTransitions = util.get(oldData, oldKey);
 
     if(!oldTransitions || !oldTransitions.length) {
-      this.emitError(new Error(`Could not find transition at path: ${oldKey.join('.')}`));
+      this.emitError(new Error(`Could not find transitions at path ${oldKey.join('.')}`));
       return;
     }
 
-    const oldIndex = oldTransitions.findIndex(t => {
-      return typeof t === 'string' ? t === oldToTaskName : t.hasOwnProperty(oldToTaskName);
+    const oldIndex = oldTransitions.findIndex(tr => {
+      return (typeof tr === 'string' && tr === oldToTaskName) || tr[oldToTaskName] === oldCondition;
     });
 
     if(oldIndex === -1) {
-      this.emitError(new Error(`Could not find transition to update: ${oldKey.join('.')}`));
+      this.emitError(new Error(`Could not find transition to update at path ${oldKey.join('.')}`));
       return;
     }
-
 
     const { type: newType, condition: newCondition, from: newFrom, to: newTo } = newData;
     const [ newFromWorkflowName, newFromTaskName ] = newFrom ? splitTaskName(newFrom.name, this.tokenSet) : [ oldFromWorkflowName, oldFromTaskName ];
@@ -234,13 +233,32 @@ class MistralModel extends BaseModel implements ModelInterface {
       return;
     }
 
-    const newKey = [ newFromWorkflowName, 'tasks', newFromTaskName, transitionTypeKey(newType || oldType) ];
+    const newKey = [ newFromWorkflowName, 'tasks', newFromTaskName/*, transitionTypeKey(newType || oldType)*/ ];
 
     if(oldData.workflows) {
       newKey.unshift('workflows');
     }
 
-    let newIndex = oldIndex;
+    if(newData.hasOwnProperty('type')) {
+      if(newType !== oldType) {
+        crawler.spliceCollection(this.tokenSet, oldKey, oldIndex, 1);
+      }
+
+      newKey.push(transitionTypeKey(newType));
+    }
+    else {
+      newKey.push(transitionTypeKey(oldType));
+    }
+
+    let newIndex;
+    if(oldFromWorkflowName !== newFromWorkflowName || oldFromTaskName !== newFromTaskName) {
+      // The transition moved to a new "from" task, delete the old one
+      crawler.spliceCollection(this.tokenSet, oldKey, oldIndex, 1);
+      newIndex = '#'; // creates a new item in the new "from" task
+    }
+    else {
+      newIndex = oldIndex;
+    }
 
     let next;
     if(newData.hasOwnProperty('condition')) {
@@ -249,13 +267,6 @@ class MistralModel extends BaseModel implements ModelInterface {
     else {
       next = oldCondition ? { [newToTaskName]: oldCondition } : newToTaskName;
     }
-
-    if(oldFromWorkflowName !== newFromWorkflowName || oldFromTaskName !== newFromTaskName) {
-      // The transition moved to a new "from" task, delete the old one
-      crawler.spliceCollection(this.tokenSet, oldKey, oldIndex, 1);
-      newIndex = '#'; // creates a new item in the new "from" task
-    }
-
 
     const existing = util.get(oldData, newKey);
     if(existing) {
@@ -295,8 +306,8 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     const transitions = crawler.getValueByKey(this.tokenSet, key);
-    const index = transitions.findIndex((t, i) => {
-      return (typeof t === 'string' && t === to.name) || t[to.name] === condition;
+    const index = transitions.findIndex((tr, i) => {
+      return (typeof tr === 'string' && tr === to.name) || tr[to.name] === condition;
     });
 
     if(index !== -1) {

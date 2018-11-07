@@ -67,7 +67,8 @@ type TokenMeta = {
   comments: string, // provides any comments associated with the token
 
   keys?: Array<string>, // for mappings (objects), provides the keys in YAML source order
-  inlineInput?: boolean, // whether or not "input" statements are declared inline
+  inlineInput?: boolean, // whether or not "input" statements are declared as inline string
+  withString?: boolean, // whether or not the "with" statements are declared as inline string
 };
 
 type JpathKey = string | Array<string | number>;

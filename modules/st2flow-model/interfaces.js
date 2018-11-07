@@ -13,23 +13,26 @@ export interface TaskInterface {
     coords: CanvasPoint;
 
     input?: Object;
+
+    // Mistral Only
+    publish?: string | Array<Object>;
 }
 
 export interface TaskRefInterface {
-    workflow?: string;
     name: string;
+    workflow?: string;
 }
 
 export interface TransitionInterface {
     from: TaskRefInterface;
     to: TaskRefInterface;
-    type?: TransitionType;
-    condition?: string;
-}
+    condition: ?string;
 
-export interface TransitionRefInterface {
-    from: TaskRefInterface;
-    to: TaskRefInterface;
+    // Mistral Only
+    type?: TransitionType;
+
+    // Orquesta Only
+    publish?: string | Array<Object>;
 }
 
 export interface ModelInterface {

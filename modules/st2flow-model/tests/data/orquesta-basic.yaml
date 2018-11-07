@@ -33,4 +33,4 @@ tasks:
   c:
     action: core.local cmd="echo 'Took path C.'"
   foobar:
-    action: core.local
+    action: core.local cmd="echo 'Took path foobar.'"
