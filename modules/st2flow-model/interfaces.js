@@ -1,6 +1,7 @@
 // @flow
+import type { JpathKey } from '@stackstorm/st2flow-yaml';
 
-export type TransitionType = 'Success' | 'Error' | 'Complete'
+export type TransitionType = 'Success' | 'Error' | 'Complete';
 
 export interface CanvasPoint {
     x: number;
@@ -12,10 +13,19 @@ export interface TaskInterface {
     action: string;
     coords: CanvasPoint;
 
+    size?: CanvasPoint;
     input?: Object;
 
-    // Mistral Only
+    // Mistral only
+    // workflow?: string;
     publish?: string | Array<Object>;
+
+    // Orquesta only
+    with?: ?{
+        items: string,
+        concurrency?: string,
+    };
+    join?: ?string;
 }
 
 export interface TaskRefInterface {
@@ -35,28 +45,44 @@ export interface TransitionInterface {
     publish?: string | Array<Object>;
 }
 
+export interface TransitionRefInterface {
+    from: TaskRefInterface;
+    to: TaskRefInterface;
+    condition?: string;
+}
+
 export interface ModelInterface {
     +version: number;
     +description: string;
     +tasks: Array<TaskInterface>;
     +transitions: Array<TransitionInterface>;
+    +lastTaskIndex: number;
+
+    constructor(yaml: string): void;
+    fromYAML(yaml: string): void;
+    toYAML(): string;
 
     // These intentionally return void to prevent chaining
     // Consumers are responsible for cleaning up after themselves
     on(event: string, callback: Function): void;
     removeListener(event: string, callback: Function): void;
 
-    constructor(yaml: string): void;
-    fromYAML(yaml: string): void;
-    toYAML(): string;
-
     addTask(opts: TaskInterface): void;
-    updateTask(oldTask: TaskInterface, newData: TaskInterface): void;
-    deleteTask(task: TaskInterface): void;
+    updateTask(ref: TaskRefInterface, newData: TaskInterface): void;
+    deleteTask(ref: TaskRefInterface): void;
+
+    setTaskProperty(task: TaskInterface, path: JpathKey, value: any): void;
+    deleteTaskProperty(task: TaskInterface, path: JpathKey): void;
 
     addTransition(opts: TransitionInterface): void;
     updateTransition(oldTransition: TransitionInterface, newData: TransitionInterface): void;
     deleteTransition(transition: TransitionInterface): void;
+
+    setTransitionProperty(transition: TransitionInterface, path: JpathKey, value: any): void;
+    deleteTransitionProperty(transition: TransitionInterface, path: JpathKey): void;
+
+    undo(): void;
+    redo(): void;
 }
 
 export interface EditorPoint {
@@ -72,12 +98,12 @@ export interface DeltaInterface {
 }
 
 export type AjvError = {
-  dataPath: string,
-  keyword: string,
-  message: string,
-  params: Object,
+    dataPath: string,
+    keyword: string,
+    message: string,
+    params: Object,
 }
 
 export type GenericError = Error | {
-  message: string
+    message: string
 }

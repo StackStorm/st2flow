@@ -1,10 +1,14 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import style from './style.css';
 
-export default class Toolbar extends Component {
+export default class Toolbar extends Component<{
+  children: any,
+}> {
   static propTypes = {
     children: PropTypes.node,
   }

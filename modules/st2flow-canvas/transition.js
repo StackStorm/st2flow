@@ -1,3 +1,7 @@
+//@flow
+
+import type { TaskInterface } from '@stackstorm/st2flow-model/interfaces';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
@@ -35,7 +39,15 @@ function roundCorner(from, origin, to) {
   };
 }
 
-export default class Transition extends Component {
+type Target = {
+  task?: TaskInterface,
+  anchor: string
+}
+
+export default class Transition extends Component<{
+  from: Target,
+  to: Target,
+}> {
   static propTypes = {
     from: PropTypes.object.isRequired,
     to: PropTypes.object.isRequired,
@@ -45,7 +57,11 @@ export default class Transition extends Component {
 
   uniqId = 'some'
 
-  makePath(from, to) {
+  makePath(from: Target, to: Target) {
+    if (!from.task || !to.task) {
+      return '';
+    }
+
     const path = [];
 
     const fromAnchor = ANCHORS[from.anchor];
@@ -58,8 +74,8 @@ export default class Transition extends Component {
 
     const toAnchor = ANCHORS[to.anchor];
     const toControl = CONTROLS[to.anchor];
-    const toCoords = new Vector(to.task.coords);
-    const toSize = new Vector(to.task.size);
+    const toCoords = new Vector((to.task || {}).coords);
+    const toSize = new Vector((to.task || {}).size);
 
     const arrowCompensation = toControl.multiply(10);
     const toPoint = toSize.multiply(toAnchor).add(toCoords).add(arrowCompensation);

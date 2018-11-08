@@ -1,7 +1,7 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TransitionInterface } from './interfaces';
-import type { TokenMeta } from '@stackstorm/st2flow-yaml';
+import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
+import type { TokenMeta, JpathKey } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
@@ -37,7 +37,7 @@ const REGEX_INLINE_PARAM_VARIATIONS = [
 
 const REGEX_INLINE_PARAMS = new RegExp(`([\\w]+)=(${REGEX_INLINE_PARAM_VARIATIONS.join('|')})(.*)`);
 
-function matchAll(str, regexp, accumulator={}) {
+function matchAll(str: string, regexp: RegExp, accumulator:Object = {}) {
   const match = str.match(regexp);
 
   if (!match) {
@@ -63,6 +63,7 @@ type RawTask = {
   input?: Object,
   next?: Array<NextItem>,
   with?: string | Object,
+  join?: string
 };
 
 type RawTasks = {
@@ -87,7 +88,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     return tasks.__meta.keys.map(name => {
       const task = tasks[name];
 
-      let coords;
+      let coords = { x: 0, y: 0 };
       if(task.__meta && REG_COORDS.test(task.__meta.comments)) {
         const match = task.__meta.comments.match(REG_COORDS);
         if (match) {
@@ -99,7 +100,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action = '', input, 'with': _with } = task;
+      const { action = '', input, 'with': _with, join } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       // if (inputPartials.length) {
@@ -110,18 +111,18 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       //   task.__meta.withString = true;
       // }
 
-      return Object.assign({}, {
+      return {
         name,
+        coords,
         action: actionRef,
         size: { x: 120, y: 48 },
-        coords: { x: 0, y: 0, ...coords },
-      }, {
         input: {
           ...input,
           ...matchAll(inputPartials.join(' '), REGEX_INLINE_PARAMS),
         },
         with: typeof _with === 'string' ? { items: _with } : _with,
-      });
+        join,
+      };
     });
   }
 
@@ -145,11 +146,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         // add the common "from" to all transitions
         .map(t => Object.assign(t, { from: { name } }));
 
-      return arr.concat(transitions);
+      return arr.concat(transitions || []);
     }, []);
   }
 
-  get lastTaskIndex() {
+  get lastTaskIndex(): number {
     return crawler.getValueByKey(this.tokenSet, 'tasks').__meta.keys
       .map(item => (item.match(/task(\d+)/) || [])[1])
       .reduce((acc, item) => Math.max(acc, item || 0), 0);
@@ -169,12 +170,12 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  updateTask(oldTask: TaskInterface, newData: TaskInterface) {
+  updateTask(ref: TaskRefInterface, newData: TaskInterface) {
     const { oldData, oldTree } = this.startMutation();
     const { name, coords, ...data } = newData;
-    const key = [ 'tasks', oldTask.name ]
+    const key = [ 'tasks', ref.name ]
 
-    if (name && oldTask.name !== name) {
+    if (name && ref.name !== name) {
       crawler.renameMappingKey(this.tokenSet, key, name);
       key.splice(-1, 1, name);
     }
@@ -191,23 +192,23 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  setTaskProperty(name: string, path: string, value: any) {
-    const { oldData, oldTree } = this.startMutation();
-    crawler.set(this.tokenSet, [ 'tasks', name ].concat(path), value);
+  setTaskProperty(ref: TaskRefInterface, path: JpathKey , value: any) {
+    const { oldTree } = this.startMutation();
+    crawler.set(this.tokenSet, [ 'tasks', ref.name ].concat(path), value);
 
     this.endMutation(oldTree);
   }
 
-  deleteTaskProperty(name: string, path: string) {
-    const { oldData, oldTree } = this.startMutation();
-    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', name ].concat(path));
+  deleteTaskProperty(ref: TaskRefInterface, path: JpathKey) {
+    const { oldTree } = this.startMutation();
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', ref.name ].concat(path));
 
     this.endMutation(oldTree);
   }
 
-  deleteTask(task: TaskInterface) {
-    const { oldData, oldTree } = this.startMutation();
-    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', task.name ]);
+  deleteTask(ref: TaskRefInterface) {
+    const { oldTree } = this.startMutation();
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', ref.name ]);
 
     this.endMutation(oldTree);
   }
@@ -250,7 +251,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }
 
     const oldNextIndex = oldTransitions.findIndex(tr => {
-      return doToArray(tr.do).includes(oldTo.name) && tr.when === oldCondition;
+      return doToArray(tr.do).includes(oldTo.name) && (tr.when || null) === oldCondition;
     });
 
     if(oldNextIndex === -1) {
@@ -337,20 +338,97 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
+  setTransitionProperty({ from, condition }: TransitionInterface, path: JpathKey, value: any) {
+    const { oldTree } = this.startMutation();
+    const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const task: RawTask = rawTasks[from.name];
+
+    if(!task || !task.next) {
+      throw new Error(`No transition found coming from task "${from.name}"`);
+    }
+
+    const transitionIndex = task.next.findIndex(transition => transition.when === condition);
+    const transition = task.next && task.next[transitionIndex];
+
+    if (!transition) {
+      if (condition) {
+        throw new Error(`No transition with condition "${condition}" found in task "${from.name}"`);
+      }
+      else {
+        throw new Error(`No transition with empty condition found in task "${from.name}"`);
+      }
+    }
+
+    crawler.set(this.tokenSet, [ 'tasks', from.name, 'next', transitionIndex ].concat(path), value);
+
+    this.endMutation(oldTree);
+  }
+
+  deleteTransitionProperty({ from, condition }: TransitionInterface, path: JpathKey) {
+    const { oldTree } = this.startMutation();
+    const rawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
+    const task: RawTask = rawTasks[from.name];
+
+    if(!task || !task.next) {
+      throw new Error(`No transition found coming from task "${from.name}"`);
+    }
+
+    const transitionIndex = task.next.findIndex(transition => transition.when === condition);
+    const transition = task.next && task.next[transitionIndex];
+
+    if (!transition) {
+      if (condition) {
+        throw new Error(`No transition with condition "${condition}" found in task "${from.name}"`);
+      }
+      else {
+        throw new Error(`No transition with empty condition found in task "${from.name}"`);
+      }
+    }
+
+    crawler.deleteMappingItem(this.tokenSet, [ 'tasks', from.name, 'next', transitionIndex ].concat(path));
+
+    this.endMutation(oldTree);
+  }
+
   deleteTransition(transition: TransitionInterface) {
     const { oldData, oldTree } = this.startMutation();
     const { to, from, type, condition } = transition;
-
     const key = [ 'tasks', from.name, 'next'];
 
     const transitions = crawler.getValueByKey(this.tokenSet, key);
-    const index = transitions.findIndex((tr, i) => {
-      const _do = typeof tr.do === 'string' ? tr.do.split(',').map(s => s.trim()) : tr.do;
-      return _do.includes(to.name) && tr.when === condition;
+    const nextIndex = transitions.findIndex((tr, i) => {
+      return doToArray(tr.do).includes(to.name) && (tr.when || null) === condition;
     });
 
-    if(index !== -1) {
-      crawler.spliceCollection(this.tokenSet, key, index, 1);
+    if(nextIndex === -1) {
+      this.emitError(new Error(`Could not find transition "${to.name}" within task "${from.name}"`));
+      return;
+    }
+
+    const nextItem = transitions[nextIndex];
+    const doArr = doToArray(nextItem.do);
+    doArr.splice(doArr.indexOf(to.name), 1);
+
+    if(doArr.length) {
+      crawler.set(this.tokenSet, key.concat(nextIndex, 'do'), typeof nextItem.do === 'string' ? doArr.join(',') : doArr);
+    }
+    else {
+      // The "do" property is now empty
+      if(Object.keys(nextItem).length === 1) {
+        // "do" was the only property remaining
+        if(transitions.length === 1) {
+          // If there was only one transition to begin with,
+          // we can now delete the "next" property altogether.
+          crawler.deleteMappingItem(this.tokenSet, key);
+        }
+        else {
+          // Otherwise, delete the entire "nextItem".
+          crawler.spliceCollection(this.tokenSet, key, nextIndex, 1);
+        }
+      } else {
+        // only delete the empty "do" property
+        crawler.deleteMappingItem(this.tokenSet, key.concat(nextIndex, 'do'));
+      }
     }
 
     this.endMutation(oldTree);

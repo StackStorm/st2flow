@@ -63,6 +63,14 @@ describe('st2flow-model: Common Model Tests: ', () => {
         });
       });
 
+      describe('setTaskProperty()', () => {
+        it('sets properties', () => {
+          model.setTaskProperty(model.tasks[0], 'size', { x: 1: y: 2 });
+          expect(model.tasks[0]).to.have.property('size.x', 1);
+          expect(model.tasks[0]).to.have.property('size.y', 2);
+        });
+      });
+
       describe('addTransition()', () => {
         it('adds a new transition', () => {
           const origLength = model.transitions.length;
@@ -157,6 +165,19 @@ describe('st2flow-model: Common Model Tests: ', () => {
 
           const newInstance = new Model(model.toYAML());
           expect(newInstance.tasks).to.have.property('length', 3);
+        });
+
+        it('removes task from transitions', () => {
+          const thirdTask = model.tasks[3];
+          expect(model.transitions.filter(tr =>
+            tr.to.name === thirdTask.name)
+          ).to.have.property('length', 1);
+
+          model.deleteTask(thirdTask);
+
+          expect(model.transitions.filter(tr =>
+            tr.to.name === thirdTask.name)
+          ).to.have.property('length', 0);
         });
       });
 

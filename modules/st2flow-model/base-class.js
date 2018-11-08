@@ -121,6 +121,15 @@ class BaseClass {
   emitError(error: GenericError | Array<GenericError>, type: string = 'error') {
     this.emitter.emit(type, error);
   }
+
+  // Temporarily, we're going to use editor's undo manager for that, but we should implement such functionality on model level
+  undo() {
+    this.emitter.emit('undo');
+  }
+
+  redo() {
+    this.emitter.emit('redo');
+  }
 }
 
 function formatAjvErrors(errors: Array<AjvError>): Array<GenericError> {

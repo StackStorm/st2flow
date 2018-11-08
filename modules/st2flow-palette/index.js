@@ -1,3 +1,5 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -6,7 +8,13 @@ import Action from './action';
 
 import style from './style.css';
 
-export default class Palette extends Component {
+export default class Palette extends Component<{
+  className?: string,
+  actions: Array<Object>,
+}, {
+  search: string,
+  packs: Object,
+}> {
   static propTypes = {
     className: PropTypes.string,
     actions: PropTypes.array,
@@ -17,11 +25,13 @@ export default class Palette extends Component {
     packs: {},
   }
 
-  handleSearch(e) {
-    this.setState({ search: e.target.value });
+  handleSearch(e: MouseEvent) {
+    if (e.target instanceof window.HTMLInputElement) {
+      this.setState({ search: e.target.value });
+    }
   }
 
-  handleTogglePack(e, pack) {
+  handleTogglePack(e: Event, pack: Object) {
     e.stopPropagation();
 
     const { packs } = this.state;

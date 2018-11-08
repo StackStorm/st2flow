@@ -1,3 +1,7 @@
+//@flow
+
+import type { Node } from 'react';
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
@@ -5,7 +9,13 @@ import { Toggle } from '@stackstorm/module-forms/button.component';
 
 import style from './style.css';
 
-export default class Property extends Component {
+export default class Property extends Component<{
+  name: string,
+  description: string,
+  value: bool,
+  onChange: Function,
+  children?: Node
+}> {
   static propTypes = {
     name: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,

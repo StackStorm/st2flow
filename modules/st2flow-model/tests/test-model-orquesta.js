@@ -54,5 +54,28 @@ describe('st2flow-model: Orquesta Model', () => {
         expect(newTransition).to.not.equal(undefined);
       });
     });
+
+    describe('updates YAML', () => {
+      it('for task deletions', () => {
+        const lines = raw.split('\n');
+
+        model.deleteTask(model.tasks[1]);
+        lines.splice(26, 2);
+
+        expect(model.toYAML()).to.equal(lines.join('\n'));
+      });
+
+      it('for transition deletions', () => {
+        const lines = raw.split('\n');
+
+        model.deleteTransition(model.transitions[4]);
+        lines.splice(30, 2);
+
+        model.deleteTransition(model.transitions[0]);
+        lines.splice(18, 1);
+
+        expect(model.toYAML()).to.equal(lines.join('\n'));
+      });
+    });
   });
 });

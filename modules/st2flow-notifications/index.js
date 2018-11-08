@@ -4,6 +4,11 @@ import cx from 'classnames';
 
 import style from './style.css';
 
+export type NotificationInterface = {
+  type: 'error' | 'warning' | 'info' | 'success',
+  message: string,
+}
+
 class Notifications extends Component {
   static propTypes = {
     className: PropTypes.string,

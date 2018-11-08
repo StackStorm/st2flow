@@ -1,7 +1,9 @@
+//@flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
-import { connect } from '@stackstorm/st2flow-model';
+import { connect, ModelInterface } from '@stackstorm/st2flow-model';
 
 import Parameter from './parameter';
 import ParameterEditor from './parameter-editor';
@@ -10,7 +12,11 @@ import Button from '@stackstorm/module-forms/button.component';
 import { Panel } from './layout';
 
 @connect(({ metaModel }) => ({ metaModel }))
-export default class Parameters extends Component {
+export default class Parameters extends Component<{
+  metaModel: ModelInterface,
+}, {
+  edit: bool,
+}> {
   static propTypes = {
     metaModel: PropTypes.object,
   }
@@ -19,13 +25,13 @@ export default class Parameters extends Component {
     edit: false,
   }
 
-  handleAdd({ name, ...properties }) {
+  handleAdd({ name, ...properties }: { name: string }) {
     const parameters = this.props.metaModel.get('parameters');
     this.props.metaModel.set('parameters', { ...parameters, [name]: properties});
     this.setState({ edit: false });
   }
 
-  handleChange(oldName, { name, ...properties }) {
+  handleChange(oldName: string, { name, ...properties }: { name: string }) {
     const { ...parameters } = this.props.metaModel.get('parameters');
     if (oldName !== name) {
       delete parameters[name];
@@ -34,7 +40,7 @@ export default class Parameters extends Component {
     this.setState({ edit: false });
   }
 
-  handleDelete(name) {
+  handleDelete(name: string) {
     const { ...parameters } = this.props.metaModel.get('parameters');
     delete parameters[name];
     this.props.metaModel.set('parameters', parameters);
@@ -62,7 +68,9 @@ export default class Parameters extends Component {
           edit === false && <Button value="Add parameter" onClick={() => this.setState({ edit: true })} />
         }
         {
-          edit === true && <ParameterEditor onChange={parameter => this.handleAdd(parameter)} onCancel={() => this.setState({ edit: false })} />
+          edit === true &&
+            //$FlowFixMe
+            <ParameterEditor onChange={parameter => this.handleAdd(parameter)} onCancel={() => this.setState({ edit: false })} />
         }
         {
           typeof edit === 'string' && (

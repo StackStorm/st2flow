@@ -11,7 +11,8 @@ import BaseModel from './base-model';
 import schema from './schemas/mistral.json';
 
 const EMPTY_ARRAY = [];
-const OMIT_KEYS = ['version', 'name', 'description', 'tags'];
+const STATUSES = [ 'Success', 'Error', 'Complete' ];
+const OMIT_KEYS = [ 'version', 'name', 'description', 'tags' ];
 const STR_KEY_SEPERATOR = '/';
 const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
 
@@ -58,7 +59,7 @@ class MistralModel extends BaseModel implements ModelInterface {
   }
 
   get tasks() {
-    const flatTasks = getRawTasks(this.tokenSet);
+    const flatTasks = getWorkflowTasksMap(this.tokenSet);
 
     const tasks: Array<TaskInterface> = Array.from(flatTasks, ([key, task]) => {
       let coords;
@@ -102,17 +103,29 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     const transitions = [];
-    getRawTasks(this.tokenSet).forEach((task, key) => {
-      (task['on-success'] || EMPTY_ARRAY).forEach(next => {
-        transitions.push(makeTransition(next, key, 'Success', this.tokenSet));
-      });
+    const tasks = getWorkflowTasksMap(this.tokenSet);
+    const keys = Array.from(tasks.keys());
+    tasks.forEach((task: RawTask, key: Array<string>) => {
+      STATUSES.forEach(status => {
+        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach(next => {
+          // NOTE: The first item in the "key" array will always be
+          // the workflow name at this point in time.
+          const toName = getToName(next);
 
-      (task['on-error'] || EMPTY_ARRAY).forEach(next => {
-        transitions.push(makeTransition(next, key, 'Error', this.tokenSet));
-      });
-
-      (task['on-complete'] || EMPTY_ARRAY).forEach(next => {
-        transitions.push(makeTransition(next, key, 'Complete', this.tokenSet));
+          if(keys.find(k => k[0] === key[0] && k[1] === toName)) {
+            transitions.push({
+              type: status,
+              condition: typeof next === 'string' ? null : next[toName],
+              from: {
+                name: joinTaskName(key, this.tokenSet),
+              },
+              to: {
+                // The first item in the fromKey will be the workflow name
+                name: joinTaskName([key[0], toName], this.tokenSet)
+              },
+            });
+          }
+        });
       });
     });
 
@@ -318,7 +331,13 @@ class MistralModel extends BaseModel implements ModelInterface {
   }
 }
 
-function getRawTasks(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
+/**
+ * Returns a Map of RawTasks where the key is an array:
+ *
+ * [workflowName, taskName] -> RawTask
+ *
+ */
+function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
   let flatTasks = new Map();
 
   if(tokenSet) {
@@ -326,8 +345,8 @@ function getRawTasks(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
 
     Object.keys(workflows).forEach(workflowName => {
       const workflow = workflows[ workflowName ];
-      Object.keys(workflow.tasks).forEach(name =>
-        flatTasks.set([workflowName, name], workflow.tasks[name])
+      Object.keys(workflow.tasks).forEach(taksName =>
+        flatTasks.set([workflowName, taksName], workflow.tasks[taksName])
       );
     }, []);
   }
@@ -340,30 +359,8 @@ function getWorkflows(tokenSet: TokenSet): Object {
   return data.workflows || util.omit(data, ...OMIT_KEYS);
 }
 
-function makeTransition(next: NextItem, fromKey: Array<string>, type: TransitionType, tokenSet: TokenSet): TransitionInterface {
-  const workflowName: string = fromKey[0];
-  const transition: Object = {
-    type,
-    condition: null,
-    from: {
-      name: joinTaskName(fromKey, tokenSet),
-    },
-    to: {},
-  };
-
-  let toKey = [workflowName];
-  if(typeof next === 'string') {
-     toKey.push(next);
-  }
-  else {
-    const toName = Object.keys(next)[0]
-    toKey.push(toName);
-    transition.condition = next[toName];
-  }
-
-  transition.to.name = joinTaskName(toKey, tokenSet);
-
-  return transition;
+function getToName(next: NextItem): string {
+  return typeof next === 'string' ? next : Object.keys(next)[0];
 }
 
 function transitionTypeKey(type: TransitionType = 'Complete') {
