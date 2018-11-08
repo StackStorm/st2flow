@@ -1,18 +1,28 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, AnyToken } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, ValueToken, AnyToken } from './types';
 import { isPlainObject } from './util';
 
 const REG_NEWLINE = /\n/;
+
+const baseToken = {
+  startPosition: 0,
+  endPosition: 0,
+  jpath: [],
+};
 
 /**
  * Factory used to create tokens from raw data.
  */
 const factory = {
+  get baseToken() {
+    return Object.assign({}, baseToken);
+  },
+
   /**
    * Given any type of YAML compatable data, creates an AST token.
    */
-  createToken(data: any): AnyToken {
+  createToken(data: any): ValueToken {
     if(Array.isArray(data)) {
       return this.createCollectionToken(data);
     }
@@ -64,11 +74,11 @@ const factory = {
    * The value can be any type.
    */
   createKeyValueToken(key: string, val: any): TokenKeyValue {
-    const token = {
+    const token = Object.assign({}, this.baseToken, {
       kind: 1,
-      key: this.createToken(key),
+      key: this.createRawValueToken(key),
       value: this.createToken(val),
-    };
+    });
 
     if(isPlainObject(val) && val.__meta && val.__meta.comments) {
       this.addTokenComments(token.key, val.__meta.comments);
@@ -87,10 +97,10 @@ const factory = {
       return arr;
     }, []);
 
-    return {
+    return Object.assign({}, baseToken, {
       kind: 2,
       mappings,
-    };
+    });
   },
 
   /**
@@ -100,14 +110,20 @@ const factory = {
   createCollectionToken(data: Array<any>): TokenCollection {
     const items = data.map(item => this.createToken(item));
 
-    return {
+    return Object.assign({}, baseToken, {
       kind: 3,
       items,
-    };
+    });
   },
 
-  addTokenComments(token: TokenRawValue, comments: string): void {
-    token.prefix = token.prefix.concat(comments.split(REG_NEWLINE).map(c => this.createToken(`# ${c}\n`)));
+  addTokenComments(token: TokenRawValue | TokenCollection, comments: string): void {
+    if(token.kind === 3 && token.items.length && token.items[0].kind === 0) {
+      token = token.items[0];
+    }
+
+    if(token.kind === 0) {
+      token.prefix = token.prefix.concat(comments.split(REG_NEWLINE).map(c => this.createRawValueToken(`# ${c}\n`)));
+    }
   },
 };
 

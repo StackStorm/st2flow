@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "babelify": "^8.0.0",
+    "chai-subset": "^1.6.0",
     "js-yaml": "^3.12.0"
   }
 }

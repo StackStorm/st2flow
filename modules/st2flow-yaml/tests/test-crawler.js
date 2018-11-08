@@ -76,6 +76,13 @@ describe('Token Set Crawler', () => {
     });
   });
 
+  it('Always treats quoted values as strings', () => {
+    const quotedValues = crawler.getValueByKey(set, 'quotedValues');
+    Object.keys(quotedValues).forEach(key => {
+      expect(quotedValues[key]).to.equal(key);
+    });
+  });
+
   it('returns referenced values', () => {
     expect(crawler.getValueByKey(set, 'anchored_content')).to.equal('This is a referencable value.');
     expect(crawler.getValueByKey(set, 'other_anchor')).to.equal('This is a referencable value.');
@@ -269,8 +276,8 @@ describe('Token Set Crawler', () => {
     });
 
     it('throws if the parent token is not a mapping token', () => {
-      expect(() => crawler.assignMappingItem(set, 'version.foo')).to.throw('token is not of kind "2"');
-      expect(() => crawler.assignMappingItem(set, 'nulls.foo')).to.throw('token is not of kind "2"');
+      expect(() => crawler.assignMappingItem(set, 'version.foo')).to.throw('Could not find mapping token (kind: 2) for path');
+      expect(() => crawler.assignMappingItem(set, 'nulls.foo')).to.throw('Could not find mapping token (kind: 2) for path');
     });
 
     [ 'scalar', 1234, true, new Date(), null, { a: 'mapping' }, [ 'an', {'array': 'item'}]].forEach(val => {
@@ -350,8 +357,8 @@ describe('Token Set Crawler', () => {
     });
 
     it('throws if the target token is not a collection token', () => {
-      expect(() => crawler.spliceCollection(set, 'version')).to.throw('token is not of kind "3"');
-      expect(() => crawler.spliceCollection(set, 'data')).to.throw('token is not of kind "3"');
+      expect(() => crawler.spliceCollection(set, 'version')).to.throw('Could not find collection token (kind: 3) for path');
+      expect(() => crawler.spliceCollection(set, 'data')).to.throw('Could not find collection token (kind: 3) for path');
     });
 
     [ 'scalar', 1234, true, new Date(), null, { a: 'mapping' }, [ 'an', {'array': 'item'}]].forEach(val => {

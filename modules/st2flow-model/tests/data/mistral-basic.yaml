@@ -18,6 +18,8 @@ examples.mistral-basic:
                 - a: <% $.path = 'a' %>
                 - b: <% $.path = 'b' %>
                 - c: <% not $.path in list(a, b) %>
+            on-error:
+                - a
         a:
             action: core.local
             input:
