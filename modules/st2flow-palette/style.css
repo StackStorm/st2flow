@@ -60,11 +60,18 @@
 
 .pack-name {
   margin: 10px;
-  padding: 10px 0;
+  padding: 10px 0 10px 0;
 
   font-size: 14px;
   text-transform: uppercase;
 
   cursor: pointer;
   user-select: none;
+
+  display: flex;
+  align-items: center;
+
+  & > div {
+    padding-left: 10px;
+  }
 }
