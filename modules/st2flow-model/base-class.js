@@ -40,7 +40,7 @@ class BaseClass {
   }
 
   fromYAML(yaml: string): void {
-    const oldTree = this.startMutation();
+    const { oldTree } = this.startMutation();
 
     try {
       this.tokenSet = new TokenSet(yaml);
@@ -94,10 +94,10 @@ class BaseClass {
   startMutation(): Object {
     return this.tokenSet ? {
       oldTree: util.deepClone(this.tokenSet.tree),
-      oldData: this.tokenSet.toObject()
+      oldData: this.tokenSet.toObject(),
     } : {
       oldTree: {},
-      oldData: {}
+      oldData: {},
     };
   }
 

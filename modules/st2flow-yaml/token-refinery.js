@@ -56,7 +56,7 @@ class Refinery {
     if(newTree.kind!== 2 ) {
       return {
         tree: EMPTY_TREE,
-        yaml: ''
+        yaml: '',
       };
     }
 
@@ -327,7 +327,7 @@ class Refinery {
       let nesting = 0;
       let itemsIdx = rawToken.jpath.lastIndexOf('items');
       let lastTwo = rawToken.jpath.slice(itemsIdx, itemsIdx + 2);
-      let currentIndex = parseInt(lastTwo[1], 10)
+      let currentIndex = parseInt(lastTwo[1], 10);
       const firstIndex = currentIndex;
 
       while(lastTwo[0] === 'items' && !isNaN(currentIndex) && currentIndex >= firstIndex) {

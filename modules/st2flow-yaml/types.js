@@ -73,8 +73,6 @@ type TokenMeta = {
   withString?: boolean, // whether or not the "with" statements are declared as inline string
 };
 
-type JpathKey = string | Array<string | number>;
-
 export type {
   JPath,
   TokenRawValue,

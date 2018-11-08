@@ -1,6 +1,6 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionRefInterface } from './interfaces';
+import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface } from './interfaces';
 import type { TokenMeta, JpathKey } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util } from '@stackstorm/st2flow-yaml';
@@ -157,7 +157,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   }
 
   addTask(task: TaskInterface) {
-    const { oldData, oldTree } = this.startMutation();
+    const { oldTree } = this.startMutation();
     const { name, coords, ...data } = task;
 
     if(coords) {
@@ -171,9 +171,9 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   }
 
   updateTask(ref: TaskRefInterface, newData: TaskInterface) {
-    const { oldData, oldTree } = this.startMutation();
+    const { oldTree } = this.startMutation();
     const { name, coords, ...data } = newData;
-    const key = [ 'tasks', ref.name ]
+    const key = [ 'tasks', ref.name ];
 
     if (name && ref.name !== name) {
       crawler.renameMappingKey(this.tokenSet, key, name);
@@ -214,7 +214,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   }
 
   addTransition(transition: TransitionInterface) {
-    const { oldData, oldTree } = this.startMutation();
+    const { oldTree } = this.startMutation();
     const { from, to } = transition;
     const key = [ 'tasks', from.name, 'next' ];
 
@@ -241,7 +241,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   updateTransition(oldTransition: TransitionInterface, newData: TransitionInterface) {
     const { oldData, oldTree } = this.startMutation();
     const { publish: oldPublish, condition: oldCondition, from: oldFrom, to: oldTo } = oldTransition;
-    let oldKey = [ 'tasks', oldFrom.name, 'next' ];
+    const oldKey = [ 'tasks', oldFrom.name, 'next' ];
 
     const oldTransitions = util.get(oldData, oldKey);
 
@@ -330,8 +330,9 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         Object.keys(next).forEach(k =>
           crawler.set(this.tokenSet, newKey.concat(k), next[k])
         );
-      } else {
-        crawler.set(this.tokenSet, newKey, [ next ])
+      }
+      else {
+        crawler.set(this.tokenSet, newKey, [ next ]);
       }
     }
 
@@ -391,9 +392,9 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   }
 
   deleteTransition(transition: TransitionInterface) {
-    const { oldData, oldTree } = this.startMutation();
-    const { to, from, type, condition } = transition;
-    const key = [ 'tasks', from.name, 'next'];
+    const { oldTree } = this.startMutation();
+    const { to, from, condition } = transition;
+    const key = [ 'tasks', from.name, 'next' ];
 
     const transitions = crawler.getValueByKey(this.tokenSet, key);
     const nextIndex = transitions.findIndex((tr, i) => {
@@ -425,7 +426,8 @@ class OrquestaModel extends BaseModel implements ModelInterface {
           // Otherwise, delete the entire "nextItem".
           crawler.spliceCollection(this.tokenSet, key, nextIndex, 1);
         }
-      } else {
+      }
+      else {
         // only delete the empty "do" property
         crawler.deleteMappingItem(this.tokenSet, key.concat(nextIndex, 'do'));
       }
@@ -436,7 +438,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 }
 
 function reduceTransitions(arr: Array<TransitionInterface>, nxt: any): Array<TransitionInterface> {
-  let to: Array<string> = doToArray(nxt.do);
+  const to: Array<string> = doToArray(nxt.do);
 
   // nxt.do can be a string, comma delimited string, or array
   if(!to.length) {

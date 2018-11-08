@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, ValueToken, AnyToken } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, ValueToken } from './types';
 import { isPlainObject } from './util';
 
 const REG_NEWLINE = /\n/;

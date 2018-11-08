@@ -45,11 +45,11 @@ export interface TransitionInterface {
     publish?: string | Array<Object>;
 }
 
-export interface TransitionRefInterface {
-    from: TaskRefInterface;
-    to: TaskRefInterface;
-    condition?: string;
-}
+// export interface TransitionRefInterface {
+//     from: TaskRefInterface;
+//     to: TaskRefInterface;
+//     condition?: string;
+// }
 
 export interface ModelInterface {
     +version: number;

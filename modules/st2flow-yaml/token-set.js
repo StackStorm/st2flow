@@ -1,6 +1,6 @@
 // @flow
 
-import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken, AnyToken } from './types';
+import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken } from './types';
 import { load } from 'yaml-ast-parser';
 import { pick, omit, get } from './util';
 import Objectifier from './objectifier';
@@ -111,7 +111,8 @@ class TokenSet {
 
     if(node.key.kind === 0) {
       token.key = this.parseValueNode(node.key, jpath.concat('key'));
-    } else {
+    }
+    else {
       token.key = this.parseCollectionNode(node.key, jpath.concat('key'));
     }
 
@@ -187,7 +188,7 @@ class TokenSet {
 
       case 1: // key/value pair
         this.parseKeyValueNode(node, jpath);
-        return;
+        return null;
 
       case 2: // map (key value pairs)
         return this.parseMappingNode(node, jpath);

@@ -8,29 +8,29 @@ const tasks = [{
   action: 'core.local',
   coords: { x: 100, y: 100 },
   input: {
-    cmd: "echo 'Task1'",
-  }
+    cmd: 'echo "Task1"',
+  },
 }, {
   name: 't2',
   action: 'core.local',
   coords: { x: 200, y: 200 },
   input: {
-    cmd: "echo 'Task2'",
-  }
+    cmd: 'echo "Task2"',
+  },
 }, {
   name: 't3',
   action: 'core.local',
   coords: { x: 300, y: 300 },
   input: {
-    cmd: "echo 'Task3'",
-  }
+    cmd: 'echo "Task3"',
+  },
 }, {
   name: 't4',
   action: 'core.local',
   coords: { x: 400, y: 400 },
   input: {
-    cmd: "echo 'Task4'",
-  }
+    cmd: 'echo "Task4"',
+  },
 }];
 
 const transitions = [{

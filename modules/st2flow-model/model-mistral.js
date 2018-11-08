@@ -1,7 +1,7 @@
 // @flow
 
-import type { ModelInterface, TaskInterface, TransitionInterface, TransitionRefInterface, TransitionType } from './interfaces';
-import type { TokenMeta } from '@stackstorm/st2flow-yaml';
+import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface, TransitionType } from './interfaces';
+import type { TokenMeta, JpathKey } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util, TokenSet } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
@@ -28,11 +28,6 @@ type RawTask = {
   'on-complete'?: Array<NextItem>,
 };
 
-type RawTasks = {
-  __meta: TokenMeta,
-  [string]: RawTask,
-};
-
 class MistralModel extends BaseModel implements ModelInterface {
   constructor(yaml: ?string) {
     super(schema, yaml);
@@ -52,6 +47,8 @@ class MistralModel extends BaseModel implements ModelInterface {
           val = workflow.description;
           return true; // break
         }
+
+        return false;
       });
     }
 
@@ -61,7 +58,7 @@ class MistralModel extends BaseModel implements ModelInterface {
   get tasks() {
     const flatTasks = getWorkflowTasksMap(this.tokenSet);
 
-    const tasks: Array<TaskInterface> = Array.from(flatTasks, ([key, task]) => {
+    const tasks: Array<TaskInterface> = Array.from(flatTasks, ([ key, task ]) => {
       let coords;
       if(task.__meta && REG_COORDS.test(task.__meta.comments)) {
         const match = task.__meta.comments.match(REG_COORDS);
@@ -74,24 +71,22 @@ class MistralModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action = '', input = [] } = task;
+      const { action = '', input = {} } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       if (inputPartials.length) {
         task.__meta.inlineInput = true;
       }
 
-      return Object.assign({}, {
+      return {
         name: joinTaskName(key, this.tokenSet),
-        size: { x: 120, y: 48 },
-        action: '',
-        coords: { x: 0, y: 0, ...coords },
-      }, task, {
         action: actionRef,
-        // input: {
-        //   ...input
-        // }
-      });
+        size: { x: 120, y: 48 },
+        coords: { x: 0, y: 0, ...coords },
+        input: {
+          ...input,
+        },
+      };
     });
 
     return tasks;
@@ -105,6 +100,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     const transitions = [];
     const tasks = getWorkflowTasksMap(this.tokenSet);
     const keys = Array.from(tasks.keys());
+
     tasks.forEach((task: RawTask, key: Array<string>) => {
       STATUSES.forEach(status => {
         (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach(next => {
@@ -121,7 +117,7 @@ class MistralModel extends BaseModel implements ModelInterface {
               },
               to: {
                 // The first item in the fromKey will be the workflow name
-                name: joinTaskName([key[0], toName], this.tokenSet)
+                name: joinTaskName([ key[0], toName ], this.tokenSet),
               },
             });
           }
@@ -164,7 +160,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     const type = `on-${(transition.type || 'complete').toLowerCase()}`;
-    const key = [fromWorkflowName, 'tasks', fromTaskName, type];
+    const key = [ fromWorkflowName, 'tasks', fromTaskName, type ];
     const next = transition.condition ? { [toTaskName]: transition.condition } : toTaskName;
 
     if(oldData.workflows) {
@@ -174,7 +170,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     const existing = crawler.getValueByKey(this.tokenSet, key);
     if(existing) {
       // creates a new array item
-      crawler.set(this.tokenSet, key.concat('#'), next)
+      crawler.set(this.tokenSet, key.concat('#'), next);
     }
     else {
       crawler.set(this.tokenSet, key, [ next ]);
@@ -183,17 +179,17 @@ class MistralModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  updateTask(oldTask: TaskInterface, newData: TaskInterface) {
+  updateTask(ref: TaskRefInterface, newData: TaskInterface) {
     const { oldData, oldTree } = this.startMutation();
     const { name, coords, ...data } = newData;
-    const [ workflowName, oldTaskName ] = splitTaskName(oldTask.name, this.tokenSet);
+    const [ workflowName, oldTaskName ] = splitTaskName(ref.name, this.tokenSet);
     const key = [ workflowName, 'tasks', oldTaskName ];
 
     if(oldData.workflows) {
       key.unshift('workflows');
     }
 
-    if (name && oldTask.name !== name) {
+    if (name && ref.name !== name) {
       crawler.renameMappingKey(this.tokenSet, key, name);
       key.splice(-1, 1, name);
     }
@@ -206,6 +202,34 @@ class MistralModel extends BaseModel implements ModelInterface {
     Object.keys(data).forEach(k => {
       crawler.set(this.tokenSet, key.concat(k), data[k]);
     });
+
+    this.endMutation(oldTree);
+  }
+
+  setTaskProperty(ref: TaskRefInterface, path: JpathKey , value: any) {
+    const { oldData, oldTree } = this.startMutation();
+    const [ workflowName, taskName ] = splitTaskName(ref.name, this.tokenSet);
+    const key = [ workflowName, 'tasks', taskName ].concat(path);
+
+    if(oldData.workflows) {
+      key.unshift('workflows');
+    }
+
+    crawler.set(this.tokenSet, key, value);
+
+    this.endMutation(oldTree);
+  }
+
+  deleteTaskProperty(ref: TaskRefInterface, path: JpathKey) {
+    const { oldData, oldTree } = this.startMutation();
+    const [ workflowName, taskName ] = splitTaskName(ref.name, this.tokenSet);
+    const key = [ workflowName, 'tasks', taskName ].concat(path);
+
+    if(oldData.workflows) {
+      key.unshift('workflows');
+    }
+
+    crawler.deleteMappingItem(this.tokenSet, key);
 
     this.endMutation(oldTree);
   }
@@ -293,9 +317,9 @@ class MistralModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  deleteTask(task: TaskInterface) {
+  deleteTask(ref: TaskRefInterface) {
     const { oldData, oldTree } = this.startMutation();
-    const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
+    const [ workflowName, taskName ] = splitTaskName(ref.name, this.tokenSet);
     const key = [ workflowName, 'tasks', taskName ];
 
     if(oldData.workflows) {
@@ -310,9 +334,8 @@ class MistralModel extends BaseModel implements ModelInterface {
     const { oldData, oldTree } = this.startMutation();
     const { to, from, type, condition } = transition;
     const [ fromWorkflowName, fromTaskName ] = splitTaskName(from.name, this.tokenSet);
-    const [ toWorkflowName, toTaskName ] = splitTaskName(to.name, this.tokenSet);
 
-    const key = [ fromWorkflowName, 'tasks', fromTaskName, transitionTypeKey(type)];
+    const key = [ fromWorkflowName, 'tasks', fromTaskName, transitionTypeKey(type) ];
 
     if(oldData.workflows) {
       key.unshift('workflows');
@@ -338,7 +361,7 @@ class MistralModel extends BaseModel implements ModelInterface {
  *
  */
 function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
-  let flatTasks = new Map();
+  const flatTasks = new Map();
 
   if(tokenSet) {
     const workflows = getWorkflows(tokenSet);
@@ -346,7 +369,7 @@ function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
     Object.keys(workflows).forEach(workflowName => {
       const workflow = workflows[ workflowName ];
       Object.keys(workflow.tasks).forEach(taksName =>
-        flatTasks.set([workflowName, taksName], workflow.tasks[taksName])
+        flatTasks.set([ workflowName, taksName ], workflow.tasks[taksName])
       );
     }, []);
   }
@@ -383,7 +406,7 @@ function splitTaskName(name: string, tokenSet: TokenSet): Array<string> {
   // split it there. Sorting by longest workflow first is important
   // b/c both workflow names and task names can contain slashes.
   const wfNames = Object.keys(workflows);
-  let workflowName = wfNames
+  const workflowName = wfNames
     .sort((a, b) => b.length - a.length)
     .find(wfName => name.indexOf(`${wfName}${STR_KEY_SEPERATOR}`) === 0);
 

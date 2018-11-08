@@ -147,7 +147,6 @@ const crawler = {
     }
 
     const parentToken: ParentToken = getTokenParent(tokenSet.tree, keyToken);
-    let oldPrefix = [];
 
     // Make sure to copy the old prefix
     switch(parentToken.kind) {
@@ -585,7 +584,8 @@ function buildArrayKey(token: TokenCollection): string {
   return token.items.reduce((keys, t) => {
     if(t.kind === 0) {
       keys.push(t.value);
-    };
+    }
+
     return keys;
   }, []).toString();
 }

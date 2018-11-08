@@ -65,9 +65,8 @@ describe('st2flow-model: Common Model Tests: ', () => {
 
       describe('setTaskProperty()', () => {
         it('sets properties', () => {
-          model.setTaskProperty(model.tasks[0], 'size', { x: 1: y: 2 });
-          expect(model.tasks[0]).to.have.property('size.x', 1);
-          expect(model.tasks[0]).to.have.property('size.y', 2);
+          model.setTaskProperty(model.tasks[0], 'action', 'foobar');
+          expect(model.tasks[0]).to.have.property('action', 'foobar');
         });
       });
 
