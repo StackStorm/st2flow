@@ -1,21 +1,25 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-
-import {
-  Router,
-  Route,
-  Switch,
-} from 'react-router-dom';
-import createHashHistory from 'history/createHashHistory';
+import { Provider } from 'react-redux';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
+import { Router } from '@stackstorm/module-router';
+import store from '@stackstorm/module-store';
+
 import style from './style.css';
 
-const history = window.routerHistory = createHashHistory({});
+window.st2constants = window.st2constants || {};
+window.st2constants.st2Config = {
+  hosts: [{
+    api: 'https://localhost/api',
+    auth: 'https://localhost/auth',
+    stream: 'https://localhost/stream',
+  }],
+};
 
 class Window extends Component {
   state = {
@@ -49,39 +53,9 @@ class Window extends Component {
   }
 }
 
-export class Container extends Component {
-  auth(bundle64) {
-    const source = JSON.parse(window.atob(bundle64));
+const routes = [{
+  url: '/',
+  Component: Window,
+}];
 
-    if (source.api === undefined) {
-      source.api = `https://${window.location.hostname}:443/api`;
-      source.auth = `https://${window.location.hostname}:443/auth`;
-    }
-  }
-
-  render() {
-    return (
-      <Router history={history}>
-        <Switch>
-          <Route exact path="/" component={Window} />
-          <Route path="/action/:ref" component={Window} />
-
-          <Route
-            path="/import/:bundle/:ref?"
-            render={({ history, match: { params: { bundle, ref }} }) => {
-              this.auth(bundle);
-
-              setTimeout(() => {
-                history.push(ref ? `/action/${ref}` : '/');
-              }, 100);
-
-              return null;
-            }}
-          />
-        </Switch>
-      </Router>
-    );
-  }
-}
-
-ReactDOM.render(<Container className="container" />, document.querySelector('#container'));
+ReactDOM.render(<Provider store={store}><Router routes={routes} /></Provider>, document.querySelector('#container'));

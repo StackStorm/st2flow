@@ -649,6 +649,21 @@
     resolve "^1.1.6"
     sink-transform "^2.0.0"
 
+"@stackstorm/module-api@^2.1.1":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@stackstorm/module-api/-/module-api-2.1.1.tgz#422ab7e3f977bf3622916eca4d430074893514cc"
+  dependencies:
+    axios "0.18.0"
+
+"@stackstorm/module-menu@^2.0.0":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@stackstorm/module-menu/-/module-menu-2.1.1.tgz#cddaa229c654dbe0e22da20cc5b64deb186cea6f"
+  dependencies:
+    "@stackstorm/module-api" "^2.1.1"
+    "@stackstorm/st2-style" "^2.0.0"
+    insert-css "2.0.0"
+    prop-types "15.6.2"
+
 "@stackstorm/module-value-format@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@stackstorm/module-value-format/-/module-value-format-2.0.0.tgz#39dd268f881ab9f5bcefeb46f88ed4f4c5825372"
@@ -6066,6 +6081,10 @@ lodash.values@~2.4.1:
   dependencies:
     lodash.keys "~2.4.1"
 
+lodash@4.17.10:
+  version "4.17.10"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.10.tgz#1b7793cf7259ea38fb3661d4d38b3260af8ae4e7"
+
 lodash@^3.10.1:
   version "3.10.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
@@ -7946,7 +7965,7 @@ react-redux@^5.0.5:
     loose-envify "^1.1.0"
     prop-types "^15.6.0"
 
-react-router-dom@^4.2.2:
+react-router-dom@4.3.1, react-router-dom@^4.2.2:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/react-router-dom/-/react-router-dom-4.3.1.tgz#4c2619fc24c4fa87c9fd18f4fb4a43fe63fbd5c6"
   dependencies:
@@ -8146,7 +8165,7 @@ redent@^2.0.0:
     indent-string "^3.0.0"
     strip-indent "^2.0.0"
 
-redux@^3.7.2:
+redux@3.7.2, redux@^3.7.2:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/redux/-/redux-3.7.2.tgz#06b73123215901d25d065be342eb026bc1c8537b"
   dependencies:
