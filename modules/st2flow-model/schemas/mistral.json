@@ -3,20 +3,17 @@
   "title": "Metadata Schema",
   "description": "A schema describing the metadata for individual workflows.",
   "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "tasks"
-  ],
+  "dependencies": {
+    "workflows": {
+      "additionalProperties": false
+    }
+  },
   "properties": {
     "name": {
       "type": "string",
       "minLength": 1
     },
     "description": {
-      "type": "string",
-      "minLength": 1
-    },
-    "type": {
       "type": "string",
       "minLength": 1
     },
@@ -49,50 +46,85 @@
       "type": "array",
       "minItems": 1
     },
-    "input": {
-      "uniqueItems": true,
-      "items": {
-        "oneOf": [
-          {
-              "minLength": 1,
-              "type": "string"
-          },
-          {
-            "maxProperties": 1,
-            "patternProperties": {
-              "^\\w+$": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "array"
-                  },
-                  {
-                    "type": "boolean"
-                  },
-                  {
-                    "type": "integer"
-                  },
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "object"
-                  },
-                  {
-                    "type": "string"
+    "workflows": {
+      "type": "object",
+      "patternProperties": {
+        "^\\w+$": {
+          "$ref": "#/definitions/workflow"
+        }
+      }
+    }
+  },
+  "patternProperties": {
+    "^\\w+$": {
+      "$ref": "#/definitions/workflow"
+    }
+  },
+  "definitions": {
+    "workflow": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {
+          "uniqueItems": true,
+          "items": {
+            "oneOf": [
+              {
+                  "minLength": 1,
+                  "type": "string"
+              },
+              {
+                "maxProperties": 1,
+                "patternProperties": {
+                  "^\\w+$": {
+                    "anyOf": [
+                      { "type": "null" },
+                      { "type": "array" },
+                      { "type": "boolean" },
+                      { "type": "integer" },
+                      { "type": "number" },
+                      { "type": "object" },
+                      { "type": "string" }
+                    ]
                   }
-                ]
+                },
+                "minProperties": 1,
+                "type": "object"
               }
-            },
-            "minProperties": 1,
-            "type": "object"
+            ]
+          },
+          "type": "array",
+          "minItems": 1
+        },
+        "tasks": {
+          "type": "object",
+          "patternProperties": {
+            "^\\w+$": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "input": {
+                  "type": "object"
+                },
+                "publish": {
+                  "type": "object"
+                }
+              }
+            }
           }
-        ]
-      },
-      "type": "array",
-      "minItems": 1
+        }
+      }
     }
   }
 }
