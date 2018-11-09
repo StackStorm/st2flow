@@ -36,6 +36,8 @@
   color: #888;
 
   padding: 10px;
+
+  min-height: 30px;
 }
 
 .search-field {

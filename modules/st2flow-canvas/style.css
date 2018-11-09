@@ -188,3 +188,30 @@
     content: ' ';
   }
 }
+
+.collapse-button {
+  position: absolute;
+  width: 20px;
+  height: 40px;
+  padding: 5px;
+
+  background-color: #444;
+  color: #eee;
+
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+
+  &.left {
+    left: 0;
+  }
+  &.right {
+    right: 0;
+  }
+  &.top {
+    top: 0;
+    right: 0;
+    background-color: #a22;
+  }
+}

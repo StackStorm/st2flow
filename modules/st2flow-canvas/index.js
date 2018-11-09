@@ -14,13 +14,19 @@ import Task from './task';
 import Transition from './transition';
 import Vector from './vector';
 import Toolbar from './toolbar';
+import CollapseButton from './collapse-button';
 
 import style from './style.css';
 
-@connect(({ model }) => ({ model }))
+type Wheel = WheelEvent & {
+  wheelDelta: number
+}
+
+@connect(({ model, collapseModel }) => ({ model, collapseModel }))
 export default class Canvas extends Component<{
       className?: string,
       model: ModelInterface,
+      collapseModel: any,
       selected: string,
       onSelect: Function,
     }, {
@@ -30,6 +36,7 @@ export default class Canvas extends Component<{
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
+    collapseModel: PropTypes.object,
     selected: PropTypes.string,
     onSelect: PropTypes.func,
   }
@@ -113,17 +120,19 @@ export default class Canvas extends Component<{
       y: height / scale,
     });
 
-    surfaceEl.style.width = `${this.size.x}px`;
-    surfaceEl.style.height = `${this.size.y}px`;
+    surfaceEl.style.width = `${(this.size.x - 1).toFixed()}px`;
+    surfaceEl.style.height = `${(this.size.y - 1).toFixed()}px`;
   }
 
-  handleMouseWheel = (e: WheelEvent) => {
+  handleMouseWheel = (e: Wheel) => {
     e.preventDefault();
     e.stopPropagation();
 
     const { scale }: { scale: number } = this.state;
+    const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+
     this.setState({
-      scale: scale + e.deltaY / 1200,
+      scale: scale + delta * .1,
     });
 
     this.handleUpdate();
@@ -273,10 +282,10 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { model, selected } = this.props;
+    const { model, selected, collapseModel } = this.props;
     const { scale } = this.state;
 
-    if (!model) {
+    if (!model || !collapseModel) {
       return false;
     }
 
@@ -296,6 +305,8 @@ export default class Canvas extends Component<{
           <div key="save" icon="icon-save" onClick={() => console.log('save')} />
           <div key="run" icon="icon-play" onClick={() => console.log('run')} />
         </Toolbar>
+        <CollapseButton position="left" state={collapseModel.isCollapsed('palette')} onClick={() => collapseModel.toggle('palette')} />
+        <CollapseButton position="right" state={collapseModel.isCollapsed('details')} onClick={() => collapseModel.toggle('details')} />
         <div className={this.style.canvas} ref={this.canvasRef}>
           <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
             {

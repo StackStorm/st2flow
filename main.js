@@ -1,15 +1,19 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
+import { PropTypes } from 'prop-types';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
-import { register } from '@stackstorm/st2flow-model/connect';
+import { connect, register } from '@stackstorm/st2flow-model/connect';
 import OrquestaModel from '@stackstorm/st2flow-model/model-orquesta';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
+import EventEmitter from '@stackstorm/st2flow-model/event-emitter';
+
+import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
 
 import { Router } from '@stackstorm/module-router';
 import store from '@stackstorm/module-store';
@@ -25,7 +29,13 @@ window.st2constants.st2Config = {
   }],
 };
 
-class Window extends Component {
+@connect(({ collapseModel }) => ({ collapseModel }))
+class Window extends Component<{
+  collapseModel: Object,
+}> {
+  static propTypes = {
+    collapseModel: PropTypes.object,
+  }
   state = {
     actions: [],
     selected: undefined,
@@ -44,14 +54,20 @@ class Window extends Component {
   style = style
 
   render() {
+    const { collapseModel } = this.props;
     const { actions } = this.state;
 
     return (
-      <div className="component" >
-        <Header className="header" />
-        <Palette className="palette" actions={actions} />
-        <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
-        <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
+      <div className="component">
+        <div className="component-row-header">
+          { !collapseModel.isCollapsed('header') && <Header className="header" /> }
+          <CollapseButton position="top" state={collapseModel.isCollapsed('header')} onClick={() => collapseModel.toggle('header')} />
+        </div>
+        <div className="component-row-content">
+          { !collapseModel.isCollapsed('palette') && <Palette className="palette" actions={actions} /> }
+          <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
+          { !collapseModel.isCollapsed('details') && <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} /> }
+        </div>
       </div>
     );
   }
@@ -130,6 +146,30 @@ parameters:
 `;
 
 register('metaModel', new MetaModel(tmpMeta));
+
+class CollapseModel {
+  emitter = new EventEmitter();
+  panels = {};
+
+  on(eventName, fn) {
+    return this.emitter.on(eventName, fn);
+  }
+
+  removeListener(eventName, fn) {
+    return this.emitter.removeListener(eventName, fn);
+  }
+
+  toggle(name) {
+    this.panels[name] = !this.panels[name];
+    this.emitter.emit('change');
+  }
+
+  isCollapsed(name) {
+    return this.panels[name];
+  }
+}
+
+register('collapseModel', new CollapseModel());
 
 const routes = [{
   url: '/',

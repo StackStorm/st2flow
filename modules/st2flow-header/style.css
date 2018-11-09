@@ -7,6 +7,9 @@
 
   background: linear-gradient(3deg, #400099 0%, #bd5030 100%);
   color: white;
+
+  /* For collapse button */
+  padding-right: 30px;
 }
 
 .logo {
