@@ -5,6 +5,7 @@
 .component {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -149,11 +150,11 @@
   grid-template-columns: auto 50px;
   grid-template-rows: auto auto auto;
 
-  grid-template-areas: 
+  grid-template-areas:
     "name toggle"
     "description toggle"
     "content content";
-  
+
   padding: 10px 0;
   border-bottom: 1px solid #ccc;
 
@@ -177,7 +178,7 @@
 
 .transition {
   display: grid;
-  
+
   grid-template-columns: auto 1fr auto;
   grid-auto-rows: 36px;
   grid-gap: 12px;

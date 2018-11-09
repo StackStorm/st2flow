@@ -26,6 +26,5 @@
 }
 
 .details {
-  height: 100%;
   grid-area: details;
 }

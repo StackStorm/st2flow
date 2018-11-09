@@ -35,19 +35,19 @@ const tasks = [{
 
 const transitions = [{
   from: { name: 't1' },
-  to: { name: 't2' },
+  to: [{ name: 't2' }],
   condition: '<% some_condition_1() %>',
 }, {
   from: { name: 't1' },
-  to: { name: 't3' },
+  to: [{ name: 't3' }],
   condition: '<% some_condition_2() %>',
 }, {
   from: { name: 't2' },
-  to: { name: 't3' },
+  to: [{ name: 't3' }],
   condition: '<% some_condition_3() %>',
 }, {
   from: { name: 't3' },
-  to: { name: 't4' },
+  to: [{ name: 't4' }],
   condition: null,
 }];
 
@@ -68,9 +68,9 @@ my.workflow:
         ${k}: ${t.input[k]}
       `).join('')}
       ${transitions.filter(tr => tr.from.name === t.name).map((tr, i) => `
-      ${i === 0 ? 'on-complete:' : ''}
-        - ${tr.to.name}${tr.condition ? `: ${tr.condition}` : ''}
-      `).join('')}
+      ${i === 0 ? 'on-complete:' : ''}${tr.to.map(to => `
+        - ${to.name}${tr.condition ? `: ${tr.condition}` : ''}
+      `)}`).join('')}
     # END ${t.name}
   `).join('')}`,
 };
@@ -91,10 +91,10 @@ tasks: ${tasks.map(t => `
       ${k}: ${t.input[k]}
     `).join('')}
     ${transitions.filter(tr => tr.from.name === t.name).map((tr, i) => `
-    ${i === 0 ? 'next:' : ''}
-      - do: ${tr.to.name}${tr.condition ? `
+    ${i === 0 ? 'next:' : ''}${tr.to.map(to => `
+      - do: ${to.name}${tr.condition ? `
         when: ${tr.condition}` : ''}
-    `).join('')}
+    `)}`).join('')}
   # END ${t.name}
   `).join('')}`,
 };

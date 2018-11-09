@@ -1,6 +1,9 @@
+// @flow
+
+import type { ModelInterface } from './interfaces';
 import dagre from 'dagre';
 
-export function layout(model) {
+export function layout(model: ModelInterface) {
   const g = new dagre.graphlib.Graph();
 
   g.setGraph({});
