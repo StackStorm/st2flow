@@ -22,13 +22,12 @@ type Wheel = WheelEvent & {
   wheelDelta: number
 }
 
-@connect(({ model, collapseModel }) => ({ model, collapseModel }))
+@connect(({ model, collapseModel, navigationModel }) => ({ model, collapseModel, navigationModel }))
 export default class Canvas extends Component<{
       className?: string,
       model: ModelInterface,
-      collapseModel: any,
-      selected: string,
-      onSelect: Function,
+      collapseModel: Object,
+      navigationModel: Object,
     }, {
       scale: number,
       errors: Array<Error>,
@@ -37,8 +36,7 @@ export default class Canvas extends Component<{
     className: PropTypes.string,
     model: PropTypes.object,
     collapseModel: PropTypes.object,
-    selected: PropTypes.string,
-    onSelect: PropTypes.func,
+    navigationModel: PropTypes.object,
   }
 
   state = {
@@ -238,13 +236,13 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.onSelect(task.name);
+    this.props.navigationModel.change({ task: task.name });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
 
-    this.props.onSelect();
+    this.props.navigationModel.change({ task: undefined });
   }
 
   handleModelError = (e: Error) => {
@@ -263,7 +261,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.onSelect(task.name);
+    this.props.navigationModel.change({ task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
@@ -282,7 +280,7 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { model, selected, collapseModel } = this.props;
+    const { model, collapseModel, navigationModel } = this.props;
     const { scale } = this.state;
 
     if (!model || !collapseModel) {
@@ -315,7 +313,7 @@ export default class Canvas extends Component<{
                   <Task
                     key={task.name}
                     task={task}
-                    selected={task.name === selected}
+                    selected={task.name === navigationModel.current.task}
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}

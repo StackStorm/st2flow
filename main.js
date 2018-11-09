@@ -38,17 +38,12 @@ class Window extends Component<{
   }
   state = {
     actions: [],
-    selected: undefined,
   }
 
   async componentDidMount() {
     const res = await fetch('/actions.json');
 
     this.setState({ actions: await res.json() });
-  }
-
-  handleSelect(name) {
-    this.setState({ selected: name });
   }
 
   style = style
@@ -65,8 +60,8 @@ class Window extends Component<{
         </div>
         <div className="component-row-content">
           { !collapseModel.isCollapsed('palette') && <Palette className="palette" actions={actions} /> }
-          <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
-          { !collapseModel.isCollapsed('details') && <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} /> }
+          <Canvas className="canvas" />
+          { !collapseModel.isCollapsed('details') && <Details className="details" actions={actions} /> }
         </div>
       </div>
     );
@@ -170,6 +165,26 @@ class CollapseModel {
 }
 
 register('collapseModel', new CollapseModel());
+
+class NavigationModel {
+  emitter = new EventEmitter();
+  current = {};
+
+  on(eventName, fn) {
+    return this.emitter.on(eventName, fn);
+  }
+
+  removeListener(eventName, fn) {
+    return this.emitter.removeListener(eventName, fn);
+  }
+
+  change(newState) {
+    this.current = { ...this.current, ...newState };
+    this.emitter.emit('change');
+  }
+}
+
+register('navigationModel', new NavigationModel());
 
 const routes = [{
   url: '/',

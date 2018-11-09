@@ -21,29 +21,22 @@ import Transition from './transition';
 
 import style from './style.css';
 
-type Navigation = {
-  type?: string,
-  section?: string,
-  asCode?: bool,
-}
-
-@connect(({ model }) => ({ model }))
+@connect(({ model, navigationModel }) => ({ model, navigationModel }))
 class TaskDetails extends Component<{
   model: ModelInterface,
+  navigationModel: Object,
   selected: string,
   actions: Array<Object>,
   onBack: Function,
-  navigation: Navigation,
-  handleNavigationChange: Function,
 }, {
   name: string,
 }> {
   static propTypes = {
     model: PropTypes.object,
+    navigationModel: PropTypes.object,
     selected: PropTypes.string,
     actions: PropTypes.array,
     onBack: PropTypes.func.isRequired,
-    handleNavigationChange: PropTypes.func,
   }
 
   constructor(props) {
@@ -93,15 +86,15 @@ class TaskDetails extends Component<{
   }
 
   handleSectionSwitch(section) {
-    this.props.handleNavigationChange({ section });
+    this.props.navigationModel.change({ section });
   }
 
   style = style
   joinFieldRef = React.createRef();
 
   render() {
-    const { model, selected, onBack, actions } = this.props;
-    const { section = 'task' } = this.props.navigation;
+    const { model, selected, onBack, actions, navigationModel } = this.props;
+    const { section = 'task' } = navigationModel.current;
     const { name } = this.state;
 
     const task = selected && model.tasks.find(task => task.name === selected);
@@ -208,20 +201,20 @@ class TaskDetails extends Component<{
   }
 }
 
-@connect(({ model }) => ({ model }))
+@connect(({ model, navigationModel }) => ({ model, navigationModel }))
 class TaskList extends Component<{
   model: ModelInterface,
-  onSelect: Function,
+  navigationModel: Object,
 }> {
   static propTypes = {
     model: PropTypes.object,
-    onSelect: PropTypes.func.isRequired,
+    navigationModel: PropTypes.object,
   }
 
   style = style
 
   render() {
-    const { model, onSelect } = this.props;
+    const { model, navigationModel } = this.props;
 
     return (
       <Panel className={this.style.taskPanel}>
@@ -230,7 +223,7 @@ class TaskList extends Component<{
             <Task
               key={task.name}
               task={task}
-              onClick={() => onSelect(task)}
+              onClick={() => navigationModel.change({ task: task.name })}
             />
           ))
         }
@@ -278,55 +271,30 @@ class Task extends Component<{
   }
 }
 
-@connect(({ model, metaModel }) => ({ model, metaModel }))
+@connect(({ model, metaModel, navigationModel }) => ({ model, metaModel, navigationModel }))
 export default class Details extends Component<{
   className?: string,
   model: ModelInterface,
   metaModel: ModelInterface,
+  navigationModel: Object,
   actions: Array<Object>,
-  selected: string,
-  onSelect: Function,
-}, {
-  navigation: Navigation,
 }> {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
     metaModel: PropTypes.object,
+    navigationModel: PropTypes.object,
     actions: PropTypes.array,
-    selected: PropTypes.string,
-    onSelect: PropTypes.func.isRequired,
-  }
-
-  state = {
-    navigation: {
-      type: undefined,
-      asCode: false,
-    },
   }
 
   style = style
 
-  handleNavigationChange(change: { type: string }) {
-    const { navigation } = this.state;
-
-    this.setState({ navigation: { ...navigation, ...change } });
-  }
-
-  handleCodeToggle() {
-    const { navigation } = this.state;
-
-    navigation.asCode = !navigation.asCode;
-
-    this.setState({ navigation });
-  }
-
   handleTaskSelect(task: TaskInterface) {
-    this.props.onSelect(task.name);
+    this.props.navigationModel.change({ task: task.name });
   }
 
   handleBack() {
-    this.props.onSelect();
+    this.props.navigationModel.change({ task: undefined });
   }
 
   render() {
@@ -338,8 +306,13 @@ export default class Details extends Component<{
       className: 'icon-lan',
     }];
 
-    const { selected: taskSelected, actions } = this.props;
-    const { type = 'metadata', asCode } = this.state.navigation;
+    const { actions, navigationModel } = this.props;
+
+    if (!navigationModel) {
+      return false;
+    }
+
+    const { type = 'metadata', asCode } = navigationModel.current;
 
     return (
       <div className={cx(this.props.className, this.style.component)}>
@@ -351,30 +324,30 @@ export default class Details extends Component<{
                   key={section.title}
                   className={section.className}
                   selected={type === section.title}
-                  onClick={() => this.handleNavigationChange({ type: section.title, section: undefined })}
+                  onClick={() => navigationModel.change({ type: section.title, section: undefined })}
                 />
               );
             })
           }
-          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => this.handleCodeToggle()} />
+          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => navigationModel.change({ asCode: !asCode })} />
         </Toolbar>
         {
           type === 'metadata' && (
             asCode
               && <Editor model={this.props.metaModel} />
               // $FlowFixMe Model is populated via decorator
-              || <Meta navigation={this.state.navigation} handleNavigationChange={navigation => this.handleNavigationChange(navigation)} />
+              || <Meta />
           )
         }
         {
           type === 'execution' && (
             asCode
               && <Editor model={this.props.model} />
-              || taskSelected
+              || navigationModel.current.task
                 // $FlowFixMe ^^
-                && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} navigation={this.state.navigation} handleNavigationChange={navigation => this.handleNavigationChange(navigation)} />
+                && <TaskDetails onBack={() => this.handleBack()} selected={navigationModel.current.task} actions={actions} />
                 // $FlowFixMe ^^
-                || <TaskList onSelect={task => this.handleTaskSelect(task)} />
+                || <TaskList />
           )
         }
       </div>
