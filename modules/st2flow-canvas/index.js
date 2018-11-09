@@ -276,6 +276,10 @@ export default class Canvas extends Component<{
     const { model, selected } = this.props;
     const { scale } = this.state;
 
+    if (!model) {
+      return false;
+    }
+
     const surfaceStyle = {
       transform: `scale(${Math.E ** scale})`,
     };

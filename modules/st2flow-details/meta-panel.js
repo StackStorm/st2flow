@@ -33,6 +33,10 @@ export default class Meta extends Component<{
     const { metaModel } = this.props;
     const { section = 'meta' } = this.props.navigation;
 
+    if (!metaModel) {
+      return false;
+    }
+
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('meta')} selected={section === 'meta'}>Meta</ToolbarButton>
