@@ -2,7 +2,7 @@
 
 type JPath = Array<string | number>;
 
-type JpathKey = string | Array<string | number>;
+type JpathKey = string | JPath;
 
 type BaseToken = {
 	startPosition: number,
