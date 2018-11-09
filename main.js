@@ -21,6 +21,7 @@ class Window extends Component {
   state = {
     actions: [],
     selected: undefined,
+    transitionToSelected: undefined,
   }
 
   async componentDidMount() {
@@ -29,8 +30,8 @@ class Window extends Component {
     this.setState({ actions: await res.json() });
   }
 
-  handleSelect(name) {
-    this.setState({ selected: name });
+  handleSelect(name, toName) {
+    this.setState({ selected: name, transitionToSelected: toName });
   }
 
   style = style
@@ -42,8 +43,19 @@ class Window extends Component {
       <div className="component" >
         <Header className="header" />
         <Palette className="palette" actions={actions} />
-        <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
-        <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
+        <Canvas
+          className="canvas"
+          selected={this.state.selected}
+          transitionToSelected={this.state.transitionToSelected}
+          onSelect={(name, toName) => this.handleSelect(name, toName)}
+        />
+        <Details
+          className="details"
+          actions={actions}
+          selected={this.state.selected}
+          transitionToSelected={this.state.transitionToSelected}
+          onSelect={(name) => this.handleSelect(name)}
+        />
       </div>
     );
   }

@@ -1,6 +1,11 @@
 //@flow
 
-import type { ModelInterface, CanvasPoint, TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
+import type {
+  ModelInterface,
+  CanvasPoint,
+  TaskRefInterface,
+  TransitionInterface,
+} from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 
 import React, { Component } from 'react';
@@ -22,6 +27,7 @@ export default class Canvas extends Component<{
       className?: string,
       model: ModelInterface,
       selected: string,
+      transitionToSelected?: string,
       onSelect: Function,
     }, {
       scale: number,
@@ -31,6 +37,7 @@ export default class Canvas extends Component<{
     className: PropTypes.string,
     model: PropTypes.object,
     selected: PropTypes.string,
+    transitionToSelected: PropTypes.string,
     onSelect: PropTypes.func,
   }
 
@@ -234,9 +241,13 @@ export default class Canvas extends Component<{
     this.props.onSelect(task.name);
   }
 
+  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
+    e.stopPropagation();
+    this.props.onSelect(transition.from.name, toTask.name);
+  }
+
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-
     this.props.onSelect();
   }
 
@@ -282,7 +293,7 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { model, selected } = this.props;
+    const { model, selected, transitionToSelected } = this.props;
     const { scale } = this.state;
 
     const surfaceStyle = {
@@ -337,9 +348,11 @@ export default class Canvas extends Component<{
                           key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
                           from={from}
                           to={to}
+                          selected={transition.from.name === selected && tto.name === transitionToSelected}
+                          onClick={(e) => this.handleTransitionSelect(e, transition, tto)}
                         />
                       );
-                    })
+                    });
                     return arr;
                   }, [])
               }

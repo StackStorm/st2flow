@@ -47,15 +47,33 @@ type Target = {
 export default class Transition extends Component<{
   from: Target,
   to: Target,
+  selected: boolean,
+  onClick: Function
 }> {
   static propTypes = {
     from: PropTypes.object.isRequired,
     to: PropTypes.object.isRequired,
   }
 
-  style = style
+  componentDidMount() {
+    // React fail: onClick isn't supported for SVG elements, so
+    // manually set up the click handler here.
+    if(this.pathElement && this.pathElement instanceof Element) {
+      this.pathElement.addEventListener('click', this.props.onClick);
+    }
+  }
+
+  componentWillUnmount() {
+    if(this.pathElement && this.pathElement instanceof Element) {
+      this.pathElement.removeEventListener('click', this.props.onClick);
+    }
+  }
 
   uniqId = 'some'
+
+  pathElement = undefined
+
+  style = style
 
   makePath(from: Target, to: Target) {
     if (!from.task || !to.task) {
@@ -81,7 +99,7 @@ export default class Transition extends Component<{
     const toPoint = toSize.multiply(toAnchor).add(toCoords).add(arrowCompensation);
     const toOrbit = toControl.multiply(ORBIT_DISTANCE).add(toPoint);
 
-    const lagrangePoint = toOrbit.subtract(fromOrbit).divide(2);  
+    const lagrangePoint = toOrbit.subtract(fromOrbit).divide(2);
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
@@ -108,22 +126,49 @@ export default class Transition extends Component<{
   }
 
   render() {
-    const { from, to, ...props } = this.props;
+    const { from, to, selected, ...props } = this.props;
 
     const path = this.makePath(from, to);
 
     return (
       [
         <defs key="marker">
+          {selected && [
+            <marker id={`${this.uniqId}ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
+            </marker>,
+            <marker id={`${this.uniqId}Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrowActive} />
+            </marker>,
+          ]}
           <marker id={this.uniqId} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
             <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
           </marker>
         </defs>,
+        selected && [
+          <path
+            className={this.style.transition}
+            style={{ strokeWidth: 17 }}
+            key="pathActiveBorder"
+            d={path}
+            markerEnd={`url(#${this.uniqId}ActiveBorder)`}
+            {...props}
+          />,
+          <path
+            className={this.style.transitionActive}
+            key="pathActive"
+            d={path}
+            markerEnd={`url(#${this.uniqId}Active)`}
+            {...props}
+          />,
+        ],
         <path
-          key="path"
           className={this.style.transition}
+          key="path"
           d={path}
           markerEnd={`url(#${this.uniqId})`}
+          pointerEvents="visibleStroke"
+          ref={(ref) => this.pathElement = ref}
           {...props}
         />,
       ]
