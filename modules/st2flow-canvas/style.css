@@ -127,7 +127,13 @@
 
 .transition-active {
   stroke: var(--selected-bg);
-  stroke-width: 15;
+  stroke-width: 12;
+  fill: transparent;
+}
+
+.transition-active-border {
+  stroke: var(--transition-color);
+  stroke-width: 13;
   fill: transparent;
 }
 

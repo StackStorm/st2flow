@@ -147,8 +147,7 @@ export default class Transition extends Component<{
         </defs>,
         selected && [
           <path
-            className={this.style.transition}
-            style={{ strokeWidth: 17 }}
+            className={this.style.transitionActiveBorder}
             key="pathActiveBorder"
             d={path}
             markerEnd={`url(#${this.uniqId}ActiveBorder)`}
