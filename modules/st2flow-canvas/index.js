@@ -236,13 +236,13 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name });
+    this.props.navigationModel.change({ task: task.name, type: 'execution', section: 'input' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
 
-    this.props.navigationModel.change({ task: undefined });
+    this.props.navigationModel.change({ task: undefined, section: undefined, type: 'metadata' });
   }
 
   handleModelError = (e: Error) => {
