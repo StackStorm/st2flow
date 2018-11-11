@@ -6,6 +6,9 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import Vector from './vector';
+import { origin } from './const';
+
 import style from './style.css';
 
 export default class Task extends Component<{
@@ -106,14 +109,13 @@ export default class Task extends Component<{
 
     if (this.props.onMove) {
       const { coords } = this.props.task;
-      const { x, y } = this.state.delta;
-      if ( x === 0 && y === 0) {
+      const { x: dx, y: dy } = this.state.delta;
+      if ( dx === 0 && dy === 0) {
         return false;
       }
-      this.props.onMove({
-        x: coords.x + x / scale,
-        y: coords.y + y / scale,
-      });
+      const x = coords.x + dx / scale;
+      const y = coords.y + dy / scale;
+      this.props.onMove(Vector.max(new Vector(x, y), new Vector(0, 0)));
     }
     
     this.setState({
@@ -134,11 +136,11 @@ export default class Task extends Component<{
     e.preventDefault();
     e.stopPropagation();
 
+    const x = e.clientX - this.start.x;
+    const y = e.clientY - this.start.y;
+
     this.setState({
-      delta: {
-        x: e.clientX - this.start.x,
-        y: e.clientY - this.start.y,
-      },
+      delta: { x, y },
     });
 
     return false;
@@ -205,11 +207,13 @@ export default class Task extends Component<{
 
     const scale = Math.E ** this.props.scale;
 
+    const coords = new Vector(delta).divide(scale).add(new Vector(task.coords)).add(origin);
+
     return (
       <div
         className={cx(this.style.task, selected && this.style.selected)}
         style={{
-          transform: `translate(${task.coords.x + delta.x / scale}px, ${task.coords.y + delta.y / scale}px)`,
+          transform: `translate(${coords.x}px, ${coords.y}px)`,
         }}
         onClick={e => this.handleClick(e)}
       >

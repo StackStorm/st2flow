@@ -16,6 +16,8 @@ import Vector from './vector';
 import Toolbar from './toolbar';
 import CollapseButton from './collapse-button';
 
+import { origin } from './const';
+
 import style from './style.css';
 
 type Wheel = WheelEvent & {
@@ -220,12 +222,12 @@ export default class Canvas extends Component<{
 
     const { action, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
 
-    const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle));
+    const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle)).subtract(new Vector(origin));
 
     this.props.model.addTask({
       name: `task${this.props.model.lastTaskIndex + 1}`,
       action: action.ref,
-      coords,
+      coords: Vector.max(coords, new Vector(0, 0)),
     });
 
     return false;
