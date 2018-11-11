@@ -35,6 +35,10 @@
 }
 
 .details {
-  width: 40%;
+  width: 360px;
   height: 100%;
+
+  &.code {
+    width: 500px;
+  }
 }

@@ -315,7 +315,7 @@ export default class Details extends Component<{
     const { type = 'metadata', asCode } = navigationModel.current;
 
     return (
-      <div className={cx(this.props.className, this.style.component)}>
+      <div className={cx(this.props.className, this.style.component, asCode && 'code')}>
         <Toolbar>
           {
             sections.map(section => {
