@@ -62,13 +62,8 @@
       content: ' ';
     }
 
-    &.edit {
-      top: -12px;
-    }
-
     &.delete {
-      top: initial;
-      bottom: -12px;
+      top: 12px;
     }
   }
 
