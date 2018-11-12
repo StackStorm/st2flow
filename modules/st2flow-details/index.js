@@ -29,6 +29,7 @@ class TaskDetails extends Component<{
   actions: Array<Object>,
   onBack: Function,
 }, {
+  rename: bool,
   name: string,
 }> {
   static propTypes = {
@@ -42,6 +43,7 @@ class TaskDetails extends Component<{
   constructor(props) {
     super(props);
     this.state = {
+      rename: false,
       name: props.selected,
     };
   }
@@ -50,12 +52,19 @@ class TaskDetails extends Component<{
     this.setState({ name });
   }
 
+  handleToggleRename() {
+    const { rename } = this.state;
+    const { selected } = this.props;
+    this.setState({ rename: !rename, name: selected });
+  }
+
   handleTaskRename(ref, name) {
-    const { model, selected, onBack } = this.props;
+    const { model, selected } = this.props;
     model && model.updateTask({ name: ref }, { name });
     if (selected === ref) {
-      onBack();
+      this.props.navigationModel.change({ task: name });
     }
+    this.setState({ rename: false });
   }
 
   handleTaskFieldChange(field, value) {
@@ -94,8 +103,8 @@ class TaskDetails extends Component<{
 
   render() {
     const { model, selected, onBack, actions, navigationModel } = this.props;
-    const { section = 'task' } = navigationModel.current;
-    const { name } = this.state;
+    const { section = 'input' } = navigationModel.current;
+    const { name, rename } = this.state;
 
     const task = selected && model.tasks.find(task => task.name === selected);
 
@@ -122,31 +131,32 @@ class TaskDetails extends Component<{
           className="icon-chevron_left"
           onClick={() => onBack()}
         />
-        <Task task={task} />
+        {
+          rename
+            ? (
+              <div className={this.style.input} >
+                <StringField value={name} onChange={name => this.handleNameChange(name)} />
+              </div>
+            )
+            : <Task task={task} />
+        }
+        {
+          rename
+            && (
+              <div className={cx(this.style.button, this.style.rename)} >
+                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={task.name === name ? 'disabled' : ''} />
+              </div>
+            )
+        }
+        <div className={cx(this.style.button, this.style.edit)} >
+          <Button onClick={() => this.handleToggleRename()} value={rename ? 'Cancel' : 'Edit'} />
+        </div>
       </Toolbar>,
       <Toolbar key="subtoolbar" secondary={true} >
-        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('task')} selected={section === 'task'}>Task</ToolbarButton>
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('input')} selected={section === 'input'}>Input</ToolbarButton>
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('properties')} selected={section === 'properties'}>Properties</ToolbarButton>
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('transitions')} selected={section === 'transitions'}>Transitions</ToolbarButton>
       </Toolbar>,
-      section === 'task' && (
-        <Panel key="task">
-          <div className={this.style.combination}>
-            <div className={this.style.combinationField} >
-              <StringField name="name" value={name} onChange={name => this.handleNameChange(name)} />
-            </div>
-            {
-              task.name !== name && (
-                <div className={this.style.combinationButton} >
-                  <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename task" />
-                </div>
-              )
-            }
-          </div>
-          <StringField name="action" value={task.action} onChange={value => this.handleTaskFieldChange('action', value)} />
-        </Panel>
-      ),
       section === 'input' && (
         <Panel key="input">
           <AutoForm

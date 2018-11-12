@@ -17,7 +17,6 @@ export default class Task extends Component<{
   selected: bool,
   onMove: Function,
   onClick: Function,
-  onEdit: Function,
   onDelete: Function,
 }, {
   delta: CanvasPoint
@@ -28,7 +27,6 @@ export default class Task extends Component<{
     selected: PropTypes.bool,
     onMove: PropTypes.func,
     onClick: PropTypes.func,
-    onEdit: PropTypes.func,
     onDelete: PropTypes.func,
   }
 
@@ -202,7 +200,7 @@ export default class Task extends Component<{
   handleRef = React.createRef();
 
   render() {
-    const { task, selected, onEdit, onDelete } = this.props;
+    const { task, selected, onDelete } = this.props;
     const { delta } = this.state;
 
     const scale = Math.E ** this.props.scale;

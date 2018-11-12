@@ -319,7 +319,6 @@ export default class Canvas extends Component<{
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}
-                    onEdit={() => this.handleTaskEdit(task)}
                     onDelete={() => this.handleTaskDelete(task)}
                   />
                 );
