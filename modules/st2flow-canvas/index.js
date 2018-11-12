@@ -61,6 +61,7 @@ export default class Canvas extends Component<{
     el.addEventListener('drop', this.handleDrop);
 
     const { model } = this.props;
+    model.on('change', this.handleModelChange);
     model.on('schema-error', this.handleModelError);
 
     this.handleUpdate();
@@ -85,6 +86,7 @@ export default class Canvas extends Component<{
     el.removeEventListener('drop', this.handleDrop);
 
     const { model } = this.props;
+    model.removeListener('change', this.handleModelChange);
     model.removeListener('schema-error', this.handleModelError);
   }
 
@@ -247,6 +249,13 @@ export default class Canvas extends Component<{
     this.props.navigationModel.change({ task: undefined, section: undefined, type: 'metadata' });
   }
 
+  handleModelChange = () => {
+    // clear any errors
+    if(this.state.errors && this.state.errors.length) {
+      this.setState({ errors: [] });
+    }
+  }
+
   handleModelError = (e: Error) => {
     // error may or may not be an array
     this.setState({ errors: e && [].concat(e) || [] });
@@ -327,23 +336,26 @@ export default class Canvas extends Component<{
             <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
               {
                 model.transitions
-                  .map((transition) => {
+                  .reduce((arr, transition) => {
                     const from = {
                       task: model.tasks.find(({ name }) => name === transition.from.name),
                       anchor: 'bottom',
                     };
-                    const to = {
-                      task: model.tasks.find(({ name }) => name === transition.to.name),
-                      anchor: 'top',
-                    };
-                    return (
-                      <Transition
-                        key={`${transition.from.name}-${transition.to.name}-${window.btoa(transition.condition)}`}
-                        from={from}
-                        to={to}
-                      />
-                    );
-                  })
+                    transition.to.forEach(tto => {
+                      const to = {
+                        task: model.tasks.find(({ name }) => name === tto.name),
+                        anchor: 'top',
+                      };
+                      arr.push(
+                        <Transition
+                          key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
+                          from={from}
+                          to={to}
+                        />
+                      );
+                    })
+                    return arr;
+                  }, [])
               }
             </svg>
           </div>

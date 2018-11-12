@@ -115,10 +115,10 @@ class MistralModel extends BaseModel implements ModelInterface {
               from: {
                 name: joinTaskName(key, this.tokenSet),
               },
-              to: {
+              to: [{
                 // The first item in the fromKey will be the workflow name
                 name: joinTaskName([ key[0], toName ], this.tokenSet),
-              },
+              }],
             });
           }
         });
@@ -152,7 +152,7 @@ class MistralModel extends BaseModel implements ModelInterface {
   addTransition(transition: TransitionInterface) {
     const { oldData, oldTree } = this.startMutation();
     const [ fromWorkflowName, fromTaskName ] = splitTaskName(transition.from.name, this.tokenSet);
-    const [ toWorkflowName, toTaskName ] = splitTaskName(transition.to.name, this.tokenSet);
+    const [ toWorkflowName, toTaskName ] = splitTaskName(transition.to[0].name, this.tokenSet);
 
     if(fromWorkflowName !== toWorkflowName) {
       this.emitError(new Error('Cannot create transitions between two different workflows'));
@@ -238,7 +238,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     const { oldData, oldTree } = this.startMutation();
     const { type: oldType, condition: oldCondition, from: oldFrom, to: oldTo } = oldTransition;
     const [ oldFromWorkflowName, oldFromTaskName ] = splitTaskName(oldFrom.name, this.tokenSet);
-    const [ oldToWorkflowName, oldToTaskName ] = splitTaskName(oldTo.name, this.tokenSet);
+    const [ oldToWorkflowName, oldToTaskName ] = splitTaskName(oldTo[0].name, this.tokenSet);
     const oldKey = [ oldFromWorkflowName, 'tasks', oldFromTaskName, transitionTypeKey(oldType) ];
 
     if(oldData.workflows) {
@@ -263,7 +263,7 @@ class MistralModel extends BaseModel implements ModelInterface {
 
     const { type: newType, condition: newCondition, from: newFrom, to: newTo } = newData;
     const [ newFromWorkflowName, newFromTaskName ] = newFrom ? splitTaskName(newFrom.name, this.tokenSet) : [ oldFromWorkflowName, oldFromTaskName ];
-    const [ newToWorkflowName, newToTaskName ] = newTo ? splitTaskName(newTo.name, this.tokenSet) : [ oldToWorkflowName, oldToTaskName ];
+    const [ newToWorkflowName, newToTaskName ] = newTo && newTo.length ? splitTaskName(newTo[0].name, this.tokenSet) : [ oldToWorkflowName, oldToTaskName ];
 
     if(newFromWorkflowName !== newToWorkflowName) {
       this.emitError(new Error('Cannot create transitions between two different workflows'));
@@ -317,6 +317,40 @@ class MistralModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
+  setTransitionProperty({ from, to, type, condition }: TransitionInterface, path: JpathKey, value: any) {
+    const { oldTree } = this.startMutation();
+    const [ fromWorkflowName, fromTaskName ] = splitTaskName(from.name, this.tokenSet);
+    const [ /*toWorkflowName*/, toTaskName ] = splitTaskName(to[0].name, this.tokenSet);
+    const typeKey = transitionTypeKey(type);
+    const key = [ fromWorkflowName, 'tasks' ];
+
+    const rawTasks = crawler.getValueByKey(this.tokenSet, key);
+    const task: RawTask = rawTasks[fromTaskName];
+
+    if(!task || !task[typeKey]) {
+      throw new Error(`No transition type "${typeKey}" found coming from task "${fromTaskName}"`);
+    }
+
+    key.concat(fromTaskName, typeKey);
+
+    const transitionIndex = task[typeKey].findIndex(tr =>
+      (typeof tr === 'string' && tr === toTaskName) || tr.hasOwnProperty(toTaskName) && tr[toTaskName] === condition
+    );
+
+    if (!transitionIndex) {
+      if (condition) {
+        throw new Error(`No transition to "${toTaskName}" with condition "${condition}" found in task "${fromTaskName}"`);
+      }
+      else {
+        throw new Error(`No transition to "${toTaskName}" found in task "${fromTaskName}"`);
+      }
+    }
+
+    crawler.set(this.tokenSet, key.concat(transitionIndex, path), value);
+
+    this.endMutation(oldTree);
+  }
+
   deleteTask(ref: TaskRefInterface) {
     const { oldData, oldTree } = this.startMutation();
     const [ workflowName, taskName ] = splitTaskName(ref.name, this.tokenSet);
@@ -343,7 +377,7 @@ class MistralModel extends BaseModel implements ModelInterface {
 
     const transitions = crawler.getValueByKey(this.tokenSet, key);
     const index = transitions.findIndex((tr, i) => {
-      return (typeof tr === 'string' && tr === to.name) || tr[to.name] === condition;
+      return (typeof tr === 'string' && tr === to[0].name) || tr[to[0].name] === condition;
     });
 
     if(index !== -1) {

@@ -117,9 +117,9 @@ class TaskDetails extends Component<{
       .reduce((acc, transition) => {
         const t = acc.find(t => t.condition === transition.condition);
         if (!t) {
-          return acc.concat({ ...transition, to: [ transition.to ] });
+          return acc.concat({ ...transition });
         }
-        t.to = t.to.concat([ transition.to ]);
+        t.to = t.to.concat(transition.to);
         return acc;
       }, []);
 

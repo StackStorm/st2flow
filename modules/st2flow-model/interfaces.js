@@ -18,7 +18,7 @@ export interface TaskInterface {
 
     // Mistral only
     // workflow?: string;
-    publish?: string | Array<Object>;
+    publish?: Array<Object>;
 
     // Orquesta only
     with?: ?{
@@ -35,21 +35,21 @@ export interface TaskRefInterface {
 
 export interface TransitionInterface {
     from: TaskRefInterface;
-    to: TaskRefInterface;
+    to: Array<TaskRefInterface>;
     condition: ?string;
 
     // Mistral Only
     type?: TransitionType;
 
     // Orquesta Only
-    publish?: string | Array<Object>;
+    publish?: Array<Object>;
 }
 
-// export interface TransitionRefInterface {
-//     from: TaskRefInterface;
-//     to: TaskRefInterface;
-//     condition?: string;
-// }
+export interface TransitionRefInterface {
+    from: TaskRefInterface;
+    to: Array<TaskRefInterface>;
+    condition: ?string;
+}
 
 export interface ModelInterface {
     +version: number;
@@ -68,14 +68,14 @@ export interface ModelInterface {
     removeListener(event: string, callback: Function): void;
 
     addTask(opts: TaskInterface): void;
-    updateTask(ref: TaskRefInterface, newData: TaskInterface): void;
+    updateTask(ref: TaskRefInterface, newData: $Shape<TaskInterface>): void;
     deleteTask(ref: TaskRefInterface): void;
 
     setTaskProperty(task: TaskInterface, path: JpathKey, value: any): void;
     deleteTaskProperty(task: TaskInterface, path: JpathKey): void;
 
     addTransition(opts: TransitionInterface): void;
-    updateTransition(oldTransition: TransitionInterface, newData: TransitionInterface): void;
+    updateTransition(oldTransition: TransitionInterface, newData: $Shape<TransitionInterface>): void;
     deleteTransition(transition: TransitionInterface): void;
 
     setTransitionProperty(transition: TransitionInterface, path: JpathKey, value: any): void;
