@@ -6,10 +6,9 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
 import Vector from './vector';
+import { origin } from './const';
 
 import style from './style.css';
-
-window.vec = Vector;
 
 const ANCHORS = {
   top: new Vector(.5, 0),
@@ -66,7 +65,7 @@ export default class Transition extends Component<{
 
     const fromAnchor = ANCHORS[from.anchor];
     const fromControl = CONTROLS[from.anchor];
-    const fromCoords = new Vector(from.task.coords);
+    const fromCoords = new Vector(from.task.coords).add(origin);
     const fromSize = new Vector(from.task.size);
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
@@ -74,7 +73,7 @@ export default class Transition extends Component<{
 
     const toAnchor = ANCHORS[to.anchor];
     const toControl = CONTROLS[to.anchor];
-    const toCoords = new Vector((to.task || {}).coords);
+    const toCoords = new Vector((to.task || {}).coords).add(origin);
     const toSize = new Vector((to.task || {}).size);
 
     const arrowCompensation = toControl.multiply(10);
