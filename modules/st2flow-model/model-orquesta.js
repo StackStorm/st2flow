@@ -205,6 +205,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   setTaskProperty(ref: TaskRefInterface, path: JpathKey , value: any) {
     const { oldTree } = this.startMutation();
+
     crawler.set(this.tokenSet, [ 'tasks', ref.name ].concat(path), value);
 
     this.endMutation(oldTree);
