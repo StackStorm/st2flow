@@ -106,15 +106,16 @@ class BaseClass {
   }
 
   emitChange(oldTree: Object, tokenSet: TokenSet): void {
-    if(!ajv.validate(this.modelName, tokenSet.toObject())) {
+    const newTree = tokenSet.toObject();
+    if(!ajv.validate(this.modelName, newTree)) {
       this.emitError(formatAjvErrors(ajv.errors), STR_ERROR_SCHEMA);
       return;
     }
 
-    const deltas = diff(oldTree, tokenSet.tree) || [];
+    const deltas = diff(oldTree, newTree) || [];
 
     if (deltas.length) {
-      this.emitter.emit('change', deltas, this.tokenSet.toYAML());
+      this.emitter.emit('change', deltas, tokenSet.toYAML());
     }
   }
 

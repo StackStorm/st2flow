@@ -1,6 +1,11 @@
 //@flow
 
-import type { ModelInterface, CanvasPoint, TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
+import type {
+  ModelInterface,
+  CanvasPoint,
+  TaskRefInterface,
+  TransitionInterface,
+} from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 
 import React, { Component } from 'react';
@@ -240,13 +245,24 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name, type: 'execution', section: 'input' });
+    this.props.navigationModel.change({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
+  }
+
+  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
+    e.stopPropagation();
+    this.props.navigationModel.change({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
+    this.props.navigationModel.change({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
+  }
 
-    this.props.navigationModel.change({ task: undefined, section: undefined, type: 'metadata' });
+  handleModelChange = () => {
+    // clear any errors
+    if(this.state.errors && this.state.errors.length) {
+      this.setState({ errors: [] });
+    }
   }
 
   handleModelChange = () => {
@@ -272,7 +288,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name });
+    this.props.navigationModel.change({ toTask: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
@@ -351,9 +367,11 @@ export default class Canvas extends Component<{
                           key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
                           from={from}
                           to={to}
+                          selected={transition.from.name === navigationModel.current.task && tto.name === navigationModel.current.toTask}
+                          onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
                         />
                       );
-                    })
+                    });
                     return arr;
                   }, [])
               }

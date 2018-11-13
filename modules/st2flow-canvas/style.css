@@ -1,5 +1,7 @@
 :root {
   --transition-color: orange;
+  --selected-bg: #fff3e6;
+  --selected-border: #ffa256;
 }
 
 .component {
@@ -34,8 +36,8 @@
   }
 
   &.selected &-body {
-    border: 1px solid #ffa256;
-    background-color: #fff3e6;
+    border: 1px solid var(--selected-border);
+    background-color: var(--selected-bg);
   }
 
   &.selected &-button {
@@ -118,8 +120,24 @@
   fill: transparent;
 }
 
+.transition-active {
+  stroke: var(--selected-bg);
+  stroke-width: 12;
+  fill: transparent;
+}
+
+.transition-active-border {
+  stroke: var(--transition-color);
+  stroke-width: 13;
+  fill: transparent;
+}
+
 .transition-arrow {
   fill: var(--transition-color);
+}
+
+.transition-arrow-active {
+  fill: var(--selected-bg);
 }
 
 .surface {
