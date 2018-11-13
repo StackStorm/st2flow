@@ -108,8 +108,11 @@ export default class Transition extends Component<{
     const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
 
     path.push(`M ${fromPoint.x} ${fromPoint.y}`);
-    path.push(`L ${fromOrbitCorner.approach.x} ${fromOrbitCorner.approach.y}`);
-    path.push(`Q ${fromOrbitCorner.origin.x} ${fromOrbitCorner.origin.y}, ${fromOrbitCorner.departure.x} ${fromOrbitCorner.departure.y}`);
+
+    if (lagrangePoint.y <= 0) {
+      path.push(`L ${fromOrbitCorner.approach.x} ${fromOrbitCorner.approach.y}`);
+      path.push(`Q ${fromOrbitCorner.origin.x} ${fromOrbitCorner.origin.y}, ${fromOrbitCorner.departure.x} ${fromOrbitCorner.departure.y}`);
+    }
 
     path.push(`L ${fromLagrangeCorner.approach.x} ${fromLagrangeCorner.approach.y}`);
     path.push(`Q ${fromLagrangeCorner.origin.x} ${fromLagrangeCorner.origin.y}, ${fromLagrangeCorner.departure.x} ${fromLagrangeCorner.departure.y}`);
@@ -117,8 +120,11 @@ export default class Transition extends Component<{
     path.push(`L ${toLagrangeCorner.approach.x} ${toLagrangeCorner.approach.y}`);
     path.push(`Q ${toLagrangeCorner.origin.x} ${toLagrangeCorner.origin.y}, ${toLagrangeCorner.departure.x} ${toLagrangeCorner.departure.y}`);
 
-    path.push(`L ${toOrbitCorner.approach.x} ${toOrbitCorner.approach.y}`);
-    path.push(`Q ${toOrbitCorner.origin.x} ${toOrbitCorner.origin.y}, ${toOrbitCorner.departure.x} ${toOrbitCorner.departure.y}`);
+    if (lagrangePoint.y <= 0) {
+      path.push(`L ${toOrbitCorner.approach.x} ${toOrbitCorner.approach.y}`);
+      path.push(`Q ${toOrbitCorner.origin.x} ${toOrbitCorner.origin.y}, ${toOrbitCorner.departure.x} ${toOrbitCorner.departure.y}`);
+    }
+
     path.push(`L ${toPoint.x} ${toPoint.y}`);
 
     return path.join(' ');
