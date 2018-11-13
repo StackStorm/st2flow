@@ -62,7 +62,7 @@ class TaskDetails extends Component<{
     const { model, selected } = this.props;
     model && model.updateTask({ name: ref }, { name });
     if (selected === ref) {
-      this.props.navigationModel.change({ task: name });
+      this.props.navigationModel.change({ toTask: undefined, task: name });
     }
     this.setState({ rename: false });
   }
@@ -300,11 +300,11 @@ export default class Details extends Component<{
   style = style
 
   handleTaskSelect(task: TaskInterface) {
-    this.props.navigationModel.change({ task: task.name });
+    this.props.navigationModel.change({ toTask: undefined, task: task.name });
   }
 
   handleBack() {
-    this.props.navigationModel.change({ task: undefined });
+    this.props.navigationModel.change({ toTask: undefined, task: undefined });
   }
 
   render() {

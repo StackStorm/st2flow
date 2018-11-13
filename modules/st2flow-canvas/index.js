@@ -245,7 +245,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name, type: 'execution', section: 'input' });
+    this.props.navigationModel.change({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
   }
 
   handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
@@ -255,7 +255,7 @@ export default class Canvas extends Component<{
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: undefined, section: undefined, type: 'metadata' });
+    this.props.navigationModel.change({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
   }
 
   handleModelChange = () => {
@@ -288,7 +288,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name });
+    this.props.navigationModel.change({ toTask: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
