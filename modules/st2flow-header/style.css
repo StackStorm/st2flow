@@ -5,11 +5,11 @@
   display: flex;
   align-items: center;
 
-  background: linear-gradient(3deg, #400099 0%, #bd5030 100%);
+  background: linear-gradient(90deg, #400099 0%, #bd5030 100%);
   color: white;
 
   /* For collapse button */
-  padding-right: 30px;
+  padding-right: 40px;
 }
 
 .logo {

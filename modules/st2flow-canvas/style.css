@@ -210,6 +210,7 @@
 
   background-color: #444;
   color: #eee;
+  font-size: 23px;
 
   z-index: 1;
 
@@ -225,6 +226,8 @@
   &.top {
     top: 0;
     right: 0;
-    background-color: #a22;
+    background-color: rgba(30, 29, 31, 0.22);
+    width: initial;
+    padding: 5px 0;
   }
 }
