@@ -14,11 +14,16 @@
   color: #bbb;
 
   display: flex;
+  align-items: center;
+
+  /* For collapse button */
+  padding-right: 30px;
 
   &.secondary {
     background-color: #d8d8d8;
     color: #222;
     border-bottom: 1px solid #f8f8f8;
+    padding-right: initial;
 
     .toolbar-button.selected {
       background-color: transparent;
@@ -30,6 +35,25 @@
 
   .task {
     border-bottom: none;
+
+    flex: 1;
+  }
+
+  .edit {
+    padding: 5px;
+  }
+
+  .input {
+
+  }
+
+  .button {
+    margin-right: -5px;
+    padding: 5px;
+
+    &:last-of-type {
+      margin-right: initial;
+    }
   }
 }
 
@@ -224,21 +248,6 @@
 
   &-footer {
     margin: 20px 0;
-  }
-}
-
-.combination {
-  display: flex;
-
-  margin-bottom: 12px;
-
-  &-field {
-    flex: 1;
-  }
-
-  &-button {
-    padding-top: 28px;
-    padding-left: 10px;
   }
 }
 

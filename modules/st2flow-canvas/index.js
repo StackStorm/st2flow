@@ -19,16 +19,22 @@ import Task from './task';
 import Transition from './transition';
 import Vector from './vector';
 import Toolbar from './toolbar';
+import CollapseButton from './collapse-button';
+
+import { origin } from './const';
 
 import style from './style.css';
 
-@connect(({ model }) => ({ model }))
+type Wheel = WheelEvent & {
+  wheelDelta: number
+}
+
+@connect(({ model, collapseModel, navigationModel }) => ({ model, collapseModel, navigationModel }))
 export default class Canvas extends Component<{
       className?: string,
       model: ModelInterface,
-      selected: string,
-      transitionToSelected?: string,
-      onSelect: Function,
+      collapseModel: Object,
+      navigationModel: Object,
     }, {
       scale: number,
       errors: Array<Error>,
@@ -36,9 +42,8 @@ export default class Canvas extends Component<{
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
-    selected: PropTypes.string,
-    transitionToSelected: PropTypes.string,
-    onSelect: PropTypes.func,
+    collapseModel: PropTypes.object,
+    navigationModel: PropTypes.object,
   }
 
   state = {
@@ -122,17 +127,19 @@ export default class Canvas extends Component<{
       y: height / scale,
     });
 
-    surfaceEl.style.width = `${this.size.x}px`;
-    surfaceEl.style.height = `${this.size.y}px`;
+    surfaceEl.style.width = `${(this.size.x - 1).toFixed()}px`;
+    surfaceEl.style.height = `${(this.size.y - 1).toFixed()}px`;
   }
 
-  handleMouseWheel = (e: WheelEvent) => {
+  handleMouseWheel = (e: Wheel) => {
     e.preventDefault();
     e.stopPropagation();
 
     const { scale }: { scale: number } = this.state;
+    const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+
     this.setState({
-      scale: scale + e.deltaY / 1200,
+      scale: scale + delta * .1,
     });
 
     this.handleUpdate();
@@ -222,12 +229,12 @@ export default class Canvas extends Component<{
 
     const { action, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
 
-    const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle));
+    const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle)).subtract(new Vector(origin));
 
     this.props.model.addTask({
       name: `task${this.props.model.lastTaskIndex + 1}`,
       action: action.ref,
-      coords,
+      coords: Vector.max(coords, new Vector(0, 0)),
     });
 
     return false;
@@ -238,17 +245,24 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.onSelect(task.name);
+    this.props.navigationModel.change({ task: task.name, type: 'execution', section: 'input' });
   }
 
   handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
     e.stopPropagation();
-    this.props.onSelect(transition.from.name, toTask.name);
+    this.props.navigationModel.change({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.onSelect();
+    this.props.navigationModel.change({ task: undefined, section: undefined, type: 'metadata' });
+  }
+
+  handleModelChange = () => {
+    // clear any errors
+    if(this.state.errors && this.state.errors.length) {
+      this.setState({ errors: [] });
+    }
   }
 
   handleModelChange = () => {
@@ -274,7 +288,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.onSelect(task.name);
+    this.props.navigationModel.change({ task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
@@ -293,8 +307,12 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { model, selected, transitionToSelected } = this.props;
+    const { model, collapseModel, navigationModel } = this.props;
     const { scale } = this.state;
+
+    if (!model || !collapseModel) {
+      return false;
+    }
 
     const surfaceStyle = {
       transform: `scale(${Math.E ** scale})`,
@@ -312,6 +330,8 @@ export default class Canvas extends Component<{
           <div key="save" icon="icon-save" onClick={() => console.log('save')} />
           <div key="run" icon="icon-play" onClick={() => console.log('run')} />
         </Toolbar>
+        <CollapseButton position="left" state={collapseModel.isCollapsed('palette')} onClick={() => collapseModel.toggle('palette')} />
+        <CollapseButton position="right" state={collapseModel.isCollapsed('details')} onClick={() => collapseModel.toggle('details')} />
         <div className={this.style.canvas} ref={this.canvasRef}>
           <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
             {
@@ -320,11 +340,10 @@ export default class Canvas extends Component<{
                   <Task
                     key={task.name}
                     task={task}
-                    selected={task.name === selected}
+                    selected={task.name === navigationModel.current.task}
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}
-                    onEdit={() => this.handleTaskEdit(task)}
                     onDelete={() => this.handleTaskDelete(task)}
                   />
                 );
@@ -348,8 +367,8 @@ export default class Canvas extends Component<{
                           key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
                           from={from}
                           to={to}
-                          selected={transition.from.name === selected && tto.name === transitionToSelected}
-                          onClick={(e) => this.handleTransitionSelect(e, transition, tto)}
+                          selected={transition.from.name === navigationModel.current.task && tto.name === navigationModel.current.toTask}
+                          onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
                         />
                       );
                     });
