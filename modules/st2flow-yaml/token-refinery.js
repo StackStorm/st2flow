@@ -1,6 +1,7 @@
 // @flow
 
 import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken, AnyToken, Refinement } from './types';
+import { get } from './util';
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
@@ -125,18 +126,33 @@ class Refinery {
       rawToken.prefix = [];
     }
 
-    const { prefix } = rawToken;
+    const { prefix, jpath: tokenPath } = rawToken;
 
 
     // TODO: smarter indentation detection per token
     // (using depth and leading whitespace in prefix)
-    const indent = `\n${this.indent.repeat(depth)}`;
+    let indent = `\n${this.indent.repeat(depth)}`;
 
     if(this.jsonDepth === -1) {
       // Normal YAML
-      if(depth && prefix.length && rawToken.jpath.length > 4) {
-        if(rawToken.jpath[rawToken.jpath.length - 5] === 'items') {
-          depth--;
+
+      // Collections have loose indentation semantics, and we want to preserve
+      // any existing indentation, determined by the first item in the list.
+      // First determine if the current mapping is in a list. Since we are
+      // currently processing a mapping "key", the end of the jpath will
+      // always match this pattern: [..., 'items', 0, 'mappings', 0, 'key'].
+      const isInCollection = tokenPath.length > 4 && tokenPath[tokenPath.length - 5] === 'items';
+      if(isInCollection) {
+        const items = get(this.tree, tokenPath.slice(0, -4));
+        const firstToken = crawler.findFirstValueToken(token);
+
+        if(firstToken && firstToken.prefix.length) {
+          const lastPrefix = firstToken.prefix[firstToken.prefix.length - 1];
+          const match = lastPrefix.rawValue.match(REG_LEADING_SPACE);
+
+          if(match) {
+            indent = match[0];
+          }
         }
       }
 
@@ -155,7 +171,7 @@ class Refinery {
     }
     else {
       // JSON-like data
-      const isFirstKey = rawToken.jpath[rawToken.jpath.length - 2] === 0;
+      const isFirstKey = tokenPath[tokenPath.length - 2] === 0;
       const hasJsonStart = isFirstKey && prefix.some(t => REG_JSON_START.test(t.value));
       const commaIndex = prefix.findIndex(t => REG_COMMA.test(t.value));
 

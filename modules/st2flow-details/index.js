@@ -277,7 +277,7 @@ class Task extends Component<{
       <div
         key={task.name}
         className={this.style.task}
-        onClick={e => this.handleClick(e)}
+        onClick={this.handleClick}
       >
         <div className={this.style.taskName}>{ task.name }</div>
         <div className={this.style.taskAction}>{ task.action }</div>
