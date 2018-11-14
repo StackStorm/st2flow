@@ -403,7 +403,7 @@ const crawler = {
         return this.findFirstValueToken(token.mappings[0]);
 
       case 3:
-        return this.findFirstValueToken(token.items[0]);
+        return this.findFirstCollectionItem(token.items);
 
       default:
         throw new Error(`Unrecognized token kind: ${token.kind}`);
@@ -424,17 +424,36 @@ const crawler = {
         return token;
 
       case 1:
-        return this.findLastValueToken(token.value);
+        // The "value" can be null (no token), so fall back to the key
+        return this.findLastValueToken(token.value || token.key);
 
       case 2:
         return this.findLastValueToken(token.mappings[token.mappings.length - 1]);
 
       case 3:
-        return this.findLastValueToken(token.items[token.items.length - 1]);
+        return this.findFirstCollectionItem(token.items, true);
 
       default:
         throw new Error(`Unrecognized token kind: ${token.kind}`);
     }
+  },
+
+  /**
+   * Collection items can be null (no token), so crawl until we find one.
+   */
+  findFirstCollectionItem(items: Array<ValueToken>, fromEnd: boolean = false): ?TokenRawValue | ?TokenReference {
+    let index = fromEnd ? items.length - 1 : 0;
+    let token: ?ValueToken;
+
+    while(!token && ((fromEnd && index >= 0) || (!fromEnd && index < items.length))) {
+      token = items[fromEnd ? index-- : index++];
+    }
+
+    if(token) {
+      token = this.findFirstValueToken(token);
+    }
+
+    return token;
   },
 
   getTokenComments(token: AnyToken): string {
