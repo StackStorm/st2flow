@@ -235,22 +235,24 @@ class Slider extends Component<{
   elementRef = React.createRef()
   isDragging = false
 
-  handleDragStart(e: DragEvent) {
+  handleDragStart(e: MouseEvent) {
     this.setState({
       isDragging: true,
     });
   }
 
-  handleDragMove(e: DragEvent) {
+  handleDragMove(e: MouseEvent) {
     if(this.state.isDragging) {
+      e.preventDefault();
       const x = e.clientX;
       this.x = x;
       this.props.onSliderMove({x});
     }
   }
 
-  handleDragEnd(e:DragEvent) {
+  handleDragEnd(e:MouseEvent) {
     const {x} = this;
+    e.preventDefault();
     this.setState({
       isDragging: false,
     });
@@ -272,6 +274,7 @@ class Slider extends Component<{
             className={this.style.sliderBackdrop}
             onMouseMove={(e) => this.handleDragMove(e)}
             onMouseUp={(e) => this.handleDragEnd(e)}
+            onMouseLeave={(e) => this.handleDragEnd(e)}
           >&nbsp;
           </div>
         )}
