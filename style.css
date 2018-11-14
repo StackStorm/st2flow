@@ -35,8 +35,10 @@
 }
 
 .details {
-  width: 360px;
+  width: 360px; /* this is the default width, but resizable */
   height: 100%;
+  min-width: 275px;
+  max-width: 50%;
 
   &.code {
     width: 500px;

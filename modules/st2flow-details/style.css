@@ -1,23 +1,25 @@
 :root {
   --token-color: #eee;
+  --slider-width: 12px;
 }
 
 .component {
   display: flex;
   flex-direction: column;
+  flex-wrap: wrap;
   overflow: hidden;
   position: relative;
 }
 
 .slider {
-  position:absolute;
-  left: 0px;
-  top: 0px;
-  height: 100%;
-  width: 10px;
+  flex-shrink: 0;
+  flex-grow: 0;
+  align-self: start;
+  flex-basis: 100%;
+  width: calc( var(--slider-width) - 2px ); /* 2px allowance for border */
   border-left: 1px solid white;
   border-right: 1px solid black;
-  background-color: gray;
+  background-color: #d8d8d8;
   cursor: col-resize;
   display: flex;
   flex-flow: column nowrap;
@@ -37,6 +39,8 @@
 }
 
 .toolbar {
+  --toolbar-padding: 30px;
+  width: calc( 100% - var(--slider-width) - var(--toolbar-padding) );
   background-color: #444;
 
   color: #bbb;
@@ -52,6 +56,7 @@
     color: #222;
     border-bottom: 1px solid #f8f8f8;
     padding-right: initial;
+    width: calc( 100% - var(--slider-width) );
 
     .toolbar-button.selected {
       background-color: transparent;
@@ -130,6 +135,7 @@
 }
 
 .panel {
+  width: calc( 100% - 12px - 40px );
   background-color: #f8f8f8;
   padding: 20px;
 
