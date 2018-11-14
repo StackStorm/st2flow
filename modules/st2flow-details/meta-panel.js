@@ -13,25 +13,27 @@ import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
 
 
-@connect(({ metaModel }) => ({ metaModel }))
+@connect(({ metaModel, navigationModel }) => ({ metaModel, navigationModel }))
 export default class Meta extends Component<{
   metaModel: ModelInterface,
-  navigation: Object,
-  handleNavigationChange: Function,
+  navigationModel: Object,
 }> {
   static propTypes = {
     metaModel: PropTypes.object,
-    navigation: PropTypes.object,
-    handleNavigationChange: PropTypes.func,
+    navigationModel: PropTypes.object,
   }
 
   handleSectionSwitch(section: string) {
-    this.props.handleNavigationChange({ section });
+    this.props.navigationModel.change({ section });
   }
 
   render() {
-    const { metaModel } = this.props;
-    const { section = 'meta' } = this.props.navigation;
+    const { metaModel, navigationModel } = this.props;
+    const { section = 'meta' } = navigationModel.current;
+
+    if (!metaModel) {
+      return false;
+    }
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >

@@ -150,7 +150,7 @@
 
     display: block;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
 
     padding: 9px 12px;
 

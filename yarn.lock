@@ -715,6 +715,23 @@
     resolve "^1.1.6"
     sink-transform "^2.0.0"
 
+"@stackstorm/module-api@^2.1.1":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@stackstorm/module-api/-/module-api-2.1.1.tgz#422ab7e3f977bf3622916eca4d430074893514cc"
+  integrity sha512-WUmWFhatlmoHnGDoO8at4xOYrk+sRuh7BeTaiEKtHNHAy0/9QpDdekyNVPySNMLmimcP28nc0qoZ6HHhjy+vaQ==
+  dependencies:
+    axios "0.18.0"
+
+"@stackstorm/module-menu@^2.0.0":
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/@stackstorm/module-menu/-/module-menu-2.1.1.tgz#cddaa229c654dbe0e22da20cc5b64deb186cea6f"
+  integrity sha512-OWO2GqnPezMgLerjRJ+kU4rmv51YJgvbrGTv4ScdEEOXfXQaMCSrzv+/Jof/O2RTQsOTNi8n1up6VYr+Bzpg7A==
+  dependencies:
+    "@stackstorm/module-api" "^2.1.1"
+    "@stackstorm/st2-style" "^2.0.0"
+    insert-css "2.0.0"
+    prop-types "15.6.2"
+
 "@stackstorm/module-value-format@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@stackstorm/module-value-format/-/module-value-format-2.0.0.tgz#39dd268f881ab9f5bcefeb46f88ed4f4c5825372"
@@ -3873,6 +3890,13 @@ escodegen@~1.9.0:
   optionalDependencies:
     source-map "~0.6.1"
 
+eslint-plugin-flowtype@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-3.2.0.tgz#824364ed5940a404b91326fdb5a313a2a74760df"
+  integrity sha512-baJmzngM6UKbEkJ5OY3aGw2zjXBt5L2QKZvTsOlXX7yHKIjNRrlJx2ods8Rng6EdqPR9rVNIQNYHpTs0qfn2qA==
+  dependencies:
+    lodash "^4.17.10"
+
 eslint-plugin-react@^7.5.1:
   version "7.11.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-react/-/eslint-plugin-react-7.11.1.tgz#c01a7af6f17519457d6116aa94fc6d2ccad5443c"
@@ -6945,6 +6969,11 @@ lodash.values@~2.4.1:
   dependencies:
     lodash.keys "~2.4.1"
 
+lodash@4.17.10:
+  version "4.17.10"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.10.tgz#1b7793cf7259ea38fb3661d4d38b3260af8ae4e7"
+  integrity sha512-UejweD1pDoXu+AD825lWwp4ZGtSwgnpZxb3JDViD7StjQz+Nb/6l093lx4OQ0foGWNRoc19mWy7BzL+UAK2iVg==
+
 lodash@^3.10.1:
   version "3.10.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
@@ -9116,7 +9145,7 @@ react-redux@^5.0.5:
     loose-envify "^1.1.0"
     prop-types "^15.6.0"
 
-react-router-dom@^4.2.2:
+react-router-dom@4.3.1, react-router-dom@^4.2.2:
   version "4.3.1"
   resolved "https://registry.yarnpkg.com/react-router-dom/-/react-router-dom-4.3.1.tgz#4c2619fc24c4fa87c9fd18f4fb4a43fe63fbd5c6"
   integrity sha512-c/MlywfxDdCp7EnB7YfPMOfMD3tOtIjrQlj/CKfNMBxdmpJP8xcz5P/UAFn3JbnQCNUxsHyVVqllF9LhgVyFCA==
@@ -9340,7 +9369,7 @@ redent@^2.0.0:
     indent-string "^3.0.0"
     strip-indent "^2.0.0"
 
-redux@^3.7.2:
+redux@3.7.2, redux@^3.7.2:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/redux/-/redux-3.7.2.tgz#06b73123215901d25d065be342eb026bc1c8537b"
   integrity sha512-pNqnf9q1hI5HHZRBkj3bAngGZW/JMCmexDlOxw4XagXY2o1327nHH54LoTjiPJ0gizoqPDRqWyX/00g0hD6w+A==
