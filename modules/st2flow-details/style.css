@@ -206,13 +206,14 @@
   display: grid;
 
   grid-template-columns: auto 1fr auto;
-  grid-auto-rows: 36px;
-  grid-gap: 12px;
+  grid-auto-rows: auto;
+  grid-gap: 12px 0;
 
   align-items: center;
 
   border-bottom: 1px solid #ccc;
-  padding: 0 10px 20px;
+  margin-top: 15px;
+  padding-bottom: 15px;
 
   & + & {
     margin-top: 20px;
@@ -224,6 +225,8 @@
 
   &-label {
     grid-column: 1;
+    color: var(--gray-dull);
+    padding-right: 10px;
   }
 
   &-field {
@@ -286,7 +289,7 @@
   }
 }
 
-.field {
+.radioField {
   width: initial;
   margin: 0 7px;
   font-weight: normal;
@@ -299,3 +302,4 @@
   background-color: white;
   box-shadow: 0 1px 0 #bbbbbc;
 }
+
