@@ -18,6 +18,7 @@ import style from './style.css';
 const Range = ace.acequire('ace/range').Range;
 const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
+const DEFAULT_TAB_SIZE = 2;
 
 export default class Editor extends Component<{
   className?: string,
@@ -48,7 +49,6 @@ export default class Editor extends Component<{
     this.editor.$blockScrolling = Infinity;
     this.editor.setOptions({
       mode: 'ace/mode/yaml',
-      tabSize: 2,
       useSoftTabs: true,
       showPrintMargin: false,
       highlightActiveLine: false,
@@ -56,6 +56,7 @@ export default class Editor extends Component<{
 
     this.editor.renderer.setPadding(10);
     this.editor.setValue(model.toYAML(), -1);
+    this.setTabSize();
     this.editor.on('change', this.handleEditorChange);
 
     if(this.props.selectedTaskName) {
@@ -101,6 +102,17 @@ export default class Editor extends Component<{
     this.props.model.fromYAML(this.editor.getValue());
   }
 
+  setTabSize() {
+    const { model } = this.props;
+
+    if(model.tokenSet) {
+      this.editor.session.setTabSize(model.tokenSet.indent.length);
+      return;
+    }
+
+    this.editor.session.setTabSize(DEFAULT_TAB_SIZE);
+  }
+
   handleTaskSelect(task: TaskInterface) {
     if(this.selectMarker) {
       this.editor.session.removeMarker(this.selectMarker);
@@ -140,6 +152,8 @@ export default class Editor extends Component<{
       // yaml was changed outside this editor
       this.editor.setValue(yaml, -1);
     }
+
+    this.setTabSize();
   }
 
   handleModelError = (err: Error) => {

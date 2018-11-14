@@ -16,13 +16,16 @@ const REG_BOOL_TRUE = /^(?:y(?:es)?|on)$/i; // y yes on
 const REG_BOOL_FALSE = /^(?:no?|off)$/i; // n no off
 const REG_FORMATTED_NUMBER = /^[+-]?[\d,_]*(?:\.[\d]*)?(?:e[+-]?\d+)?$/;
 const REG_JSON_END = /^[^#}\]]*[}\]]/;
+const REG_INDENT = /\n( +)\S/;
 const OMIT_FIELDS = [ 'errors', 'parent', 'mappings', 'items' ];
+const DEFAULT_INDENT = '  ';
 
 class TokenSet {
   yaml: string;                 // The full YAML file
   tree: TokenMapping;           // All of the parsed tokens
   lastToken: ValueToken;        // The last "value" token (kind: 0) that was processed
   anchors: Object;              // Map of anchor IDs to the original token
+  indent: string;               // The indentation used
   objectified: ?Object;         // POJO representation of the token tree
   stringified: ?string;         // Stringified YAML
 
@@ -47,6 +50,9 @@ class TokenSet {
       throw new Error(`Invalid root node kind (${rootNode && rootNode.kind}) - must be a mapping`);
     }
 
+    const match = this.yaml.match(REG_INDENT);
+
+    this.indent = match && match[1] || DEFAULT_INDENT;
     this.anchors = {};
     this.objectified = null;
     this.stringified = null;
@@ -250,7 +256,7 @@ class TokenSet {
     this.stringified = null;
 
     perf.start('refineTree');
-    const refinery = new Refinery(this.tree, this.yaml);
+    const refinery = new Refinery(this.tree, this.indent, this.yaml);
     const { tree, yaml } = refinery.refineTree();
     perf.stop('refineTree');
 
