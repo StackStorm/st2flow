@@ -248,6 +248,11 @@ class Task extends Component<{
     onClick: PropTypes.func,
   }
 
+  constructor(...args) {
+    super(...args);
+    this.handleClick = this.handleClick.bind(this);
+  }
+
   style = style
 
   handleClick(e) {
@@ -259,7 +264,7 @@ class Task extends Component<{
 
     e.stopPropagation();
 
-    onClick();
+    onClick(e);
   }
 
   render() {
@@ -298,12 +303,28 @@ export default class Details extends Component<{
     onSelect: PropTypes.func.isRequired,
   }
 
+  constructor(...args) {
+    super(...args);
+    this.handleBack = this.handleBack.bind(this);
+    this.handleTaskSelect = this.handleTaskSelect.bind(this);
+    this.handleCodeToggle = this.handleCodeToggle.bind(this);
+    this.handleNavigationChange = this.handleNavigationChange.bind(this);
+  }
+
   state = {
     navigation: {
-      type: undefined,
-      asCode: false,
+      type: 'execution',
+      asCode: true,
     },
   }
+
+  sections = [{
+    title: 'metadata',
+    className: 'icon-gear',
+  }, {
+    title: 'execution',
+    className: 'icon-lan',
+  }]
 
   style = style
 
@@ -330,22 +351,14 @@ export default class Details extends Component<{
   }
 
   render() {
-    const sections = [{
-      title: 'metadata',
-      className: 'icon-gear',
-    }, {
-      title: 'execution',
-      className: 'icon-lan',
-    }];
-
     const { selected: taskSelected, actions } = this.props;
-    const { type = 'metadata', asCode } = this.state.navigation;
+    const { type, asCode } = this.state.navigation;
 
     return (
       <div className={cx(this.props.className, this.style.component)}>
         <Toolbar>
           {
-            sections.map(section => {
+            this.sections.map(section => {
               return (
                 <ToolbarButton
                   key={section.title}
@@ -356,25 +369,25 @@ export default class Details extends Component<{
               );
             })
           }
-          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => this.handleCodeToggle()} />
+          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={this.handleCodeToggle} />
         </Toolbar>
         {
           type === 'metadata' && (
             asCode
               && <Editor model={this.props.metaModel} />
               // $FlowFixMe Model is populated via decorator
-              || <Meta navigation={this.state.navigation} handleNavigationChange={navigation => this.handleNavigationChange(navigation)} />
+              || <Meta navigation={this.state.navigation} handleNavigationChange={this.handleNavigationChange} />
           )
         }
         {
           type === 'execution' && (
             asCode
-              && <Editor model={this.props.model} />
+              && <Editor model={this.props.model} selectedTaskName={this.props.selected} onTaskSelect={this.handleTaskSelect} />
               || taskSelected
                 // $FlowFixMe ^^
-                && <TaskDetails onBack={() => this.handleBack()} selected={taskSelected} actions={actions} navigation={this.state.navigation} handleNavigationChange={navigation => this.handleNavigationChange(navigation)} />
+                && <TaskDetails onBack={this.handleBack} selected={taskSelected} actions={actions} navigation={this.state.navigation} handleNavigationChange={this.handleNavigationChange} />
                 // $FlowFixMe ^^
-                || <TaskList onSelect={task => this.handleTaskSelect(task)} />
+                || <TaskList onSelect={this.handleTaskSelect} />
           )
         }
       </div>

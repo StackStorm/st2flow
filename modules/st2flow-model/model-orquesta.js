@@ -381,6 +381,10 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     this.endMutation(oldTree);
   }
+
+  getRangeForTask(task: TaskInterface) {
+    return crawler.getRangeForKey(this.tokenSet, [ 'tasks', task.name ]);
+  }
 }
 
 function reduceTransitions(arr: Array<TransitionInterface>, nxt: NextItem): Array<TransitionInterface> {

@@ -91,11 +91,14 @@
 }
 
 .task {
+  cursor: pointer;
   padding: 10px;
-
   border-bottom: 1px solid #ccc;
-}
 
+  &:hover {
+    background-color: #eee;
+  };
+}
 
 .parameter {
   border-bottom: 1px solid #ccc;

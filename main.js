@@ -26,10 +26,12 @@ class Window extends Component {
   async componentDidMount() {
     const res = await fetch('/actions.json');
 
+    this.handleSelect = this.handleSelect.bind(this);
+
     this.setState({ actions: await res.json() });
   }
 
-  handleSelect(name) {
+  handleSelect(name: string) {
     this.setState({ selected: name });
   }
 
@@ -42,8 +44,8 @@ class Window extends Component {
       <div className="component" >
         <Header className="header" />
         <Palette className="palette" actions={actions} />
-        <Canvas className="canvas" selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
-        <Details className="details" actions={actions} selected={this.state.selected} onSelect={(name) => this.handleSelect(name)} />
+        <Canvas className="canvas" selected={this.state.selected} onSelect={this.handleSelect} />
+        <Details className="details" actions={actions} selected={this.state.selected} onSelect={this.handleSelect} />
       </div>
     );
   }

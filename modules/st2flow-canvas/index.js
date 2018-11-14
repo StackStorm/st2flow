@@ -339,7 +339,7 @@ export default class Canvas extends Component<{
                           to={to}
                         />
                       );
-                    })
+                    });
                     return arr;
                   }, [])
               }
