@@ -20,10 +20,9 @@
   }
 
   &__title {
-    font-size: 15px;
-    line-height: 18px;
-
-    padding-bottom: 8px;
+    padding-top: 8px;
+    padding-bottom: 4px;
+    color: var(--gray-dull);
 
     white-space: nowrap;
   }
@@ -86,7 +85,7 @@
     border: none;
     outline: 0;
     background-color: white;
-    box-shadow: 0 1px 0 var(--grey-lighten-2);
+    box-shadow: 0 1px 0 var(--grey-lighten-3);
 
     &&[disabled] {
       cursor: default;
@@ -152,7 +151,7 @@
     overflow-x: hidden;
     overflow-y: auto;
 
-    padding: 9px 12px;
+    padding: 9px 7px;
 
     resize: none;
     cursor: text;
@@ -241,12 +240,12 @@
     padding: 0;
 
     &-block {
-      font-size: 15px;
       line-height: 36px;
     }
 
     &-label {
       font-weight: 100;
+      color: var(--gray-dull);
 
       cursor: pointer;
       user-select: none;
@@ -293,8 +292,9 @@
   &__description {
     margin-top: 7px;
 
-    opacity: .7;
-    color: var(--grey-darken-1);
+    color: var(--gray-bright);
+    font-size: 12px;
+    line-height: 16px;
   }
 
   &__suggestions {

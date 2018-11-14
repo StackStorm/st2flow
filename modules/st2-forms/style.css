@@ -262,7 +262,7 @@
       }
       
       &:checked + label {
-        background: #008ceb;
+        background: var(--green-base);
       }
     }
 

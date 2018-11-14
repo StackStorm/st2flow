@@ -179,7 +179,7 @@ class TaskDetails extends Component<{
                     Join all tasks
                   </div>
                   <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', (this.joinFieldRef.current || {}).value)} >
-                    Join <input type="text" id="joinField" ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', e.target.value)} /> tasks
+                    Join <input type="text" id="joinField"  size="3" className={this.style.field}  ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', e.target.value)} /> tasks
                   </label>
                 </div>
               )
