@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, ValueToken } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, ValueToken, AnyToken } from './types';
 import { isPlainObject } from './util';
 
 const REG_NEWLINE = /\n/;
@@ -9,6 +9,7 @@ const baseToken = {
   startPosition: 0,
   endPosition: 0,
   jpath: [],
+  range: [{ row: 0, column: 0 }, { row: 0, column: 0 }],
 };
 
 /**
@@ -50,17 +51,14 @@ const factory = {
    * by the token-refinery.
    */
   createRawValueToken(val: string, valObj: any): TokenRawValue {
-    const token: TokenRawValue = {
+    const token: TokenRawValue = Object.assign({}, this.baseToken, {
       kind: 0,
       value: val,
       rawValue: val,
       doubleQuoted: false,
       plainScalar: true,
-      startPosition: 0,
-      endPosition: val.length,
-      jpath: [],
       prefix: [],
-    };
+    });
 
     if(typeof valObj !== 'undefined' && val !== valObj) {
       token.valueObject = valObj;
@@ -116,14 +114,33 @@ const factory = {
     });
   },
 
+  /**
+   * Adds comments to a token
+   */
   addTokenComments(token: TokenRawValue | TokenCollection, comments: string): void {
     if(token.kind === 3 && token.items.length && token.items[0].kind === 0) {
       token = token.items[0];
     }
 
     if(token.kind === 0) {
-      token.prefix = token.prefix.concat(comments.split(REG_NEWLINE).map(c => this.createRawValueToken(`# ${c}\n`)));
+      token.prefix = token.prefix.concat(comments.split(REG_NEWLINE).map(c => this.createRawValueToken(`# ${c}`)));
     }
+  },
+
+  /**
+   * Adds range (row/column) information to a token
+   */
+  addRangeInfo(token: AnyToken, yaml: string): void {
+    const start = yaml.slice(0, token.startPosition).split(REG_NEWLINE);
+    const covers = yaml.slice(token.startPosition, token.endPosition).split(REG_NEWLINE);
+
+    token.range = [{
+      row: start.length - 1,
+      column: start[start.length - 1].length,
+    }, {
+      row: start.length - 1 + covers.length - 1,
+      column: covers[covers.length - 1].length,
+    }];
   },
 };
 

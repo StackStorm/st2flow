@@ -15,22 +15,23 @@ const STR_OPEN_SQUARE = '[';
 const STR_CLOSE_SQUARE = ']';
 const STR_FIRST_TOKEN = 'mappings.0';
 const REG_INDENT = /\n( +)\S/;
-const REG_LEADING_SPACE = /^\s*/;
-const REG_ALL_WHITESPACE = /^\s+$/;
-const REG_COMMENT = /^\s*#(?:\s*)?/;
+const REG_LEADING_SPACE = /^\s+/;
+const REG_ALL_WHITESPACE = /^\s*$/;
 const REG_JSON_START = /^\s*(?:[-:] )?[{[]/;
-const REG_DASH = /^\s*-\s*/;
+const REG_SPECIAL = /^\s*[-:?]\s*/;
 const REG_COMMA = /^\s*(?::\s*[{[]\s*)?[}\]]?\s*,\s*/;
 
 const EMPTY_TREE = Object.assign({}, factory.baseToken, {
   kind: 2,
   mappings: [],
+  range: [{ row: 0, column: 0 }, { row: 0, column: 0 }],
 });
 
 /**
  * Class for refining tokens whenever mutations are made to the AST.
  */
 class Refinery {
+  oldYaml: string = '';
   newYaml: string = '';
   indent: string;
   tree: TokenMapping;
@@ -47,13 +48,14 @@ class Refinery {
     const match = oldYaml.match(REG_INDENT);
     this.indent = match ? match[1] : DEFAULT_INDENT;
     this.tree = tree;
+    this.oldYaml = oldYaml;
   }
 
   // This is the only method anybody should care about
   refineTree(): Refinement {
     const newTree: AnyToken = this.prefixToken(this.tree, 0, this.tree.jpath || []);
 
-    if(newTree.kind!== 2 ) {
+    if(newTree.kind !== 2 ) {
       return {
         tree: EMPTY_TREE,
         yaml: '',
@@ -110,8 +112,11 @@ class Refinery {
   prefixKey(token: TokenRawValue | TokenCollection, depth: number, jpath: JPath): void {
     this.prefixToken(token, depth + 1, jpath.concat('key'));
 
-    const rawToken: ?TokenRawValue | ?TokenReference = crawler.findFirstValueToken(token);
+    if(jpath.join('.') === STR_FIRST_TOKEN) {
+      return;
+    }
 
+    const rawToken: ?TokenRawValue | ?TokenReference = crawler.findFirstValueToken(token);
     if(!rawToken) {
       return;
     }
@@ -121,20 +126,35 @@ class Refinery {
     }
 
     const { prefix } = rawToken;
-    if(depth && prefix.length && REG_DASH.test(prefix[prefix.length - 1].value)) {
-      depth--;
-    }
+
 
     // TODO: smarter indentation detection per token
     // (using depth and leading whitespace in prefix)
-    const indent = this.indent.repeat(depth);
-    let missingIndent;
+    const indent = `\n${this.indent.repeat(depth)}`;
+
     if(this.jsonDepth === -1) {
-      missingIndent = prefix.every(t =>
-        !REG_ALL_WHITESPACE.test(t.rawValue) && t.value.indexOf(indent) === -1
-      );
+      // Normal YAML
+      if(depth && prefix.length && rawToken.jpath.length > 4) {
+        if(rawToken.jpath[rawToken.jpath.length - 5] === 'items') {
+          depth--;
+        }
+      }
+
+      prefix.forEach((t, i) => {
+        if(!REG_ALL_WHITESPACE.test(t.rawValue) && !REG_SPECIAL.test(t.rawValue) && !t.rawValue.includes(indent)) {
+          if(i > 0 || !REG_LEADING_SPACE.test(t.rawValue)) {
+            t.value = t.rawValue = `${indent}${t.rawValue.replace(REG_LEADING_SPACE, '')}`;
+          }
+        }
+      });
+
+      const lastVal = prefix.length && prefix[prefix.length - 1].rawValue;
+      if(!prefix.length || (lastVal && !REG_SPECIAL.test(lastVal) && lastVal !== indent)) {
+        prefix.push(factory.createRawValueToken(`${indent}`));
+      }
     }
     else {
+      // JSON-like data
       const isFirstKey = rawToken.jpath[rawToken.jpath.length - 2] === 0;
       const hasJsonStart = isFirstKey && prefix.some(t => REG_JSON_START.test(t.value));
       const commaIndex = prefix.findIndex(t => REG_COMMA.test(t.value));
@@ -145,21 +165,10 @@ class Refinery {
 
       if(!isFirstKey && commaIndex === -1) {
         prefix.push(factory.createRawValueToken(STR_COMMA));
-      }
 
-      missingIndent = commaIndex === -1 && !hasJsonStart;
-    }
-
-    // If there is no indent prefix AND this is not the very first key/value token.
-    if(missingIndent && jpath.join('.') !== STR_FIRST_TOKEN) {
-      prefix.forEach(t => {
-        if(REG_COMMENT.test(t.value)) {
-          t.value = t.rawValue = indent + t.rawValue.replace(REG_LEADING_SPACE, '');
+        if(!hasJsonStart) {
+          prefix.push(factory.createRawValueToken(`${indent}`));
         }
-      });
-
-      if(!prefix.length || prefix[prefix.length - 1].rawValue.indexOf(STR_DASH) === -1) {
-        prefix.push(factory.createRawValueToken(`\n${indent}`));
       }
     }
   }
@@ -387,14 +396,16 @@ class Refinery {
         token.startPosition = token.prefix.reduce((pos, prefix) => {
           return pos + prefix.rawValue.length;
         }, startPos);
-        this.newYaml += stringifier.stringifyToken(token);
         token.endPosition = token.startPosition + (token.rawValue || token.value).length;
+        this.newYaml += stringifier.stringifyToken(token);
+        factory.addRangeInfo(token, this.newYaml);
         break;
 
       case 1:
         token.startPosition = startPos;
         startPos = this.reIndexToken(token.key, token.startPosition);
         token.endPosition = token.value ? this.reIndexToken(token.value, startPos) : startPos;
+        factory.addRangeInfo(token, this.newYaml);
         break;
 
       case 2:
@@ -406,6 +417,8 @@ class Refinery {
         if(token.suffix) {
           this.newYaml += token.suffix.reduce((s, t) => stringifier.stringifyToken(t, s), '');
         }
+
+        factory.addRangeInfo(token, this.newYaml);
         break;
 
       case 3:
@@ -417,6 +430,8 @@ class Refinery {
         if(token.suffix) {
           this.newYaml += token.suffix.reduce((s, t) => stringifier.stringifyToken(t, s), '');
         }
+
+        factory.addRangeInfo(token, this.newYaml);
         break;
 
       case 4:
@@ -425,6 +440,7 @@ class Refinery {
         }, startPos);
         this.newYaml += stringifier.stringifyToken(token);
         token.endPosition = token.startPosition + token.referencesAnchor.length + 1;
+        factory.addRangeInfo(token, this.newYaml);
         break;
 
       default:

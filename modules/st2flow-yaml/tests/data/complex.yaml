@@ -170,6 +170,10 @@ a_sequence:
 - key: value
   another_key: another_value
 -
+  - deep_key: value
+    # a comment
+    another_deep_key: another_value
+-
   - This is a sequence
   - inside another sequence
 - - - Nested sequence indicators

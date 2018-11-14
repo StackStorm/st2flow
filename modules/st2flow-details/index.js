@@ -251,6 +251,11 @@ class Task extends Component<{
     onClick: PropTypes.func,
   }
 
+  constructor(...args) {
+    super(...args);
+    this.handleClick = this.handleClick.bind(this);
+  }
+
   style = style
 
   handleClick(e) {
@@ -262,7 +267,7 @@ class Task extends Component<{
 
     e.stopPropagation();
 
-    onClick();
+    onClick(e);
   }
 
   render() {
@@ -297,6 +302,20 @@ export default class Details extends Component<{
     actions: PropTypes.array,
   }
 
+  constructor(...args) {
+    super(...args);
+    this.handleBack = this.handleBack.bind(this);
+    this.handleTaskSelect = this.handleTaskSelect.bind(this);
+  }
+
+  sections = [{
+    title: 'metadata',
+    className: 'icon-gear',
+  }, {
+    title: 'execution',
+    className: 'icon-lan',
+  }]
+
   style = style
 
   handleTaskSelect(task: TaskInterface) {
@@ -308,14 +327,6 @@ export default class Details extends Component<{
   }
 
   render() {
-    const sections = [{
-      title: 'metadata',
-      className: 'icon-gear',
-    }, {
-      title: 'execution',
-      className: 'icon-lan',
-    }];
-
     const { actions, navigationModel } = this.props;
 
     if (!navigationModel) {
@@ -328,7 +339,7 @@ export default class Details extends Component<{
       <div className={cx(this.props.className, this.style.component, asCode && 'code')}>
         <Toolbar>
           {
-            sections.map(section => {
+            this.sections.map(section => {
               return (
                 <ToolbarButton
                   key={section.title}
@@ -352,10 +363,10 @@ export default class Details extends Component<{
         {
           type === 'execution' && (
             asCode
-              && <Editor model={this.props.model} />
+              && <Editor model={this.props.model} selectedTaskName={navigationModel.current.task} onTaskSelect={this.handleTaskSelect} />
               || navigationModel.current.task
                 // $FlowFixMe ^^
-                && <TaskDetails onBack={() => this.handleBack()} selected={navigationModel.current.task} actions={actions} />
+                && <TaskDetails onBack={this.handleBack} selected={navigationModel.current.task} actions={actions} />
                 // $FlowFixMe ^^
                 || <TaskList />
           )

@@ -65,114 +65,6 @@ class TokenSet {
     // console.log(JSON.stringify(this.tree, null, '  '));
   }
 
-  parseValueNode(node: Object, jpath: JPath = []): TokenRawValue {
-    const token: TokenRawValue = omit(node, ...OMIT_FIELDS);
-
-    token.jpath = jpath;
-    token.prefix = this.parsePrefix(token);
-    token.rawValue = this.yaml.slice(token.startPosition, token.endPosition);
-
-    // Don't parse mapping keys for special values.
-    // This MUST happen after parsePrefix
-    const len = jpath.length;
-    const isKey = len > 2 && jpath[len - 1] === 'key' && jpath[len - 3] === 'mappings';
-    if (!isKey) {
-      const special = parseSpecialValue(token);
-      if (special !== undefined) {
-        token.valueObject = special;
-      }
-    }
-
-    if(token.anchorId) {
-      this.anchors[token.anchorId] = token;
-    }
-
-    return token;
-  }
-
-  parseKeyValueNode(node: Object, jpath: JPath = []): TokenKeyValue {
-    if (node.key.errors.length) {
-      throw node.key.errors;
-    }
-
-    // value can be null
-    if (node.value && node.value.errors.length) {
-      throw node.value.errors;
-    }
-
-    // Keys are normally scalar keys (foo: bar) but can an array
-    // See test files for examples of multiline keys.
-    if(node.key.kind !== 0 && node.key.kind !== 3) {
-      throw new Error(`Unexpected node key kind: ${node.key.kind}`);
-    }
-
-    const token: TokenKeyValue = pick(node, 'kind', 'startPosition', 'endPosition');
-    token.jpath = jpath;
-
-    if(node.key.kind === 0) {
-      token.key = this.parseValueNode(node.key, jpath.concat('key'));
-    }
-    else {
-      token.key = this.parseCollectionNode(node.key, jpath.concat('key'));
-    }
-
-    token.value = this.parseNode(node.value, jpath.concat('value'));
-
-    return token;
-  }
-
-  parseMappingNode(node: Object, jpath: JPath = []): TokenMapping {
-    const token: TokenMapping = omit(node, ...OMIT_FIELDS);
-
-    token.jpath = jpath;
-
-    if(token.anchorId) {
-      this.anchors[token.anchorId] = token;
-    }
-
-    token.mappings = node.mappings.map((kvPair, i) =>
-      this.parseKeyValueNode(kvPair, jpath.concat('mappings', i))
-    );
-
-    if(!token.mappings.length) {
-      // special handling for empty JS objects
-      const suffix = this.yaml.slice(this.lastToken.endPosition, token.endPosition);
-      token.suffix = [ createToken(suffix, this.lastToken.endPosition) ];
-      this.lastToken = token;
-    }
-
-    return token;
-  }
-
-  parseCollectionNode(node: Object, jpath: JPath = []): TokenCollection {
-    const token: TokenCollection = omit(node, ...OMIT_FIELDS);
-
-    token.jpath = jpath;
-
-    token.items = node.items.map((item, i) => {
-      return this.parseNode(item, jpath.concat('items', i));
-    });
-
-    if(!token.items.length) {
-      // special handling for empty JS arrays
-      const suffix = this.yaml.slice(this.lastToken.endPosition, token.endPosition);
-      token.suffix = [ createToken(suffix, this.lastToken.endPosition) ];
-      this.lastToken = token;
-    }
-
-    return token;
-  }
-
-  parseReferenceNode(node: Object, jpath: JPath = []): TokenReference {
-    const token: TokenReference = omit(node, 'value', ...OMIT_FIELDS);
-
-    token.jpath = jpath;
-    token.prefix = this.parsePrefix(token);
-    token.value = omit(this.anchors[token.referencesAnchor], ...OMIT_FIELDS);
-
-    return token;
-  }
-
   parseNode(node: Object, jpath: JPath = []): ?ValueToken {
     if(node === null || typeof node === 'undefined') {
       return null;
@@ -204,6 +96,129 @@ class TokenSet {
     }
   }
 
+  // kind: 0
+  parseValueNode(node: Object, jpath: JPath = []): TokenRawValue {
+    const token: TokenRawValue = omit(node, ...OMIT_FIELDS);
+
+    token.jpath = jpath;
+    token.prefix = this.parsePrefix(token);
+    token.rawValue = this.yaml.slice(token.startPosition, token.endPosition);
+
+    // Don't parse mapping keys for special values.
+    // This MUST happen after parsePrefix
+    const len = jpath.length;
+    const isKey = len > 2 && jpath[len - 1] === 'key' && jpath[len - 3] === 'mappings';
+    if (!isKey) {
+      const special = parseSpecialValue(token);
+      if (special !== undefined) {
+        token.valueObject = special;
+      }
+    }
+
+    if(token.anchorId) {
+      this.anchors[token.anchorId] = token;
+    }
+
+    factory.addRangeInfo(token, this.yaml);
+
+    return token;
+  }
+
+  // kind: 1
+  parseKeyValueNode(node: Object, jpath: JPath = []): TokenKeyValue {
+    if (node.key.errors.length) {
+      throw node.key.errors;
+    }
+
+    // value can be null
+    if (node.value && node.value.errors.length) {
+      throw node.value.errors;
+    }
+
+    // Keys are normally scalar keys (foo: bar) but can an array
+    // See test files for examples of multiline keys.
+    if(node.key.kind !== 0 && node.key.kind !== 3) {
+      throw new Error(`Unexpected node key kind: ${node.key.kind}`);
+    }
+
+    const token: TokenKeyValue = pick(node, 'kind', 'startPosition', 'endPosition');
+    token.jpath = jpath;
+
+    if(node.key.kind === 0) {
+      token.key = this.parseValueNode(node.key, jpath.concat('key'));
+    }
+    else {
+      token.key = this.parseCollectionNode(node.key, jpath.concat('key'));
+    }
+
+    token.value = this.parseNode(node.value, jpath.concat('value'));
+
+    factory.addRangeInfo(token, this.yaml);
+
+    return token;
+  }
+
+  // kind: 2
+  parseMappingNode(node: Object, jpath: JPath = []): TokenMapping {
+    const token: TokenMapping = omit(node, ...OMIT_FIELDS);
+
+    token.jpath = jpath;
+
+    if(token.anchorId) {
+      this.anchors[token.anchorId] = token;
+    }
+
+    token.mappings = node.mappings.map((kvPair, i) =>
+      this.parseKeyValueNode(kvPair, jpath.concat('mappings', i))
+    );
+
+    if(!token.mappings.length) {
+      // special handling for empty JS objects
+      const suffix = this.yaml.slice(this.lastToken.endPosition, token.endPosition);
+      token.suffix = [ createToken(suffix, this.lastToken.endPosition) ];
+      this.lastToken = token;
+    }
+
+    factory.addRangeInfo(token, this.yaml);
+
+    return token;
+  }
+
+  // kind: 3
+  parseCollectionNode(node: Object, jpath: JPath = []): TokenCollection {
+    const token: TokenCollection = omit(node, ...OMIT_FIELDS);
+
+    token.jpath = jpath;
+
+    token.items = node.items.map((item, i) => {
+      return this.parseNode(item, jpath.concat('items', i));
+    });
+
+    if(!token.items.length) {
+      // special handling for empty JS arrays
+      const suffix = this.yaml.slice(this.lastToken.endPosition, token.endPosition);
+      token.suffix = [ createToken(suffix, this.lastToken.endPosition) ];
+      this.lastToken = token;
+    }
+
+    factory.addRangeInfo(token, this.yaml);
+
+    return token;
+  }
+
+  // kind: 4
+  parseReferenceNode(node: Object, jpath: JPath = []): TokenReference {
+    const token: TokenReference = omit(node, 'value', ...OMIT_FIELDS);
+
+    token.jpath = jpath;
+    token.prefix = this.parsePrefix(token);
+    token.value = omit(this.anchors[token.referencesAnchor], ...OMIT_FIELDS);
+
+    factory.addRangeInfo(token, this.yaml);
+
+    return token;
+  }
+
   /**
    * Parses the space between the last token and the next one.
    * This includes whitespace, comments, colons, and other
@@ -216,8 +231,6 @@ class TokenSet {
 
     token.isTag = REG_TAG.test(gap);
     this.lastToken = token;
-
-    // logIfValue(token, 'anchored_content', prev);
 
     return tokenizeUnparsedData(gap, prev, this.tokensWithSuffix);
   }
@@ -292,7 +305,8 @@ class TokenSet {
  * Based on the above, there is a JSON array and two JSON objects
  * being closed. Those closing tokens are stored as a "suffix" on
  * corresponding collection or mapping. This is crucial for the
- * stringifier and token refinery.
+ * stringifier and token refinery as well as maintaining original
+ * source identity.
  */
 function tokenizeUnparsedData(str: string, lastToken: ValueToken, tokensWithSuffix): Array<TokenRawValue> {
   const lines = str.split(REG_NEWLINE);
