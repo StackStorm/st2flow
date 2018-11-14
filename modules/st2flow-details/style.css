@@ -6,6 +6,34 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+.slider {
+  position:absolute;
+  left: 0px;
+  top: 0px;
+  height: 100%;
+  width: 10px;
+  border-left: 1px solid white;
+  border-right: 1px solid black;
+  background-color: gray;
+  cursor: col-resize;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  &:before {
+    content: '⤄';
+  }
+  &-backdrop {
+    position:fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    z-index: 1000;
+  }
 }
 
 .toolbar {

@@ -211,6 +211,75 @@ class TaskDetails extends Component<{
   }
 }
 
+class Slider extends Component<{
+  onSliderMove: Function,
+  onSliderEnd: Function,
+}, {
+  isDragging: boolean,
+}> {
+  constructor(...args) {
+    super(...args);
+    this.state = {
+      isDragging: false,
+    };
+  }
+
+  componentDidMount() {
+    if(this.elementRef.current instanceof HTMLElement) {
+      this.x = this.elementRef.current.offsetLeft;
+    }
+  }
+
+  x: number;
+  style = style
+  elementRef = React.createRef()
+  isDragging = false
+
+  handleDragStart(e: DragEvent) {
+    this.setState({
+      isDragging: true,
+    });
+  }
+
+  handleDragMove(e: DragEvent) {
+    if(this.state.isDragging) {
+      const x = e.clientX;
+      this.x = x;
+      this.props.onSliderMove({x});
+    }
+  }
+
+  handleDragEnd(e:DragEvent) {
+    const {x} = this;
+    this.setState({
+      isDragging: false,
+    });
+    this.props.onSliderEnd({x});
+  }
+
+
+  render() {
+    const { isDragging } = this.state;
+    return (
+      <div
+        className={this.style.slider}
+        ref={this.elementRef}
+        onMouseDown={(e) => this.handleDragStart(e)}
+        onMouseUp={(e) => this.handleDragEnd(e)}
+      >
+        {isDragging && (
+          <div
+            className={this.style.sliderBackdrop}
+            onMouseMove={(e) => this.handleDragMove(e)}
+            onMouseUp={(e) => this.handleDragEnd(e)}
+          >&nbsp;
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
 @connect(({ model, navigationModel }) => ({ model, navigationModel }))
 class TaskList extends Component<{
   model: ModelInterface,
@@ -308,6 +377,13 @@ export default class Details extends Component<{
     this.handleTaskSelect = this.handleTaskSelect.bind(this);
   }
 
+  componentDidMount() {
+    const width = +localStorage.getItem('detailWidth');
+    if(width) {
+      this.setWidth(width);
+    }
+  }
+
   sections = [{
     title: 'metadata',
     className: 'icon-gear',
@@ -317,6 +393,13 @@ export default class Details extends Component<{
   }]
 
   style = style
+  ref = React.createRef()
+
+  setWidth(width: number) {
+    if(this.ref.current) {
+      this.ref.current.style.width = `${width}px`;
+    }
+  }
 
   handleTaskSelect(task: TaskInterface) {
     this.props.navigationModel.change({ toTask: undefined, task: task.name });
@@ -324,6 +407,18 @@ export default class Details extends Component<{
 
   handleBack() {
     this.props.navigationModel.change({ toTask: undefined, task: undefined });
+  }
+
+  handleSliderMove(e: {x: number}) {
+    if(this.ref.current instanceof HTMLElement) {
+      this.setWidth( this.ref.current.parentElement.offsetWidth - e.x );
+    }
+  }
+
+  handleSliderEnd(e: {x: number}) {
+    if(this.ref.current instanceof HTMLElement) {
+      localStorage.setItem('detailWidth', `${this.ref.current.parentElement.offsetWidth - e.x}` );
+    }
   }
 
   render() {
@@ -336,7 +431,8 @@ export default class Details extends Component<{
     const { type = 'metadata', asCode } = navigationModel.current;
 
     return (
-      <div className={cx(this.props.className, this.style.component, asCode && 'code')}>
+      <div ref={this.ref} className={cx(this.props.className, this.style.component, asCode && 'code')}>
+        <Slider onSliderMove={e => this.handleSliderMove(e)} onSliderEnd={e => this.handleSliderEnd(e)} />
         <Toolbar>
           {
             this.sections.map(section => {
