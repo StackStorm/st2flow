@@ -76,9 +76,7 @@ class TokenSet {
       return null;
     }
 
-    if(node.errors.length) {
-      throw node.errors;
-    }
+    this.checkNodeErrors(node);
 
     switch(node.kind) {
       case 0: // scalar "value" token (no children)
@@ -102,10 +100,17 @@ class TokenSet {
     }
   }
 
+  checkNodeErrors(node: Object) {
+    if(node && node.errors && node.errors.length) {
+      throw node.errors;
+    }
+  }
+
   // kind: 0
   parseValueNode(node: Object, jpath: JPath = []): TokenRawValue {
-    const token: TokenRawValue = omit(node, ...OMIT_FIELDS);
+    this.checkNodeErrors(node);
 
+    const token: TokenRawValue = omit(node, ...OMIT_FIELDS);
     token.jpath = jpath;
     token.prefix = this.parsePrefix(token);
     token.rawValue = this.yaml.slice(token.startPosition, token.endPosition);
@@ -132,14 +137,8 @@ class TokenSet {
 
   // kind: 1
   parseKeyValueNode(node: Object, jpath: JPath = []): TokenKeyValue {
-    if (node.key.errors.length) {
-      throw node.key.errors;
-    }
-
-    // value can be null
-    if (node.value && node.value.errors.length) {
-      throw node.value.errors;
-    }
+    this.checkNodeErrors(node.key);
+    this.checkNodeErrors(node.value);
 
     // Keys are normally scalar keys (foo: bar) but can an array
     // See test files for examples of multiline keys.
@@ -166,8 +165,9 @@ class TokenSet {
 
   // kind: 2
   parseMappingNode(node: Object, jpath: JPath = []): TokenMapping {
-    const token: TokenMapping = omit(node, ...OMIT_FIELDS);
+    this.checkNodeErrors(node);
 
+    const token: TokenMapping = omit(node, ...OMIT_FIELDS);
     token.jpath = jpath;
 
     if(token.anchorId) {
@@ -192,8 +192,9 @@ class TokenSet {
 
   // kind: 3
   parseCollectionNode(node: Object, jpath: JPath = []): TokenCollection {
-    const token: TokenCollection = omit(node, ...OMIT_FIELDS);
+    this.checkNodeErrors(node.key);
 
+    const token: TokenCollection = omit(node, ...OMIT_FIELDS);
     token.jpath = jpath;
 
     token.items = node.items.map((item, i) => {
@@ -214,8 +215,9 @@ class TokenSet {
 
   // kind: 4
   parseReferenceNode(node: Object, jpath: JPath = []): TokenReference {
-    const token: TokenReference = omit(node, 'value', ...OMIT_FIELDS);
+    this.checkNodeErrors(node.key);
 
+    const token: TokenReference = omit(node, 'value', ...OMIT_FIELDS);
     token.jpath = jpath;
     token.prefix = this.parsePrefix(token);
     token.value = omit(this.anchors[token.referencesAnchor], ...OMIT_FIELDS);

@@ -1,6 +1,7 @@
 // @flow
 
 // Some lodashy (and other) functions without all the dashy
+const REG_KEY_DELIM = /[.[\]]/g;
 
 function isPlainObject(data: any) {
   return Object.prototype.toString.call(data) === '[object Object]';
@@ -29,7 +30,7 @@ function get(obj: Object, key: string | Array<string | number>) {
 }
 
 function splitKey(key: string | Array<string | number>): Array<any> {
-  const arr = typeof key === 'string' ? key.split('.') : key.slice(0);
+  const arr = typeof key === 'string' ? key.split(REG_KEY_DELIM).filter(Boolean) : key.slice(0);
   return arr.length === 1 && arr[0] === '' ? [] : arr;
 }
 

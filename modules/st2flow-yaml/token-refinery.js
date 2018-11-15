@@ -1,7 +1,6 @@
 // @flow
 
 import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken, AnyToken, Refinement } from './types';
-import { get } from './util';
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';

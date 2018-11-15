@@ -1,7 +1,7 @@
 //@flow
 
 import type { TaskInterface } from '@stackstorm/st2flow-yaml';
-import type { ModelInterface, DeltaInterface } from '@stackstorm/st2flow-model';
+import type { ModelInterface, DeltaInterface, GenericError } from '@stackstorm/st2flow-model';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 
 import React, { Component } from 'react';
@@ -11,7 +11,7 @@ import cx from 'classnames';
 import ace from 'brace';
 import 'brace/ext/language_tools';
 import 'brace/mode/yaml';
-import Notifications from '@stackstorm/st2flow-notifications';
+// import Notifications from '@stackstorm/st2flow-notifications';
 
 import style from './style.css';
 
@@ -103,14 +103,9 @@ export default class Editor extends Component<{
   }
 
   setTabSize() {
-    const { model } = this.props;
+    const { model: { tokenSet } } = this.props;
 
-    if(model.tokenSet) {
-      this.editor.session.setTabSize(model.tokenSet.indent.length);
-      return;
-    }
-
-    this.editor.session.setTabSize(DEFAULT_TAB_SIZE);
+    this.editor.session.setTabSize(tokenSet ? tokenSet.indent.length : DEFAULT_TAB_SIZE);
   }
 
   handleTaskSelect(task: TaskInterface) {
@@ -147,6 +142,8 @@ export default class Editor extends Component<{
 
   handleModelChange = (deltas: Array<DeltaInterface>, yaml: string) => {
     this.setState({ errors: [] });
+    this.clearErrorMarkers();
+    this.editor.session.setAnnotations([]);
 
     if (yaml !== this.editor.getValue()) {
       // yaml was changed outside this editor
@@ -156,9 +153,28 @@ export default class Editor extends Component<{
     this.setTabSize();
   }
 
-  handleModelError = (err: Error) => {
-    // error may or may not be an array
-    this.setState({ errors: err && [].concat(err) || [] });
+  handleModelError = (err: Array<GenericError>) => {
+    const { session } = this.editor;
+    const annotations = [];
+
+    this.clearErrorMarkers();
+
+    this.errorMarkers = err.filter(e => !!e.mark).map((e, i) => {
+      const { line: row, column } = e.mark;
+      const selection = new Range(row, 0, row, Infinity);
+
+      annotations.push({
+        row,
+        column,
+        type: 'warning',
+        text: e.message,
+      });
+
+      return session.addMarker(selection, cx(this.style.errorLine), 'fullLine');
+    });
+
+    session.setAnnotations(annotations);
+    this.setState({ errors: err });
   }
 
   handleNotificationRemove = (notification: NotificationInterface) => {
@@ -171,6 +187,12 @@ export default class Editor extends Component<{
     }
   }
 
+  clearErrorMarkers() {
+    if(this.errorMarkers && this.errorMarkers.length) {
+      this.errorMarkers.forEach(m => this.editor.session.removeMarker(m));
+    }
+  }
+
   get notifications() {
     return this.state.errors.map(err => ({
       type: 'error',
@@ -180,18 +202,21 @@ export default class Editor extends Component<{
 
 
   editor: any;
-  selectMarker: any;
-  deltaTimer = 0; // debounce timer
+  selectMarker: any;          // marker used to highlight selected task/transition
+  errorMarkers: Array<any>;   // array of error markers
+  deltaTimer = 0;             // debounce timer
   style = style;
 
   render() {
+    const { errors } = this.state;
+
     return (
-      <div className={cx(this.props.className, this.style.component)}>
+      <div className={cx(this.props.className, this.style.component, { [this.style.hasError]: errors.length })}>
         <div
           id={editorId}
           className={this.style.editor}
         />
-        {!this.notifications.length ?
+        {/*!this.notifications.length ?
           null : (
             <Notifications
               className={style.notifications}
@@ -199,7 +224,7 @@ export default class Editor extends Component<{
               notifications={this.notifications}
               onRemove={this.handleNotificationRemove}
             />
-          )}
+          )*/}
       </div>
     );
   }

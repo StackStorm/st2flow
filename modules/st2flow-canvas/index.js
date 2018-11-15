@@ -62,6 +62,7 @@ export default class Canvas extends Component<{
     el.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
+    window.addEventListener('resize', this.handleUpdate);
     el.addEventListener('dragover', this.handleDragOver);
     el.addEventListener('drop', this.handleDrop);
 
@@ -87,6 +88,7 @@ export default class Canvas extends Component<{
     el.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
+    window.removeEventListener('resize', this.handleUpdate);
     el.removeEventListener('dragover', this.handleDragOver);
     el.removeEventListener('drop', this.handleDrop);
 
@@ -100,7 +102,7 @@ export default class Canvas extends Component<{
   startx: number
   starty: number
 
-  handleUpdate() {
+  handleUpdate = () => {
     const canvasEl = this.canvasRef.current;
     const surfaceEl = this.surfaceRef.current;
 
@@ -127,8 +129,8 @@ export default class Canvas extends Component<{
       y: height / scale,
     });
 
-    surfaceEl.style.width = `${(this.size.x - 1).toFixed()}px`;
-    surfaceEl.style.height = `${(this.size.y - 1).toFixed()}px`;
+    surfaceEl.style.width = `${(this.size.x).toFixed()}px`;
+    surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
   }
 
   handleMouseWheel = (e: Wheel) => {
