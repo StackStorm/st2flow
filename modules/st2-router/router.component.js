@@ -9,7 +9,6 @@ import store from '@stackstorm/module-store';
 
 import history from './history';
 import { updateLocation } from './methods';
-import Redirect from './redirect.component';
 
 @connect(
   ({ location }) => ({ location }),
