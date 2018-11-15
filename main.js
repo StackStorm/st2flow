@@ -20,15 +20,6 @@ import store from '@stackstorm/module-store';
 
 import style from './style.css';
 
-window.st2constants = window.st2constants || {};
-window.st2constants.st2Config = {
-  hosts: [{
-    api: 'https://localhost/api',
-    auth: 'https://localhost/auth',
-    stream: 'https://localhost/stream',
-  }],
-};
-
 @connect(({ collapseModel }) => ({ collapseModel }))
 class Window extends Component<{
   collapseModel: Object,
