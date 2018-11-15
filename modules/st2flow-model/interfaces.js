@@ -26,6 +26,7 @@ export interface TaskInterface {
         concurrency?: string,
     };
     join?: ?string;
+    ref?: any;
 }
 
 export interface TaskRefInterface {

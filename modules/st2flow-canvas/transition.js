@@ -32,12 +32,169 @@ const CONTROLS = {
 const ORBIT_DISTANCE = 20;
 const APPROACH_DISTANCE = 10;
 
-function roundCorner(from, origin, to) {
-  return {
-    origin,
-    approach: from.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
-    departure: to.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
-  };
+// function roundCorner (from: Vector, origin: Vector, to: Vector): {| origin: Vector, approach: Vector, departure: Vector |} {
+//   return {
+//     origin,
+//     approach: from.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
+//     departure: to.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
+//   };
+// }
+
+interface PathElementInterface {
+  direction?: Direction;
+  calcNewPosition({ origin: Vector, dir: Direction }): {| point: Vector, dir: Direction |};
+  toPathString({ origin: Vector, previous: PathElementInterface, next: PathElementInterface }): string;
+}
+
+type Direction = 'up' | 'down' | 'left' | 'right';
+class Line {
+  px: number;
+  direction: Direction;
+  constructor(px: number, dir: Direction) {
+    Object.defineProperties(this, {
+      direction: {
+        value: dir,
+      },
+      px: {
+        value: px,
+      },
+    });
+  }
+  calcNewPosition(origin: Vector): Vector {
+    const point = new Vector(origin.x, origin.y);
+    switch(this.direction) {
+      case 'up':
+        point.y -= this.px;
+        break;
+      case 'down':
+        point.y += this.px;
+        break;
+      case 'left':
+        point.x -= this.px;
+        break;
+      case 'right':
+        point.x += this.px;
+        break;
+    }
+    return point;
+  }
+  toPathString(origin: Vector, previous: Line, next: Line): string {
+    const newPoint = this.calcNewPosition(origin);
+
+    // did the previous line segment curve in?
+    //const adjustmentPrev = previous && previous.direction !== this.direction ? ORBIT_DISTANCE : 0;
+    // does the next line segment curve out?
+    const adjustmentNext = next && next.direction !== this.direction ? ORBIT_DISTANCE : 0;
+    // does this line go up and down?  or left and right?
+    const isYDimension = this.direction === 'up' || this.direction === 'down';
+    // Which direction in pixels from 0,0?
+    const dimensionScale = this.direction === 'up' || this.direction === 'left' ? -1 : 1;
+
+    let curvePath = '';
+
+    // if(adjustmentPrev) {
+    //   // encountered a point
+    //   const adjustmentMax = Math.min(adjustmentPrev, previous.px);
+    //   if(isYDimension) {
+    //     newPoint.y += adjustmentMax * dimensionScale;
+    //   }
+    //   else {
+    //     newPoint.x += adjustmentMax * dimensionScale;
+    //   }
+    // }
+    if(adjustmentNext) {
+      const adjustmentMax = Math.min(adjustmentNext, next.px);
+      const nextIsYDimension = next.direction === 'up' || next.direction === 'down';
+      const nextDimensionScale = next.direction === 'up' || next.direction === 'left' ? -1 : 1;
+
+      if(isYDimension && !nextIsYDimension) {
+        const oldPointY = newPoint.y;
+        newPoint.y -= adjustmentMax * dimensionScale;
+        const controlPointX = newPoint.x + adjustmentMax * nextDimensionScale;
+        curvePath = ` Q ${newPoint.x} ${oldPointY}, ${controlPointX} ${oldPointY}`;
+      }
+      else if(nextIsYDimension) {
+        const oldPointX = newPoint.x;
+        const controlPointY = newPoint.y + adjustmentMax * nextDimensionScale;
+        newPoint.x -= adjustmentMax * dimensionScale;
+        curvePath = ` Q ${oldPointX} ${newPoint.y}, ${oldPointX} ${controlPointY}`;
+      }
+    }
+
+    return `L ${newPoint.x} ${newPoint.y}${curvePath}`;
+  }
+  toString(): string {
+    return `${this.px} ${this.direction}`;
+  }
+}
+
+class Path {
+  origin: Vector
+  elements: Array<Line> = [];
+  initialDir: Direction
+  constructor(origin: Vector, dir: Direction) {
+    Object.assign(this, { origin, initialDir: dir });
+  }
+
+  moveTo(newPosition: Vector) {
+    const pos = this.currentPosition;
+    const dir = this.currentDir;
+
+    const yMove = newPosition.y !== pos.y;
+    const xMove = newPosition.x !== pos.x;
+
+    let xLine: Line;
+    let yLine: Line;
+    if(xMove) {
+      xLine = new Line(
+        Math.abs(newPosition.x - pos.x),
+        newPosition.x > pos.x ? 'right' : 'left'
+      );
+    }
+    if(yMove) {
+      yLine = new Line(
+        Math.abs(newPosition.y - pos.y),
+        newPosition.y > pos.y ? 'down' : 'up'
+      );
+    }
+    if(dir === 'left' || dir === 'right') {
+      yLine && this.elements.push(yLine);
+      xLine && this.elements.push(xLine);
+    }
+    else {
+      xLine && this.elements.push(xLine);
+      yLine && this.elements.push(yLine);
+    }
+  }
+
+  get currentDir() {
+    return this.elements.length > 0
+      ? this.elements[this.elements.length - 1].direction
+      : this.initialDir;
+  }
+
+  get currentPosition() {
+    let currentPoint = this.origin;
+    this.elements.forEach(el => {
+      currentPoint = el.calcNewPosition(currentPoint);
+    });
+    return currentPoint;
+  }
+
+  toString(): string {
+    let origin: Vector = this.origin;
+console.log(`new path at ${origin.x}, ${origin.y}`);
+    const path = this.elements.map((el, idx) => {
+      const next = this.elements[idx + 1];
+      const prev = this.elements[idx - 1];
+console.log(el.toString());
+      const str = el.toPathString(origin, prev, next);
+      origin = el.calcNewPosition(origin);
+
+      return str;
+    }).join(' ');
+    return `M ${this.origin.x} ${this.origin.y} ${path}`;
+  }
 }
 
 type Target = {
@@ -45,7 +202,7 @@ type Target = {
   anchor: string
 }
 
-class Path extends Component<{
+class SVGPath extends Component<{
   onClick: Function
 }> {
   componentDidMount() {
@@ -77,6 +234,7 @@ export default class TransitionGroup extends Component<{
   color: string,
   selected: boolean,
   onClick: Function,
+  taskRefs: {},
 }> {
   static propTypes = {
     transitions: PropTypes.arrayOf(
@@ -94,11 +252,13 @@ export default class TransitionGroup extends Component<{
   style = style
 
   makePath(from: Target, to: Target) {
+    const { taskRefs } = this.props;
     if (!from.task || !to.task) {
       return '';
     }
-
-    const path = [];
+    if (!taskRefs[from.task.name].current || !taskRefs[to.task.name].current) {
+      return '';
+    }
 
     const fromAnchor = ANCHORS[from.anchor];
     const fromControl = CONTROLS[from.anchor];
@@ -107,46 +267,34 @@ export default class TransitionGroup extends Component<{
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
     const fromOrbit = fromControl.multiply(ORBIT_DISTANCE).add(fromPoint);
+    const path = new Path(fromPoint, 'down');
 
     const toAnchor = ANCHORS[to.anchor];
     const toControl = CONTROLS[to.anchor];
     const toCoords = new Vector((to.task || {}).coords).add(origin);
     const toSize = new Vector((to.task || {}).size);
 
-    const arrowCompensation = toControl.multiply(10);
-    const toPoint = toSize.multiply(toAnchor).add(toCoords).add(arrowCompensation);
+    // const arrowCompensation = toControl.multiply(10);
+    const toPoint = toSize.multiply(toAnchor).add(toCoords); //.add(arrowCompensation);
     const toOrbit = toControl.multiply(ORBIT_DISTANCE).add(toPoint);
 
     const lagrangePoint = toOrbit.subtract(fromOrbit).divide(2);
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-    const fromOrbitCorner = roundCorner(fromPoint, fromOrbit, fromLagrange);
-    const fromLagrangeCorner = roundCorner(fromOrbit, fromLagrange, toLagrange);
-    const toLagrangeCorner = roundCorner(fromLagrange, toLagrange, toOrbit);
-    const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
+    // const fromOrbitCorner = roundCorner(fromPoint, fromOrbit, fromLagrange);
+    // const fromLagrangeCorner = roundCorner(fromOrbit, fromLagrange, toLagrange);
+    // const toLagrangeCorner = roundCorner(fromLagrange, toLagrange, toOrbit);
+    // const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
 
-    path.push(`M ${fromPoint.x} ${fromPoint.y}`);
+    // path.push(`M ${fromPoint.x} ${fromPoint.y}`);
+    path.moveTo(fromOrbit);
+    path.moveTo(fromLagrange);
+    path.moveTo(toLagrange);
+    path.moveTo(toOrbit);
+    path.moveTo(toPoint);
 
-    if (lagrangePoint.y <= 0) {
-      path.push(`L ${fromOrbitCorner.approach.x} ${fromOrbitCorner.approach.y}`);
-      path.push(`Q ${fromOrbitCorner.origin.x} ${fromOrbitCorner.origin.y}, ${fromOrbitCorner.departure.x} ${fromOrbitCorner.departure.y}`);
-    }
-
-    path.push(`L ${fromLagrangeCorner.approach.x} ${fromLagrangeCorner.approach.y}`);
-    path.push(`Q ${fromLagrangeCorner.origin.x} ${fromLagrangeCorner.origin.y}, ${fromLagrangeCorner.departure.x} ${fromLagrangeCorner.departure.y}`);
-
-    path.push(`L ${toLagrangeCorner.approach.x} ${toLagrangeCorner.approach.y}`);
-    path.push(`Q ${toLagrangeCorner.origin.x} ${toLagrangeCorner.origin.y}, ${toLagrangeCorner.departure.x} ${toLagrangeCorner.departure.y}`);
-
-    if (lagrangePoint.y <= 0) {
-      path.push(`L ${toOrbitCorner.approach.x} ${toOrbitCorner.approach.y}`);
-      path.push(`Q ${toOrbitCorner.origin.x} ${toOrbitCorner.origin.y}, ${toOrbitCorner.departure.x} ${toOrbitCorner.departure.y}`);
-    }
-
-    path.push(`L ${toPoint.x} ${toPoint.y}`);
-
-    return path.join(' ');
+    return path.toString();
   }
 
   render(): Array<Node> {
@@ -176,7 +324,7 @@ export default class TransitionGroup extends Component<{
     );
 
     const activeBorders = transitionPaths.map(({ from, to, path }) => (
-      <Path
+      <SVGPath
         className={cx(this.style.transitionActiveBorder, selected && this.style.selected)}
         style={{ stroke: color }}
         key={`${from}-${to}-pathActiveBorder`}
@@ -188,7 +336,7 @@ export default class TransitionGroup extends Component<{
     ));
 
     const actives = transitionPaths.map(({ from, to, path }) => (
-      <Path
+      <SVGPath
         className={cx(this.style.transitionActive, selected && this.style.selected)}
         key={`${from}-${to}-pathActive`}
         d={path}
@@ -198,7 +346,7 @@ export default class TransitionGroup extends Component<{
     ));
 
     const paths = transitionPaths.map(({ from, to, path }) => (
-      <Path
+      <SVGPath
         className={this.style.transition}
         style={{ stroke: color }}
         key={`${from}-${to}-path`}

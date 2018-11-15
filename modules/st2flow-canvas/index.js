@@ -59,23 +59,23 @@ type Wheel = WheelEvent & {
   })
 )
 export default class Canvas extends Component<{
-      children: Node,
-      className?: string,
+  children: Node,
+  className?: string,
 
-      navigation: Object,
-      navigate: Function,
+  navigation: Object,
+  navigate: Function,
 
-      tasks: Array<TaskInterface>,
-      transitions: Array<Object>,
-      notifications: Array<NotificationInterface>,
-      issueModelCommand: Function,
-      nextTask: string,
+  tasks: Array<TaskInterface>,
+  transitions: Array<Object>,
+  notifications: Array<NotificationInterface>,
+  issueModelCommand: Function,
+  nextTask: string,
 
-      isCollapsed: Object,
-      toggleCollapse: Function,
-    }, {
-      scale: number,
-    }> {
+  isCollapsed: Object,
+  toggleCollapse: Function,
+}, {
+  scale: number,
+}> {
   static propTypes = {
     children: PropTypes.node,
     className: PropTypes.string,
@@ -400,6 +400,7 @@ export default class Canvas extends Component<{
   style = style
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
+  taskRefs = {};
 
   render() {
     const { notifications, children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
@@ -480,6 +481,7 @@ export default class Canvas extends Component<{
             <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
               {
                 tasks.map((task) => {
+                  this.taskRefs[task.name] = this.taskRefs[task.name] || React.createRef();
                   return (
                     <Task
                       key={task.name}
@@ -490,6 +492,7 @@ export default class Canvas extends Component<{
                       onConnect={(...a) => this.handleTaskConnect(task, ...a)}
                       onClick={() => this.handleTaskSelect(task)}
                       onDelete={() => this.handleTaskDelete(task)}
+                      ref={this.taskRefs[task.name]}
                     />
                   );
                 })
@@ -534,6 +537,7 @@ export default class Canvas extends Component<{
                         key={`${id}-${window.btoa(transition.condition)}`}
                         color={color}
                         transitions={group}
+                        taskRefs={this.taskRefs}
                         selected={false}
                         onClick={(e) => this.handleTransitionSelect(e, transition)}
                       />
@@ -546,6 +550,7 @@ export default class Canvas extends Component<{
                         key={`${id}-${window.btoa(transition.condition)}-selected`}
                         color={color}
                         transitions={group}
+                        taskRefs={this.taskRefs}
                         selected={true}
                         onClick={(e) => this.handleTransitionSelect(e, transition)}
                       />
