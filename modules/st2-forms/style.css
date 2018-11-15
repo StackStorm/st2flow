@@ -13,7 +13,7 @@
   &__button,
   &__button-prev,
   &__button-next {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 200;
     line-height: 21px;
 
@@ -37,7 +37,7 @@
     color: #fff;
     border: 0;
     outline: 0;
-    background-color: #008ceb;
+    background-color: var(--aqua-base);
     border-radius: 2px;
 
     &:before,
@@ -72,11 +72,11 @@
     }
 
     &:focus {
-      background-color: #0076c6;
+      background-color: var(--aqua-darken-2);
     }
 
     &:active {
-      background-color: #0076c6;
+      background-color: var(--aqua-darken-3);
     }
 
     &--small {
@@ -262,7 +262,7 @@
       }
       
       &:checked + label {
-        background: #008ceb;
+        background: var(--green-base);
       }
     }
 
