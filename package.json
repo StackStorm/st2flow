@@ -22,8 +22,6 @@
   },
   "workspaces": [
     "modules/*",
-    "../st2web/tasks",
-    "../st2web/modules/st2-test-utils",
     "."
   ],
   "browserify": {
@@ -72,7 +70,7 @@
   "devDependencies": {
     "@stackstorm/browserify-postcss": "0.3.4-patch.5",
     "@stackstorm/module-test-utils": "^2.0.0",
-    "@stackstorm/st2-build": "1.0.0-pre.5",
+    "@stackstorm/st2-build": "^2.0.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.1.2",
     "babel-plugin-transform-class-properties": "^6.6.0",
