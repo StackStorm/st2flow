@@ -149,6 +149,7 @@
   background-size:100px 100px, 100px 100px, 20px 20px, 20px 20px;
   background-position:-2px -2px, -2px -2px, -1px -1px, -1px -1px;
 
+  box-shadow: inset 0px 0px 8px 0px rgba(0,0,0,0.32);
   position: absolute;
 
   transform-origin: 0 0;
@@ -166,7 +167,7 @@
 
 .toolbar {
   position: absolute;
-  top: 0;
+  top: 8px;
   left: 0;
   right: 0;
 
@@ -184,7 +185,7 @@
   background-color: white;
 
   z-index: 1;
-  margin: 4px;
+  margin: 8px;
 
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 
@@ -194,7 +195,7 @@
   align-items: center;
   justify-content: center;
 
-  color: #444;
+  color: var(--gray);
   font-size: 20px;
 
   &:after {
@@ -204,27 +205,35 @@
 
 .collapse-button {
   position: absolute;
-  width: 20px;
+  width: 30px;
   height: 40px;
-  padding: 5px;
+  padding: 5px 0;
 
   background-color: #444;
   color: #eee;
+  font-size: 23px;
 
   z-index: 1;
 
   display: flex;
   align-items: center;
+  
 
   &.left {
     left: 0;
+    border-bottom-right-radius: 4px;
+    box-shadow: 2px 0px 7px 0px rgba(0,0,0,0.32);
   }
   &.right {
     right: 0;
+    border-bottom-left-radius: 4px;
+    box-shadow: -2px 0px 7px 0px rgba(0,0,0,0.32);
   }
   &.top {
     top: 0;
     right: 0;
-    background-color: #a22;
+    background-color: rgba(30, 29, 31, 0.22);
+    width: initial;
+    padding: 5px 0;
   }
 }
