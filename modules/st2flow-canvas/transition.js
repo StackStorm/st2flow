@@ -183,11 +183,8 @@ class Path {
 
   toString(): string {
     let origin: Vector = this.origin;
-console.log(`new path at ${origin.x}, ${origin.y}`);
     const path = this.elements.map((el, idx) => {
       const next = this.elements[idx + 1];
-      const prev = this.elements[idx - 1];
-console.log(el.toString());
       const str = el.toPathString(origin, next);
       origin = el.calcNewPosition(origin);
 
@@ -282,12 +279,6 @@ export default class TransitionGroup extends Component<{
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-    // const fromOrbitCorner = roundCorner(fromPoint, fromOrbit, fromLagrange);
-    // const fromLagrangeCorner = roundCorner(fromOrbit, fromLagrange, toLagrange);
-    // const toLagrangeCorner = roundCorner(fromLagrange, toLagrange, toOrbit);
-    // const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
-
-    // path.push(`M ${fromPoint.x} ${fromPoint.y}`);
     path.moveTo(fromOrbit);
     path.moveTo(fromLagrange);
     path.moveTo(toLagrange);
