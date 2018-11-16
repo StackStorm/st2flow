@@ -43,7 +43,7 @@ const APPROACH_DISTANCE = 10;
 interface PathElementInterface {
   direction?: Direction;
   calcNewPosition({ origin: Vector, dir: Direction }): {| point: Vector, dir: Direction |};
-  toPathString({ origin: Vector, previous: PathElementInterface, next: PathElementInterface }): string;
+  toPathString({ origin: Vector, next: PathElementInterface }): string;
 }
 
 type Direction = 'up' | 'down' | 'left' | 'right';
@@ -78,11 +78,9 @@ class Line {
     }
     return point;
   }
-  toPathString(origin: Vector, previous: Line, next: Line): string {
+  toPathString(origin: Vector, next: Line): string {
     const newPoint = this.calcNewPosition(origin);
 
-    // did the previous line segment curve in?
-    //const adjustmentPrev = previous && previous.direction !== this.direction ? ORBIT_DISTANCE : 0;
     // does the next line segment curve out?
     const adjustmentNext = next && next.direction !== this.direction ? ORBIT_DISTANCE : 0;
     // does this line go up and down?  or left and right?
@@ -92,18 +90,8 @@ class Line {
 
     let curvePath = '';
 
-    // if(adjustmentPrev) {
-    //   // encountered a point
-    //   const adjustmentMax = Math.min(adjustmentPrev, previous.px);
-    //   if(isYDimension) {
-    //     newPoint.y += adjustmentMax * dimensionScale;
-    //   }
-    //   else {
-    //     newPoint.x += adjustmentMax * dimensionScale;
-    //   }
-    // }
     if(adjustmentNext) {
-      const adjustmentMax = Math.min(adjustmentNext, next.px);
+      const adjustmentMax = Math.min(adjustmentNext, next.px / 2, this.px / 2);
       const nextIsYDimension = next.direction === 'up' || next.direction === 'down';
       const nextDimensionScale = next.direction === 'up' || next.direction === 'left' ? -1 : 1;
 
@@ -146,24 +134,36 @@ class Path {
     let xLine: Line;
     let yLine: Line;
     if(xMove) {
-      xLine = new Line(
-        Math.abs(newPosition.x - pos.x),
-        newPosition.x > pos.x ? 'right' : 'left'
-      );
+      if(this.elements.length && (dir === 'left' || dir === 'right')) {
+        xLine = this.elements.pop();
+        xLine = new Line(xLine.px += (newPosition.x - pos.x) * (dir === 'left' ? -1 : 1), xLine.direction);
+      }
+      else {
+        xLine = new Line(
+          Math.abs(newPosition.x - pos.x),
+          newPosition.x > pos.x ? 'right' : 'left'
+        );
+      }
     }
     if(yMove) {
-      yLine = new Line(
-        Math.abs(newPosition.y - pos.y),
-        newPosition.y > pos.y ? 'down' : 'up'
-      );
+      if(this.elements.length && (dir === 'up' || dir === 'down')) {
+        yLine = this.elements.pop();
+        yLine = new Line(yLine.px + (newPosition.y - pos.y) * (dir === 'up' ? -1 : 1), yLine.direction);
+      }
+      else {
+        yLine = new Line(
+          Math.abs(newPosition.y - pos.y),
+          newPosition.y > pos.y ? 'down' : 'up'
+        );
+      }
     }
     if(dir === 'left' || dir === 'right') {
-      yLine && this.elements.push(yLine);
       xLine && this.elements.push(xLine);
+      yLine && this.elements.push(yLine);
     }
     else {
-      xLine && this.elements.push(xLine);
       yLine && this.elements.push(yLine);
+      xLine && this.elements.push(xLine);
     }
   }
 
@@ -188,7 +188,7 @@ console.log(`new path at ${origin.x}, ${origin.y}`);
       const next = this.elements[idx + 1];
       const prev = this.elements[idx - 1];
 console.log(el.toString());
-      const str = el.toPathString(origin, prev, next);
+      const str = el.toPathString(origin, next);
       origin = el.calcNewPosition(origin);
 
       return str;
@@ -274,8 +274,8 @@ export default class TransitionGroup extends Component<{
     const toCoords = new Vector((to.task || {}).coords).add(origin);
     const toSize = new Vector((to.task || {}).size);
 
-    // const arrowCompensation = toControl.multiply(10);
-    const toPoint = toSize.multiply(toAnchor).add(toCoords); //.add(arrowCompensation);
+    const arrowCompensation = toControl.multiply(10);
+    const toPoint = toSize.multiply(toAnchor).add(toCoords).add(arrowCompensation);
     const toOrbit = toControl.multiply(ORBIT_DISTANCE).add(toPoint);
 
     const lagrangePoint = toOrbit.subtract(fromOrbit).divide(2);
