@@ -170,13 +170,22 @@ a_sequence:
 - key: value
   another_key: another_value
 -
+  - deep_key: value
+    # a comment
+        another_deep_key: another_value
+        and_even_deeper:
+        - # intentionally empty with less indentation
+        - we go
+              - with lots
+              - of indentation
+-
   - This is a sequence
   - inside another sequence
 - - - Nested sequence indicators
     - can be collapsed
     - *anchor_name
 
-json_map: {"key": "value"}
+json_map: { "key": "value"}
 json_seq: [3, 2, 1, "takeoff"]
 quotes are optional: {key: [3, 2, 1, takeoff]}
 

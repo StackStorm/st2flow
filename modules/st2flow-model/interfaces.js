@@ -1,5 +1,5 @@
 // @flow
-import type { JpathKey } from '@stackstorm/st2flow-yaml';
+import type { JpathKey, Range } from '@stackstorm/st2flow-yaml';
 
 export type TransitionType = 'Success' | 'Error' | 'Complete';
 
@@ -80,6 +80,8 @@ export interface ModelInterface {
 
     setTransitionProperty(transition: TransitionInterface, path: JpathKey, value: any): void;
     deleteTransitionProperty(transition: TransitionInterface, path: JpathKey): void;
+
+    getRangeForTask(task: TaskInterface): Range;
 
     undo(): void;
     redo(): void;

@@ -19,8 +19,8 @@ class EventEmitter extends EventEmitter3 {
 
     if(this.stack[event] && this.stack[event].length) {
       this.stack[event] = this.stack[event].filter(eventData => {
-        this.emit(event, eventData);
-        return false; // empty the stack
+        this.emit(event, ...eventData);
+        return false; // remove from list
       });
     }
 
@@ -33,7 +33,7 @@ class EventEmitter extends EventEmitter3 {
         this.stack[event] = [];
       }
 
-      this.stack[event].push(...data);
+      this.stack[event].push(data);
 
       return this;
     }

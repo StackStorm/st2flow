@@ -1,0 +1,140 @@
+StackStorm Enterprise EULA
+
+1. GRANT AND USE RIGHTS FOR SOFTWARE.
+
+  1.1 License. This Agreement grants You a non-transferable, non-exclusive,
+  limited right to use one copy of the Software in a non production
+  environment and for a limited time period for the sole purpose of evaluating
+  the Software for purchase. "Software" means software products that are
+  licensed to You under this Agreement, including, but not limited to, any
+  related components provided with the Software, application programming
+  interfaces, associated media, printed materials, online or electronic
+  documentation, and any updates and maintenance releases thereto. Open source
+  software components provided with the Software are licensed to you under the
+  terms of the applicable license agreements included with such open source
+  software components. The open source software licenses can be found in the
+  licenses.txt file, other materials accompanying the Software, the
+  documentation or corresponding source files available
+  at http://github.com/StackStorm.
+
+  1.2 License Limitations. You may not copy the Software or remove any
+  titles, trademarks or trade names, copyright notices, legends, or other
+  proprietary markings on the Software. You are not granted any rights to any
+  trademarks or service marks of StackStorm. StackStorm retains all rights not
+  expressly granted to You in this Agreement.
+
+  1.3 Restrictions. Except as expressly permitted by this Agreement or by
+  applicable law, You may not (i) sell, lease, assign, license, sublicense,
+  distribute or otherwise transfer in whole or in part the Software; (ii)
+  permit any use of or access to the Software by any third party, or operate
+  the Software on behalf of or for the benefit of any third party, including
+  the operation of any service that is accessed by a third party; (iii)
+  decompile, disassemble, reverse engineer, or otherwise attempt to derive
+  source code from the Software; (iv) modify or create derivative works based
+  upon the Software; or (v) create, develop, license, install, use, or deploy
+  any software or services to circumvent, enable, modify or provide access,
+  permissions or rights which violate the technical restrictions in the
+  Software. If You wish to exercise any rights to reverse engineer to ensure
+  interoperability in accordance with applicable law, You must first provide
+  StackStorm with written notice and all reasonably requested information
+  to moc.mrotskcats@ofni within 30 days and permit StackStorm to assess Your
+  claim and, at StackStorm’s sole discretion, to make an offer to provide
+  alternatives that reduce any adverse impact on StackStorm’s intellectual
+  property or other rights.
+
+2. TITLE
+
+  StackStorm retains all right, title, and interest in and to the
+  Software and in all related copyrights, trade secrets, patents, trademarks,
+  and any other intellectual and industrial property and proprietary rights,
+  including registrations, applications, renewals, and extensions of such
+  rights.
+
+3. TERM AND TERMINATION
+
+  Unless earlier terminated in accordance with this Agreement, StackStorm may
+  terminate this Agreement immediately upon notice if You fail to comply with
+  any term of this Agreement. In the event of termination, You must remove and
+  destroy all copies of the Software, including all backup copies, from the
+  server and all computers and terminals You own, possess or control and on
+  which the Software is installed. The provisions regarding title, exclusion
+  of warranty, and limitation of liability will survive termination or
+  expiration of this Agreement.
+
+4. EXCLUSION OF WARRANTY AND LIMITATION OF LIABILITY
+
+  4.1 EXCLUSION OF WARRANTY. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE
+  MANDATORY LAW, STACKSTORM AND ITS LICENSORS PROVIDE THE SOFTWARE WITHOUT ANY
+  WARRANTIES OF ANY KIND, EXPRESS, IMPLIED, STATUTORY, OR IN ANY OTHER
+  PROVISION OF THIS AGREEMENT OR COMMUNICATION WITH YOU, AND STACKSTORM AND
+  ITS LICENSORS SPECIFICALLY DISCLAIM ANY IMPLIED WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+  4.2 LIMITATION OF LIABILITY. TO THE MAXIMUM EXTENT MANDATED BY LAW, IN NO
+  EVENT WILL STACKSTORM AND ITS LICENSORS BE LIABLE FOR ANY LOST PROFITS OR
+  BUSINESS OPPORTUNITIES, LOSS OF USE, BUSINESS INTERRUPTION, LOSS OF DATA, OR
+  ANY OTHER INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES UNDER ANY
+  THEORY OF LIABILITY, WHETHER BASED IN CONTRACT, TORT, NEGLIGENCE, PRODUCT
+  LIABILITY, OR OTHERWISE. BECAUSE SOME JURISDICTIONS DO NOT ALLOW THE
+  EXCLUSION OR LIMITATION OF LIABILITY FOR CONSEQUENTIAL OR INCIDENTAL
+  DAMAGES, THE PRECEDING LIMITATION MAY NOT APPLY TO YOU. STACKSTORM’S AND
+  ITS LICENSORS’ LIABILITY UNDER THIS AGREEMENT WILL NOT, IN ANY EVENT,
+  EXCEED THE LICENSE FEES YOU PAID FOR THE SOFTWARE, IF ANY. THE FOREGOING
+  LIMITATIONS SHALL APPLY REGARDLESS OF WHETHER STACKSTORM OR ITS LICENSORS
+  HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES AND REGARDLESS OF
+  WHETHER ANY REMEDY FAILS OF ITS ESSENTIAL PURPOSE.
+
+5. GENERAL
+
+  5.1 Entire Agreement. This Agreement sets forth StackStorm’s entire
+  liability and Your exclusive remedy with respect to the Software and
+  supersedes the terms of any communications or advertising with respect to
+  the Software. You acknowledge that this Agreement is a complete statement of
+  the agreement between You and StackStorm with respect to the Software, and
+  that there are no other prior or contemporaneous understandings, promises,
+  representations, or descriptions with respect to the Software.
+
+  5.2 Headings. Headings under this Agreement are intended only for
+  convenience and shall not affect the interpretation of this Agreement.
+
+  5.3 Waiver and Modification. No failure of either party to exercise or
+  enforce any of its rights under this Agreement will act as a waiver of those
+  rights. This Agreement may only be modified, or any rights under it waived,
+  by a written document executed by the party against which it is asserted.
+
+  5.4 Severability. If any provision of this Agreement is found illegal or
+  unenforceable, it will be enforced to the maximum extent permissible, and
+  the legality and enforceability of the other provisions of this Agreement
+  will not be affected.
+
+  5.5 Governing Law. This Agreement will be governed by California law and
+  the United States of America, without regard to its choice of law
+  principles. The United Nations Convention for the International Sale of
+  Goods shall not apply.
+
+  5.6 Government Restrictions. The Software and accompanying documentation
+  are deemed to be "commercial computer software" and "commercial computer
+  software documentation," respectively, pursuant to DFAR Section 227.7202 and
+  FAR Section 12.212(b), as applicable. Any use, modification, reproduction,
+  release, performing, displaying, or disclosing of the Software by the U.S.
+  Government shall be governed solely by the terms of this Agreement.
+
+  5.7 Export Controls. The Software is of United States origin and is
+  provided subject to the U.S. Export Administration Regulations. Diversion
+  contrary to U.S. law is prohibited. Without limiting the foregoing, You
+  agree that (1) You are not, and are not acting on behalf of, any person who
+  is a citizen, national, or resident of, or who is controlled by the
+  government of, Cuba, Iran, North Korea, Sudan, or Syria, or any other
+  country to which the United States has prohibited export transactions; (2)
+  You are not, and are not acting on behalf of, any person or entity listed on
+  the U.S. Treasury Department list of Specially Designated Nationals and
+  Blocked Persons, or the U.S. Commerce Department Denied Persons List or
+  Entity List; and (3) You will not use the Software for, and will not permit
+  the Software to be used for, any purposes prohibited by law, including,
+  without limitation, for any prohibited development, design, manufacture or
+  production of missiles or nuclear, chemical or biological weapons.
+
+  5.8 Contact Information. If You have any questions about this Agreement, or
+  if You want to contact StackStorm for any reason, please direct all
+  correspondence to: StackStorm, Inc., 395 Page Mill Road, Suite 150, Palo
+  Alto, CA 94306, United States of America or email: info@StackStorm.com

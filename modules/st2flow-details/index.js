@@ -179,7 +179,7 @@ class TaskDetails extends Component<{
                     Join all tasks
                   </div>
                   <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value))} >
-                    Join <input type="text" id="joinField" ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value))} /> tasks
+                    Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value))} /> tasks
                   </label>
                 </div>
               )
@@ -251,6 +251,11 @@ class Task extends Component<{
     onClick: PropTypes.func,
   }
 
+  constructor(...args) {
+    super(...args);
+    this.handleClick = this.handleClick.bind(this);
+  }
+
   style = style
 
   handleClick(e) {
@@ -262,7 +267,7 @@ class Task extends Component<{
 
     e.stopPropagation();
 
-    onClick();
+    onClick(e);
   }
 
   render() {
@@ -272,7 +277,7 @@ class Task extends Component<{
       <div
         key={task.name}
         className={this.style.task}
-        onClick={e => this.handleClick(e)}
+        onClick={this.handleClick}
       >
         <div className={this.style.taskName}>{ task.name }</div>
         <div className={this.style.taskAction}>{ task.action }</div>
@@ -297,6 +302,20 @@ export default class Details extends Component<{
     actions: PropTypes.array,
   }
 
+  constructor(...args) {
+    super(...args);
+    this.handleBack = this.handleBack.bind(this);
+    this.handleTaskSelect = this.handleTaskSelect.bind(this);
+  }
+
+  sections = [{
+    title: 'metadata',
+    className: 'icon-gear',
+  }, {
+    title: 'execution',
+    className: 'icon-lan',
+  }]
+
   style = style
 
   handleTaskSelect(task: TaskInterface) {
@@ -308,14 +327,6 @@ export default class Details extends Component<{
   }
 
   render() {
-    const sections = [{
-      title: 'metadata',
-      className: 'icon-gear',
-    }, {
-      title: 'execution',
-      className: 'icon-lan',
-    }];
-
     const { actions, navigationModel } = this.props;
 
     if (!navigationModel) {
@@ -328,7 +339,7 @@ export default class Details extends Component<{
       <div className={cx(this.props.className, this.style.component, asCode && 'code')}>
         <Toolbar>
           {
-            sections.map(section => {
+            this.sections.map(section => {
               return (
                 <ToolbarButton
                   key={section.title}
@@ -352,10 +363,10 @@ export default class Details extends Component<{
         {
           type === 'execution' && (
             asCode
-              && <Editor model={this.props.model} />
+              && <Editor model={this.props.model} selectedTaskName={navigationModel.current.task} onTaskSelect={this.handleTaskSelect} />
               || navigationModel.current.task
                 // $FlowFixMe ^^
-                && <TaskDetails onBack={() => this.handleBack()} selected={navigationModel.current.task} actions={actions} />
+                && <TaskDetails onBack={this.handleBack} selected={navigationModel.current.task} actions={actions} />
                 // $FlowFixMe ^^
                 || <TaskList />
           )

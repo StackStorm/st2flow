@@ -1,5 +1,6 @@
 //@flow
 
+import type { TaskInterface } from '@stackstorm/st2flow-yaml';
 import type { ModelInterface, DeltaInterface } from '@stackstorm/st2flow-model';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 
@@ -14,6 +15,7 @@ import Notifications from '@stackstorm/st2flow-notifications';
 
 import style from './style.css';
 
+const Range = ace.acequire('ace/range').Range;
 const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
 
@@ -26,6 +28,8 @@ export default class Editor extends Component<{
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
+    selectedTaskName: PropTypes.string,
+    onTaskSelect: PropTypes.func,
   }
 
   constructor(...args: any) {
@@ -47,10 +51,18 @@ export default class Editor extends Component<{
       tabSize: 2,
       useSoftTabs: true,
       showPrintMargin: false,
+      highlightActiveLine: false,
     });
 
+    this.editor.renderer.setPadding(10);
     this.editor.setValue(model.toYAML(), -1);
     this.editor.on('change', this.handleEditorChange);
+
+    if(this.props.selectedTaskName) {
+      this.mountCallback = setTimeout(() => {
+        this.handleTaskSelect({ name: this.props.selectedTaskName });
+      }, 20);
+    }
 
     model.on('change', this.handleModelChange);
     model.on('yaml-error', this.handleModelError);
@@ -58,9 +70,19 @@ export default class Editor extends Component<{
     model.on('redo', this.redo);
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.selectedTaskName !== prevProps.selectedTaskName) {
+      this.handleTaskSelect({ name: this.props.selectedTaskName });
+    }
+  }
+
   componentWillUnmount() {
     window.clearTimeout(this.deltaTimer);
     this.editor.removeListener('change', this.handleEditorChange);
+
+    if(this.mountCallback) {
+      clearTimeout(this.mountCallback);
+    }
 
     const { model } = this.props;
     model.removeListener('change', this.handleModelChange);
@@ -69,16 +91,35 @@ export default class Editor extends Component<{
     model.removeListener('redo', this.redo);
   }
 
-  editor: any
-  deltaTimer: number
-
   undo = () => {
     this.editor.undo();
     this.props.model.fromYAML(this.editor.getValue());
   }
+
   redo = () => {
     this.editor.redo();
     this.props.model.fromYAML(this.editor.getValue());
+  }
+
+  handleTaskSelect(task: TaskInterface) {
+    if(this.selectMarker) {
+      this.editor.session.removeMarker(this.selectMarker);
+    }
+
+    const [ start, end ] = this.props.model.getRangeForTask(task);
+    const selection = new Range(start.row, 0, end.row, Infinity);
+    const cursor = this.editor.selection.getCursor();
+
+    if(selection.compare(cursor.row, cursor.column)) {
+      this.editor.renderer.scrollCursorIntoView(start, 0.5);
+    }
+    else {
+      this.editor.renderer.scrollCursorIntoView(cursor, 0.5);
+    }
+
+    this.selectMarker = this.editor.session.addMarker(selection, cx(this.style.activeTask), 'fullLine');
+
+    this.props.onTaskSelect(task);
   }
 
   handleEditorChange = (delta: DeltaInterface) => {
@@ -123,6 +164,9 @@ export default class Editor extends Component<{
     }));
   }
 
+
+  editor: any;
+  selectMarker: any;
   deltaTimer = 0; // debounce timer
   style = style;
 

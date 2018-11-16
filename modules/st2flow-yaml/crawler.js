@@ -1,6 +1,6 @@
 // @flow
 
-import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ParentToken, ValueToken, AnyToken, JPath, JpathKey } from './types';
+import type { TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ParentToken, ValueToken, AnyToken, JPath, JpathKey, Range } from './types';
 
 import factory from './token-factory';
 import TokenSet from './token-set';
@@ -352,10 +352,7 @@ const crawler = {
   },
 
   /**
-   * [setCommentForKey description]
-   * @param {[type]} tokenSet: TokenSet [description]
-   * @param {[type]} key:      JpathKey [description]
-   * @param {[type]} comments: string   [description]
+   * Sets comment tokens for the given key
    */
   setCommentForKey(tokenSet: TokenSet, key: JpathKey, comments: string) {
     const token: ?TokenRawValue = getRawTokenByKey(tokenSet.tree, key);
@@ -364,13 +361,26 @@ const crawler = {
       throw new Error(`Could not find token for path: ${key.toString()}`);
     }
 
-    const example: ?TokenRawValue = token.prefix.find(t => REG_COMMENT.test(t.rawValue));
-    const indent = example ? example.rawValue.split('#')[0]: '  ';
-    const tokens = comments.split(/\n/).map(comment => factory.createRawValueToken(`${indent}# ${comment}`));
+    const tokens = comments.split(/\n/).map(comment => factory.createRawValueToken(`# ${comment}`));
     const lastToken = token.prefix.pop();
 
     token.prefix = token.prefix.filter(t => !REG_COMMENT.test(t.rawValue)).concat(tokens).concat(lastToken);
     tokenSet.refineTree();
+  },
+
+  /**
+   * Gets the source range for a give key and its value
+   */
+  getRangeForKey(tokenSet: TokenSet, key: JpathKey): Range {
+    const token: ?TokenRawValue = getRawTokenByKey(tokenSet.tree, key);
+
+    if(!token) {
+      throw new Error(`Could not find token for path: ${key.toString()}`);
+    }
+
+    const valueToken = getTokenValueByKey(tokenSet.tree, key);
+    const lastToken = valueToken ? this.findLastValueToken(valueToken) || token : token;
+    return [ token.range[0], lastToken.range[1] ];
   },
 
   /**
@@ -393,11 +403,57 @@ const crawler = {
         return this.findFirstValueToken(token.mappings[0]);
 
       case 3:
-        return this.findFirstValueToken(token.items[0]);
+        return this.findFirstCollectionItem(token.items);
 
       default:
         throw new Error(`Unrecognized token kind: ${token.kind}`);
     }
+  },
+
+  /**
+   * Recursively finds the last token of type 0 or 4
+   */
+  findLastValueToken(token: AnyToken): ?TokenRawValue | ?TokenReference {
+    if(token === null || typeof token === 'undefined') {
+      return null;
+    }
+
+    switch(token.kind) {
+      case 0:
+      case 4:
+        return token;
+
+      case 1:
+        // The "value" can be null (no token), so fall back to the key
+        return this.findLastValueToken(token.value || token.key);
+
+      case 2:
+        return this.findLastValueToken(token.mappings[token.mappings.length - 1]);
+
+      case 3:
+        return this.findFirstCollectionItem(token.items, true);
+
+      default:
+        throw new Error(`Unrecognized token kind: ${token.kind}`);
+    }
+  },
+
+  /**
+   * Collection items can be null (no token), so crawl until we find one.
+   */
+  findFirstCollectionItem(items: Array<ValueToken>, fromEnd: boolean = false): ?TokenRawValue | ?TokenReference {
+    let index = fromEnd ? items.length - 1 : 0;
+    let token: ?ValueToken;
+
+    while(!token && ((fromEnd && index >= 0) || (!fromEnd && index < items.length))) {
+      token = items[fromEnd ? index-- : index++];
+    }
+
+    if(token) {
+      token = this.findFirstValueToken(token);
+    }
+
+    return token;
   },
 
   getTokenComments(token: AnyToken): string {
@@ -415,8 +471,19 @@ const crawler = {
     return comments;
   },
 
-  // export for others to use
-  buildArrayKey,
+  /**
+   * YAML allows mapping keys to be constructed from a collection (array) of values.
+   * The string version of the key is the result of Array.prototype.toString()
+   */
+  buildArrayKey(token: TokenCollection): string {
+    return token.items.reduce((keys, t) => {
+      if(t.kind === 0) {
+        keys.push(t.value);
+      }
+
+      return keys;
+    }, []).toString();
+  },
 };
 
 /**
@@ -462,7 +529,7 @@ function getTokenByKey(branch: ?ValueToken, key: JpathKey): ?ValueToken {
   switch(branch.kind) {
     case 2: {
       const kvToken: ?TokenKeyValue = branch.mappings.find(kvt =>
-        (kvt.key.kind === 0 ? kvt.key.value : buildArrayKey(kvt.key)) === segment
+        (kvt.key.kind === 0 ? kvt.key.value : crawler.buildArrayKey(kvt.key)) === segment
       );
 
       if (!kvToken) {
@@ -574,20 +641,6 @@ function updateTokenValue(token: TokenRawValue, value: string) {
   }
 
   Object.assign(token, { value, rawValue });
-}
-
-/**
- * YAML allows mapping keys to be constructed from a collection (array) of values.
- * The key is the result of Array.prototype.toString()
- */
-function buildArrayKey(token: TokenCollection): string {
-  return token.items.reduce((keys, t) => {
-    if(t.kind === 0) {
-      keys.push(t.value);
-    }
-
-    return keys;
-  }, []).toString();
 }
 
 export default crawler;

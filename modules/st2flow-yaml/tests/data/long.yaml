@@ -120,8 +120,8 @@ workflows:
                 on-success:
                     - enterprise_tests: <% $.enterprise %>
             enterprise_tests:
-               action: st2cd.st2_enterprise_tests
-               input:
+                action: st2cd.st2_enterprise_tests
+                input:
                     host_ip: <% $.host_ip %>
 
     test_basic:

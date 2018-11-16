@@ -159,12 +159,12 @@ describe('Token Set Crawler', () => {
     expect(arr[7].constructor).to.equal(Object);
     expect(Object.keys(arr[7])).to.deep.equal([ 'key', 'another_key' ]);
     expect(Array.isArray(arr[8])).to.equal(true);
-    expect(arr[8].length).to.equal(2);
-    expect(Array.isArray(arr[9])).to.equal(true);
-    expect(arr[9].length).to.equal(1);
-    expect(Array.isArray(arr[9][0])).to.equal(true);
-    expect(arr[9][0].length).to.equal(3);
-    expect(arr[9][0][2]).to.equal('This is a referencable value.');
+    expect(arr[9].length).to.equal(2);
+    expect(Array.isArray(arr[10])).to.equal(true);
+    expect(arr[10].length).to.equal(1);
+    expect(Array.isArray(arr[10][0])).to.equal(true);
+    expect(arr[10][0].length).to.equal(3);
+    expect(arr[10][0][2]).to.equal('This is a referencable value.');
   });
 
   it('works with json values', () => {

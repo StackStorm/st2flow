@@ -234,7 +234,7 @@ export default class Login extends React.Component {
                 onChange={({ target: { checked: remember } }) => this.setState({ remember })}
               />
               <span className={style.checkboxLabel}>
-                remember
+                Remember
               </span>
             </label>
           </LoginRow>

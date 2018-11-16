@@ -1,0 +1,46 @@
+{
+  "port": 3000,
+  "dev": ".",
+  "styles": {
+    "dest": "css"
+  },
+  "modules": {
+    "main.js": "main.js"
+  },
+  "html": "index.html",
+  "production": {
+    "dest": "build/",
+    "scripts": [
+      "js/*.js"
+    ],
+    "static": [
+      "index.html",
+      "img/*",
+      "font/*",
+      "favicon.ico"
+    ],
+    "styles": [
+      "css/*.css"
+    ],
+    "tests": [
+      "tests/**/test-*.js",
+      "!**/node_modules/**"
+    ]
+  },
+  "lint": [
+    "*.js",
+    "modules/**/*.js",
+    "apps/**/*.js",
+    "tasks/**/*.js",
+    "!**/node_modules/**"
+  ],
+  "tests": [
+    "tests/**/test-*.js",
+    "!**/node_modules/**"
+  ],
+  "units": [
+    "apps/**/tests/test-*.js",
+    "modules/**/tests/test-*.js",
+    "!**/node_modules/**"
+  ]
+}

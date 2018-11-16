@@ -4,10 +4,15 @@ type JPath = Array<string | number>;
 
 type JpathKey = string | JPath;
 
+type RowColumn = { row: number, column: number };
+
+type Range = [ RowColumn, RowColumn ];
+
 type BaseToken = {
 	startPosition: number,
   endPosition: number,
   jpath: JPath,
+  range: Range,
 };
 
 type TokenRawValue = BaseToken & {
@@ -86,4 +91,5 @@ export type {
   Refinement,
   TokenMeta,
   JpathKey,
+  Range,
 };

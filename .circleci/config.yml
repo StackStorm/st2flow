@@ -30,9 +30,8 @@ jobs:
             set +e
             export NVM_DIR="/opt/circleci/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-            nvm install 8.9.3
-            nvm alias default 8.9.3
-
+            nvm install 10.4.1
+            nvm alias default 10.4.1
             # Each step uses the same `$BASH_ENV`, so need to modify it
             echo 'export NVM_DIR="/opt/circleci/.nvm"' >> $BASH_ENV
             echo "[ -s \"$NVM_DIR/nvm.sh\" ] && . \"$NVM_DIR/nvm.sh\"" >> $BASH_ENV
@@ -49,7 +48,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install rpm jq devscripts debhelper
             gem install package_cloud
-            npm install --global lerna
+            npm install --global lerna yarn eslint flow
       - run:
           name: Clone st2web
           command: |
@@ -66,51 +65,87 @@ jobs:
           name: Run code checks
           command: |
             npm run eslint
-            npm run flow
+            #npm run flow
 
       - run:
           name: Run unit tests
           command: npm run test-unit
 
+      # - run:
+      #     name: Update Docker Compose
+      #     command: |
+      #       set -x
+      #       sudo sh -c "curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose"
+      #       sudo chmod +x /usr/local/bin/docker-compose
+      # - run:
+      #     name: Clone test containers
+      #     command: git clone --depth 1 https://github.com/StackStorm/st2-docker ~/st2-docker
+      # - run:
+      #     name: Update env variables for test containers
+      #     command: |
+      #       make -C ~/st2-docker env
+      #       echo -e "ST2_USER=${ST2_USERNAME}\nST2_PASSWORD=${ST2_PASSWORD}" > ~/st2-docker/conf/stackstorm.env
+      #       cat ~/st2-docker/conf/stackstorm.env
+      # - run:
+      #     name: Start test containers
+      #     command: |
+      #       docker-compose -f ~/st2-docker/docker-compose.yml up -d
+      #       sleep 60
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm crudini --set /etc/st2/st2.conf api allow_origin "*"
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2ctl restart
+      # - run:
+      #     name: Check test containers
+      #     command: |
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2 run core.noop
+      # - run:
+      #     name: Run functional tests
+      #     command: npm run test-functional
+      # - run:
+      #     name: Reset test containers
+      #     command: |
+      #       docker-compose -f ~/st2-docker/docker-compose.yml down
+      #       docker-compose -f ~/st2-docker/docker-compose.yml up -d
+      #       sleep 60
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm crudini --set /etc/st2/st2.conf api allow_origin "*"
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2ctl restart
+      # - run:
+      #     name: Recheck test containers
+      #     command: |
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2 run core.noop
+      #       docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2 execution list
+      # - run:
+      #     name: Run tests on production version
+      #     command: npm run test-production
+
       - run:
-          name: Update Docker Compose
+          name: Create directories for Artifacts
+          command: mkdir ~/artifacts && cd ~/artifacts && mkdir ${DEB} ${RPM} logs
+      - run:
+          name: Fetch container logs
           command: |
-            set -x
-            sudo sh -c "curl -L https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose"
-            sudo chmod +x /usr/local/bin/docker-compose
+            for container in $(docker ps -a --format "{{.Names}}"); do
+              docker logs ${container} > ~/artifacts/logs/${container}.log 2>&1
+            done
       - run:
-          name: Clone test containers
-          command: git clone --depth 1 https://github.com/StackStorm/st2-docker ~/st2-docker
-      - run:
-          name: Update env variables for test containers
+          name: Make deb packages
           command: |
-            make -C ~/st2-docker env
-            echo -e "ST2_USER=${ST2_USERNAME}\nST2_PASSWORD=${ST2_PASSWORD}" > ~/st2-docker/conf/stackstorm.env
-            cat ~/st2-docker/conf/stackstorm.env
+            make deb
+            echo $DEB | tr ' ' '\n' | xargs -I{} cp -vr ../st2flow_*.{deb,changes} ~/artifacts/{}
       - run:
-          name: Start test containers
+          name: Make RPM packages
           command: |
-            docker-compose -f ~/st2-docker/docker-compose.yml up -d
-      - run:
-          name: Check test containers
-          command: |
-            docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2 run core.noop
-      - run:
-          name: Run functional tests
-          command: npm run test-functional
-      - run:
-          name: Reset test containers
-          command: |
-            docker-compose -f ~/st2-docker/docker-compose.yml down
-            docker-compose -f ~/st2-docker/docker-compose.yml up -d
-      - run:
-          name: Recheck test containers
-          command: |
-            docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2 run core.noop
-            docker-compose -f ~/st2-docker/docker-compose.yml exec stackstorm st2 execution list
-      - run:
-          name: Run tests on production version
-          command: npm run test-production
+            make rpm
+            echo $RPM | tr ' ' '\n' | xargs -I{} cp -vr ../st2flow-*.rpm ~/artifacts/{}
+      - store_artifacts:
+          path: ~/artifacts
+          destination: packages
+      - persist_to_workspace:
+          root: /home/circleci/artifacts
+          paths:
+            - trusty
+            - xenial
+            - el6
+            - el7
 
 experimental:
   notify:
