@@ -21,12 +21,12 @@ import Transition from './transition';
 
 import style from './style.css';
 
-@connect(({ model, navigationModel }) => ({ model, navigationModel }))
+@connect(({ model, navigationModel, actionsModel }) => ({ model, navigationModel, actionsModel }))
 class TaskDetails extends Component<{
   model: ModelInterface,
   navigationModel: Object,
   selected: string,
-  actions: Array<Object>,
+  actionsModel: Object,
   onBack: Function,
 }, {
   rename: bool,
@@ -36,7 +36,7 @@ class TaskDetails extends Component<{
     model: PropTypes.object,
     navigationModel: PropTypes.object,
     selected: PropTypes.string,
-    actions: PropTypes.array,
+    actionsModel: PropTypes.object,
     onBack: PropTypes.func.isRequired,
   }
 
@@ -102,7 +102,8 @@ class TaskDetails extends Component<{
   joinFieldRef = React.createRef();
 
   render() {
-    const { model, selected, onBack, actions, navigationModel } = this.props;
+    const { model, selected, onBack, actionsModel, navigationModel } = this.props;
+    const { actions } = actionsModel;
     const { section = 'input' } = navigationModel.current;
     const { name, rename } = this.state;
 
@@ -286,20 +287,20 @@ class Task extends Component<{
   }
 }
 
-@connect(({ model, metaModel, navigationModel }) => ({ model, metaModel, navigationModel }))
+@connect(({ model, metaModel, navigationModel, actionsModel }) => ({ model, metaModel, navigationModel, actionsModel }))
 export default class Details extends Component<{
   className?: string,
   model: ModelInterface,
   metaModel: ModelInterface,
   navigationModel: Object,
-  actions: Array<Object>,
+  actionsModel: Object,
 }> {
   static propTypes = {
     className: PropTypes.string,
     model: PropTypes.object,
     metaModel: PropTypes.object,
     navigationModel: PropTypes.object,
-    actions: PropTypes.array,
+    actionsModel: PropTypes.object,
   }
 
   constructor(...args) {
@@ -327,7 +328,8 @@ export default class Details extends Component<{
   }
 
   render() {
-    const { actions, navigationModel } = this.props;
+    const { actionsModel, navigationModel } = this.props;
+    const { actions } = actionsModel;
 
     if (!navigationModel) {
       return false;

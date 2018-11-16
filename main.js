@@ -8,6 +8,7 @@ import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
+import api from '@stackstorm/module-api';
 import { connect, register } from '@stackstorm/st2flow-model/connect';
 import OrquestaModel from '@stackstorm/st2flow-model/model-orquesta';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
@@ -20,28 +21,25 @@ import store from '@stackstorm/module-store';
 
 import style from './style.css';
 
-@connect(({ collapseModel }) => ({ collapseModel }))
+@connect(({ collapseModel, actionsModel }) => ({ collapseModel, actionsModel }))
 class Window extends Component<{
   collapseModel: Object,
+  actionsModel: Object,
 }> {
   static propTypes = {
     collapseModel: PropTypes.object,
-  }
-  state = {
-    actions: [],
+    actionsModel: PropTypes.object,
   }
 
   async componentDidMount() {
-    const res = await fetch('/actions.json');
-
-    this.setState({ actions: await res.json() });
+    this.props.actionsModel.fetch();
   }
 
   style = style
 
   render() {
-    const { collapseModel } = this.props;
-    const { actions } = this.state;
+    const { collapseModel, actionsModel } = this.props;
+    const { actions } = actionsModel;
 
     return (
       <div className="component">
@@ -176,6 +174,33 @@ class NavigationModel {
 }
 
 register('navigationModel', new NavigationModel());
+
+class ActionsModel {
+  emitter = new EventEmitter();
+  actions = [];
+  
+  on(eventName, fn) {
+    return this.emitter.on(eventName, fn);
+  }
+
+  removeListener(eventName, fn) {
+    return this.emitter.removeListener(eventName, fn);
+  }
+
+  async fetch() {
+    try {
+      this.actions = await api.request({ path: '/actions/views/overview' });
+      this.emitter.emit('change');
+    }
+    catch (e) {
+      const res = await fetch('/actions.json');
+      this.actions = await res.json();
+      this.emitter.emit('change');
+    }
+  }
+}
+
+register('actionsModel', new ActionsModel());
 
 const routes = [{
   url: '/',

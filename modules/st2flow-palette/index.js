@@ -4,20 +4,23 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
+import { connect } from '@stackstorm/st2flow-model/connect';
+
 import Action from './action';
 import Pack from './pack';
 
 import style from './style.css';
 
+@connect(({ actionsModel }) => ({ actionsModel }))
 export default class Palette extends Component<{
   className?: string,
-  actions: Array<Object>,
+  actionsModel: Object,
 }, {
   search: string,
 }> {
   static propTypes = {
     className: PropTypes.string,
-    actions: PropTypes.array,
+    actionsModel: PropTypes.object,
   }
 
   state = {
@@ -33,7 +36,8 @@ export default class Palette extends Component<{
   style = style
 
   render() {
-    const { actions } = this.props;
+    const { actionsModel } = this.props;
+    const { actions } = actionsModel;
     const { search } = this.state;
 
     return (
