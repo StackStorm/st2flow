@@ -60,7 +60,7 @@ type Wheel = WheelEvent & {
 )
 export default class Canvas extends Component<{
   children: Node,
-  className?: string,
+      className?: string,
 
   navigation: Object,
   navigate: Function,
@@ -74,7 +74,7 @@ export default class Canvas extends Component<{
   isCollapsed: Object,
   toggleCollapse: Function,
 }, {
-  scale: number,
+      scale: number,
 }> {
   static propTypes = {
     children: PropTypes.node,

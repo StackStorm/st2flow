@@ -10,6 +10,7 @@ import cx from 'classnames';
 import Vector from './vector';
 import { origin, ORBIT_DISTANCE } from './const';
 import Path from './path/';
+import type { Task } from './task';
 
 import style from './style.css';
 
@@ -67,7 +68,7 @@ export default class TransitionGroup extends Component<{
   color: string,
   selected: boolean,
   onClick: Function,
-  taskRefs: {},
+  taskRefs: {| [taskname: string]: { current: Task } |},
 }> {
   static propTypes = {
     transitions: PropTypes.arrayOf(
@@ -76,6 +77,7 @@ export default class TransitionGroup extends Component<{
         to: PropTypes.object.isRequired,
       })
     ),
+    taskRefs: PropTypes.object.isRequired,
     selected: PropTypes.bool,
     onClick: PropTypes.func,
   }
@@ -115,11 +117,80 @@ export default class TransitionGroup extends Component<{
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
+
+    const taskElements: Array<?HTMLElement> = Object.keys(taskRefs).map((key: string): ?HTMLElement => {
+      const task = taskRefs[key].current;
+      if(task.taskRef.current instanceof HTMLElement) {
+        return task.taskRef.current;
+      }
+      else {
+        return null;
+      }
+    }).filter(e => e);
+    type BoundingBox = {|
+      left: number,
+      right: number,
+      top: number,
+      bottom: number,
+      midpointX: number,
+      midpointY: number,
+    |};
+    const boundingBoxes: Array<BoundingBox> = taskElements.map(element => {
+      if(!element) {
+        return { left: NaN, right: NaN, top: NaN, bottom: NaN, midpointX: NaN, midpointY: NaN };
+      }
+
+      const matrixString = getComputedStyle(element).getPropertyValue('transform');
+      const Matrix = 'DOMMatrix' in window ? window.DOMMatrix : window.WebKitCSSMatrix;
+      const coords = new Matrix(matrixString);
+
+      // NEXT STEPS:  Too many things are intersecting and I think it's because the
+      // paths are being compared against the boxes they come from and go to.
+      // Filter those out, and then try again.
+
+      return {
+        left: coords.m41,
+        top: coords.m42,
+        bottom: coords.m42 + element.offsetHeight,
+        right: coords.m41 + element.offsetWidth,
+        midpointY: coords.m42 + element.offsetHeight / 2,
+        midpointX: coords.m41 + element.offsetWidth / 2,
+      };
+    });
+
+    function doesPathIntersectBox(path: Path, box: BoundingBox): boolean {
+      let result = false;
+      let origin = path.origin;
+      path.elements.forEach(line => {
+        const newPos = line.calcNewPosition(origin);
+        const withinY = !(
+          newPos.y < box.top && origin.y < box.top ||
+          newPos.y > box.bottom && origin.y > box.bottom
+        );
+        const withinX = !(
+          newPos.x < box.left && origin.x < box.left ||
+          newPos.x > box.right && origin.x > box.right
+        );
+        if(withinX && withinY) {
+          result = true;
+        }
+        origin = newPos;
+      });
+      return result;
+    }
+
+
     path.moveTo(fromOrbit);
     path.moveTo(fromLagrange);
     path.moveTo(toLagrange);
     path.moveTo(toOrbit);
     path.moveTo(toPoint);
+
+    boundingBoxes.forEach(box => {
+      if(doesPathIntersectBox(path, box)) {
+        this.props = Object.create(this.props, { 'selected': {value:  true} });
+      }
+    });
 
     return path.toString();
   }

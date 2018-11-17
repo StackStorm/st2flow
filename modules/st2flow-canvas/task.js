@@ -13,7 +13,7 @@ import { origin } from './const';
 import style from './style.css';
 import api from '@stackstorm/module-api';
 
-export default class Task extends Component<{
+export class Task extends Component<{
   task: TaskInterface,
   scale: number,
   selected: bool,
@@ -263,3 +263,5 @@ export default class Task extends Component<{
     );
   }
 }
+
+export default Task;
