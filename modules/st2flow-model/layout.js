@@ -18,7 +18,7 @@ export function layout(model: ModelInterface) {
   model.transitions.forEach(transition => {
     const { from, to } = transition;
 
-    g.setEdge(from.name, to.name);
+    to.forEach(to => g.setEdge(from.name, to.name));
   });
 
   dagre.layout(g);
