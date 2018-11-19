@@ -2,6 +2,7 @@
 
 import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken, AnyToken, Refinement } from './types';
 
+import { deepClone } from './util';
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
@@ -36,10 +37,9 @@ class Refinery {
   newYaml: string = '';
   indent: string;
   tree: TokenMapping;
-  lastToken: TokenRawValue | TokenReference;
 
   // used to determine whether or not we are refining JSON data
-  jsonDepth: number = -1;
+  isJSON: boolean = false;
 
   constructor(tree: TokenMapping, oldYaml: string = '') {
     if(tree.kind !== 2) {
@@ -58,7 +58,7 @@ class Refinery {
 
     if(newTree.kind !== 2 ) {
       return {
-        tree: EMPTY_TREE,
+        tree: deepClone(EMPTY_TREE),
         yaml: '',
       };
     }
@@ -82,7 +82,6 @@ class Refinery {
     switch(startToken.kind) {
       case 0:
       case 4:
-        this.lastToken = startToken;
         return startToken;
 
       case 1:
@@ -133,7 +132,26 @@ class Refinery {
     // (using depth and leading whitespace in prefix)
     let indent = `\n${this.indent.repeat(depth)}`;
 
-    if(this.jsonDepth === -1) {
+    if(this.isJSON) {
+      // JSON-like data
+      const isFirstKey = tokenPath[tokenPath.length - 2] === 0;
+      const hasJsonStart = isFirstKey && prefix.some(t => REG_JSON_START.test(t.value));
+      const commaIndex = prefix.findIndex(t => REG_COMMA.test(t.value));
+
+      if(commaIndex === 0) {
+        prefix[0].value = prefix[0].rawValue = prefix[0].rawValue.replace(REG_LEADING_SPACE, '');
+      }
+
+      if(!isFirstKey && commaIndex === -1) {
+        prefix.push(factory.createRawValueToken(STR_COMMA));
+
+        if(!hasJsonStart) {
+          prefix.push(factory.createRawValueToken(`${indent}`));
+        }
+      }
+
+    }
+    else {
       // Normal YAML
 
       // Collections have loose indentation semantics, and we want to preserve
@@ -168,29 +186,11 @@ class Refinery {
         prefix.push(factory.createRawValueToken(`${indent}`));
       }
     }
-    else {
-      // JSON-like data
-      const isFirstKey = tokenPath[tokenPath.length - 2] === 0;
-      const hasJsonStart = isFirstKey && prefix.some(t => REG_JSON_START.test(t.value));
-      const commaIndex = prefix.findIndex(t => REG_COMMA.test(t.value));
-
-      if(commaIndex === 0) {
-        prefix[0].value = prefix[0].rawValue = prefix[0].rawValue.replace(REG_LEADING_SPACE, '');
-      }
-
-      if(!isFirstKey && commaIndex === -1) {
-        prefix.push(factory.createRawValueToken(STR_COMMA));
-
-        if(!hasJsonStart) {
-          prefix.push(factory.createRawValueToken(`${indent}`));
-        }
-      }
-    }
   }
 
   /**
    * Adds the prefix to "value" tokens in a mapping. Most of the time
-   * this will include a colon and white space.
+   * this will consist of a colon and white space.
    */
   prefixValue(token: ValueToken, depth: number, jpath: JPath): void {
     this.prefixToken(token, depth + 1, jpath.concat('value'));
@@ -249,23 +249,22 @@ class Refinery {
       if(!firstToken) {
         firstToken = rawToken;
 
-        if(this.jsonDepth === -1) {
-          if(firstToken.prefix.find(t => REG_JSON_START.test(t.value))) {
-            // The object is a JSON-style object -> { foo: bar }
-            isJSON = true;
-            this.jsonDepth = depth;
+        if(this.isJSON) {
+          if(firstToken.prefix.every(t => !REG_JSON_START.test(t.value))) {
+            firstToken.prefix.unshift(factory.createRawValueToken(`${STR_OPEN_CURLY}\n${this.indent.repeat(depth)}`));
+            mapNeedsClosing = true;
           }
         }
-        else if(firstToken.prefix.every(t => !REG_JSON_START.test(t.value))) {
-          firstToken.prefix.unshift(factory.createRawValueToken(`${STR_OPEN_CURLY}\n${this.indent.repeat(depth)}`));
-          mapNeedsClosing = true;
+        else if(firstToken.prefix.find(t => REG_JSON_START.test(t.value))) {
+          // The object is a JSON-style object -> { foo: bar }
+          isJSON = this.isJSON = true;
         }
       }
 
-      this.prefixToken(token, /*(token.kind === 2 ? depth + 1 : depth)*/ depth, jpath.concat('mappings', i));
+      this.prefixToken(token, depth, jpath.concat('mappings', i));
     });
 
-    if(this.jsonDepth !== -1 && mapNeedsClosing) {
+    if(this.isJSON && mapNeedsClosing) {
       if(!startToken.suffix) {
         startToken.suffix = [];
       }
@@ -274,7 +273,7 @@ class Refinery {
 
     // reset it back
     if(isJSON) {
-      this.jsonDepth = -1;
+      this.isJSON = false;
     }
   }
 
@@ -306,32 +305,31 @@ class Refinery {
       if(!firstToken) {
         firstToken = rawToken;
 
-        if(this.jsonDepth === -1) {
-          if(firstToken.prefix.find(t => REG_JSON_START.test(t.value))) {
-            // The object is a JSON-style array -> foo: [ bar ]
-            isJSON = true;
-            this.jsonDepth = depth;
+        if(this.isJSON) {
+          if(firstToken.prefix.every(t => !REG_JSON_START.test(t.value))) {
+            firstToken.prefix.unshift(factory.createRawValueToken(`${STR_OPEN_SQUARE}\n${this.indent.repeat(depth)}`));
+            itemsNeedsClosing = true;
           }
         }
-        else if(firstToken.prefix.every(t => !REG_JSON_START.test(t.value))) {
-          firstToken.prefix.unshift(factory.createRawValueToken(`${STR_OPEN_SQUARE}\n${this.indent.repeat(depth)}`));
-          itemsNeedsClosing = true;
+        else if(firstToken.prefix.find(t => REG_JSON_START.test(t.value))) {
+          // The object is a JSON-style array -> foo: [ bar ]
+          isJSON = this.isJSON = true;
         }
       }
 
       let delimeterIndex: number = rawToken.prefix.findIndex(t =>
-        this.jsonDepth === -1
-          ? t.value.indexOf(STR_DASH) !== -1
-          : REG_JSON_START.test(t.value) || REG_COMMA.test(t.value)
+        this.isJSON
+          ? REG_JSON_START.test(t.value) || REG_COMMA.test(t.value)
+          : t.value.indexOf(STR_DASH) !== -1
       );
 
-      // if it's already there, no need to go further .
+      // if it's already there, no need to go further
       if(delimeterIndex !== -1) {
         return;
       }
 
       // First remove any whitespace tokens at the top of the prefix
-      let pre = rawToken.prefix[ ++delimeterIndex] ;
+      let pre = rawToken.prefix[ ++delimeterIndex ] ;
       while(pre && REG_ALL_WHITESPACE.test(pre.rawValue)) {
         rawToken.prefix.splice(delimeterIndex, 1);
         pre = rawToken.prefix[ delimeterIndex ];
@@ -342,11 +340,11 @@ class Refinery {
        * add an indent + dash. So for values nested 3 levels deep like this:
        *   foo: [ [ [ 'bar' ] ] ]
        * the jpath for "bar" will look something like this:
-       *   ['mappings', 3, 'value', 'items', 0, 'items', 0, 'items', 0]
+       *   ['mappings', 0, 'value', 'items', 0, 'items', 0, 'items', 0]
        * For object values values nested 3 levels deep like this:
        *   foo: [ [ [ { bing: 'bar' } ] ] ]
        * the jpath for "bing" will look something like this:
-       *   ['mappings', 3, 'value', 'items', 0, 'items', 0, 'items', 0, 'mappings', 0, 'key']
+       *   ['mappings', 0, 'value', 'items', 0, 'items', 0, 'items', 0, 'mappings', 0, 'key']
        */
       let nesting = 0;
       let itemsIdx = rawToken.jpath.lastIndexOf('items');
@@ -358,16 +356,16 @@ class Refinery {
         let separator: string = '';
         let prefix: string;
 
-        if(this.jsonDepth === -1) {
-          separator = nesting === 0 ? `${STR_DASH} ` : STR_DASH;
-          prefix = `\n${this.indent.repeat(depth - nesting)}${separator}`;
-        }
-        else {
+        if(this.isJSON) {
           if(currentIndex > 0) {
             separator = nesting === 0 ? `${STR_COMMA} ` : STR_COMMA;
           }
 
           prefix = `${separator}\n${this.indent.repeat(depth - nesting)}`;
+        }
+        else {
+          separator = nesting === 0 ? `${STR_DASH} ` : STR_DASH;
+          prefix = `\n${this.indent.repeat(depth - nesting)}${separator}`;
         }
 
         rawToken.prefix.unshift(factory.createRawValueToken(prefix));
@@ -381,13 +379,13 @@ class Refinery {
         currentIndex = parseInt(lastTwo[1], 10);
       }
 
-      // the fist item in a collection should have a colon prefix
+      // the first item in a collection should have a colon prefix
       if(i === 0 && rawToken.jpath[itemsIdx + 3] === 0) {
         this.addColonPrefix(rawToken.prefix);
       }
     });
 
-    if(this.jsonDepth !== -1 && itemsNeedsClosing) {
+    if(this.isJSON && itemsNeedsClosing) {
       if(!startToken.suffix) {
         startToken.suffix = [];
       }
@@ -397,7 +395,7 @@ class Refinery {
 
     // reset it back
     if(isJSON) {
-      this.jsonDepth = -1;
+      this.isJSON = false;
     }
   }
 
