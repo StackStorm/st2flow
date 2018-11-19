@@ -24,13 +24,44 @@ export default class Transition extends Component<{
     onChange: PropTypes.func,
   }
 
+  constructor({ transition }) {
+    super();
+
+    this.state = {
+      publishOn: transition.publish && Object.keys(transition.publish).length > 0,
+    };
+  }
+
   style = style
+  cache = {} // used to cache togglable data
+
+  onPublishToggle = (val) => {
+    if(val) {
+      if(this.cache.publish) {
+        this.props.onChange('publish', this.cache.publish);
+        delete this.cache.publish;
+      }
+    }
+    else {
+      this.cache.publish = this.props.transition.publish;
+      this.props.onChange('publish', null);
+    }
+
+    this.setState({ publishOn: val });
+  }
+
+  handlePublishChange(index, key, val) {
+    const { transition: { publish }, onChange } = this.props;
+    publish[index] = { [key]: val };
+    onChange('publish', publish);
+  }
 
   render() {
     const { transition, onChange } = this.props;
-
+    const { publishOn } = this.state;
     const to = transition.to.map(({ name }) => name);
-    
+    const publish = transition.publish; // Object.keys(transition.publish || {}).map(key => [ key, transition.publish[key] ]);
+
     return (
       <div className={this.style.transition}>
         <div className={this.style.transitionLine} >
@@ -47,19 +78,25 @@ export default class Transition extends Component<{
             Publish
           </div>
           <div className={this.style.transitionField}>
-            <Toggle />
+            <Toggle value={publishOn} onChange={this.onPublishToggle} />
           </div>
         </div>
-        { transition.publish && (
-          <div className={this.style.transitionLine} >
-            <div className={this.style.transitionField}>
-              <StringField /><StringField />
+        { publish.map((obj, i) => {
+          const key = Object.keys(obj)[0];
+          const val = obj[key];
+
+          return (
+            <div className={this.style.transitionLine} key={`publish-${key}`} >
+              <div className={this.style.transitionField}>
+                <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
+                <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
+              </div>
+              <div className={this.style.transitionField}>
+                <i className="icon-plus2" />
+              </div>
             </div>
-            <div className={this.style.transitionField}>
-              <i className="icon-plus2" />
-            </div>
-          </div>
-        )}
+          );
+        })}
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
             Do
