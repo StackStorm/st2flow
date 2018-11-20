@@ -201,6 +201,18 @@
   &:after {
     content: ' ';
   }
+
+  &.success {
+    animation: ok .2s linear 3s forwards;
+    background-color: var(--green-base);
+    color: white;
+  }
+
+  &.error {
+    animation: fail .2s linear 3s forwards;
+    background-color: var(--red-base);
+    color: white;
+  }
 }
 
 .collapse-button {
@@ -235,5 +247,27 @@
     background-color: rgba(30, 29, 31, 0.22);
     width: initial;
     padding: 5px 0;
+  }
+}
+
+@keyframes ok {
+  0% {
+    background-color: var(--green-base);
+    color: white;
+  }
+  100% {
+    background-color: white;
+    color: var(--gray);
+  }
+}
+
+@keyframes fail {
+  0% {
+    background-color: var(--red-base);
+    color: white;
+  }
+  100% {
+    background-color: white;
+    color: var(--gray);
   }
 }
