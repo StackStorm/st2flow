@@ -7,18 +7,18 @@ import type {
   TransitionInterface,
 } from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+import type { Node } from 'react';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import Notifications from '@stackstorm/st2flow-notifications';
-import { connect, layout } from '@stackstorm/st2flow-model';
+import { connect } from '@stackstorm/st2flow-model';
 
 import Task from './task';
 import Transition from './transition';
 import Vector from './vector';
-import Toolbar from './toolbar';
 import CollapseButton from './collapse-button';
 
 import { origin } from './const';
@@ -31,6 +31,7 @@ type Wheel = WheelEvent & {
 
 @connect(({ model, collapseModel, navigationModel }) => ({ model, collapseModel, navigationModel }))
 export default class Canvas extends Component<{
+      children: Node,
       className?: string,
       model: ModelInterface,
       collapseModel: Object,
@@ -40,6 +41,7 @@ export default class Canvas extends Component<{
       errors: Array<Error>,
     }> {
   static propTypes = {
+    children: PropTypes.node,
     className: PropTypes.string,
     model: PropTypes.object,
     collapseModel: PropTypes.object,
@@ -307,7 +309,7 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { model, collapseModel, navigationModel } = this.props;
+    const { children, model, collapseModel, navigationModel } = this.props;
     const { scale } = this.state;
 
     if (!model || !collapseModel) {
@@ -323,13 +325,7 @@ export default class Canvas extends Component<{
         className={cx(this.props.className, this.style.component)}
         onClick={e => this.handleCanvasClick(e)}
       >
-        <Toolbar>
-          <div key="undo" icon="icon-redirect" onClick={() => model.undo()} />
-          <div key="redo" icon="icon-redirect2" onClick={() => model.redo()} />
-          <div key="rearrange" icon="icon-arrange" onClick={() => layout(model)} />
-          <div key="save" icon="icon-save" onClick={() => console.log('save')} />
-          <div key="run" icon="icon-play" onClick={() => console.log('run')} />
-        </Toolbar>
+        { children }
         <CollapseButton position="left" state={collapseModel.isCollapsed('palette')} onClick={() => collapseModel.toggle('palette')} />
         <CollapseButton position="right" state={collapseModel.isCollapsed('details')} onClick={() => collapseModel.toggle('details')} />
         <div className={this.style.canvas} ref={this.canvasRef}>

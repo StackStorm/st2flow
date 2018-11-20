@@ -10,23 +10,29 @@ import Details from '@stackstorm/st2flow-details';
 
 import api from '@stackstorm/module-api';
 import { connect, register } from '@stackstorm/st2flow-model/connect';
+import { layout } from '@stackstorm/st2flow-model/layout';
 import OrquestaModel from '@stackstorm/st2flow-model/model-orquesta';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
 import EventEmitter from '@stackstorm/st2flow-model/event-emitter';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
+import Toolbar from '@stackstorm/st2flow-canvas/toolbar';
 
 import { Router } from '@stackstorm/module-router';
 import store from '@stackstorm/module-store';
 
 import style from './style.css';
 
-@connect(({ collapseModel, actionsModel }) => ({ collapseModel, actionsModel }))
+@connect(({ model, metaModel, collapseModel, actionsModel }) => ({ model, metaModel, collapseModel, actionsModel }))
 class Window extends Component<{
+  model: Object,
+  metaModel: Object,
   collapseModel: Object,
   actionsModel: Object,
 }> {
   static propTypes = {
+    model: PropTypes.object,
+    metaModel: PropTypes.object,
     collapseModel: PropTypes.object,
     actionsModel: PropTypes.object,
   }
@@ -35,10 +41,32 @@ class Window extends Component<{
     this.props.actionsModel.fetch();
   }
 
+  save() {
+    const { model, metaModel, actionsModel } = this.props;
+    const meta = metaModel.tokenSet.toObject();
+
+    const existingAction = actionsModel.actions.find(e => e.name === meta.name && e.pack === meta.pack);
+
+    meta.data_files = [{
+      file_path: meta.entry_point,
+      content: model.toYAML(),
+    }, {
+      file_path: existingAction && existingAction.metadata_file && existingAction.metadata_file.replace(/^actions\//, '') || `${meta.name}.meta.yaml`,
+      content: metaModel.toYAML(),
+    }];
+    
+    if (existingAction) {
+      return api.request({ method: 'put', path: `/actions/${meta.pack}.${meta.name}` }, meta);
+    }
+    else {
+      return api.request({ method: 'post', path: '/actions' }, meta);
+    }
+  }
+
   style = style
 
   render() {
-    const { collapseModel, actionsModel } = this.props;
+    const { model, collapseModel, actionsModel } = this.props;
     const { actions } = actionsModel;
 
     return (
@@ -49,7 +77,15 @@ class Window extends Component<{
         </div>
         <div className="component-row-content">
           { !collapseModel.isCollapsed('palette') && <Palette className="palette" actions={actions} /> }
-          <Canvas className="canvas" />
+          <Canvas className="canvas">
+            <Toolbar>
+              <div key="undo" icon="icon-redirect" onClick={() => model.undo()} />
+              <div key="redo" icon="icon-redirect2" onClick={() => model.redo()} />
+              <div key="rearrange" icon="icon-arrange" onClick={() => layout(model)} />
+              <div key="save" icon="icon-save" onClick={() => this.save()} />
+              <div key="run" icon="icon-play" onClick={() => console.log('run')} />
+            </Toolbar>
+          </Canvas>
           { !collapseModel.isCollapsed('details') && <Details className="details" actions={actions} /> }
         </div>
       </div>
@@ -110,7 +146,6 @@ entry_point: workflows/build-controller.yaml
 name: build-controller
 pack: st2cicd
 runner_type: orquesta
-type: foo
 parameters:
   # build_num:
   #   required: true
