@@ -29,6 +29,10 @@ type RawTask = {
 };
 
 class MistralModel extends BaseModel implements ModelInterface {
+  static runner_types = [
+    'mistral',
+  ]
+
   constructor(yaml: ?string) {
     super(schema, yaml);
   }
@@ -402,7 +406,7 @@ function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
 
     Object.keys(workflows).forEach(workflowName => {
       const workflow = workflows[ workflowName ];
-      Object.keys(workflow.tasks).forEach(taksName =>
+      workflow.tasks && Object.keys(workflow.tasks).forEach(taksName =>
         flatTasks.set([ workflowName, taksName ], workflow.tasks[taksName])
       );
     }, []);

@@ -9,9 +9,9 @@ import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
 import api from '@stackstorm/module-api';
-import { connect, register } from '@stackstorm/st2flow-model/connect';
+import { connect, register, subscribe, get } from '@stackstorm/st2flow-model/connect';
 import { layout } from '@stackstorm/st2flow-model/layout';
-import OrquestaModel from '@stackstorm/st2flow-model/model-orquesta';
+import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
 import EventEmitter from '@stackstorm/st2flow-model/event-emitter';
 
@@ -165,6 +165,19 @@ parameters:
 `;
 
 register('metaModel', new MetaModel(tmpMeta));
+
+subscribe('metaModel', m => {
+  const model = get('model');
+
+  if (model.constructor.runner_types.indexOf(m.runner_type) === -1) {
+    const NewModel = models[m.runner_type];
+
+    if (NewModel) {
+      register('model', new NewModel(model.toYAML()));
+    }
+  }
+
+});
 
 class CollapseModel {
   emitter = new EventEmitter();
