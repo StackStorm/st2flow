@@ -59,7 +59,6 @@ export default class Palette extends Component<{
                 if (!pack) {
                   pack = {
                     name: action.pack,
-                    icon: 'static/icon.png',
                     actions: [],
                   };
                   acc.push(pack);
@@ -71,7 +70,7 @@ export default class Palette extends Component<{
               }, [])
               .map(pack => {
                 return (
-                  <Pack key={pack.name} name={pack.name} icon={pack.icon}>
+                  <Pack key={pack.name} name={pack.name}>
                     {
                       pack.actions
                         .map(action => <Action key={action.ref} action={action} />)
