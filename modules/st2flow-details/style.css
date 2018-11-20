@@ -206,14 +206,6 @@
 }
 
 .transition {
-  display: grid;
-
-  grid-template-columns: auto 1fr auto;
-  grid-auto-rows: auto;
-  grid-gap: 12px 0;
-
-  align-items: center;
-
   border-bottom: 1px solid #ccc;
   margin-top: 15px;
   padding-bottom: 15px;
@@ -223,7 +215,15 @@
   }
 
   &-line {
-    display: contents;
+    display: grid;
+
+    grid-template-columns: 1fr 4fr auto;
+    grid-auto-rows: auto;
+    grid-gap: 12px 0;
+
+    align-items: center;
+
+    margin-bottom: 12px;
   }
 
   &-label {
@@ -234,6 +234,10 @@
 
   &-field {
     grid-column: 2;
+  }
+
+  &-publish-label {
+    text-align: right;
   }
 
   &-button {

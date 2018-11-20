@@ -4,6 +4,7 @@ import type { TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import StringField from '@stackstorm/module-auto-form/fields/string';
 import ArrayField from '@stackstorm/module-auto-form/fields/array';
@@ -56,11 +57,26 @@ export default class Transition extends Component<{
     onChange('publish', publish);
   }
 
+  addPublishField = (ev) => {
+    let { transition: { publish } } = this.props;
+    const newVal = { key: '<% result().val %>' };
+
+    if(this.state.publishOn) {
+      publish.push(newVal);
+    }
+    else {
+      publish = [ newVal ];
+      this.setState({ publishOn: true });
+    }
+
+    this.props.onChange('publish', publish);
+  }
+
   render() {
     const { transition, onChange } = this.props;
     const { publishOn } = this.state;
     const to = transition.to.map(({ name }) => name);
-    const publish = transition.publish; // Object.keys(transition.publish || {}).map(key => [ key, transition.publish[key] ]);
+    const publish = transition.publish;
 
     return (
       <div className={this.style.transition}>
@@ -87,16 +103,26 @@ export default class Transition extends Component<{
 
           return (
             <div className={this.style.transitionLine} key={`publish-${key}`} >
-              <div className={this.style.transitionField}>
-                <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
-                <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
+              <div className={cx(this.style.transitionLabel, this.style.transitionPublishLabel)}>
+                Key:
               </div>
               <div className={this.style.transitionField}>
-                <i className="icon-plus2" />
+                <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
+              </div>
+              <div className={cx(this.style.transitionLabel, this.style.transitionPublishLabel)}>
+                Value:
+              </div>
+              <div className={this.style.transitionField}>
+                <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
               </div>
             </div>
           );
         })}
+        <div className={this.style.transitionLine}>
+          <div className={this.style.transitionField}>
+            <i className="icon-plus" onClick={this.addPublishField} />
+          </div>
+        </div>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
             Do

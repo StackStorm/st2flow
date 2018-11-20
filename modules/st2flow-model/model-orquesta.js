@@ -266,7 +266,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     if(newData.hasOwnProperty('to')) {
       if(newTo && newTo.length) {
         const names = newTo.map(t => t.name);
-        next.do = typeof oldNext.do === 'string' ? names.join(', ') : names;
+        next.do = getDoValue(names, oldNext);
       }
       else {
         // newTo explicitly set to null or empty array, remove the "do" property
@@ -331,6 +331,10 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     const key = jpath.concat(path);
 
     switch(key[key.length - 1]) {
+      case 'do':
+        value = getDoValue(value, nextItem);
+        break;
+
       case 'publish':
         value = getPublishValue(value, nextItem);
         break;
@@ -465,6 +469,21 @@ function getNextItemInfo({ from, to, condition, publish }: TransitionInterface, 
   return { nextIndex, nextItem: next[nextIndex] };
 }
 
+
+function getDoValue(newDo: ?Array<string>, oldNext: NextItem) {
+  if(newDo && newDo.length) {
+    if(oldNext.do && typeof oldNext.do === 'string') {
+      return newDo.join(', ');
+    }
+    else {
+      return newDo;
+    }
+  }
+
+  // This likely means the value was explicitly set to null/empty and
+  // should be be deleted from the tree altogether.
+  return undefined;
+}
 
 function getPublishValue(newPublish: ?Array<Object>, oldNext: NextItem) {
   if(newPublish && newPublish.length) {
