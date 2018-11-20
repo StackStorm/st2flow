@@ -13,14 +13,16 @@ import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
 
 
-@connect(({ metaModel, navigationModel }) => ({ metaModel, navigationModel }))
+@connect(({ metaModel, navigationModel, actionsModel }) => ({ metaModel, navigationModel, actionsModel }))
 export default class Meta extends Component<{
   metaModel: ModelInterface,
   navigationModel: Object,
+  actionsModel: Object,
 }> {
   static propTypes = {
     metaModel: PropTypes.object,
     navigationModel: PropTypes.object,
+    actionsModel: PropTypes.object,
   }
 
   handleSectionSwitch(section: string) {
@@ -28,12 +30,14 @@ export default class Meta extends Component<{
   }
 
   render() {
-    const { metaModel, navigationModel } = this.props;
+    const { metaModel, navigationModel, actionsModel } = this.props;
     const { section = 'meta' } = navigationModel.current;
 
     if (!metaModel) {
       return false;
     }
+
+    const packs = [ ...new Set(actionsModel.actions.map(a => a.pack)).add(metaModel.get('pack')) ];
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
@@ -43,7 +47,7 @@ export default class Meta extends Component<{
       section === 'meta' && (
         <Panel key="meta">
           <EnumField name="Runner Type" value={metaModel.get('runner_type')} spec={{enum: [ 'mistral', 'orquesta', 'action-chain' ]}} onChange={(v) => metaModel.set('runner_type', v)} />
-          <EnumField name="Pack" value={metaModel.get('pack')} spec={{enum: [ 'some', 'thing', 'else' ]}} onChange={(v) => metaModel.set('pack', v)} />
+          <EnumField name="Pack" value={metaModel.get('pack')} spec={{enum: packs}} onChange={(v) => metaModel.set('pack', v)} />
           <StringField name="Name" value={metaModel.get('name')} onChange={(v) => metaModel.set('name', v)} />
           <StringField name="Description" value={metaModel.get('description')} onChange={(v) => metaModel.set('description', v)} />
           <BooleanField name="Enabled" value={metaModel.get('enabled')} spec={{}} onChange={(v) => metaModel.set('enabled', v)} />
