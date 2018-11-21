@@ -254,6 +254,12 @@
     margin-bottom: 12px;
   }
 
+  &-publish-line {
+    grid-template-columns: 1fr 1fr auto;
+
+    grid-gap: 12px;
+  }
+
   &-label {
     grid-column: 1;
     color: var(--gray-dull);
@@ -264,8 +270,12 @@
     grid-column: 2;
   }
 
-  &-publish-label {
-    text-align: right;
+  &-publish-key {
+    grid-column: 1;
+  }
+
+  &-publish-value {
+    grid-column: 2;
   }
 
   &-button {

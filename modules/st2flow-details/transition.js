@@ -113,29 +113,21 @@ export default class Transition extends Component<{
           const val = obj[key];
 
           return (
-            <div className={this.style.transitionLine} key={`publish-${key}`} >
-              <div className={cx(this.style.transitionLabel, this.style.transitionPublishLabel)}>
-                Key:
-              </div>
-              <div className={this.style.transitionField}>
+            <div className={cx(this.style.transitionLine, this.style.transitionPublishLine)} key={`publish-${key}`} >
+              <div className={this.style.transitionPublishKey}>
                 <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
+              </div>
+              <div className={this.style.transitionPublishValue}>
+                <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
               </div>
               <div className={this.style.transitionButton}>
                 <i className="icon-delete" onClick={() => this.removePublishField(i)} />
-              </div>
-              <div className={cx(this.style.transitionLabel, this.style.transitionPublishLabel)}>
-                Value:
-              </div>
-              <div className={this.style.transitionField}>
-                <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
               </div>
             </div>
           );
         })}
         <div className={this.style.transitionLine}>
-          <div className={this.style.transitionField}>
-            <i className="icon-plus" onClick={this.addPublishField} />
-          </div>
+          <i className="icon-plus" onClick={this.addPublishField} />
         </div>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
