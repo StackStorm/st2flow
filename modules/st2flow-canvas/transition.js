@@ -10,6 +10,7 @@ import cx from 'classnames';
 import Vector from './vector';
 import { origin, ORBIT_DISTANCE } from './const';
 import Path from './path/';
+import Line from './path/line';
 import type { Task } from './task';
 
 import style from './style.css';
@@ -98,7 +99,7 @@ export default class TransitionGroup extends Component<{
     const fromAnchor = ANCHORS[from.anchor];
     const fromControl = CONTROLS[from.anchor];
     const fromCoords = new Vector(from.task.coords).add(origin);
-    const fromSize = new Vector(from.task.size);
+    const fromSize = new Vector(from.task && from.task.size);
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
     const fromOrbit = fromControl.multiply(ORBIT_DISTANCE).add(fromPoint);
@@ -117,9 +118,15 @@ export default class TransitionGroup extends Component<{
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-
     const taskElements: Array<?HTMLElement> = Object.keys(taskRefs).map((key: string): ?HTMLElement => {
       const task = taskRefs[key].current;
+
+      // Filter out path start and end points, which produce false positives
+      if(this.props.from.task && task.props.task.name === this.props.from.task.name
+        || this.props.to.task && task.props.task.name === this.props.to.task.name) {
+        return null;
+      }
+
       if(task.taskRef.current instanceof HTMLElement) {
         return task.taskRef.current;
       }
@@ -144,52 +151,86 @@ export default class TransitionGroup extends Component<{
       const Matrix = 'DOMMatrix' in window ? window.DOMMatrix : window.WebKitCSSMatrix;
       const coords = new Matrix(matrixString);
 
-      // NEXT STEPS:  Too many things are intersecting and I think it's because the
-      // paths are being compared against the boxes they come from and go to.
-      // Filter those out, and then try again.
-
       return {
-        left: coords.m41,
-        top: coords.m42,
-        bottom: coords.m42 + element.offsetHeight,
-        right: coords.m41 + element.offsetWidth,
+        left: coords.m41 - ORBIT_DISTANCE / 2,
+        top: coords.m42 - ORBIT_DISTANCE / 2,
+        bottom: coords.m42 + element.offsetHeight + ORBIT_DISTANCE / 2,
+        right: coords.m41 + element.offsetWidth + ORBIT_DISTANCE / 2,
         midpointY: coords.m42 + element.offsetHeight / 2,
         midpointX: coords.m41 + element.offsetWidth / 2,
       };
     });
 
-    function doesPathIntersectBox(path: Path, box: BoundingBox): boolean {
-      let result = false;
-      let origin = path.origin;
-      path.elements.forEach(line => {
-        const newPos = line.calcNewPosition(origin);
-        const withinY = !(
-          newPos.y < box.top && origin.y < box.top ||
-          newPos.y > box.bottom && origin.y > box.bottom
-        );
-        const withinX = !(
-          newPos.x < box.left && origin.x < box.left ||
-          newPos.x > box.right && origin.x > box.right
-        );
-        if(withinX && withinY) {
-          result = true;
-        }
-        origin = newPos;
-      });
-      return result;
+    function doesPathSegmentIntersectBox(line: Line, origin: Vector, box: BoundingBox): boolean {
+      const newPos = line.calcNewPosition(origin);
+      const withinY = !(
+        newPos.y < box.top && origin.y < box.top ||
+        newPos.y > box.bottom && origin.y > box.bottom
+      );
+      const withinX = !(
+        newPos.x < box.left && origin.x < box.left ||
+        newPos.x > box.right && origin.x > box.right
+      );
+      return withinX && withinY;
     }
 
 
-    path.moveTo(fromOrbit);
-    path.moveTo(fromLagrange);
-    path.moveTo(toLagrange);
-    path.moveTo(toOrbit);
-    path.moveTo(toPoint);
+    [ fromOrbit, fromLagrange, toLagrange, toOrbit, toPoint ].forEach(nextPoint => {
+      let origin = path.currentPosition;
+      //const dir = path.currentDir;
+      path.moveTo(nextPoint);
+      let lastSegment: Line = path.elements.pop();
 
-    boundingBoxes.forEach(box => {
-      if(doesPathIntersectBox(path, box)) {
-        this.props = Object.create(this.props, { 'selected': {value:  true} });
-      }
+      boundingBoxes.forEach(box => {
+        if(doesPathSegmentIntersectBox(lastSegment, origin, box)) {
+
+          // cut box into quadrants so we know which direction to push the line around.
+          const ul: BoundingBox = { left: box.left, right: box.midpointX, top: box.top, bottom: box.midpointY, midpointX: NaN, midpointY: NaN };
+          const ur: BoundingBox = { left: box.midpointX, right: box.right, top: box.top, bottom: box.midpointY, midpointX: NaN, midpointY: NaN };
+          const ll: BoundingBox = { left: box.left, right: box.midpointX, top: box.midpointY, bottom: box.bottom, midpointX: NaN, midpointY: NaN };
+          const lr: BoundingBox = { left: box.midpointX, right: box.right, top: box.midpointY, bottom: box.bottom, midpointX: NaN, midpointY: NaN };
+
+          const ulint = doesPathSegmentIntersectBox(lastSegment, origin, ul);
+          const urint = doesPathSegmentIntersectBox(lastSegment, origin, ur);
+          const llint = doesPathSegmentIntersectBox(lastSegment, origin, ll);
+          const lrint = doesPathSegmentIntersectBox(lastSegment, origin, lr);
+
+          switch(lastSegment.direction) {
+            case 'up':
+            case 'down':
+              if(ulint || llint) {
+                path.moveTo(new Vector(box.left, origin.y));
+                origin = path.currentPosition;
+                path.moveTo(new Vector(box.left, nextPoint.y));
+                lastSegment = path.elements.pop();
+              }
+              if(urint || lrint) {
+                path.moveTo(new Vector(box.right, origin.y));
+                origin = path.currentPosition;
+                path.moveTo(new Vector(box.right, nextPoint.y));
+                lastSegment = path.elements.pop();
+              }
+              break;
+            case 'left':
+            case 'right':
+              if(ulint || urint) {
+                path.moveTo(new Vector(origin.x, box.top));
+                origin = path.currentPosition;
+                path.moveTo(new Vector(nextPoint.x, box.top));
+                lastSegment = path.elements.pop();
+              }
+              if(llint || lrint) {
+                path.moveTo(new Vector(origin.x, box.bottom));
+                origin = path.currentPosition;
+                path.moveTo(new Vector(nextPoint.x, box.bottom));
+                lastSegment = path.elements.pop();
+              }
+              break;
+          }
+
+        }
+      });
+      path.elements.push(lastSegment);
     });
 
     return path.toString();
