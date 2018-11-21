@@ -12,6 +12,8 @@ import { origin, ORBIT_DISTANCE } from './const';
 import Path from './path/';
 import Line from './path/line';
 import type { Task } from './task';
+import astar, { Graph } from './astar';
+import type { GridNode } from './astar';
 
 import style from './style.css';
 
@@ -118,22 +120,6 @@ export default class TransitionGroup extends Component<{
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-    const taskElements: Array<?HTMLElement> = Object.keys(taskRefs).map((key: string): ?HTMLElement => {
-      const task = taskRefs[key].current;
-
-      // Filter out path start and end points, which produce false positives
-      if(this.props.from.task && task.props.task.name === this.props.from.task.name
-        || this.props.to.task && task.props.task.name === this.props.to.task.name) {
-        return null;
-      }
-
-      if(task.taskRef.current instanceof HTMLElement) {
-        return task.taskRef.current;
-      }
-      else {
-        return null;
-      }
-    }).filter(e => e);
     type BoundingBox = {|
       left: number,
       right: number,
@@ -142,96 +128,174 @@ export default class TransitionGroup extends Component<{
       midpointX: number,
       midpointY: number,
     |};
-    const boundingBoxes: Array<BoundingBox> = taskElements.map(element => {
-      if(!element) {
-        return { left: NaN, right: NaN, top: NaN, bottom: NaN, midpointX: NaN, midpointY: NaN };
-      }
+    const boundingBoxes: Array<BoundingBox> = Object.keys(taskRefs).map((key: string): BoundingBox => {
+      const task: TaskInterface = taskRefs[key].current.props.task;
 
-      const matrixString = getComputedStyle(element).getPropertyValue('transform');
-      const Matrix = 'DOMMatrix' in window ? window.DOMMatrix : window.WebKitCSSMatrix;
-      const coords = new Matrix(matrixString);
+      const coords = new Vector(task.coords).add(origin);
+      const size = new Vector(task.size);
 
       return {
-        left: coords.m41 - ORBIT_DISTANCE / 2,
-        top: coords.m42 - ORBIT_DISTANCE / 2,
-        bottom: coords.m42 + element.offsetHeight + ORBIT_DISTANCE / 2,
-        right: coords.m41 + element.offsetWidth + ORBIT_DISTANCE / 2,
-        midpointY: coords.m42 + element.offsetHeight / 2,
-        midpointX: coords.m41 + element.offsetWidth / 2,
+        left: coords.x - ORBIT_DISTANCE,
+        top: coords.y - ORBIT_DISTANCE,
+        bottom: coords.y + size.y + ORBIT_DISTANCE,
+        right: coords.x + size.x + ORBIT_DISTANCE,
+        midpointY: coords.y + size.y / 2,
+        midpointX: coords.x + size.x / 2,
       };
     });
 
-    function doesPathSegmentIntersectBox(line: Line, origin: Vector, box: BoundingBox): boolean {
-      const newPos = line.calcNewPosition(origin);
-      const withinY = !(
-        newPos.y < box.top && origin.y < box.top ||
-        newPos.y > box.bottom && origin.y > box.bottom
-      );
-      const withinX = !(
-        newPos.x < box.left && origin.x < box.left ||
-        newPos.x > box.right && origin.x > box.right
-      );
-      return withinX && withinY;
-    }
-
-
-    [ fromOrbit, fromLagrange, toLagrange, toOrbit, toPoint ].forEach(nextPoint => {
-      let origin = path.currentPosition;
-      //const dir = path.currentDir;
-      path.moveTo(nextPoint);
-      let lastSegment: Line = path.elements.pop();
-
-      boundingBoxes.forEach(box => {
-        if(doesPathSegmentIntersectBox(lastSegment, origin, box)) {
-
-          // cut box into quadrants so we know which direction to push the line around.
-          const ul: BoundingBox = { left: box.left, right: box.midpointX, top: box.top, bottom: box.midpointY, midpointX: NaN, midpointY: NaN };
-          const ur: BoundingBox = { left: box.midpointX, right: box.right, top: box.top, bottom: box.midpointY, midpointX: NaN, midpointY: NaN };
-          const ll: BoundingBox = { left: box.left, right: box.midpointX, top: box.midpointY, bottom: box.bottom, midpointX: NaN, midpointY: NaN };
-          const lr: BoundingBox = { left: box.midpointX, right: box.right, top: box.midpointY, bottom: box.bottom, midpointX: NaN, midpointY: NaN };
-
-          const ulint = doesPathSegmentIntersectBox(lastSegment, origin, ul);
-          const urint = doesPathSegmentIntersectBox(lastSegment, origin, ur);
-          const llint = doesPathSegmentIntersectBox(lastSegment, origin, ll);
-          const lrint = doesPathSegmentIntersectBox(lastSegment, origin, lr);
-
-          switch(lastSegment.direction) {
-            case 'up':
-            case 'down':
-              if(ulint || llint) {
-                path.moveTo(new Vector(box.left, origin.y));
-                origin = path.currentPosition;
-                path.moveTo(new Vector(box.left, nextPoint.y));
-                lastSegment = path.elements.pop();
-              }
-              if(urint || lrint) {
-                path.moveTo(new Vector(box.right, origin.y));
-                origin = path.currentPosition;
-                path.moveTo(new Vector(box.right, nextPoint.y));
-                lastSegment = path.elements.pop();
-              }
-              break;
-            case 'left':
-            case 'right':
-              if(ulint || urint) {
-                path.moveTo(new Vector(origin.x, box.top));
-                origin = path.currentPosition;
-                path.moveTo(new Vector(nextPoint.x, box.top));
-                lastSegment = path.elements.pop();
-              }
-              if(llint || lrint) {
-                path.moveTo(new Vector(origin.x, box.bottom));
-                origin = path.currentPosition;
-                path.moveTo(new Vector(nextPoint.x, box.bottom));
-                lastSegment = path.elements.pop();
-              }
-              break;
+    /*  Let I be the set of interesting points (x, y) in the diagram, i.e. the connector
+    points and corners of the bounding box of each object. Let XI be the set of x
+    coordinates in I and YI the set of y coordinates in I. The orthogonal visibility
+    graph V G = (V, E) is made up of nodes V ⊆ XI × YI s.t. (x, y) ∈ V iff there
+    exists y0 s.t. (x, y0) ∈ I and there is no intervening object between (x, y) and
+    (x, y0) and there exists x0 s.t. (x0, y) ∈ I and there is no intervening object
+    between (x, y) and (x0, y). There is an edge e ∈ E between each point in V to its
+    nearest neighbour to the north, south, east and west iff there is no intervening
+    object in the original diagram */
+    const I = [].concat(...boundingBoxes.map(box => {
+      return [
+        { x: box.left, y: box.top },
+        { x: box.left, y: box.bottom },
+        { x: box.right, y: box.top },
+        { x: box.right, y: box.bottom },
+        // our connectors are currently at the midpoints of each edge.
+        //  That can be changed here.
+        { x: box.left, y: box.midpointY },
+        { x: box.midpointX, y: box.top },
+        { x: box.midpointX, y: box.bottom },
+        { x: box.right, y: box.midpointY },
+      ];
+    }));
+    const XI = I.reduce((a, i) => {
+      a[i.x] = a[i.x] || [];
+      a[i.x].push(i.y);
+      return a;
+    }, {});
+    const YI = I.reduce((a, i) => {
+      a[i.y] = a[i.y] || [];
+      a[i.y].push(i.x);
+      return a;
+    }, {});
+    const E = {};
+    const V = [].concat(...Object.keys(XI).map(_x => {
+      const x = +_x;
+      return Object.keys(YI).filter(_y => {
+        const y = +_y;
+        // optimization: find nearest neighbor first.
+        //  if nearest neighbors are blocked then all are.
+        let nearestNeighborUp = -Infinity;
+        let nearestNeighborDown = Infinity;
+        let nearestNeighborLeft = -Infinity;
+        let nearestNeighborRight = Infinity;
+        YI[y].forEach(_x => {
+          // x > _x means _x is to the left
+          if(x !== _x) {
+            if(x > _x && _x > nearestNeighborLeft) {
+              nearestNeighborLeft = _x;
+            }
+            if(x < _x && _x < nearestNeighborRight) {
+              nearestNeighborRight = _x;
+            }
           }
+        });
+        XI[x].forEach(_y => {
+          // y > _y means _y is above
+          if(y !== _y) {
+            if(y > _y && _y > nearestNeighborUp) {
+              nearestNeighborUp = _y;
+            }
+            if(y < _y && _y < nearestNeighborDown) {
+              nearestNeighborDown = _y;
+            }
+          }
+        });
 
+        boundingBoxes.forEach(box => {
+          // Make visibility checks.  If a box is beween (x, y) and the nearest "interesting" neighbor,
+          // (interesting neighbors are the points in I which share either an X or Y coordinate)
+          // remove that nearest neighbor.
+          if(nearestNeighborUp > -Infinity) {
+            if(x > box.left && x < box.right && y > box.top && nearestNeighborUp < box.bottom) {
+              nearestNeighborUp = -Infinity;
+            }
+          }
+          if(nearestNeighborDown < Infinity) {
+            if(x > box.left && x < box.right && y < box.bottom && nearestNeighborDown > box.top) {
+              nearestNeighborDown = Infinity;
+            }
+          }
+          if(nearestNeighborLeft > -Infinity) {
+            if(y > box.top && y < box.bottom && x > box.left && nearestNeighborLeft < box.right) {
+              nearestNeighborLeft = -Infinity;
+            }
+          }
+          if(nearestNeighborRight < Infinity) {
+            if(y > box.top && y < box.bottom && x < box.right && nearestNeighborRight > box.left) {
+              nearestNeighborRight = Infinity;
+            }
+          }
+        });
+
+        if (XI[x].indexOf(y) > -1 ||
+          (nearestNeighborUp !== -Infinity ||
+             nearestNeighborDown !== Infinity) &&
+            (nearestNeighborLeft !== -Infinity ||
+             nearestNeighborRight !== Infinity)
+        ) {
+          E[`${x}|${y}`] = E[`${x}|${y}`] || [];
+          if(nearestNeighborUp !== -Infinity) {
+            // for what to put in the graph edges, now we want to look
+            // at any point in V, not just interesting ones.
+            // If there exists a point of interest (x, yi) such that there
+            // is no bounding box in V
+            nearestNeighborUp = Object.keys(YI).reduce((bestY, _yStr) => {
+              const _y = +_yStr;
+              return _y < y && _y > bestY ? _y : bestY;
+            }, nearestNeighborUp);
+            E[`${x}|${y}`].push({x, y: nearestNeighborUp});
+          }
+          if(nearestNeighborDown !== Infinity) {
+            nearestNeighborDown = Object.keys(YI).reduce((bestY, _yStr) => {
+              const _y = +_yStr;
+              return _y > y && _y < bestY ? _y : bestY;
+            }, nearestNeighborDown);
+            E[`${x}|${y}`].push({x, y: nearestNeighborDown});
+          }
+          if(nearestNeighborLeft !== -Infinity) {
+            nearestNeighborLeft = Object.keys(XI).reduce((bestX, _xStr) => {
+              const _x = +_xStr;
+              return _x < x && _x > bestX ? _x : bestX;
+            }, nearestNeighborLeft);
+            E[`${x}|${y}`].push({x: nearestNeighborLeft, y});
+          }
+          if(nearestNeighborRight !== Infinity) {
+            nearestNeighborRight = Object.keys(XI).reduce((bestX, _xStr) => {
+              const _x = +_xStr;
+              return _x > x && _x < bestX ? _x : bestX;
+            }, nearestNeighborRight);
+            E[`${x}|${y}`].push({x: nearestNeighborRight, y});
+          }
+          return true;
         }
-      });
-      path.elements.push(lastSegment);
+        else {
+          return false;
+        }
+      }).map(y => ({ x, y: +y }));
+    }));
+
+    // now for the A* algorithm
+    const pathElements = astar.search(
+      V,
+      E,
+      fromPoint.add(new Vector(0, ORBIT_DISTANCE)),
+      toPoint.add(new Vector(0, -ORBIT_DISTANCE/2))
+    );
+
+    pathElements.forEach(nextPoint => {
+      path.moveTo(new Vector(nextPoint.x, nextPoint.y));
     });
+    path.moveTo(toPoint);
 
     return path.toString();
   }
@@ -294,6 +358,18 @@ export default class TransitionGroup extends Component<{
         {...props}
       />
     ));
+
+    // TODO: make this debug routine a const var and add to the return concats below.
+    // this.state && this.state.graph && [ Object.keys(this.state.graph.grid).map(e => {
+    //   const [ x, y ] = e.split('|');
+    //   return this.state.graph.grid[e].map(et => {
+    //     const [ xt, yt ] = et.split('|');
+    //     return <path key={e+et} stroke="red" strokeWidth="1" d={`M ${x} ${y} L ${xt} ${yt}`} />;
+    //   });
+    // }).concat(Object.values(this.state.graph.nodes).map((node: GridNode) => {
+    //   const { x, y } = node;
+    //   return <circle key={`${node.x}|${node.y}`} cx={x} cy={y} r="3" fill="black" />;
+    // })) ],
 
     return [ markers ]
       .concat(activeBorders)
