@@ -340,7 +340,12 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         break;
     }
 
-    crawler.set(this.tokenSet, key, value);
+    if(value === undefined) {
+      crawler.deleteMappingItem(this.tokenSet, key);
+    }
+    else {
+      crawler.set(this.tokenSet, key, value);
+    }
 
     this.endMutation(oldTree);
   }

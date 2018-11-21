@@ -23,7 +23,7 @@ describe('TokenSet', () => {
         expect(set.toYAML()).to.equal(yaml);
       });
 
-      it.skip(`refining maintains source identity with ${filename}`, () => {
+      it(`refining maintains source identity with ${filename}`, () => {
         set.refineTree();
         expect(set.toYAML()).to.equal(yaml);
       });

@@ -9,12 +9,15 @@ import style from './style.css';
 export const specialProperties = [{
   name: 'required',
   description: 'The parameter could not be ommited',
+  value: false,
 }, {
   name: 'immutable',
   description: 'Prevent parameter from being overritten',
+  value: false,
 }, {
   name: 'secret',
   description: 'Mark parameter value as sensitive',
+  value: false,
 }];
 
 export default class Parameter extends Component<{

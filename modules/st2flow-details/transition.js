@@ -72,6 +72,17 @@ export default class Transition extends Component<{
     this.props.onChange('publish', publish);
   }
 
+  removePublishField = (index) => {
+    const { transition: { publish }, onChange } = this.props;
+    publish.splice(index, 1);
+
+    if(!publish.length) {
+      this.setState({ publishOn: false });
+    }
+
+    onChange('publish', publish);
+  }
+
   render() {
     const { transition, onChange } = this.props;
     const { publishOn } = this.state;
@@ -108,6 +119,9 @@ export default class Transition extends Component<{
               </div>
               <div className={this.style.transitionField}>
                 <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
+              </div>
+              <div className={this.style.transitionButton}>
+                <i className="icon-delete" onClick={() => this.removePublishField(i)} />
               </div>
               <div className={cx(this.style.transitionLabel, this.style.transitionPublishLabel)}>
                 Value:

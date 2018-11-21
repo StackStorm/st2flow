@@ -29,7 +29,7 @@ describe('st2flow-model: Meta Model', () => {
       }
     });
 
-    it.skip('writes meta-basic.json', () => {
+    it('writes meta-basic.json', () => {
       expect(model.toYAML()).to.equal(raw);
     });
 

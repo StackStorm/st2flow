@@ -178,14 +178,14 @@ class TaskDetails extends Component<{
                   <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleTaskProperty('join', 'all')}>
                     Join all tasks
                   </div>
-                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', (this.joinFieldRef.current || {}).value)} >
-                    Join <input type="text" id="joinField"  size="3" className={this.style.radioField}  ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', e.target.value)} /> tasks
+                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value, 10))} >
+                    Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value, 10))} /> tasks
                   </label>
                 </div>
               )
             }
           </Property>
-          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in [1, 2, 3]' } : false)}>
+          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in <% ctx(y) %>' } : false)}>
             {
               task.with && (
                 <div className={this.style.propertyChild}>
@@ -226,8 +226,11 @@ class TaskList extends Component<{
   render() {
     const { model, navigationModel } = this.props;
 
-    return (
-      <Panel className={this.style.taskPanel}>
+    return ([
+      <Toolbar key="toolbar" secondary={true}>
+        <h4 className={this.style.taskListTitle}>Workflow Tasks</h4>
+      </Toolbar>,
+      <Panel key="panel" className={this.style.taskPanel}>
         {
           model.tasks.map(task => (
             <Task
@@ -237,8 +240,8 @@ class TaskList extends Component<{
             />
           ))
         }
-      </Panel>
-    );
+      </Panel>,
+    ]);
   }
 }
 
@@ -279,8 +282,11 @@ class Task extends Component<{
         className={this.style.task}
         onClick={this.handleClick}
       >
-        <div className={this.style.taskName}>{ task.name }</div>
-        <div className={this.style.taskAction}>{ task.action }</div>
+        <div className={this.style.taskInfo}>
+          <div className={this.style.taskName}>{ task.name }</div>
+          <div className={this.style.taskAction}>{ task.action }</div>
+        </div>
+        <i className={cx('icon-chevron_right', this.style.taskArrow)} />
       </div>
     );
   }
