@@ -22,7 +22,7 @@ export class Path {
     if(xMove) {
       if(this.elements.length && (dir === 'left' || dir === 'right')) {
         xLine = this.elements.pop();
-        xLine = new Line(xLine.px += (newPosition.x - pos.x) * (dir === 'left' ? -1 : 1), xLine.direction);
+        xLine = new Line(xLine.px + (newPosition.x - pos.x) * (dir === 'left' ? -1 : 1), xLine.direction);
       }
       else {
         xLine = new Line(
