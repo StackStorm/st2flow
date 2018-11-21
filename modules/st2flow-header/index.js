@@ -11,26 +11,55 @@ import style from './style.css';
 
 export default class Header extends Component<{
   className?: string,
+}, {
+  showDropdown: bool,
 }> {
   static propTypes = {
     className: PropTypes.string,
   }
 
+  state = {
+    showDropdown: false,
+  }
+
   style = style
 
+  handleToggleDropdown(e: Event) {
+    e.stopPropagation();
+
+    const { showDropdown } = this.state;
+
+    this.setState({ showDropdown: !showDropdown });
+  }
+
+  handleLogout(e: Event) {
+    e.stopPropagation();
+
+    api.disconnect();
+    window.location.reload();
+  }
+
   render() {
+    const { showDropdown } = this.state;
+
     return (
       <div className={cx(this.props.className, this.style.component)}>
         <div className={this.style.logo}>Extreme</div>
         <div className={this.style.subtitle}>Workflow Designer</div>
         <div className={this.style.separator} />
         {
-          api.token && api.server && ([
-            <div className={this.style.user} key="user-info" >
+          api.token && api.server && (
+            <div className={this.style.user} onClick={e => this.handleToggleDropdown(e)} >
               { api.token.user }@{ url.parse(api.server.api).host }
-            </div>,
-            <i className={cx('icon-user', this.style.icon)}  key="user-icon" />,
-          ])
+              <i className={cx('icon-user', this.style.icon)} />
+              { showDropdown && (
+                <div className={this.style.dropdown}>
+                  <div className={this.style.dropdownBackdrop} onClick={e => this.handleToggleDropdown(e)} />
+                  <div className={this.style.dropdownItem} onClick={e => this.handleLogout(e)}>logout</div>
+                </div>
+              )}
+            </div>
+          )
         }
       </div>
     );
