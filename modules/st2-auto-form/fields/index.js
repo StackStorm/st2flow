@@ -5,6 +5,7 @@ import IntegerField from './integer';
 import NumberField from './number';
 import ObjectField from './object';
 import PasswordField from './password';
+import SelectField from './select';
 import StringField from './string';
 
 export {
@@ -15,5 +16,6 @@ export {
   NumberField,
   ObjectField,
   PasswordField,
+  SelectField,
   StringField,
 };

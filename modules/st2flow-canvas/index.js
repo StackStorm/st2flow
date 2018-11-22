@@ -245,17 +245,17 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
+    this.props.navigationModel.change({ task: task.name, toTasks: undefined, type: 'execution', section: 'input' });
   }
 
-  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
+  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
+    this.props.navigationModel.change({ task: transition.from.name, toTasks: transition.to.map(t => t.name), type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
+    this.props.navigationModel.change({ task: undefined, toTasks: undefined, section: undefined, type: 'metadata' });
   }
 
   handleModelChange = () => {
@@ -288,7 +288,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ toTask: undefined, task: task.name });
+    this.props.navigationModel.change({ toTasks: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
@@ -357,6 +357,8 @@ export default class Canvas extends Component<{
                       task: model.tasks.find(({ name }) => name === transition.from.name),
                       anchor: 'bottom',
                     };
+                    const { task, toTasks = [] } = navigationModel.current;
+                    const selected = transition.from.name === task && transition.to.every(t => toTasks.includes(t.name));
                     transition.to.forEach(tto => {
                       const to = {
                         task: model.tasks.find(({ name }) => name === tto.name),
@@ -367,8 +369,8 @@ export default class Canvas extends Component<{
                           key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
                           from={from}
                           to={to}
-                          selected={transition.from.name === navigationModel.current.task && tto.name === navigationModel.current.toTask}
-                          onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
+                          selected={selected}
+                          onClick={(e) => this.handleTransitionSelect(e, transition)}
                         />
                       );
                     });

@@ -62,7 +62,7 @@ class TaskDetails extends Component<{
     const { model, selected } = this.props;
     model && model.updateTask({ name: ref }, { name });
     if (selected === ref) {
-      this.props.navigationModel.change({ toTask: undefined, task: name });
+      this.props.navigationModel.change({ toTasks: undefined, task: name });
     }
     this.setState({ rename: false });
   }
@@ -86,7 +86,7 @@ class TaskDetails extends Component<{
   handleTransitionProperty(transition: TransitionRefInterface, name, value) {
     const { model } = this.props;
 
-    if (value) {
+    if (value !== null && value !== void 0) {
       model.setTransitionProperty(transition, name, value);
     }
     else {
@@ -103,10 +103,11 @@ class TaskDetails extends Component<{
 
   render() {
     const { model, selected, onBack, actions, navigationModel } = this.props;
-    const { section = 'input' } = navigationModel.current;
+    const { section = 'input', toTasks } = navigationModel.current;
     const { name, rename } = this.state;
 
     const task = selected && model.tasks.find(task => task.name === selected);
+    const taskNames = selected && model.tasks.map(task => task.name);
 
     if (!task) {
       return false;
@@ -200,7 +201,11 @@ class TaskDetails extends Component<{
       section === 'transitions' && (
         <Panel key="transitions">
           {
-            (transitions || []).map((transition, index) => <Transition key={index} transition={transition} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />)
+            (transitions || []).map((transition, index) => {
+              // TODO: this logic could result in false positives - we need to compare conidtions too
+              const selected = toTasks && transition.to.every((t, i) => toTasks[i] === t.name);
+              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />
+            })
           }
           <div className={this.style.transitionInfo}>
             To add a transition, hover over a task box and drag the connector to the desired task box you want to transition to.
@@ -325,11 +330,11 @@ export default class Details extends Component<{
   style = style
 
   handleTaskSelect(task: TaskInterface) {
-    this.props.navigationModel.change({ toTask: undefined, task: task.name });
+    this.props.navigationModel.change({ toTasks: undefined, task: task.name });
   }
 
   handleBack() {
-    this.props.navigationModel.change({ toTask: undefined, task: undefined });
+    this.props.navigationModel.change({ toTasks: undefined, task: undefined });
   }
 
   render() {
