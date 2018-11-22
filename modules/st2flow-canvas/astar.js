@@ -21,12 +21,21 @@ function getHeap() {
 }
 
 
-/* entries in the priority queue have form (v, D, lv, bv, p, cv) where v is the
-node in the orthogonal visibility graph, D is the “direction of entry” to the node,
-6
-lv is the length of the partial path from s to v and bv the number of bends in
-the partial path, p a pointer to the parent entry (so that the final path can be
-reconstructed), and cv the cost of the partial path. There is at most one entry
+/*
+Notes from B. Momberger on 2018-11-21: the following is an exceprt from
+https://pdfs.semanticscholar.org/9f60/6a3b611e6ab7c2bcd4c1f79fb8585dda8be2.pdf
+and
+
+
+[E]ntries in the priority queue have form (v, D, lv, bv, p, cv) where:
+ v is the node in the orthogonal visibility graph;
+ D is the “direction of entry” to the node;
+ lv is the length of the partial path from s (start node) to v;
+ bv the number of *bends* in the partial path;
+ p a pointer to the parent entry (so that the final path can be reconstructed);
+ and cv the cost of the partial path.
+
+There is at most one entry
 popped from the queue for each (v, D) pair. When an entry (v, D, lv, bv, p, cv)
 is scheduled for addition to the priority queue, it is only added if no entry with
 the same (v, D) pair has been removed from the queue, i.e. is on the closed list.
@@ -34,9 +43,31 @@ And only the entry with lowest cost for each (v, D) pair is kept on the priority
 queue.
 When we remove entry (v, D, lv, bv, p, cv) from the priority queue we
 1. add the neighbour (v0, D) in the same direction with priority
-    f(lv+||(v, v0)||1+||(v0, d)||1, sv + sd);
+    f(lv + ||(v, v0)||1 + ||(v0, d)||1, sv + sd);
+    another way of saying that first arg is the sum of how far we've come, how far we're going, and how far we'll have left to go.
+    and for the second... sv isn't actually specified in the paper. but i think it's the cost of the node up to know
 2. add the neighbours (v0, right(D)) and (v0, left(D)) at right angles to the entry
   with priority f(lv + ||(v, v0)||1 + ||(v0, d)||1, sv + 1 + sd);
+  So turning adds one cost to the path (1 + sd);
+
+Let dirns((x1, y1), (x2, y2)) be the set of cardinal directions of the line (x1, y1) to (x2, y2)
+Range[dirns] = { {N}, {S}, {E}, {W}, {N,E}, {N,W}, {S,E}, {S,W} }
+Let left() and right() be bijective functions over the range of dirns(), inverse of each other
+   (the mapping of left() and right() should be intuitive)
+Let reverse() be a bijective function over the range of dirns()
+
+sd is the estimation of the remaining segments required for the route from
+(v0, D0) to (d, Dd). The estimation of the remaining segments required is: sd =...
+
+0: if D0 = Dd and dirns(v0, d) = {D0};  (if we are moving straight towards the destination in the final direction)
+1: if left(Dd) = D0 ∨ right(Dd) = D0
+    and D0 ∈ dirns(v0, d); (i.e. if you can turn 90 degrees or less to the final direction)
+2: if D0 = Dd and dirns(v0, d) != {D0}
+    but D0 ∈ dirns(v0, d),
+    or D0 = reverse(Dd) and dirns(v0, d) != {Dd};  (two turns to chicane into alignment with Dd or turn around)
+3: if left(Dd) = D0 ∨ right(Dd) = D0 and D0 !∈ dirns(v0, d); (we're going away from d in a perpendicular direction to final)
+4: if D0 = reverse(Dd) and dirns(v0, d) = {Dd},
+    or D0 = Dd and D0 !∈ dirns(v0, d).  (going directly away from d in the opposite direction, or at d in the wrong direction)
 */
 
 
@@ -53,17 +84,21 @@ export const astar = {
   *          astar.heuristics).
   */
   search: function(
-    vertices: Array<{x: number, y: number}>,
-    edges: { [string]: Array<{x: number, y: number}> },
+    graph: Graph,
     _start: {x: number, y: number},
     _end: {x: number, y: number}) {
-    const graph = new Graph(vertices, edges);
     const start = graph.nodes[`${_start.x}|${_start.y}`];
     const end = graph.nodes[`${_end.x}|${_end.y}`];
+    if(!start || !end) {
+      return [];
+    }
 
     const heuristic = astar.heuristic;
 
     const openHeap = getHeap();
+
+    // make sure graph is clean
+    graph.init();
 
     start.h = heuristic(start, end);
 
@@ -88,7 +123,7 @@ export const astar = {
       for (let i = 0, il = neighbors.length; i < il; ++i) {
         const neighbor = neighbors[i];
 
-        if (neighbor.closed || neighbor.isWall()) {
+        if (neighbor.closed || graph.neighbors(neighbor).length < 2) {
           // Not a valid node to process, skip to next neighbor.
           continue;
         }
@@ -130,7 +165,7 @@ export const astar = {
     const d2 = Math.abs(pos1.y - pos0.y);
     return d1 + d2;
   },
-  cleanNode: function(node) {
+  cleanNode: function(node: GridNode) {
     node.f = 0;
     node.g = 0;
     node.h = 0;
@@ -189,12 +224,13 @@ export class GridNode {
   weight: number;
   // calculated forms
   f: number = 0;
-  g: number = 0; // cost of node plus cost of parent
+  g: number = 0; // cost of node plus cost of parent?
   h: number = 0;
   // traversal state
   visited: boolean = false;
   closed: boolean = false;
   parent: GridNode = null;
+  // direction: Direction = null;
 
   constructor(x, y, weight) {
     this.x = x;
@@ -208,14 +244,13 @@ export class GridNode {
 
   getCost(fromNeighbor: GridNode): number {
     // Take diagonal weight into consideration.
+    //
+    // Notes from B. Momberger on 2018-11-21 -- the block of comments
+    // at the top of this file should be here.
     if (fromNeighbor && fromNeighbor.x !== this.x && fromNeighbor.y !== this.y) {
       return this.weight * 1.41421;
     }
     return this.weight;
-  }
-
-  isWall(): boolean {
-    return this.weight === 0;
   }
 }
 
