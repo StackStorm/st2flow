@@ -203,8 +203,8 @@ class TaskDetails extends Component<{
           {
             (transitions || []).map((transition, index) => {
               // TODO: this logic could result in false positives - we need to compare conidtions too
-              const selected = toTasks && transition.to.every((t, i) => toTasks[i] === t.name);
-              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />
+              const selected = toTasks && toTasks.length === transition.to.length && transition.to.every((t, i) => toTasks[i] === t.name);
+              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />;
             })
           }
           <div className={this.style.transitionInfo}>
