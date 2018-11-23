@@ -240,7 +240,7 @@ class TaskDetails extends Component<{
 }
 
 @connect(
-  ({ tasks }) => ({ tasks }),
+  ({ flow: { tasks }}) => ({ tasks }),
   (dispatch) => ({
     navigate: (navigation) => dispatch({
       type: 'CHANGE_NAVIGATION',
