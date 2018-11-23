@@ -369,7 +369,7 @@ export default class Canvas extends Component<{
             </svg>
           </div>
         </div>
-        <Notifications position="top" notifications={this.notifications} />
+        <Notifications position="bottom" notifications={this.notifications} />
       </div>
     );
   }

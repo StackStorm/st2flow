@@ -42,6 +42,7 @@ class BaseClass {
 
   fromYAML(yaml: string): void {
     const { oldTree } = this.startMutation();
+    this.errors = [];
 
     try {
       this.tokenSet = new TokenSet(yaml);
