@@ -7,6 +7,25 @@ import MetaModel from '@stackstorm/st2flow-model/model-meta';
 const workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
 
+function workflowModelGetter(model) {
+  const { tasks, transitions, errors } = model;
+
+  return {
+    workflowSource: model.toYAML(),
+    ranges: getRanges(model),
+    tasks,
+    transitions,
+    errors,
+  };
+}
+
+function metaModelGetter(model) {
+  return {
+    metaSource: model.toYAML(),
+    meta: model.tokenSet.toObject(),
+  };
+}
+
 function getRanges(model) {
   const ranges = {};
   
@@ -67,30 +86,18 @@ const flowReducer = (state = {}, input) => {
 
       workflowModel[command](...args);
 
-      const { tasks, transitions, errors } = workflowModel;
-
       return {
         ...state,
-        workflowSource: workflowModel.toYAML(),
-        ranges: getRanges(workflowModel),
-        tasks,
-        transitions,
-        errors,
+        ...workflowModelGetter(workflowModel),
       };
     }
 
     case 'MODEL_LAYOUT' : {
       layout(workflowModel);
 
-      const { tasks, transitions, errors } = workflowModel;
-
       return {
         ...state,
-        workflowSource: workflowModel.toYAML(),
-        ranges: getRanges(workflowModel),
-        tasks,
-        transitions,
-        errors,
+        ...workflowModelGetter(workflowModel),
       };
     }
 
@@ -106,17 +113,7 @@ const flowReducer = (state = {}, input) => {
 
       return {
         ...state,
-        metaSource: metaModel.toYAML(),
-        meta: metaModel.tokenSet.toObject(),
-      };
-    }
-
-    case 'META_MODEL_CHANGE': {
-      const workflowSource = input.yaml;
-
-      return {
-        ...state,
-        workflowSource,
+        ...metaModelGetter(metaModel),
       };
     }
 
@@ -165,8 +162,120 @@ const flowReducer = (state = {}, input) => {
   }
 };
 
+const prevRecords = [];
+const nextRecords = [];
+
+const undoReducer = (prevState = {}, state = {}, input) => {
+  switch (input.type) {
+    case 'META_ISSUE_COMMAND':
+    case 'MODEL_LAYOUT':
+    case 'MODEL_ISSUE_COMMAND': {
+      const historyRecord = {};
+
+      if (prevState.workflowSource !== state.workflowSource) {
+        historyRecord.workflowSource = prevState.workflowSource;
+      }
+
+      if (prevState.metaSource !== state.metaSource) {
+        historyRecord.metaSource = prevState.metaSource;
+      }
+
+      if (Object.keys(historyRecord).length !== 0) {
+        prevRecords.push(historyRecord);
+      }
+
+      return state;
+    }
+
+    case 'FLOW_UNDO': {
+      const historyRecord = prevRecords.pop();
+
+      if (!historyRecord) {
+        return state;
+      }
+
+      const { workflowSource, metaSource } = historyRecord;
+      const futureRecord = {};
+
+      if (workflowSource !== undefined) {
+        futureRecord.workflowSource = state.workflowSource;
+
+        workflowModel.applyDelta(null, workflowSource);
+
+        state = {
+          ...state,
+          ...workflowModelGetter(workflowModel),
+        };
+      }
+
+      if (metaSource !== undefined) {
+        futureRecord.metaSource = state.metaSource;
+
+        metaModel.applyDelta(null, metaSource);
+
+        state = {
+          ...state,
+          ...metaModelGetter(metaModel),
+        };
+      }
+
+      nextRecords.push(futureRecord);
+
+      return state;
+    }
+
+    case 'FLOW_REDO': {
+      const historyRecord = nextRecords.pop();
+
+      if (!historyRecord) {
+        return state;
+      }
+
+      const { workflowSource, metaSource } = historyRecord;
+      const pastRecord = {};
+
+      if (workflowSource !== undefined) {
+        pastRecord.workflowSource = state.workflowSource;
+
+        workflowModel.applyDelta(null, workflowSource);
+
+        const { tasks, transitions, errors } = workflowModel;
+
+        state = {
+          ...state,
+          workflowSource: workflowModel.toYAML(),
+          ranges: getRanges(workflowModel),
+          tasks,
+          transitions,
+          errors,
+        };
+      }
+
+      if (metaSource !== undefined) {
+        pastRecord.metaSource = state.metaSource;
+
+        metaModel.applyDelta(null, metaSource);
+
+        state = {
+          ...state,
+          metaSource: metaModel.toYAML(),
+          meta: metaModel.tokenSet.toObject(),
+        };
+      }
+
+      prevRecords.push(pastRecord);
+
+      return state;
+    }
+
+    default:
+      return state;
+  }
+};
+
 const reducer = (state = {}, action) => {
-  state = flowReducer(state, action);
+  const nextState = flowReducer(state, action);
+  state = undoReducer(state, nextState, action);
 
   return state;
 };

@@ -32,8 +32,8 @@ import style from './style.css';
       promise: api.request({ path: '/actions/views/overview' })
         .catch(() => fetch('/actions.json').then(res => res.json())),
     }),
-    undo: () => console.log('TODO'),
-    redo: () => console.log('TODO'),
+    undo: () => dispatch({ type: 'FLOW_UNDO' }),
+    redo: () => dispatch({ type: 'FLOW_REDO' }),
     layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
   })
 )
