@@ -50,7 +50,7 @@ class BaseClass {
     catch (ex) {
       // The parser is overly verbose on certain errors, so
       // just grab the relevant parts. Also normalize it to an array.
-      const exception = ex.length > 2 ? ex.slice(0, 2) : [].concat(ex);
+      const exception = Array.isArray(ex) && ex.length > 2 ? ex.slice(0, 2) : [].concat(ex);
       this.yaml = yaml;
       this.emitError(exception, STR_ERROR_YAML);
 
@@ -110,6 +110,7 @@ class BaseClass {
     this.errors = [];
 
     const newTree = tokenSet.toObject();
+
     if(!ajv.validate(this.modelName, newTree)) {
       this.emitError(formatAjvErrors(ajv.errors), STR_ERROR_SCHEMA);
       return;

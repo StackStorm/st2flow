@@ -1,6 +1,7 @@
 //@flow
 
 import type { TaskInterface, DeltaInterface } from '@stackstorm/st2flow-model';
+import type { GenericError } from '@stackstorm/st2flow-model';
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -10,13 +11,13 @@ import cx from 'classnames';
 import ace from 'brace';
 import 'brace/ext/language_tools';
 import 'brace/mode/yaml';
-import Notifications from '@stackstorm/st2flow-notifications';
 
 import style from './style.css';
 
 const Range = ace.acequire('ace/range').Range;
 const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
+const DEFAULT_TAB_SIZE = 2;
 
 function workflowTransform(input, state) {
   return {
@@ -104,7 +105,6 @@ export default class Editor extends Component<{
     this.editor.$blockScrolling = Infinity;
     this.editor.setOptions({
       mode: 'ace/mode/yaml',
-      tabSize: 2,
       useSoftTabs: true,
       showPrintMargin: false,
       highlightActiveLine: false,
@@ -112,6 +112,7 @@ export default class Editor extends Component<{
 
     this.editor.renderer.setPadding(10);
     this.editor.setValue(source, -1);
+    this.setTabSize();
     this.editor.on('change', this.handleEditorChange);
 
     if(this.props.selectedTaskName) {
@@ -122,13 +123,17 @@ export default class Editor extends Component<{
   }
 
   componentDidUpdate(prevProps: Object) {
-    const { selectedTaskName, source } = this.props;
+    const { selectedTaskName, source, errors } = this.props;
     if (selectedTaskName !== prevProps.selectedTaskName) {
       this.handleTaskSelect({ name: selectedTaskName });
     }
 
     if (source !== prevProps.source) {
       this.handleModelChange([], source);
+    }
+
+    if (errors !== prevProps.errors) {
+      this.handleModelError(errors);
     }
   }
 
@@ -139,6 +144,13 @@ export default class Editor extends Component<{
     if(this.mountCallback) {
       clearTimeout(this.mountCallback);
     }
+  }
+
+  setTabSize() {
+    // const { model: { tokenSet } } = this.props;
+    const tokenSet = false;
+
+    this.editor.session.setTabSize(tokenSet ? tokenSet.indent.length : DEFAULT_TAB_SIZE);
   }
 
   handleTaskSelect(task: TaskInterface) {
@@ -174,9 +186,43 @@ export default class Editor extends Component<{
   }
 
   handleModelChange = (deltas: Array<DeltaInterface>, yaml: string) => {
+    this.clearErrorMarkers();
+    this.editor.session.setAnnotations([]);
+
     if (yaml !== this.editor.getValue()) {
       // yaml was changed outside this editor
       this.editor.setValue(yaml, -1);
+    }
+
+    this.setTabSize();
+  }
+
+  handleModelError = (err: Array<GenericError>) => {
+    const { session } = this.editor;
+    const annotations = [];
+
+    this.clearErrorMarkers();
+
+    this.errorMarkers = err.filter(e => !!e.mark).map((e, i) => {
+      const { line: row, column } = e.mark;
+      const selection = new Range(row, 0, row, Infinity);
+
+      annotations.push({
+        row,
+        column,
+        type: 'warning',
+        text: e.message,
+      });
+
+      return session.addMarker(selection, cx(this.style.errorLine), 'fullLine');
+    });
+
+    session.setAnnotations(annotations);
+  }
+
+  clearErrorMarkers() {
+    if(this.errorMarkers && this.errorMarkers.length) {
+      this.errorMarkers.forEach(m => this.editor.session.removeMarker(m));
     }
   }
 
@@ -190,26 +236,21 @@ export default class Editor extends Component<{
 
   editor: any;
   selectMarker: any;
+  errorMarkers: Array<any>;   // array of error markers
   deltaTimer = 0; // debounce timer
   mountCallback: any;
 
   style = style;
 
   render() {
+    const { errors } = this.props;
+
     return (
-      <div className={cx(this.props.className, this.style.component)}>
+      <div className={cx(this.props.className, this.style.component, { [this.style.hasError]: errors.length })}>
         <div
           id={editorId}
           className={this.style.editor}
         />
-        {!this.notifications.length ?
-          null : (
-            <Notifications
-              className={style.notifications}
-              position="top"
-              notifications={this.notifications}
-            />
-          )}
       </div>
     );
   }

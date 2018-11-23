@@ -1,12 +1,10 @@
 // @flow
 
 import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken, AnyToken, Refinement } from './types';
-import { get } from './util';
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
 
-const DEFAULT_INDENT = '  ';
 const STR_COLON = ':';
 const STR_DASH = '-';
 const STR_COMMA = ',';
@@ -15,7 +13,6 @@ const STR_CLOSE_CURLY = '}';
 const STR_OPEN_SQUARE = '[';
 const STR_CLOSE_SQUARE = ']';
 const STR_FIRST_TOKEN = 'mappings.0';
-const REG_INDENT = /\n( +)\S/;
 const REG_LEADING_SPACE = /^\s+/;
 const REG_ALL_WHITESPACE = /^\s*$/;
 const REG_JSON_START = /^\s*(?:[-:] )?[{[]/;
@@ -41,14 +38,13 @@ class Refinery {
   // used to determine whether or not we are refining JSON data
   jsonDepth: number = -1;
 
-  constructor(tree: TokenMapping, oldYaml: string = '') {
+  constructor(tree: TokenMapping, indent: string, oldYaml: string = '') {
     if(tree.kind !== 2) {
       throw new Error('Tree argument must be a mapping token');
     }
 
-    const match = oldYaml.match(REG_INDENT);
-    this.indent = match ? match[1] : DEFAULT_INDENT;
     this.tree = tree;
+    this.indent = indent;
     this.oldYaml = oldYaml;
   }
 
@@ -143,7 +139,6 @@ class Refinery {
       // always match this pattern: [..., 'items', 0, 'mappings', 0, 'key'].
       const isInCollection = tokenPath.length > 4 && tokenPath[tokenPath.length - 5] === 'items';
       if(isInCollection) {
-        const items = get(this.tree, tokenPath.slice(0, -4));
         const firstToken = crawler.findFirstValueToken(token);
 
         if(firstToken && firstToken.prefix.length) {

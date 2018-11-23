@@ -97,7 +97,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       return [];
     }
 
-    return tasks.__meta.keys.map(name => {
+    return tasks.__meta.keys.filter(n => !!tasks[n]).map(name => {
       const task = tasks[name];
 
       let coords = { x: 0, y: 0 };
@@ -146,7 +146,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }
 
     const transitions = Object.keys(tasks).reduce((arr, name) => {
-      if(name === '__meta') {
+      if(name === '__meta' || !tasks[name]) {
         return arr;
       }
 
