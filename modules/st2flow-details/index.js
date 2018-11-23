@@ -90,7 +90,7 @@ class TaskDetails extends Component<{
     issueModelCommand('updateTask', { name: ref }, { name });
 
     if (selected === ref) {
-      this.props.navigate({ toTask: undefined, task: name });
+      this.props.navigate({ toTasks: undefined, task: name });
     }
     this.setState({ rename: false });
   }
@@ -114,7 +114,7 @@ class TaskDetails extends Component<{
   handleTransitionProperty(transition: TransitionRefInterface, name, value) {
     const { issueModelCommand } = this.props;
 
-    if (value) {
+    if (value !== null && value !== void 0) {
       issueModelCommand('setTransitionProperty', transition, name, value);
     }
     else {
@@ -131,10 +131,11 @@ class TaskDetails extends Component<{
 
   render() {
     const { selected, onBack, actions, navigation, tasks, transitions } = this.props;
-    const { section = 'input' } = navigation;
+    const { section = 'input', toTasks } = navigation;
     const { name, rename } = this.state;
 
     const task = selected && tasks.find(task => task.name === selected);
+    const taskNames = selected && tasks.map(task => task.name);
 
     if (!task) {
       return false;
@@ -206,14 +207,14 @@ class TaskDetails extends Component<{
                   <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleTaskProperty('join', 'all')}>
                     Join all tasks
                   </div>
-                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value))} >
-                    Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value))} /> tasks
+                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value, 10))} >
+                    Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value, 10))} /> tasks
                   </label>
                 </div>
               )
             }
           </Property>
-          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: '{{ x in [1, 2, 3] }}' } : false)}>
+          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in <% ctx(y) %>' } : false)}>
             {
               task.with && (
                 <div className={this.style.propertyChild}>
@@ -228,7 +229,11 @@ class TaskDetails extends Component<{
       section === 'transitions' && (
         <Panel key="transitions">
           {
-            (trans || []).map((transition, index) => <Transition key={index} transition={transition} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />)
+            (trans || []).map((transition, index) => {
+              // TODO: this logic could result in false positives - we need to compare conidtions too
+              const selected = toTasks && toTasks.length === transition.to.length && transition.to.every((t, i) => toTasks[i] === t.name);
+              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />;
+            })
           }
           <div className={this.style.transitionInfo}>
             To add a transition, hover over a task box and drag the connector to the desired task box you want to transition to.
@@ -264,8 +269,11 @@ class TaskList extends Component<{
   render() {
     const { tasks, navigate } = this.props;
 
-    return (
-      <Panel className={this.style.taskPanel}>
+    return ([
+      <Toolbar key="toolbar" secondary={true}>
+        <h4 className={this.style.taskListTitle}>Workflow Tasks</h4>
+      </Toolbar>,
+      <Panel key="panel" className={this.style.taskPanel}>
         {
           tasks.map(task => (
             <Task
@@ -275,8 +283,8 @@ class TaskList extends Component<{
             />
           ))
         }
-      </Panel>
-    );
+      </Panel>,
+    ]);
   }
 }
 
@@ -312,8 +320,11 @@ class Task extends Component<{
         className={this.style.task}
         onClick={this.handleClick}
       >
-        <div className={this.style.taskName}>{ task.name }</div>
-        <div className={this.style.taskAction}>{ task.action }</div>
+        <div className={this.style.taskInfo}>
+          <div className={this.style.taskName}>{ task.name }</div>
+          <div className={this.style.taskAction}>{ task.action }</div>
+        </div>
+        <i className={cx('icon-chevron_right', this.style.taskArrow)} />
       </div>
     );
   }
@@ -356,11 +367,11 @@ export default class Details extends Component<{
   style = style
 
   handleTaskSelect = (task: TaskInterface) => {
-    this.props.navigate({ toTask: undefined, task: task.name });
+    this.props.navigate({ toTasks: undefined, task: task.name });
   }
 
   handleBack = () => {
-    this.props.navigate({ toTask: undefined, task: undefined });
+    this.props.navigate({ toTasks: undefined, task: undefined });
   }
 
   render() {

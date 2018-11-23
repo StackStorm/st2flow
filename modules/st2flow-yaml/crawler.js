@@ -450,7 +450,7 @@ const crawler = {
     }
 
     if(token) {
-      token = this.findFirstValueToken(token);
+      token = fromEnd ? this.findLastValueToken(token) : this.findFirstValueToken(token);
     }
 
     return token;

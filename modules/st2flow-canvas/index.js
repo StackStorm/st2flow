@@ -275,21 +275,21 @@ export default class Canvas extends Component<{
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigate({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
+    this.props.navigate({ task: task.name, toTasks: undefined, type: 'execution', section: 'input' });
   }
 
-  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
+  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface) => {
     e.stopPropagation();
-    this.props.navigate({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
+    this.props.navigate({ task: transition.from.name, toTasks: transition.to.map(t => t.name), type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.navigate({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
+    this.props.navigate({ task: undefined, toTasks: undefined, section: undefined, type: 'metadata' });
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigate({ toTask: undefined, task: task.name });
+    this.props.navigate({ toTasks: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
@@ -348,6 +348,8 @@ export default class Canvas extends Component<{
                       task: tasks.find(({ name }) => name === transition.from.name),
                       anchor: 'bottom',
                     };
+                    const { task, toTasks = [] } = navigation;
+                    const selected = transition.from.name === task && transition.to.every(t => toTasks.includes(t.name));
                     transition.to.forEach(tto => {
                       const to = {
                         task: tasks.find(({ name }) => name === tto.name),
@@ -358,8 +360,8 @@ export default class Canvas extends Component<{
                           key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
                           from={from}
                           to={to}
-                          selected={transition.from.name === navigation.task && tto.name === navigation.toTask}
-                          onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
+                          selected={selected}
+                          onClick={(e) => this.handleTransitionSelect(e, transition)}
                         />
                       );
                     });

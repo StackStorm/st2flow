@@ -4,9 +4,9 @@ import type { TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
-import StringField from '@stackstorm/module-auto-form/fields/string';
-import ArrayField from '@stackstorm/module-auto-form/fields/array';
+import { StringField, SelectField } from '@stackstorm/module-auto-form/fields';
 import { Toggle } from '@stackstorm/module-forms/button.component';
 
 import style from './style.css';
@@ -21,18 +21,107 @@ export default class Transition extends Component<{
 }> {
   static propTypes = {
     transition: PropTypes.object.isRequired,
+    taskNames: PropTypes.arrayOf(PropTypes.string),
+    selected: PropTypes.bool,
     onChange: PropTypes.func,
   }
 
+  constructor({ transition }) {
+    super();
+
+    this.state = {
+      publishOn: transition.publish && Object.keys(transition.publish).length > 0,
+    };
+  }
+
   style = style
+  cache = {} // used to cache togglable data
+
+  onPublishToggle = (val) => {
+    if(val) {
+      if(this.cache.publish) {
+        this.props.onChange('publish', this.cache.publish);
+        delete this.cache.publish;
+      }
+      else {
+        const { transition: { publish } } = this.props;
+
+        if(!publish || !publish.length) {
+          this.addPublishField();
+        }
+      }
+    }
+    else {
+      this.cache.publish = this.props.transition.publish;
+      this.props.onChange('publish', null);
+    }
+
+    this.setState({ publishOn: val });
+  }
+
+  handlePublishChange(index, key, value) {
+    const { transition: { publish }, onChange } = this.props;
+    const val = publish.slice(0);
+
+    // Make sure to mutate the copy
+    val[index] = { [key]: value };
+    onChange('publish', val);
+  }
+
+  handleDoChange(index, value) {
+    const { transition: { to }, onChange } = this.props;
+    const val = to.map(t => t.name);
+
+    // Make sure to mutate the copy
+    val[index] = value;
+    onChange('do', val);
+  }
+
+  addPublishField = () => {
+    const { transition: { publish }, onChange } = this.props;
+    const newVal = { key: '<% result().val %>' };
+    const val = this.state.publishOn ? publish.concat(newVal) : [ newVal ];
+
+    onChange('publish', val);
+  }
+
+  addDoItem = (value) => {
+    const { transition: { to }, onChange } = this.props;
+    const val = (to || []).map(t => t.name).concat(value);
+    onChange('do', val);
+  }
+
+  removePublishField = (index) => {
+    const { transition: { publish }, onChange } = this.props;
+    const val = publish.slice(0);
+
+    // make sure to splice the copy!
+    val.splice(index, 1);
+    if(!val.length) {
+      this.setState({ publishOn: false });
+    }
+
+    onChange('publish', val);
+  }
+
+  removeDoItem = (index) => {
+    const { transition: { to }, onChange } = this.props;
+    const val = to.map(t => t.name);
+
+    // make sure to splice the copy!
+    val.splice(index, 1);
+    onChange('do', val);
+  }
 
   render() {
-    const { transition, onChange } = this.props;
+    const { transition, taskNames, selected, onChange } = this.props;
+    const { publishOn } = this.state;
+    const to = transition.to.map(t => t.name);
+    const taskOptions = taskNames.map(n => ({ text: n, value: n }));
+    const publish = transition.publish;
 
-    const to = transition.to.map(({ name }) => name);
-    
     return (
-      <div className={this.style.transition}>
+      <div className={cx(this.style.transition, { [this.style.transitionSelected]: selected })}>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
             When
@@ -47,26 +136,57 @@ export default class Transition extends Component<{
             Publish
           </div>
           <div className={this.style.transitionField}>
-            <Toggle />
+            <Toggle value={publishOn} onChange={this.onPublishToggle} />
           </div>
         </div>
-        { transition.publish && (
-          <div className={this.style.transitionLine} >
-            <div className={this.style.transitionField}>
-              <StringField /><StringField />
-            </div>
-            <div className={this.style.transitionField}>
-              <i className="icon-plus2" />
-            </div>
-          </div>
-        )}
+        <div className={this.style.transitionPublish}>
+          {publish.map((obj, i) => {
+            const key = Object.keys(obj)[0];
+            const val = obj[key];
+
+            return (
+              <div className={this.style.transitionLine} key={`publish-${i}`} >
+                <div className={this.style.transitionPublishKey}>
+                  <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
+                </div>
+                <div className={this.style.transitionPublishValue}>
+                  <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
+                </div>
+                <div className={this.style.transitionButton}>
+                  <i className="icon-delete" onClick={() => this.removePublishField(i)} />
+                  {i ===  publish.length - 1 &&
+                    <i className="icon-plus" onClick={this.addPublishField} />
+                  }
+                </div>
+              </div>
+            );
+          })}
+        </div>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
             Do
           </div>
-          <div className={this.style.transitionField}>
-            <ArrayField value={to} onChange={v => onChange('do', v)} />
-          </div>
+          {to.length === 0 && (
+            <div className={this.style.transitionField}>
+              <SelectField spec={{ options: taskOptions }} onChange={v => this.addDoItem(v)} />
+            </div>
+          )}
+          {to.map((toName, i) => {
+            const options = taskOptions.filter(({ value }) => value === toName || !to.includes(value));
+            const key = options.map(o => o.value).join('_');
+
+            return ([
+              <div key={key} className={this.style.transitionField}>
+                <SelectField value={toName} spec={{ default: true, options }} onChange={v => this.handleDoChange(i, v)} />
+              </div>,
+              <div key={`${key}_delete`} className={this.style.transitionButton}>
+                <i className="icon-delete" onClick={() => this.removeDoItem(i)} />
+                {i === to.length - 1 && options.length &&
+                  <i className="icon-plus" onClick={() => this.addDoItem(options[0].value)} />
+                }
+              </div>,
+            ]);
+          })}
           <div className={this.style.transitionButton}>
             <i className="icon-plus2" />
           </div>

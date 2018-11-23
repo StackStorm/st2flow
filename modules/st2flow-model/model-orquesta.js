@@ -4,7 +4,7 @@ import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterfa
 import type { TokenMeta, JPath, JpathKey } from '@stackstorm/st2flow-yaml';
 
 import diff from 'deep-diff';
-import { crawler, util } from '@stackstorm/st2flow-yaml';
+import { crawler } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
 
 // The model schema is generated in the orquesta repo. Do not update it manually!
@@ -174,14 +174,14 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   addTask(task: TaskInterface) {
     const { oldTree } = this.startMutation();
     const { name, coords, ...data } = task;
+    const key = [ 'tasks', name ];
+
+    crawler.set(this.tokenSet, key, data);
 
     if(coords) {
-      util.defineExpando(data, '__meta', {
-        comments: `[${coords.x}, ${coords.y}]`,
-      });
+      crawler.setCommentForKey(this.tokenSet, key, `[${coords.x}, ${coords.y}]`);
     }
 
-    crawler.set(this.tokenSet, [ 'tasks', name ], data);
     this.endMutation(oldTree);
   }
 
@@ -256,28 +256,26 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   updateTransition(oldTransition: TransitionInterface, newData: $Shape<TransitionInterface>) {
     const { oldData, oldTree } = this.startMutation();
-    const { nextIndex: oldNextIndex, nextItem: oldNext, error } = getRawTransitionInfo(oldTransition, oldData);
+    const { nextItem: oldNext, jpath: oldKey, error } = getRawTransitionInfo(oldTransition, oldData);
 
     if(error) {
       this.emitError(error);
       return;
     }
 
-    const { publish: oldPublish, condition: oldCondition, from: oldFrom, to: oldTo } = oldTransition;
+    const { condition: oldCondition, from: oldFrom } = oldTransition;
     const { publish: newPublish, condition: newCondition, from: newFrom, to: newTo } = newData;
     const newFromName = newFrom && newFrom.name || oldFrom.name;
-    const oldKey = [ 'tasks', oldFrom.name, 'next', oldNextIndex ];
-
     const next: NextItem = {};
 
     if(newData.hasOwnProperty('to')) {
       if(newTo && newTo.length) {
         const names = newTo.map(t => t.name);
-        next.do = typeof oldNext.do === 'string' ? names.join(', ') : names;
+        next.do = getDoValue(names, oldNext);
       }
-      else if(oldTo.length) {
+      else {
         // newTo explicitly set to null or empty array, remove the "do" property
-        crawler.deleteMappingItem(this.tokenSet, oldKey.concat('do'));
+        next.do = undefined;
       }
     }
 
@@ -287,34 +285,25 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       }
       else if(oldCondition) {
         // newCondition explicitly set to null, remove the old condition
-        crawler.deleteMappingItem(this.tokenSet, oldKey.concat('when'));
+        next.when = undefined;
       }
     }
 
     if(newData.hasOwnProperty('publish')) {
-      if(newPublish && newPublish.length) {
-        if(oldPublish && typeof oldNext.publish === 'string') {
-          next.publish = newPublish.reduce((str, obj) => {
-            const key = Object.keys(obj)[0];
-            return `${str} ${key}=${obj[key]}`;
-          }, '').trim();
-        }
-        else {
-          next.publish = newPublish;
-        }
-      }
-      else if(oldPublish) {
-        // newPublish explicitly set to null or empty array, remove the old value
-        crawler.deleteMappingItem(this.tokenSet, oldKey.concat('publish'));
-      }
+      next.publish = getPublishValue(newPublish, oldNext);
     }
 
     const sameFrom = oldFrom.name === newFromName;
     if(sameFrom) {
       // Update the existing "old" object
-      Object.keys(next).forEach(k =>
-        crawler.set(this.tokenSet, oldKey.concat(k), next[k])
-      );
+      Object.keys(next).forEach(k => {
+        if(next[k] === null) {
+          crawler.deleteMappingItem(this.tokenSet, oldKey.concat(k));
+        }
+        else {
+          crawler.set(this.tokenSet, oldKey.concat(k), next[k]);
+        }
+      });
     }
     else {
       const newKey = [ 'tasks', newFromName, 'next' ];
@@ -337,14 +326,31 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   setTransitionProperty(transition: TransitionInterface, path: JpathKey, value: any) {
     const { oldData, oldTree } = this.startMutation();
-    const { jpath, error } = getRawTransitionInfo(transition, oldData);
+    const { nextItem, jpath, error } = getRawTransitionInfo(transition, oldData);
 
     if(error) {
       this.emitError(error);
       return;
     }
 
-    crawler.set(this.tokenSet, jpath.concat(path), value);
+    const key = jpath.concat(path);
+
+    switch(key[key.length - 1]) {
+      case 'do':
+        value = getDoValue(value, nextItem);
+        break;
+
+      case 'publish':
+        value = getPublishValue(value, nextItem);
+        break;
+    }
+
+    if(value === undefined) {
+      crawler.deleteMappingItem(this.tokenSet, key);
+    }
+    else {
+      crawler.set(this.tokenSet, key, value);
+    }
 
     this.endMutation(oldTree);
   }
@@ -471,6 +477,40 @@ function getNextItemInfo({ from, to, condition, publish }: TransitionInterface, 
   });
 
   return { nextIndex, nextItem: next[nextIndex] };
+}
+
+
+function getDoValue(newDo: ?Array<string>, oldNext: NextItem) {
+  if(newDo && newDo.length) {
+    if(oldNext.do && typeof oldNext.do === 'string') {
+      return newDo.join(', ');
+    }
+    else {
+      return newDo;
+    }
+  }
+
+  // This likely means the value was explicitly set to null/empty and
+  // should be be deleted from the tree altogether.
+  return undefined;
+}
+
+function getPublishValue(newPublish: ?Array<Object>, oldNext: NextItem) {
+  if(newPublish && newPublish.length) {
+    if(oldNext.publish && typeof oldNext.publish === 'string') {
+      return newPublish.reduce((str, obj) => {
+        const key = Object.keys(obj)[0];
+        return `${str} ${key}=${obj[key]}`;
+      }, '').trim();
+    }
+    else {
+      return newPublish;
+    }
+  }
+
+  // This likely means the value was explicitly set to null/empty and
+  // should be be deleted from the tree altogether.
+  return undefined;
 }
 
 export default OrquestaModel;
