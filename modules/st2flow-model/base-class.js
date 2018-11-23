@@ -23,6 +23,7 @@ class BaseClass {
   yaml: string;
   modelName: string;
   tokenSet: TokenSet;
+  errors: Array<Object>;
   emitter: EventEmitter;
 
   constructor(schema: Object, yaml: ?string): void {
@@ -106,6 +107,8 @@ class BaseClass {
   }
 
   emitChange(oldTree: Object, tokenSet: TokenSet): void {
+    this.errors = [];
+
     const newTree = tokenSet.toObject();
     if(!ajv.validate(this.modelName, newTree)) {
       this.emitError(formatAjvErrors(ajv.errors), STR_ERROR_SCHEMA);
@@ -120,6 +123,8 @@ class BaseClass {
   }
 
   emitError(error: GenericError | Array<GenericError>, type: string = 'error') {
+    this.errors = this.errors.concat(error);
+
     this.emitter.emit(type, error);
   }
 

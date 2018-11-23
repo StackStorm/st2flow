@@ -1,10 +1,9 @@
 //@flow
 
-import type { TaskInterface } from '@stackstorm/st2flow-yaml';
-import type { ModelInterface, DeltaInterface } from '@stackstorm/st2flow-model';
-import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+import type { TaskInterface, DeltaInterface } from '@stackstorm/st2flow-model';
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
@@ -19,29 +18,86 @@ const Range = ace.acequire('ace/range').Range;
 const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
 
+function workflowTransform(input, state) {
+  return {
+    ...input,
+    source: state.workflowSource,
+  };
+}
+
+function workflowDispatch(dispatch, source) {
+  return dispatch({
+    type: 'MODEL_ISSUE_COMMAND',
+    command: 'applyDelta',
+    args: [ null, source ],
+  });
+}
+
+function metaTransform(input, state) {
+  return {
+    ...input,
+    source: state.metaSource,
+  };
+}
+
+function metaDispatch(dispatch, source) {
+  return dispatch({
+    type: 'META_ISSUE_COMMAND',
+    command: 'applyDelta',
+    args: [ null, source ],
+  });
+}
+
+@connect(
+  ({ flow }, { type }) => {
+    const { ranges, errors } = flow;
+    let input = { ranges, errors };
+
+    if (type === 'workflow') {
+      input = workflowTransform(input, flow);
+    }
+
+    if (type === 'meta') {
+      input = metaTransform(input, flow);
+    }
+
+    return input;
+  },
+  (dispatch, { type }) => ({
+    onEditorChange: (source) => {
+      if (type === 'workflow') {
+        return workflowDispatch(dispatch, source);
+      }
+
+      if (type === 'meta') {
+        return metaDispatch(dispatch, source);
+      }
+
+      return false;
+    },
+  })
+)
 export default class Editor extends Component<{
   className?: string,
-  model: ModelInterface,
-}, {
-  errors: Array<Error>
+  ranges: Object,
+  errors: Array<Error>,
+  selectedTaskName: string,
+  onTaskSelect: Function,
+  source: string,
+  onEditorChange: Function,
 }> {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object,
+    ranges: PropTypes.object,
+    errors: PropTypes.array,
     selectedTaskName: PropTypes.string,
     onTaskSelect: PropTypes.func,
-  }
-
-  constructor(...args: any) {
-    super(...args);
-
-    this.state = {
-      errors: [],
-    };
+    source: PropTypes.string,
+    onEditorChange: PropTypes.func,
   }
 
   componentDidMount() {
-    const { model } = this.props;
+    const { source } = this.props;
     ace.acequire('ace/ext/language_tools');
 
     this.editor = ace.edit(editorId);
@@ -55,7 +111,7 @@ export default class Editor extends Component<{
     });
 
     this.editor.renderer.setPadding(10);
-    this.editor.setValue(model.toYAML(), -1);
+    this.editor.setValue(source, -1);
     this.editor.on('change', this.handleEditorChange);
 
     if(this.props.selectedTaskName) {
@@ -63,16 +119,16 @@ export default class Editor extends Component<{
         this.handleTaskSelect({ name: this.props.selectedTaskName });
       }, 20);
     }
-
-    model.on('change', this.handleModelChange);
-    model.on('yaml-error', this.handleModelError);
-    model.on('undo', this.undo);
-    model.on('redo', this.redo);
   }
 
-  componentDidUpdate(prevProps) {
-    if (this.props.selectedTaskName !== prevProps.selectedTaskName) {
-      this.handleTaskSelect({ name: this.props.selectedTaskName });
+  componentDidUpdate(prevProps: Object) {
+    const { selectedTaskName, source } = this.props;
+    if (selectedTaskName !== prevProps.selectedTaskName) {
+      this.handleTaskSelect({ name: selectedTaskName });
+    }
+
+    if (source !== prevProps.source) {
+      this.handleModelChange([], source);
     }
   }
 
@@ -83,22 +139,6 @@ export default class Editor extends Component<{
     if(this.mountCallback) {
       clearTimeout(this.mountCallback);
     }
-
-    const { model } = this.props;
-    model.removeListener('change', this.handleModelChange);
-    model.removeListener('yaml-error', this.handleModelError);
-    model.removeListener('undo', this.undo);
-    model.removeListener('redo', this.redo);
-  }
-
-  undo = () => {
-    this.editor.undo();
-    this.props.model.fromYAML(this.editor.getValue());
-  }
-
-  redo = () => {
-    this.editor.redo();
-    this.props.model.fromYAML(this.editor.getValue());
   }
 
   handleTaskSelect(task: TaskInterface) {
@@ -106,7 +146,7 @@ export default class Editor extends Component<{
       this.editor.session.removeMarker(this.selectMarker);
     }
 
-    const [ start, end ] = this.props.model.getRangeForTask(task);
+    const [ start, end ] = this.props.ranges[task.name];
     const selection = new Range(start.row, 0, end.row, Infinity);
     const cursor = this.editor.selection.getCursor();
 
@@ -128,37 +168,20 @@ export default class Editor extends Component<{
     // Only if the user is actually typing
     if(this.editor.isFocused()) {
       this.deltaTimer = window.setTimeout(() => {
-        this.props.model.applyDelta(delta, this.editor.getValue());
+        this.props.onEditorChange(this.editor.getValue());
       }, DELTA_DEBOUNCE);
     }
   }
 
   handleModelChange = (deltas: Array<DeltaInterface>, yaml: string) => {
-    this.setState({ errors: [] });
-
     if (yaml !== this.editor.getValue()) {
       // yaml was changed outside this editor
       this.editor.setValue(yaml, -1);
     }
   }
 
-  handleModelError = (err: Error) => {
-    // error may or may not be an array
-    this.setState({ errors: err && [].concat(err) || [] });
-  }
-
-  handleNotificationRemove = (notification: NotificationInterface) => {
-    switch(notification.type) {
-      case 'error':
-        this.setState({
-          errors: this.state.errors.filter(err => err.message !== notification.message),
-        });
-        break;
-    }
-  }
-
   get notifications() {
-    return this.state.errors.map(err => ({
+    return this.props.errors.map(err => ({
       type: 'error',
       message: err.message,
     }));
@@ -168,6 +191,8 @@ export default class Editor extends Component<{
   editor: any;
   selectMarker: any;
   deltaTimer = 0; // debounce timer
+  mountCallback: any;
+
   style = style;
 
   render() {
@@ -183,7 +208,6 @@ export default class Editor extends Component<{
               className={style.notifications}
               position="top"
               notifications={this.notifications}
-              onRemove={this.handleNotificationRemove}
             />
           )}
       </div>

@@ -1,7 +1,6 @@
 //@flow
 
 import type {
-  ModelInterface,
   CanvasPoint,
   TaskRefInterface,
   TransitionInterface,
@@ -10,11 +9,11 @@ import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 import type { Node } from 'react';
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import Notifications from '@stackstorm/st2flow-notifications';
-import { connect } from '@stackstorm/st2flow-model';
 
 import Task from './task';
 import Transition from './transition';
@@ -29,28 +28,63 @@ type Wheel = WheelEvent & {
   wheelDelta: number
 }
 
-@connect(({ model, collapseModel, navigationModel }) => ({ model, collapseModel, navigationModel }))
+@connect(
+  ({ flow: { tasks, transitions, errors, lastTaskIndex, panels, navigation }}) => ({ tasks, transitions, errors, lastTaskIndex, isCollapsed: panels, navigation }),
+  (dispatch) => ({
+    issueModelCommand: (command, ...args) => {
+      dispatch({
+        type: 'MODEL_ISSUE_COMMAND',
+        command,
+        args,
+      });
+    },
+    toggleCollapse: name => dispatch({
+      type: 'PANEL_TOGGLE_COLLAPSE',
+      name,
+    }),
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+  })
+)
 export default class Canvas extends Component<{
       children: Node,
       className?: string,
-      model: ModelInterface,
-      collapseModel: Object,
-      navigationModel: Object,
+      
+      navigation: Object,
+      navigate: Function,
+
+      tasks: Array<Object>,
+      transitions: Array<Object>,
+      errors: Array<Error>,
+      issueModelCommand: Function,
+      lastTaskIndex: number,
+
+      isCollapsed: Object,
+      toggleCollapse: Function,
     }, {
       scale: number,
-      errors: Array<Error>,
     }> {
   static propTypes = {
     children: PropTypes.node,
     className: PropTypes.string,
-    model: PropTypes.object,
-    collapseModel: PropTypes.object,
-    navigationModel: PropTypes.object,
+
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
+    tasks: PropTypes.array,
+    transitions: PropTypes.array,
+    errors: PropTypes.array,
+    issueModelCommand: PropTypes.func,
+    lastTaskIndex: PropTypes.number,
+
+    isCollapsed: PropTypes.object,
+    toggleCollapse: PropTypes.func,
   }
 
   state = {
     scale: 0,
-    errors: [],
   }
 
   componentDidMount() {
@@ -66,10 +100,6 @@ export default class Canvas extends Component<{
     window.addEventListener('mouseup', this.handleMouseUp);
     el.addEventListener('dragover', this.handleDragOver);
     el.addEventListener('drop', this.handleDrop);
-
-    const { model } = this.props;
-    model.on('change', this.handleModelChange);
-    model.on('schema-error', this.handleModelError);
 
     this.handleUpdate();
   }
@@ -91,10 +121,6 @@ export default class Canvas extends Component<{
     window.removeEventListener('mouseup', this.handleMouseUp);
     el.removeEventListener('dragover', this.handleDragOver);
     el.removeEventListener('drop', this.handleDrop);
-
-    const { model } = this.props;
-    model.removeListener('change', this.handleModelChange);
-    model.removeListener('schema-error', this.handleModelError);
   }
 
   size: CanvasPoint
@@ -110,12 +136,12 @@ export default class Canvas extends Component<{
       return;
     }
 
-    const { model }: { model: ModelInterface } = this.props;
+    const { tasks } = this.props;
     const { width, height } = canvasEl.getBoundingClientRect();
 
     const scale = Math.E ** this.state.scale;
 
-    this.size = model.tasks.reduce((acc, item) => {
+    this.size = tasks.reduce((acc, item) => {
       const coords = new Vector(item.coords);
       const size = new Vector(item.size);
       const { x, y } = coords.add(size).add(50);
@@ -233,8 +259,8 @@ export default class Canvas extends Component<{
 
     const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle)).subtract(new Vector(origin));
 
-    this.props.model.addTask({
-      name: `task${this.props.model.lastTaskIndex + 1}`,
+    this.props.issueModelCommand('addTask', {
+      name: `task${this.props.lastTaskIndex + 1}`,
       action: action.ref,
       coords: Vector.max(coords, new Vector(0, 0)),
     });
@@ -243,62 +269,33 @@ export default class Canvas extends Component<{
   }
 
   handleTaskMove = (task: TaskRefInterface, coords: CanvasPoint) => {
-    this.props.model.updateTask(task, { coords });
+    this.props.issueModelCommand('updateTask', task, { coords });
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
+    this.props.navigate({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
   }
 
   handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
+    this.props.navigate({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
-  }
-
-  handleModelChange = () => {
-    // clear any errors
-    if(this.state.errors && this.state.errors.length) {
-      this.setState({ errors: [] });
-    }
-  }
-
-  handleModelChange = () => {
-    // clear any errors
-    if(this.state.errors && this.state.errors.length) {
-      this.setState({ errors: [] });
-    }
-  }
-
-  handleModelError = (e: Error) => {
-    // error may or may not be an array
-    this.setState({ errors: e && [].concat(e) || [] });
-  }
-
-  handleNotificationRemove = (notification: NotificationInterface) => {
-    switch(notification.type) {
-      case 'error':
-        this.setState({
-          errors: this.state.errors.filter(err => err.message !== notification.message),
-        });
-        break;
-    }
+    this.props.navigate({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ toTask: undefined, task: task.name });
+    this.props.navigate({ toTask: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
-    this.props.model.deleteTask(task);
+    this.props.issueModelCommand('deleteTask', task);
   }
 
   get notifications() : Array<NotificationInterface> {
-    return this.state.errors.map(err => ({
+    return this.props.errors.map(err => ({
       type: 'error',
       message: err.message,
     }));
@@ -309,12 +306,8 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { children, model, collapseModel, navigationModel } = this.props;
+    const { children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
-
-    if (!model || !collapseModel) {
-      return false;
-    }
 
     const surfaceStyle = {
       transform: `scale(${Math.E ** scale})`,
@@ -326,17 +319,17 @@ export default class Canvas extends Component<{
         onClick={e => this.handleCanvasClick(e)}
       >
         { children }
-        <CollapseButton position="left" state={collapseModel.isCollapsed('palette')} onClick={() => collapseModel.toggle('palette')} />
-        <CollapseButton position="right" state={collapseModel.isCollapsed('details')} onClick={() => collapseModel.toggle('details')} />
+        <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
+        <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />
         <div className={this.style.canvas} ref={this.canvasRef}>
           <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
             {
-              model.tasks.map((task) => {
+              tasks.map((task) => {
                 return (
                   <Task
                     key={task.name}
                     task={task}
-                    selected={task.name === navigationModel.current.task}
+                    selected={task.name === navigation.task}
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}
@@ -347,15 +340,15 @@ export default class Canvas extends Component<{
             }
             <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
               {
-                model.transitions
+                transitions
                   .reduce((arr, transition) => {
                     const from = {
-                      task: model.tasks.find(({ name }) => name === transition.from.name),
+                      task: tasks.find(({ name }) => name === transition.from.name),
                       anchor: 'bottom',
                     };
                     transition.to.forEach(tto => {
                       const to = {
-                        task: model.tasks.find(({ name }) => name === tto.name),
+                        task: tasks.find(({ name }) => name === tto.name),
                         anchor: 'top',
                       };
                       arr.push(
@@ -363,7 +356,7 @@ export default class Canvas extends Component<{
                           key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
                           from={from}
                           to={to}
-                          selected={transition.from.name === navigationModel.current.task && tto.name === navigationModel.current.toTask}
+                          selected={transition.from.name === navigation.task && tto.name === navigation.toTask}
                           onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
                         />
                       );
@@ -374,7 +367,7 @@ export default class Canvas extends Component<{
             </svg>
           </div>
         </div>
-        <Notifications position="top" notifications={this.notifications} onRemove={this.handleNotificationRemove} />
+        <Notifications position="top" notifications={this.notifications} />
       </div>
     );
   }

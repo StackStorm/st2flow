@@ -9,12 +9,6 @@ import api from '@stackstorm/module-api';
 
 import style from './style.css';
 
-function defaultImage() {
-  if (this.src !== 'static/icon.png') {
-    this.src = 'static/icon.png';
-  }
-}
-
 export default class Action extends Component<{
   name: string,
   children?: Node,

@@ -1,7 +1,6 @@
 import OrquestaModel from './model-orquesta';
 import MistralModel from './model-mistral';
 
-export { connect } from './connect';
 export { layout } from './layout';
 
 const models = {};

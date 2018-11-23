@@ -1,9 +1,8 @@
 //@flow
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
-
-import { connect, ModelInterface } from '@stackstorm/st2flow-model';
 
 import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
@@ -13,31 +12,48 @@ import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
 
 
-@connect(({ metaModel, navigationModel, actionsModel }) => ({ metaModel, navigationModel, actionsModel }))
+@connect(
+  ({ flow: { actions, navigation, meta }}) => ({ actions, navigation, meta }),
+  (dispatch) => ({
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+    setMeta: (field, value) => dispatch({
+      type: 'META_ISSUE_COMMAND',
+      command: 'set',
+      args: [ field, value ],
+    }),
+  })
+)
 export default class Meta extends Component<{
-  metaModel: ModelInterface,
-  navigationModel: Object,
-  actionsModel: Object,
+  meta: Object,
+  setMeta: Function,
+
+  navigation: Object,
+  navigate: Function,
+
+  actions: Array<Object>,
 }> {
   static propTypes = {
-    metaModel: PropTypes.object,
-    navigationModel: PropTypes.object,
-    actionsModel: PropTypes.object,
+    meta: PropTypes.object,
+    setMeta: PropTypes.func,
+
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
+    actions: PropTypes.array,
   }
 
   handleSectionSwitch(section: string) {
-    this.props.navigationModel.change({ section });
+    this.props.navigate({ section });
   }
 
   render() {
-    const { metaModel, navigationModel, actionsModel } = this.props;
-    const { section = 'meta' } = navigationModel.current;
+    const { meta, setMeta, navigation, actions } = this.props;
+    const { section = 'meta' } = navigation;
 
-    if (!metaModel) {
-      return false;
-    }
-
-    const packs = [ ...new Set(actionsModel.actions.map(a => a.pack)).add(metaModel.get('pack')) ];
+    const packs = [ ...new Set(actions.map(a => a.pack)).add(meta.pack) ];
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
@@ -46,12 +62,12 @@ export default class Meta extends Component<{
       </Toolbar>,
       section === 'meta' && (
         <Panel key="meta">
-          <EnumField name="Runner Type" value={metaModel.get('runner_type')} spec={{enum: [ 'mistral', 'orquesta', 'action-chain' ]}} onChange={(v) => metaModel.set('runner_type', v)} />
-          <EnumField name="Pack" value={metaModel.get('pack')} spec={{enum: packs}} onChange={(v) => metaModel.set('pack', v)} />
-          <StringField name="Name" value={metaModel.get('name')} onChange={(v) => metaModel.set('name', v)} />
-          <StringField name="Description" value={metaModel.get('description')} onChange={(v) => metaModel.set('description', v)} />
-          <BooleanField name="Enabled" value={metaModel.get('enabled')} spec={{}} onChange={(v) => metaModel.set('enabled', v)} />
-          <StringField name="Entry point" value={metaModel.get('entry_point')} onChange={(v) => metaModel.set('entry_point', v)} />
+          <EnumField name="Runner Type" value={meta.runner_type} spec={{enum: [ 'mistral', 'orquesta', 'action-chain' ]}} onChange={(v) => setMeta('runner_type', v)} />
+          <EnumField name="Pack" value={meta.pack} spec={{enum: packs}} onChange={(v) => setMeta('pack', v)} />
+          <StringField name="Name" value={meta.name} onChange={(v) => setMeta('name', v)} />
+          <StringField name="Description" value={meta.description} onChange={(v) => setMeta('description', v)} />
+          <BooleanField name="Enabled" value={meta.enabled} spec={{}} onChange={(v) => setMeta('enabled', v)} />
+          <StringField name="Entry point" value={meta.entry_point} onChange={(v) => setMeta('entry_point', v)} />
         </Panel>
       ),
       section === 'parameters' && (
