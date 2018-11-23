@@ -1,10 +1,21 @@
 import { createScopedStore } from '@stackstorm/module-store';
 
 import { OrquestaModel } from '@stackstorm/st2flow-model';
+import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
 
 const workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
+
+function getRanges(model) {
+  const ranges = {};
+  
+  model.tasks.forEach(task => {
+    ranges[task.name] = workflowModel.getRangeForTask(task);
+  });
+
+  return ranges;
+}
 
 const flowReducer = (state = {}, input) => {
   const {
@@ -58,18 +69,27 @@ const flowReducer = (state = {}, input) => {
 
       const { tasks, transitions, errors } = workflowModel;
 
-      const ranges = {};
-      
-      tasks.forEach(task => {
-        ranges[task.name] = workflowModel.getRangeForTask(task);
-      });
+      return {
+        ...state,
+        workflowSource: workflowModel.toYAML(),
+        ranges: getRanges(workflowModel),
+        tasks,
+        transitions,
+        errors,
+      };
+    }
+
+    case 'MODEL_LAYOUT' : {
+      layout(workflowModel);
+
+      const { tasks, transitions, errors } = workflowModel;
 
       return {
         ...state,
         workflowSource: workflowModel.toYAML(),
+        ranges: getRanges(workflowModel),
         tasks,
         transitions,
-        ranges,
         errors,
       };
     }

@@ -9,7 +9,6 @@ import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
 import api from '@stackstorm/module-api';
-import { layout } from '@stackstorm/st2flow-model/layout';
 import { models } from '@stackstorm/st2flow-model';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
@@ -35,7 +34,7 @@ import style from './style.css';
     }),
     undo: () => console.log('TODO'),
     redo: () => console.log('TODO'),
-    layout: () => console.log('TODO'),
+    layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
   })
 )
 class Window extends Component<{
