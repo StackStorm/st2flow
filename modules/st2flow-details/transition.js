@@ -11,13 +11,19 @@ import { Toggle } from '@stackstorm/module-forms/button.component';
 
 import style from './style.css';
 
-export default class Transition extends Component<{
+type TransitionProps = {
   transition: {
     to: Array<TaskRefInterface>,
     condition?: string,
     publish?: string,
   },
+  taskNames: Array<string> | string,
+  selected: boolean,
   onChange: Function,
+};
+
+export default class Transition extends Component<TransitionProps, {
+  publishOn: boolean,
 }> {
   static propTypes = {
     transition: PropTypes.object.isRequired,
@@ -26,11 +32,11 @@ export default class Transition extends Component<{
     onChange: PropTypes.func,
   }
 
-  constructor({ transition }) {
-    super();
+  constructor(props: TransitionProps) {
+    super(props);
 
     this.state = {
-      publishOn: transition.publish && Object.keys(transition.publish).length > 0,
+      publishOn: !!props.transition.publish && Object.keys(props.transition.publish).length > 0,
     };
   }
 

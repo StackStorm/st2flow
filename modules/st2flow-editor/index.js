@@ -19,73 +19,17 @@ const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
 const DEFAULT_TAB_SIZE = 2;
 
-function workflowTransform(input, state) {
-  return {
-    ...input,
-    source: state.workflowSource,
-  };
-}
-
-function workflowDispatch(dispatch, source) {
-  return dispatch({
-    type: 'MODEL_ISSUE_COMMAND',
-    command: 'applyDelta',
-    args: [ null, source ],
-  });
-}
-
-function metaTransform(input, state) {
-  return {
-    ...input,
-    source: state.metaSource,
-  };
-}
-
-function metaDispatch(dispatch, source) {
-  return dispatch({
-    type: 'META_ISSUE_COMMAND',
-    command: 'applyDelta',
-    args: [ null, source ],
-  });
-}
-
 @connect(
-  ({ flow }, { type }) => {
-    const { ranges, errors } = flow;
-    let input = { ranges, errors };
-
-    if (type === 'workflow') {
-      input = workflowTransform(input, flow);
-    }
-
-    if (type === 'meta') {
-      input = metaTransform(input, flow);
-    }
-
-    return input;
-  },
-  (dispatch, { type }) => ({
-    onEditorChange: (source) => {
-      if (type === 'workflow') {
-        return workflowDispatch(dispatch, source);
-      }
-
-      if (type === 'meta') {
-        return metaDispatch(dispatch, source);
-      }
-
-      return false;
-    },
-  })
+  ({ ranges, errors }) => ({ ranges, errors })
 )
 export default class Editor extends Component<{
   className?: string,
-  ranges: Object,
-  errors: Array<Error>,
-  selectedTaskName: string,
-  onTaskSelect: Function,
-  source: string,
-  onEditorChange: Function,
+  ranges?: Object,
+  errors?: Array<Error>,
+  selectedTaskName?: string,
+  onTaskSelect?: Function,
+  source?: string,
+  onEditorChange?: Function,
 }> {
   static propTypes = {
     className: PropTypes.string,
@@ -111,7 +55,7 @@ export default class Editor extends Component<{
     });
 
     this.editor.renderer.setPadding(10);
-    this.editor.setValue(source, -1);
+    this.editor.setValue(source || '', -1);
     this.setTabSize();
     this.editor.on('change', this.handleEditorChange);
 
@@ -128,11 +72,11 @@ export default class Editor extends Component<{
       this.handleTaskSelect({ name: selectedTaskName });
     }
 
-    if (source !== prevProps.source) {
+    if (source && source !== prevProps.source) {
       this.handleModelChange([], source);
     }
 
-    if (errors !== prevProps.errors) {
+    if (errors && errors !== prevProps.errors) {
       this.handleModelError(errors);
     }
   }
@@ -158,6 +102,10 @@ export default class Editor extends Component<{
       this.editor.session.removeMarker(this.selectMarker);
     }
 
+    if (!this.props.ranges) {
+      return;
+    }
+
     const [ start, end ] = this.props.ranges[task.name];
     const selection = new Range(start.row, 0, end.row, Infinity);
     const cursor = this.editor.selection.getCursor();
@@ -171,7 +119,9 @@ export default class Editor extends Component<{
 
     this.selectMarker = this.editor.session.addMarker(selection, cx(this.style.activeTask), 'fullLine');
 
-    this.props.onTaskSelect(task);
+    if (this.props.onTaskSelect) {
+      this.props.onTaskSelect(task);
+    }
   }
 
   handleEditorChange = (delta: DeltaInterface) => {
@@ -180,7 +130,9 @@ export default class Editor extends Component<{
     // Only if the user is actually typing
     if(this.editor.isFocused()) {
       this.deltaTimer = window.setTimeout(() => {
-        this.props.onEditorChange(this.editor.getValue());
+        if (this.props.onEditorChange) {
+          this.props.onEditorChange(this.editor.getValue());
+        }
       }, DELTA_DEBOUNCE);
     }
   }
@@ -227,7 +179,7 @@ export default class Editor extends Component<{
   }
 
   get notifications() {
-    return this.props.errors.map(err => ({
+    return this.props.errors && this.props.errors.map(err => ({
       type: 'error',
       message: err.message,
     }));
@@ -246,7 +198,7 @@ export default class Editor extends Component<{
     const { errors } = this.props;
 
     return (
-      <div className={cx(this.props.className, this.style.component, { [this.style.hasError]: errors.length })}>
+      <div className={cx(this.props.className, this.style.component, { [this.style.hasError]: errors && errors.length })}>
         <div
           id={editorId}
           className={this.style.editor}

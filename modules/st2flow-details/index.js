@@ -331,6 +331,34 @@ class Task extends Component<{
 }
 
 @connect(
+  ({ flow: { metaSource }}) => ({
+    source: metaSource,
+  }),
+  (dispatch, source) => ({
+    onEditorChange: source => dispatch({
+      type: 'META_ISSUE_COMMAND',
+      command: 'applyDelta',
+      args: [ null, source ],
+    }),
+  })
+)
+class MetaEditor extends Editor {}
+
+@connect(
+  ({ flow: { workflowSource }}) => ({
+    source: workflowSource,
+  }),
+  (dispatch, source) => ({
+    onEditorChange: source => dispatch({
+      type: 'MODEL_ISSUE_COMMAND',
+      command: 'applyDelta',
+      args: [ null, source ],
+    }),
+  })
+)
+class WorkflowEditor extends Editor {}
+
+@connect(
   ({ flow: { actions, navigation }}) => ({ actions, navigation }),
   (dispatch) => ({
     navigate: (navigation) => dispatch({
@@ -399,7 +427,7 @@ export default class Details extends Component<{
         {
           type === 'metadata' && (
             asCode
-              && <Editor type="meta" />
+              && <MetaEditor />
               // $FlowFixMe Model is populated via decorator
               || <Meta />
           )
@@ -407,7 +435,7 @@ export default class Details extends Component<{
         {
           type === 'execution' && (
             asCode
-              && <Editor type="workflow" selectedTaskName={navigation.task} onTaskSelect={this.handleTaskSelect} />
+              && <WorkflowEditor selectedTaskName={navigation.task} onTaskSelect={this.handleTaskSelect} />
               || navigation.task
                 // $FlowFixMe ^^
                 && <TaskDetails onBack={this.handleBack} selected={navigation.task} actions={actions} />
