@@ -67,6 +67,7 @@ export default class Editor extends Component<{
 
     model.on('change', this.handleModelChange);
     model.on('yaml-error', this.handleModelError);
+    model.on('schema-error', this.handleModelError);
     model.on('undo', this.undo);
     model.on('redo', this.redo);
   }
@@ -88,6 +89,7 @@ export default class Editor extends Component<{
     const { model } = this.props;
     model.removeListener('change', this.handleModelChange);
     model.removeListener('yaml-error', this.handleModelError);
+    model.removeListener('schema-error', this.handleModelError);
     model.removeListener('undo', this.undo);
     model.removeListener('redo', this.redo);
   }
@@ -160,7 +162,7 @@ export default class Editor extends Component<{
     this.clearErrorMarkers();
 
     this.errorMarkers = err.filter(e => !!e.mark).map((e, i) => {
-      const { line: row, column } = e.mark;
+      const { row, column } = e.mark;
       const selection = new Range(row, 0, row, Infinity);
 
       annotations.push({

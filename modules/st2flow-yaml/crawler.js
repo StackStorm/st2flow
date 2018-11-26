@@ -372,7 +372,7 @@ const crawler = {
    * Gets the source range for a give key and its value
    */
   getRangeForKey(tokenSet: TokenSet, key: JpathKey): Range {
-    const token: ?TokenRawValue = getRawTokenByKey(tokenSet.tree, key);
+    const token: ?ValueToken = getTokenByKey(tokenSet.tree, key);
 
     if(!token) {
       throw new Error(`Could not find token for path: ${key.toString()}`);

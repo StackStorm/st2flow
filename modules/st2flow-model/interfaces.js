@@ -88,8 +88,8 @@ export interface ModelInterface {
 }
 
 export interface EditorPoint {
-    row: number;
     column: number;
+    row: number;
 }
 
 export interface DeltaInterface {
@@ -107,5 +107,6 @@ export type AjvError = {
 }
 
 export type GenericError = Error | {
-    message: string
+    message: string,
+    mark?: EditorPoint,
 }

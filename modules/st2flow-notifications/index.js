@@ -7,7 +7,7 @@ import style from './style.css';
 export type NotificationInterface = {
   type: 'error' | 'warning' | 'info' | 'success',
   message: string,
-}
+};
 
 class Notifications extends Component {
   static propTypes = {
@@ -27,6 +27,8 @@ class Notifications extends Component {
   }
 
   handleRemove = (ev) => {
+    ev.stopPropagation();
+
     if(this.props.onRemove) {
       const index = ev.currentTarget.dataset.index;
       this.props.onRemove(this.props.notifications[index]);
