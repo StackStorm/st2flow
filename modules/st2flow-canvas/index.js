@@ -12,11 +12,12 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+import fp from 'lodash/fp';
 
 import Notifications from '@stackstorm/st2flow-notifications';
 
 import Task from './task';
-import Transition from './transition';
+import TransitionGroup from './transition';
 import Vector from './vector';
 import CollapseButton from './collapse-button';
 
@@ -315,6 +316,31 @@ export default class Canvas extends Component<{
       transform: `scale(${Math.E ** scale})`,
     };
 
+    const transitionGroups = transitions
+      .map(transition => {
+        const from = {
+          task: tasks.find(({ name }) => name === transition.from.name),
+          anchor: 'bottom',
+        };
+
+        const group = transition.to.map(tto => {
+          const to = {
+            task: tasks.find(({ name }) => name === tto.name) || {},
+            anchor: 'top',
+          };
+
+          return {
+            from,
+            to,
+          };
+        });
+
+        return {
+          transition,
+          group,
+        };
+      });
+    
     return (
       <div
         className={cx(this.props.className, this.style.component)}
@@ -342,31 +368,30 @@ export default class Canvas extends Component<{
             }
             <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
               {
-                transitions
-                  .reduce((arr, transition) => {
-                    const from = {
-                      task: tasks.find(({ name }) => name === transition.from.name),
-                      anchor: 'bottom',
-                    };
+                transitionGroups
+                  .map(({ id, transition, group }, i) => (
+                    <TransitionGroup
+                      key={`${transition.from.name}-${window.btoa(transition.condition)}`}
+                      transitions={group}
+                      selected={false}
+                      onClick={(e) => this.handleTransitionSelect(e, transition)}
+                    />
+                  ))
+              }
+              {
+                transitionGroups
+                  .filter(({ transition }) => {
                     const { task, toTasks = [] } = navigation;
-                    const selected = transition.from.name === task && transition.to.every(t => toTasks.includes(t.name));
-                    transition.to.forEach(tto => {
-                      const to = {
-                        task: tasks.find(({ name }) => name === tto.name),
-                        anchor: 'top',
-                      };
-                      arr.push(
-                        <Transition
-                          key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
-                          from={from}
-                          to={to}
-                          selected={selected}
-                          onClick={(e) => this.handleTransitionSelect(e, transition)}
-                        />
-                      );
-                    });
-                    return arr;
-                  }, [])
+                    return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+                  })
+                  .map(({ id, transition, group }, i) => (
+                    <TransitionGroup
+                      key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                      transitions={group}
+                      selected={true}
+                      onClick={(e) => this.handleTransitionSelect(e, transition)}
+                    />
+                  ))
               }
             </svg>
           </div>

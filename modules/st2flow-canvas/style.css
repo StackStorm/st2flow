@@ -118,18 +118,30 @@
   stroke: var(--transition-color);
   stroke-width: 5;
   fill: transparent;
+  pointer-events: none;
 }
 
 .transition-active {
-  stroke: var(--selected-bg);
   stroke-width: 12;
   fill: transparent;
+  stroke: transparent;
+
+  &.selected {
+    stroke: var(--selected-bg);
+    pointer-events: none;
+  }
 }
 
 .transition-active-border {
-  stroke: var(--transition-color);
   stroke-width: 13;
   fill: transparent;
+  stroke: transparent;
+  pointer-events: stroke;
+
+  &.selected {
+    stroke: var(--transition-color);
+    pointer-events: none;
+  }
 }
 
 .transition-arrow {
