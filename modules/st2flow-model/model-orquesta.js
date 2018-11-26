@@ -235,7 +235,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     const key = [ 'tasks', from.name, 'next' ];
 
     const next: NextItem = {
-      do: to.map(t => t.name),
+      do: [].concat(to).map(t => t.name),
     };
 
     if(transition.condition) {

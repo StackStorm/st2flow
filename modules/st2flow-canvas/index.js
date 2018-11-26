@@ -297,6 +297,10 @@ export default class Canvas extends Component<{
     this.props.issueModelCommand('deleteTask', task);
   }
 
+  handleTaskConnect = (to: TaskRefInterface, from: TaskRefInterface) => {
+    this.props.issueModelCommand('addTransition', { from, to });
+  }
+
   get notifications() : Array<NotificationInterface> {
     return this.props.errors.map(err => ({
       type: 'error',
@@ -360,6 +364,7 @@ export default class Canvas extends Component<{
                     selected={task.name === navigation.task}
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
+                    onConnect={(...a) => this.handleTaskConnect(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}
                     onDelete={() => this.handleTaskDelete(task)}
                   />
