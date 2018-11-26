@@ -186,7 +186,8 @@ function formatAjvErrors(errors: Array<AjvError>, tokenSet: TokenSet): Array<Gen
           const path = err.dataPath.slice(1);
           mark = crawler.getRangeForKey(tokenSet, path)[0];
           message = `${path} - ${err.message}`;
-        } else {
+        }
+        else {
           message += errors[errors.length - 1].message;
         }
       }
