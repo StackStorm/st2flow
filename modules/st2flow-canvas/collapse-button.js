@@ -44,7 +44,7 @@ export default class CollapseButton extends Component<{
     }[position] || {};
 
     return (
-      <div className={cx(this.style.collapseButton, className)} onClick={(e) => this.handleClick(e)}>
+      <div className={cx(this.style.collapseButton, className, { [this.style.rightCollapsed]: position === 'right' && state })} onClick={(e) => this.handleClick(e)}>
         <i className={icon} />
       </div>
     );

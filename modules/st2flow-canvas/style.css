@@ -217,18 +217,24 @@
 
   display: flex;
   align-items: center;
-  
+
 
   &.left {
     left: 0;
     border-bottom-right-radius: 4px;
     box-shadow: 2px 0px 7px 0px rgba(0,0,0,0.32);
   }
+
   &.right {
-    right: 0;
+    right: -14px; /* width of details panel resize handle */
     border-bottom-left-radius: 4px;
     box-shadow: -2px 0px 7px 0px rgba(0,0,0,0.32);
   }
+
+  &.right-collapsed {
+    right: 0;
+  }
+
   &.top {
     top: 0;
     right: 0;

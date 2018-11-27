@@ -11,7 +11,6 @@ import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
-import ReactResizeDetector from 'react-resize-detector';
 
 import Notifications from '@stackstorm/st2flow-notifications';
 import { connect, layout } from '@stackstorm/st2flow-model';
@@ -380,7 +379,6 @@ export default class Canvas extends Component<{
           </div>
         </div>
         <Notifications position="top" notifications={this.notifications} onRemove={this.handleNotificationRemove} />
-        <ReactResizeDetector handleWidth onResize={(e) => this.handleUpdate()} />
       </div>
     );
   }
