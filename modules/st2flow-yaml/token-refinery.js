@@ -1,7 +1,7 @@
 // @flow
 
 import type { JPath, TokenRawValue, TokenKeyValue, TokenMapping, TokenCollection, TokenReference, ValueToken, AnyToken, Refinement } from './types';
-import { get } from './util';
+
 import crawler from './crawler';
 import factory from './token-factory';
 import stringifier from './stringifier';
@@ -143,7 +143,6 @@ class Refinery {
       // always match this pattern: [..., 'items', 0, 'mappings', 0, 'key'].
       const isInCollection = tokenPath.length > 4 && tokenPath[tokenPath.length - 5] === 'items';
       if(isInCollection) {
-        const items = get(this.tree, tokenPath.slice(0, -4));
         const firstToken = crawler.findFirstValueToken(token);
 
         if(firstToken && firstToken.prefix.length) {
