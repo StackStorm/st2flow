@@ -119,6 +119,28 @@
   stroke-width: 5;
   fill: transparent;
   pointer-events: none;
+
+  &-button {
+    position: absolute;
+    top: -13px;
+    left: -13px;
+
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+    border: 1px solid #ffa256;
+    background-color: #fff3e6;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    &:after {
+      content: ' ';
+    }
+  }
 }
 
 .transition-active {

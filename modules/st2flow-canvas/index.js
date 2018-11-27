@@ -3,6 +3,7 @@
 import type {
   CanvasPoint,
   TaskRefInterface,
+  TaskInterface,
   TransitionInterface,
 } from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
@@ -56,7 +57,7 @@ export default class Canvas extends Component<{
       navigation: Object,
       navigate: Function,
 
-      tasks: Array<Object>,
+      tasks: Array<TaskInterface>,
       transitions: Array<Object>,
       errors: Array<Error>,
       issueModelCommand: Function,
@@ -301,6 +302,10 @@ export default class Canvas extends Component<{
     this.props.issueModelCommand('addTransition', { from, to });
   }
 
+  handleTransitionDelete = (transition: TransitionInterface) => {
+    this.props.issueModelCommand('deleteTransition', transition);
+  }
+
   get notifications() : Array<NotificationInterface> {
     return this.props.errors.map(err => ({
       type: 'error',
@@ -344,6 +349,12 @@ export default class Canvas extends Component<{
           group,
         };
       });
+
+    const selectedTransitionGroups = transitionGroups
+      .filter(({ transition }) => {
+        const { task, toTasks = [] } = navigation;
+        return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+      });
     
     return (
       <div
@@ -361,7 +372,7 @@ export default class Canvas extends Component<{
                   <Task
                     key={task.name}
                     task={task}
-                    selected={task.name === navigation.task}
+                    selected={task.name === navigation.task && !selectedTransitionGroups.length}
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
                     onConnect={(...a) => this.handleTaskConnect(task, ...a)}
@@ -370,6 +381,38 @@ export default class Canvas extends Component<{
                   />
                 );
               })
+            }
+            {
+              transitionGroups
+                .filter(({ transition }) => {
+                  const { task, toTasks = [] } = navigation;
+                  return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+                })
+                .map(({ transition }) => {
+                  const toPoint = transition.to
+                    .map(task => tasks.find(({ name }) => name === task.name))
+                    .map(task => new Vector(task.size).multiply(new Vector(.5, 0)).add(new Vector(0, -10)).add(new Vector(task.coords)))
+                    ;
+
+                  const fromPoint = [ transition.from ]
+                    .map((task: TaskRefInterface): any => tasks.find(({ name }) => name === task.name))
+                    .map((task: TaskInterface) => new Vector(task.size).multiply(new Vector(.5, 1)).add(new Vector(task.coords)))
+                    ;
+
+                  const point = fromPoint.concat(toPoint)
+                    .reduce((acc, point) => (acc || point).add(point).divide(2))
+                    ;
+
+                  const { x, y } = point.add(origin);
+                  return (
+                    <div
+                      key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                      className={cx(this.style.transitionButton, this.style.delete, 'icon-delete')}
+                      style={{ transform: `translate(${x}px, ${y}px)`}}
+                      onClick={() => this.handleTransitionDelete(transition)}
+                    />
+                  );
+                })
             }
             <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
               {
@@ -384,11 +427,7 @@ export default class Canvas extends Component<{
                   ))
               }
               {
-                transitionGroups
-                  .filter(({ transition }) => {
-                    const { task, toTasks = [] } = navigation;
-                    return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
-                  })
+                selectedTransitionGroups
                   .map(({ id, transition, group }, i) => (
                     <TransitionGroup
                       key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
