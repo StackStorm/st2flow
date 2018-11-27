@@ -21,6 +21,8 @@ import Transition from './transition';
 
 import style from './style.css';
 
+const SLIDER_DEBOUNCE_MS = 100;
+
 @connect(({ model, navigationModel }) => ({ model, navigationModel }))
 class TaskDetails extends Component<{
   model: ModelInterface,
@@ -259,7 +261,6 @@ class Slider extends Component<{
     this.props.onSliderEnd({x});
   }
 
-
   render() {
     const { isDragging } = this.state;
     return (
@@ -395,8 +396,9 @@ export default class Details extends Component<{
     className: 'icon-lan',
   }]
 
-  style = style
-  ref = React.createRef()
+  style = style;
+  ref = React.createRef();
+  lastSliderMove = Date.now();
 
   setWidth(width: number) {
     if(this.ref.current) {
@@ -413,8 +415,11 @@ export default class Details extends Component<{
   }
 
   handleSliderMove(e: {x: number}) {
-    if(this.ref.current instanceof HTMLElement) {
+    const now = Date.now();
+
+    if(now - this.lastSliderMove > SLIDER_DEBOUNCE_MS && this.ref.current instanceof HTMLElement) {
       this.setWidth( this.ref.current.parentElement.offsetWidth - e.x );
+      this.lastSliderMove = now;
     }
   }
 
