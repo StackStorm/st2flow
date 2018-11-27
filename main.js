@@ -9,7 +9,7 @@ import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
 import api from '@stackstorm/module-api';
-import { models } from '@stackstorm/st2flow-model';
+// import { models } from '@stackstorm/st2flow-model';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
 import Toolbar from '@stackstorm/st2flow-canvas/toolbar';
