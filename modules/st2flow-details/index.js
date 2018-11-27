@@ -1,12 +1,11 @@
 //@flow
 
-import type { ModelInterface, TaskInterface, TransitionRefInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { TaskInterface, TransitionRefInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
-
-import { connect } from '@stackstorm/st2flow-model';
 
 import AutoForm from '@stackstorm/module-auto-form';
 import Editor from '@stackstorm/st2flow-editor';
@@ -21,22 +20,49 @@ import Transition from './transition';
 
 import style from './style.css';
 
-@connect(({ model, navigationModel }) => ({ model, navigationModel }))
+@connect(
+  ({ flow: { actions, navigation, tasks, transitions }}) => ({ actions, navigation, tasks, transitions }),
+  (dispatch) => ({
+    issueModelCommand: (command, ...args) => {
+      dispatch({
+        type: 'MODEL_ISSUE_COMMAND',
+        command,
+        args,
+      });
+    },
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+  })
+)
 class TaskDetails extends Component<{
-  model: ModelInterface,
-  navigationModel: Object,
-  selected: string,
+  tasks: Array<Object>,
+  transitions: Array<Object>,
+  issueModelCommand: Function,
+
+  navigation: Object,
+  navigate: Function,
+
   actions: Array<Object>,
+
+  selected: string,
   onBack: Function,
 }, {
   rename: bool,
   name: string,
 }> {
   static propTypes = {
-    model: PropTypes.object,
-    navigationModel: PropTypes.object,
-    selected: PropTypes.string,
+    tasks: PropTypes.array,
+    transitions: PropTypes.array,
+    issueModelCommand: PropTypes.func,
+
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
     actions: PropTypes.array,
+
+    selected: PropTypes.string,
     onBack: PropTypes.func.isRequired,
   }
 
@@ -59,60 +85,63 @@ class TaskDetails extends Component<{
   }
 
   handleTaskRename(ref, name) {
-    const { model, selected } = this.props;
-    model && model.updateTask({ name: ref }, { name });
+    const { selected, issueModelCommand } = this.props;
+
+    issueModelCommand('updateTask', { name: ref }, { name });
+
     if (selected === ref) {
-      this.props.navigationModel.change({ toTask: undefined, task: name });
+      this.props.navigate({ toTasks: undefined, task: name });
     }
     this.setState({ rename: false });
   }
 
   handleTaskFieldChange(field, value) {
-    const { model, selected } = this.props;
-    model.updateTask({ name: selected }, { [field]: value });
+    const { selected, issueModelCommand } = this.props;
+    issueModelCommand('updateTask', { name: selected }, { [field]: value });
   }
 
   handleTaskProperty(name, value) {
-    const { model, selected } = this.props;
+    const { selected, issueModelCommand } = this.props;
 
     if (value) {
-      model.setTaskProperty({ name: selected }, name, value);
+      issueModelCommand('setTaskProperty', { name: selected }, name, value);
     }
     else {
-      model.deleteTaskProperty({ name: selected }, name);
+      issueModelCommand('deleteTaskProperty', { name: selected }, name);
     }
   }
 
   handleTransitionProperty(transition: TransitionRefInterface, name, value) {
-    const { model } = this.props;
+    const { issueModelCommand } = this.props;
 
-    if (value) {
-      model.setTransitionProperty(transition, name, value);
+    if (value !== null && value !== void 0) {
+      issueModelCommand('setTransitionProperty', transition, name, value);
     }
     else {
-      model.deleteTransitionProperty(transition, name);
+      issueModelCommand('model.deleteTransitionProperty', transition, name);
     }
   }
 
   handleSectionSwitch(section) {
-    this.props.navigationModel.change({ section });
+    this.props.navigate({ section });
   }
 
   style = style
   joinFieldRef = React.createRef();
 
   render() {
-    const { model, selected, onBack, actions, navigationModel } = this.props;
-    const { section = 'input' } = navigationModel.current;
+    const { selected, onBack, actions, navigation, tasks, transitions } = this.props;
+    const { section = 'input', toTasks } = navigation;
     const { name, rename } = this.state;
 
-    const task = selected && model.tasks.find(task => task.name === selected);
+    const task = selected && tasks.find(task => task.name === selected);
+    const taskNames = selected && tasks.map(task => task.name);
 
     if (!task) {
       return false;
     }
 
-    const transitions = !!selected && model.transitions
+    const trans = !!selected && transitions
       .filter(transition => transition.from.name === task.name)
       .reduce((acc, transition) => {
         const t = acc.find(t => t.condition === transition.condition);
@@ -178,14 +207,14 @@ class TaskDetails extends Component<{
                   <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleTaskProperty('join', 'all')}>
                     Join all tasks
                   </div>
-                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', (this.joinFieldRef.current || {}).value)} >
-                    Join <input type="text" id="joinField"  size="3" className={this.style.radioField}  ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', e.target.value)} /> tasks
+                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value, 10))} >
+                    Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value, 10))} /> tasks
                   </label>
                 </div>
               )
             }
           </Property>
-          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in [1, 2, 3]' } : false)}>
+          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in <% ctx(y) %>' } : false)}>
             {
               task.with && (
                 <div className={this.style.propertyChild}>
@@ -200,7 +229,11 @@ class TaskDetails extends Component<{
       section === 'transitions' && (
         <Panel key="transitions">
           {
-            (transitions || []).map((transition, index) => <Transition key={index} transition={transition} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />)
+            (trans || []).map((transition, index) => {
+              // TODO: this logic could result in false positives - we need to compare conidtions too
+              const selected = toTasks && toTasks.length === transition.to.length && transition.to.every((t, i) => toTasks[i] === t.name);
+              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />;
+            })
           }
           <div className={this.style.transitionInfo}>
             To add a transition, hover over a task box and drag the connector to the desired task box you want to transition to.
@@ -211,34 +244,47 @@ class TaskDetails extends Component<{
   }
 }
 
-@connect(({ model, navigationModel }) => ({ model, navigationModel }))
+@connect(
+  ({ flow: { tasks }}) => ({ tasks }),
+  (dispatch) => ({
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+  })
+)
 class TaskList extends Component<{
-  model: ModelInterface,
-  navigationModel: Object,
+  tasks: Array<Object>,
+
+  navigate: Function,
 }> {
   static propTypes = {
-    model: PropTypes.object,
-    navigationModel: PropTypes.object,
+    tasks: PropTypes.array,
+
+    navigate: PropTypes.func,
   }
 
   style = style
 
   render() {
-    const { model, navigationModel } = this.props;
+    const { tasks, navigate } = this.props;
 
-    return (
-      <Panel className={this.style.taskPanel}>
+    return ([
+      <Toolbar key="toolbar" secondary={true}>
+        <h4 className={this.style.taskListTitle}>Workflow Tasks</h4>
+      </Toolbar>,
+      <Panel key="panel" className={this.style.taskPanel}>
         {
-          model.tasks.map(task => (
+          tasks.map(task => (
             <Task
               key={task.name}
               task={task}
-              onClick={() => navigationModel.change({ task: task.name })}
+              onClick={() => navigate({ task: task.name })}
             />
           ))
         }
-      </Panel>
-    );
+      </Panel>,
+    ]);
   }
 }
 
@@ -251,14 +297,9 @@ class Task extends Component<{
     onClick: PropTypes.func,
   }
 
-  constructor(...args) {
-    super(...args);
-    this.handleClick = this.handleClick.bind(this);
-  }
-
   style = style
 
-  handleClick(e) {
+  handleClick = (e) => {
     const { onClick } = this.props;
 
     if (!onClick) {
@@ -279,33 +320,68 @@ class Task extends Component<{
         className={this.style.task}
         onClick={this.handleClick}
       >
-        <div className={this.style.taskName}>{ task.name }</div>
-        <div className={this.style.taskAction}>{ task.action }</div>
+        <div className={this.style.taskInfo}>
+          <div className={this.style.taskName}>{ task.name }</div>
+          <div className={this.style.taskAction}>{ task.action }</div>
+        </div>
+        <i className={cx('icon-chevron_right', this.style.taskArrow)} />
       </div>
     );
   }
 }
 
-@connect(({ model, metaModel, navigationModel }) => ({ model, metaModel, navigationModel }))
+@connect(
+  ({ flow: { metaSource }}) => ({
+    source: metaSource,
+  }),
+  (dispatch, source) => ({
+    onEditorChange: source => dispatch({
+      type: 'META_ISSUE_COMMAND',
+      command: 'applyDelta',
+      args: [ null, source ],
+    }),
+  })
+)
+class MetaEditor extends Editor {}
+
+@connect(
+  ({ flow: { workflowSource }}) => ({
+    source: workflowSource,
+  }),
+  (dispatch, source) => ({
+    onEditorChange: source => dispatch({
+      type: 'MODEL_ISSUE_COMMAND',
+      command: 'applyDelta',
+      args: [ null, source ],
+    }),
+  })
+)
+class WorkflowEditor extends Editor {}
+
+@connect(
+  ({ flow: { actions, navigation }}) => ({ actions, navigation }),
+  (dispatch) => ({
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+  })
+)
 export default class Details extends Component<{
   className?: string,
-  model: ModelInterface,
-  metaModel: ModelInterface,
-  navigationModel: Object,
+
+  navigation: Object,
+  navigate: Function,
+
   actions: Array<Object>,
 }> {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object,
-    metaModel: PropTypes.object,
-    navigationModel: PropTypes.object,
-    actions: PropTypes.array,
-  }
 
-  constructor(...args) {
-    super(...args);
-    this.handleBack = this.handleBack.bind(this);
-    this.handleTaskSelect = this.handleTaskSelect.bind(this);
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
+    actions: PropTypes.array,
   }
 
   sections = [{
@@ -318,22 +394,18 @@ export default class Details extends Component<{
 
   style = style
 
-  handleTaskSelect(task: TaskInterface) {
-    this.props.navigationModel.change({ toTask: undefined, task: task.name });
+  handleTaskSelect = (task: TaskInterface) => {
+    this.props.navigate({ toTasks: undefined, task: task.name });
   }
 
-  handleBack() {
-    this.props.navigationModel.change({ toTask: undefined, task: undefined });
+  handleBack = () => {
+    this.props.navigate({ toTasks: undefined, task: undefined });
   }
 
   render() {
-    const { actions, navigationModel } = this.props;
+    const { actions, navigation, navigate } = this.props;
 
-    if (!navigationModel) {
-      return false;
-    }
-
-    const { type = 'metadata', asCode } = navigationModel.current;
+    const { type = 'metadata', asCode } = navigation;
 
     return (
       <div className={cx(this.props.className, this.style.component, asCode && 'code')}>
@@ -345,17 +417,17 @@ export default class Details extends Component<{
                   key={section.title}
                   className={section.className}
                   selected={type === section.title}
-                  onClick={() => navigationModel.change({ type: section.title, section: undefined })}
+                  onClick={() => navigate({ type: section.title, section: undefined })}
                 />
               );
             })
           }
-          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => navigationModel.change({ asCode: !asCode })} />
+          <ToolbarButton className={cx(style.code, 'icon-code')} selected={asCode} onClick={() => navigate({ asCode: !asCode })} />
         </Toolbar>
         {
           type === 'metadata' && (
             asCode
-              && <Editor model={this.props.metaModel} />
+              && <MetaEditor />
               // $FlowFixMe Model is populated via decorator
               || <Meta />
           )
@@ -363,10 +435,10 @@ export default class Details extends Component<{
         {
           type === 'execution' && (
             asCode
-              && <Editor model={this.props.model} selectedTaskName={navigationModel.current.task} onTaskSelect={this.handleTaskSelect} />
-              || navigationModel.current.task
+              && <WorkflowEditor selectedTaskName={navigation.task} onTaskSelect={this.handleTaskSelect} />
+              || navigation.task
                 // $FlowFixMe ^^
-                && <TaskDetails onBack={this.handleBack} selected={navigationModel.current.task} actions={actions} />
+                && <TaskDetails onBack={this.handleBack} selected={navigation.task} actions={actions} />
                 // $FlowFixMe ^^
                 || <TaskList />
           )

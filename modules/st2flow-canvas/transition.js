@@ -1,9 +1,11 @@
 //@flow
 
 import type { TaskInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { Node } from 'react';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import Vector from './vector';
 import { origin } from './const';
@@ -39,38 +41,54 @@ function roundCorner(from, origin, to) {
 }
 
 type Target = {
-  task?: TaskInterface,
+  task: TaskInterface,
   anchor: string
 }
 
-export default class Transition extends Component<{
-  from: Target,
-  to: Target,
-  selected: boolean,
+class Path extends Component<{
   onClick: Function
 }> {
-  static propTypes = {
-    from: PropTypes.object.isRequired,
-    to: PropTypes.object.isRequired,
-  }
-
   componentDidMount() {
     // React fail: onClick isn't supported for SVG elements, so
     // manually set up the click handler here.
-    if(this.pathElement && this.pathElement instanceof Element) {
-      this.pathElement.addEventListener('click', this.props.onClick);
+    if(this.pathElement.current && this.pathElement.current instanceof Element) {
+      this.pathElement.current.addEventListener('click', () => this.props.onClick);
     }
   }
 
   componentWillUnmount() {
-    if(this.pathElement && this.pathElement instanceof Element) {
-      this.pathElement.removeEventListener('click', this.props.onClick);
+    if(this.pathElement.current && this.pathElement.current instanceof Element) {
+      this.pathElement.current.removeEventListener('click', this.props.onClick);
     }
   }
 
-  uniqId = 'some'
+  pathElement = React.createRef()
 
-  pathElement = undefined
+  render() {
+    return <path ref={this.pathElement} {...this.props} />;
+  }
+}
+
+export default class TransitionGroup extends Component<{
+  transitions: Array<{
+    from: Target,
+    to: Target,
+  }>,
+  selected: boolean,
+  onClick: Function,
+}> {
+  static propTypes = {
+    transitions: PropTypes.arrayOf(
+      PropTypes.shape({
+        from: PropTypes.object.isRequired,
+        to: PropTypes.object.isRequired,
+      })
+    ),
+    selected: PropTypes.bool,
+    onClick: PropTypes.func,
+  }
+
+  uniqId = 'some'
 
   style = style
 
@@ -130,52 +148,67 @@ export default class Transition extends Component<{
     return path.join(' ');
   }
 
-  render() {
-    const { from, to, selected, ...props } = this.props;
+  render(): Array<Node> {
+    const { transitions, selected, ...props } = this.props;
 
-    const path = this.makePath(from, to);
+    const transitionPaths = transitions
+      .map(({ from, to }) => ({
+        from: from.task.name,
+        to: to.task.name, 
+        path: this.makePath(from, to),
+      }));
 
-    return (
-      [
-        <defs key="marker">
-          {selected && [
-            <marker id={`${this.uniqId}ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
-            </marker>,
-            <marker id={`${this.uniqId}Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrowActive} />
-            </marker>,
-          ]}
-          <marker id={this.uniqId} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+    const markers = (
+      <defs key="marker">
+        {selected && [
+          <marker id={`${this.uniqId}${selected && 'selected'}ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
             <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
-          </marker>
-        </defs>,
-        selected && [
-          <path
-            className={this.style.transitionActiveBorder}
-            key="pathActiveBorder"
-            d={path}
-            markerEnd={`url(#${this.uniqId}ActiveBorder)`}
-            {...props}
-          />,
-          <path
-            className={this.style.transitionActive}
-            key="pathActive"
-            d={path}
-            markerEnd={`url(#${this.uniqId}Active)`}
-            {...props}
-          />,
-        ],
-        <path
-          className={this.style.transition}
-          key="path"
-          d={path}
-          markerEnd={`url(#${this.uniqId})`}
-          pointerEvents="visibleStroke"
-          ref={(ref) => this.pathElement = ref}
-          {...props}
-        />,
-      ]
+          </marker>,
+          <marker id={`${this.uniqId}${selected && 'selected'}Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrowActive} />
+          </marker>,
+        ]}
+        <marker id={this.uniqId} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
+        </marker>
+      </defs>
     );
+
+    const activeBorders = transitionPaths.map(({ from, to, path }) => (
+      <Path
+        className={cx(this.style.transitionActiveBorder, selected && this.style.selected)}
+        key={`${from}-${to}-pathActiveBorder`}
+        d={path}
+        markerEnd={`url(#${this.uniqId}${selected && 'selected' || ''}ActiveBorder)`}
+        onClick={this.props.onClick}
+        {...props}
+      />
+    ));
+
+    const actives = transitionPaths.map(({ from, to, path }) => (
+      <Path
+        className={cx(this.style.transitionActive, selected && this.style.selected)}
+        key={`${from}-${to}-pathActive`}
+        d={path}
+        markerEnd={`url(#${this.uniqId}${selected && 'selected' || ''}Active)`}
+        {...props}
+      />
+    ));
+
+    const paths = transitionPaths.map(({ from, to, path }) => (
+      <Path
+        className={this.style.transition}
+        key={`${from}-${to}-path`}
+        d={path}
+        markerEnd={`url(#${this.uniqId})`}
+        {...props}
+      />
+    ));
+
+    return [ markers ]
+      .concat(activeBorders)
+      .concat(actives)
+      .concat(paths);
+
   }
 }

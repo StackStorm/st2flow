@@ -23,6 +23,7 @@ class BaseClass {
   yaml: string;
   modelName: string;
   tokenSet: TokenSet;
+  errors: Array<Object>;
   emitter: EventEmitter;
 
   constructor(schema: Object, yaml: ?string): void {
@@ -41,6 +42,7 @@ class BaseClass {
 
   fromYAML(yaml: string): void {
     const { oldTree } = this.startMutation();
+    this.errors = [];
 
     try {
       this.tokenSet = new TokenSet(yaml);
@@ -49,7 +51,7 @@ class BaseClass {
     catch (ex) {
       // The parser is overly verbose on certain errors, so
       // just grab the relevant parts. Also normalize it to an array.
-      const exception = ex.length > 2 ? ex.slice(0, 2) : [].concat(ex);
+      const exception = Array.isArray(ex) && ex.length > 2 ? ex.slice(0, 2) : [].concat(ex);
       this.yaml = yaml;
       this.emitError(exception, STR_ERROR_YAML);
 
@@ -106,7 +108,10 @@ class BaseClass {
   }
 
   emitChange(oldTree: Object, tokenSet: TokenSet): void {
+    this.errors = [];
+
     const newTree = tokenSet.toObject();
+
     if(!ajv.validate(this.modelName, newTree)) {
       this.emitError(formatAjvErrors(ajv.errors), STR_ERROR_SCHEMA);
       return;
@@ -120,6 +125,8 @@ class BaseClass {
   }
 
   emitError(error: GenericError | Array<GenericError>, type: string = 'error') {
+    this.errors = this.errors.concat(error);
+
     this.emitter.emit(type, error);
   }
 

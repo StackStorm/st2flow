@@ -16,6 +16,7 @@ export default class Task extends Component<{
   scale: number,
   selected: bool,
   onMove: Function,
+  onConnect: Function,
   onClick: Function,
   onDelete: Function,
 }, {
@@ -26,6 +27,7 @@ export default class Task extends Component<{
     scale: PropTypes.number.isRequired,
     selected: PropTypes.bool,
     onMove: PropTypes.func,
+    onConnect: PropTypes.func,
     onClick: PropTypes.func,
     onDelete: PropTypes.func,
   }
@@ -152,7 +154,7 @@ export default class Task extends Component<{
     }
   }
 
-  handleDragStartHandle = (e: DragEvent, handle: string) => {
+  handleDragStartHandle = (e: DragEvent) => {
     e.stopPropagation();
 
     this.style.opacity = '0.4';
@@ -163,7 +165,6 @@ export default class Task extends Component<{
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('application/json', JSON.stringify({
         task,
-        handle,
       }));
     }
   }
@@ -187,9 +188,11 @@ export default class Task extends Component<{
     }
 
     if (e.dataTransfer) {
-      const { task, handle } = JSON.parse(e.dataTransfer.getData('application/json'));
+      const { task } = JSON.parse(e.dataTransfer.getData('application/json'));
 
-      console.log(task, handle);
+      if (this.props.onConnect) {
+        this.props.onConnect(task);
+      }
     }
 
     return false;
@@ -227,9 +230,6 @@ export default class Task extends Component<{
           <div className={cx(this.style.taskAction)}>{task.action}</div>
         </div>
         <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} onClick={() => onDelete()} />
-        <div className={this.style.taskHandle} style={{ top: '50%', left: 0 }} draggable ref={this.handleRef} />
-        <div className={this.style.taskHandle} style={{ top: 0, left: '50%' }}  draggable ref={this.handleRef} />
-        <div className={this.style.taskHandle} style={{ top: '50%', left: '100%' }}  draggable ref={this.handleRef} />
         <div className={this.style.taskHandle} style={{ top: '100%', left: '50%' }}  draggable ref={this.handleRef} />
       </div>
     );

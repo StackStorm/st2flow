@@ -35,8 +35,15 @@
 
   .task {
     border-bottom: none;
-
     flex: 1;
+
+    &:hover {
+      background-color: initial;
+    }
+
+    &-arrow {
+      display: none;
+    }
   }
 
   .edit {
@@ -110,18 +117,39 @@
   flex: 1;
 }
 
+.task-list-title {
+  margin: 12px;
+  color: var(--gray);
+  text-transform: uppercase;
+}
+
 .taskPanel {
   padding: 10px;
 }
 
 .task {
+  display: flex;
+  align-items: center;
   cursor: pointer;
   padding: 10px;
   border-bottom: 1px solid #ccc;
 
   &:hover {
     background-color: #eee;
-  };
+  }
+
+  &-info {
+    flex-grow: 1;
+  }
+
+  &-name {
+    font-weight: bold;
+  }
+
+  &-arrow {
+    flex-grow: 0;
+    font-size: 1.3em;
+  }
 }
 
 .parameter {
@@ -206,6 +234,10 @@
 }
 
 .transition {
+  border-bottom: 1px solid #ccc;
+  margin-top: 15px;
+  padding-bottom: 15px;
+
   display: grid;
 
   grid-template-columns: auto 1fr auto;
@@ -214,16 +246,30 @@
 
   align-items: center;
 
-  border-bottom: 1px solid #ccc;
-  margin-top: 15px;
-  padding-bottom: 15px;
-
   & + & {
     margin-top: 20px;
   }
 
+  &-selected {
+    background-color: var(--yellow-lighten-5);
+    border-left: 4px solid var(--yellow-base);
+    margin-left: -4px;
+    padding-left: 10px;
+    padding-top: 15px;
+  }
+
   &-line {
     display: contents;
+  }
+
+  &-publish {
+    grid-column: 1 / -1;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    grid-auto-rows: auto;
+    align-items: center;
+    grid-gap: 12px;
   }
 
   &-label {
@@ -233,6 +279,14 @@
   }
 
   &-field {
+    grid-column: 2;
+  }
+
+  &-publish-key {
+    grid-column: 1;
+  }
+
+  &-publish-value {
     grid-column: 2;
   }
 

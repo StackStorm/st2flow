@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
+import { Provider, connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 
 import Header from '@stackstorm/st2flow-header';
@@ -8,51 +8,114 @@ import Palette from '@stackstorm/st2flow-palette';
 import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
-import { connect, register } from '@stackstorm/st2flow-model/connect';
-import OrquestaModel from '@stackstorm/st2flow-model/model-orquesta';
-import MetaModel from '@stackstorm/st2flow-model/model-meta';
-import EventEmitter from '@stackstorm/st2flow-model/event-emitter';
+import api from '@stackstorm/module-api';
+// import { models } from '@stackstorm/st2flow-model';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
+import Toolbar from '@stackstorm/st2flow-canvas/toolbar';
 
 import { Router } from '@stackstorm/module-router';
-import store from '@stackstorm/module-store';
+import globalStore from '@stackstorm/module-store';
 
+import store from './store';
 import style from './style.css';
 
-@connect(({ collapseModel }) => ({ collapseModel }))
+@connect(
+  ({ flow: { panels, actions, meta } }) => ({ isCollapsed: panels, actions, meta }),
+  (dispatch) => ({
+    toggleCollapse: name => dispatch({
+      type: 'PANEL_TOGGLE_COLLAPSE',
+      name,
+    }),
+    fetchActions: () => dispatch({
+      type: 'FETCH_ACTIONS',
+      promise: api.request({ path: '/actions/views/overview' })
+        .catch(() => fetch('/actions.json').then(res => res.json())),
+    }),
+    undo: () => dispatch({ type: 'FLOW_UNDO' }),
+    redo: () => dispatch({ type: 'FLOW_REDO' }),
+    layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
+  })
+)
 class Window extends Component<{
-  collapseModel: Object,
+  meta: Object,
+  metaSource: string,
+  workflowSource: string,
+
+  isCollapsed: Object,
+  toggleCollapse: Function,
+
+  actions: Array<Object>,
+  fetchActions: Function,
+
+  undo: Function,
+  redo: Function,
+  layout: Function,
 }> {
   static propTypes = {
-    collapseModel: PropTypes.object,
-  }
-  state = {
-    actions: [],
+    meta: PropTypes.object,
+    metaSource: PropTypes.string,
+    workflowSource: PropTypes.string,
+
+    isCollapsed: PropTypes.object,
+    toggleCollapse: PropTypes.func,
+
+    actions: PropTypes.array,
+    fetchActions: PropTypes.func,
+
+    undo: PropTypes.func,
+    redo: PropTypes.func,
+    layout: PropTypes.func,
   }
 
   async componentDidMount() {
-    const res = await fetch('/actions.json');
+    this.props.fetchActions();
+  }
 
-    this.setState({ actions: await res.json() });
+  save() {
+    const { meta, actions, workflowSource, metaSource } = this.props;
+
+    const existingAction = actions.find(e => e.name === meta.name && e.pack === meta.pack);
+
+    meta.data_files = [{
+      file_path: meta.entry_point,
+      content: workflowSource,
+    }, {
+      file_path: existingAction && existingAction.metadata_file && existingAction.metadata_file.replace(/^actions\//, '') || `${meta.name}.meta.yaml`,
+      content: metaSource,
+    }];
+    
+    if (existingAction) {
+      return api.request({ method: 'put', path: `/actions/${meta.pack}.${meta.name}` }, meta);
+    }
+    else {
+      return api.request({ method: 'post', path: '/actions' }, meta);
+    }
   }
 
   style = style
 
   render() {
-    const { collapseModel } = this.props;
-    const { actions } = this.state;
+    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout } = this.props;
 
     return (
       <div className="component">
         <div className="component-row-header">
-          { !collapseModel.isCollapsed('header') && <Header className="header" /> }
-          <CollapseButton position="top" state={collapseModel.isCollapsed('header')} onClick={() => collapseModel.toggle('header')} />
+          { !isCollapsed.header && <Header className="header" /> }
+          <CollapseButton position="top" state={isCollapsed.header} onClick={() => toggleCollapse('header')} />
         </div>
         <div className="component-row-content">
-          { !collapseModel.isCollapsed('palette') && <Palette className="palette" actions={actions} /> }
-          <Canvas className="canvas" />
-          { !collapseModel.isCollapsed('details') && <Details className="details" actions={actions} /> }
+          { !isCollapsed.palette && <Palette className="palette" actions={actions} /> }
+          <Canvas className="canvas">
+            <Toolbar>
+              <div key="undo" icon="icon-redirect" onClick={() => undo()} />
+              <div key="redo" icon="icon-redirect2" onClick={() => redo()} />
+              <div key="rearrange" icon="icon-arrange" onClick={() => layout()} />
+              <div key="save" icon="icon-save" onClick={() => this.save()} />
+              <div key="run" icon="icon-play" onClick={() => console.log('run')} />
+            </Toolbar>
+          </Canvas>
+          { !isCollapsed.details && <Details className="details" actions={actions} /> }
         </div>
       </div>
     );
@@ -103,7 +166,11 @@ tasks:
     action: core.local
 `;
 
-register('model', new OrquestaModel(tmpYAML));
+store.dispatch({
+  type: 'MODEL_ISSUE_COMMAND',
+  command: 'applyDelta',
+  args: [ null, tmpYAML ],
+});
 
 const tmpMeta = `---
 description: Build node automation workflow.
@@ -112,7 +179,6 @@ entry_point: workflows/build-controller.yaml
 name: build-controller
 pack: st2cicd
 runner_type: orquesta
-type: foo
 parameters:
   # build_num:
   #   required: true
@@ -131,55 +197,28 @@ parameters:
     default: false
 `;
 
-register('metaModel', new MetaModel(tmpMeta));
+store.dispatch({
+  type: 'META_ISSUE_COMMAND',
+  command: 'applyDelta',
+  args: [ null, tmpMeta ],
+});
 
-class CollapseModel {
-  emitter = new EventEmitter();
-  panels = {};
+// subscribe('metaModel', m => {
+//   const model = get('model');
 
-  on(eventName, fn) {
-    return this.emitter.on(eventName, fn);
-  }
+//   if (model.constructor.runner_types.indexOf(m.runner_type) === -1) {
+//     const NewModel = models[m.runner_type];
 
-  removeListener(eventName, fn) {
-    return this.emitter.removeListener(eventName, fn);
-  }
+//     if (NewModel) {
+//       register('model', new NewModel(model.toYAML()));
+//     }
+//   }
 
-  toggle(name) {
-    this.panels[name] = !this.panels[name];
-    this.emitter.emit('change');
-  }
-
-  isCollapsed(name) {
-    return this.panels[name];
-  }
-}
-
-register('collapseModel', new CollapseModel());
-
-class NavigationModel {
-  emitter = new EventEmitter();
-  current = {};
-
-  on(eventName, fn) {
-    return this.emitter.on(eventName, fn);
-  }
-
-  removeListener(eventName, fn) {
-    return this.emitter.removeListener(eventName, fn);
-  }
-
-  change(newState) {
-    this.current = { ...this.current, ...newState };
-    this.emitter.emit('change');
-  }
-}
-
-register('navigationModel', new NavigationModel());
+// });
 
 const routes = [{
   url: '/',
   Component: Window,
 }];
 
-ReactDOM.render(<Provider store={store}><Router routes={routes} /></Provider>, document.querySelector('#container'));
+ReactDOM.render(<Provider store={globalStore}><Router routes={routes} /></Provider>, document.querySelector('#container'));

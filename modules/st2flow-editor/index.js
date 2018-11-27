@@ -1,61 +1,62 @@
 //@flow
 
-import type { TaskInterface } from '@stackstorm/st2flow-yaml';
-import type { ModelInterface, DeltaInterface } from '@stackstorm/st2flow-model';
-import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+import type { TaskInterface, DeltaInterface } from '@stackstorm/st2flow-model';
+import type { GenericError } from '@stackstorm/st2flow-model';
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import ace from 'brace';
 import 'brace/ext/language_tools';
 import 'brace/mode/yaml';
-import Notifications from '@stackstorm/st2flow-notifications';
 
 import style from './style.css';
 
 const Range = ace.acequire('ace/range').Range;
 const editorId = 'editor_mount_point';
 const DELTA_DEBOUNCE = 300; // ms
+const DEFAULT_TAB_SIZE = 2;
 
+@connect(
+  ({ ranges, errors }) => ({ ranges, errors })
+)
 export default class Editor extends Component<{
   className?: string,
-  model: ModelInterface,
-}, {
-  errors: Array<Error>
+  ranges?: Object,
+  errors?: Array<Error>,
+  selectedTaskName?: string,
+  onTaskSelect?: Function,
+  source?: string,
+  onEditorChange?: Function,
 }> {
   static propTypes = {
     className: PropTypes.string,
-    model: PropTypes.object,
+    ranges: PropTypes.object,
+    errors: PropTypes.array,
     selectedTaskName: PropTypes.string,
     onTaskSelect: PropTypes.func,
-  }
-
-  constructor(...args: any) {
-    super(...args);
-
-    this.state = {
-      errors: [],
-    };
+    source: PropTypes.string,
+    onEditorChange: PropTypes.func,
   }
 
   componentDidMount() {
-    const { model } = this.props;
+    const { source } = this.props;
     ace.acequire('ace/ext/language_tools');
 
     this.editor = ace.edit(editorId);
     this.editor.$blockScrolling = Infinity;
     this.editor.setOptions({
       mode: 'ace/mode/yaml',
-      tabSize: 2,
       useSoftTabs: true,
       showPrintMargin: false,
       highlightActiveLine: false,
     });
 
     this.editor.renderer.setPadding(10);
-    this.editor.setValue(model.toYAML(), -1);
+    this.editor.setValue(source || '', -1);
+    this.setTabSize();
     this.editor.on('change', this.handleEditorChange);
 
     if(this.props.selectedTaskName) {
@@ -63,16 +64,20 @@ export default class Editor extends Component<{
         this.handleTaskSelect({ name: this.props.selectedTaskName });
       }, 20);
     }
-
-    model.on('change', this.handleModelChange);
-    model.on('yaml-error', this.handleModelError);
-    model.on('undo', this.undo);
-    model.on('redo', this.redo);
   }
 
-  componentDidUpdate(prevProps) {
-    if (this.props.selectedTaskName !== prevProps.selectedTaskName) {
-      this.handleTaskSelect({ name: this.props.selectedTaskName });
+  componentDidUpdate(prevProps: Object) {
+    const { selectedTaskName, source, errors } = this.props;
+    if (selectedTaskName !== prevProps.selectedTaskName) {
+      this.handleTaskSelect({ name: selectedTaskName });
+    }
+
+    if (source && source !== prevProps.source) {
+      this.handleModelChange([], source);
+    }
+
+    if (errors && errors !== prevProps.errors) {
+      this.handleModelError(errors);
     }
   }
 
@@ -83,22 +88,13 @@ export default class Editor extends Component<{
     if(this.mountCallback) {
       clearTimeout(this.mountCallback);
     }
-
-    const { model } = this.props;
-    model.removeListener('change', this.handleModelChange);
-    model.removeListener('yaml-error', this.handleModelError);
-    model.removeListener('undo', this.undo);
-    model.removeListener('redo', this.redo);
   }
 
-  undo = () => {
-    this.editor.undo();
-    this.props.model.fromYAML(this.editor.getValue());
-  }
+  setTabSize() {
+    // const { model: { tokenSet } } = this.props;
+    const tokenSet = false;
 
-  redo = () => {
-    this.editor.redo();
-    this.props.model.fromYAML(this.editor.getValue());
+    this.editor.session.setTabSize(tokenSet ? tokenSet.indent.length : DEFAULT_TAB_SIZE);
   }
 
   handleTaskSelect(task: TaskInterface) {
@@ -106,7 +102,11 @@ export default class Editor extends Component<{
       this.editor.session.removeMarker(this.selectMarker);
     }
 
-    const [ start, end ] = this.props.model.getRangeForTask(task);
+    if (!this.props.ranges) {
+      return;
+    }
+
+    const [ start, end ] = this.props.ranges[task.name];
     const selection = new Range(start.row, 0, end.row, Infinity);
     const cursor = this.editor.selection.getCursor();
 
@@ -119,7 +119,9 @@ export default class Editor extends Component<{
 
     this.selectMarker = this.editor.session.addMarker(selection, cx(this.style.activeTask), 'fullLine');
 
-    this.props.onTaskSelect(task);
+    if (this.props.onTaskSelect) {
+      this.props.onTaskSelect(task);
+    }
   }
 
   handleEditorChange = (delta: DeltaInterface) => {
@@ -128,37 +130,56 @@ export default class Editor extends Component<{
     // Only if the user is actually typing
     if(this.editor.isFocused()) {
       this.deltaTimer = window.setTimeout(() => {
-        this.props.model.applyDelta(delta, this.editor.getValue());
+        if (this.props.onEditorChange) {
+          this.props.onEditorChange(this.editor.getValue());
+        }
       }, DELTA_DEBOUNCE);
     }
   }
 
   handleModelChange = (deltas: Array<DeltaInterface>, yaml: string) => {
-    this.setState({ errors: [] });
+    this.clearErrorMarkers();
+    this.editor.session.setAnnotations([]);
 
     if (yaml !== this.editor.getValue()) {
       // yaml was changed outside this editor
       this.editor.setValue(yaml, -1);
     }
+
+    this.setTabSize();
   }
 
-  handleModelError = (err: Error) => {
-    // error may or may not be an array
-    this.setState({ errors: err && [].concat(err) || [] });
+  handleModelError = (err: Array<GenericError>) => {
+    const { session } = this.editor;
+    const annotations = [];
+
+    this.clearErrorMarkers();
+
+    this.errorMarkers = err.filter(e => !!e.mark).map((e, i) => {
+      const { line: row, column } = e.mark;
+      const selection = new Range(row, 0, row, Infinity);
+
+      annotations.push({
+        row,
+        column,
+        type: 'warning',
+        text: e.message,
+      });
+
+      return session.addMarker(selection, cx(this.style.errorLine), 'fullLine');
+    });
+
+    session.setAnnotations(annotations);
   }
 
-  handleNotificationRemove = (notification: NotificationInterface) => {
-    switch(notification.type) {
-      case 'error':
-        this.setState({
-          errors: this.state.errors.filter(err => err.message !== notification.message),
-        });
-        break;
+  clearErrorMarkers() {
+    if(this.errorMarkers && this.errorMarkers.length) {
+      this.errorMarkers.forEach(m => this.editor.session.removeMarker(m));
     }
   }
 
   get notifications() {
-    return this.state.errors.map(err => ({
+    return this.props.errors && this.props.errors.map(err => ({
       type: 'error',
       message: err.message,
     }));
@@ -167,25 +188,21 @@ export default class Editor extends Component<{
 
   editor: any;
   selectMarker: any;
+  errorMarkers: Array<any>;   // array of error markers
   deltaTimer = 0; // debounce timer
+  mountCallback: any;
+
   style = style;
 
   render() {
+    const { errors } = this.props;
+
     return (
-      <div className={cx(this.props.className, this.style.component)}>
+      <div className={cx(this.props.className, this.style.component, { [this.style.hasError]: errors && errors.length })}>
         <div
           id={editorId}
           className={this.style.editor}
         />
-        {!this.notifications.length ?
-          null : (
-            <Notifications
-              className={style.notifications}
-              position="top"
-              notifications={this.notifications}
-              onRemove={this.handleNotificationRemove}
-            />
-          )}
       </div>
     );
   }

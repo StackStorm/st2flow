@@ -1,14 +1,19 @@
 //@flow
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+
 
 import Action from './action';
 import Pack from './pack';
 
 import style from './style.css';
 
+@connect(
+  ({ flow: { actions }}) => ({ actions })
+)
 export default class Palette extends Component<{
   className?: string,
   actions: Array<Object>,
@@ -55,7 +60,6 @@ export default class Palette extends Component<{
                 if (!pack) {
                   pack = {
                     name: action.pack,
-                    icon: 'static/icon.png',
                     actions: [],
                   };
                   acc.push(pack);
@@ -67,7 +71,7 @@ export default class Palette extends Component<{
               }, [])
               .map(pack => {
                 return (
-                  <Pack key={pack.name} name={pack.name} icon={pack.icon}>
+                  <Pack key={pack.name} name={pack.name}>
                     {
                       pack.actions
                         .map(action => <Action key={action.ref} action={action} />)

@@ -7,10 +7,12 @@ import TokenRefinery from '../token-refinery';
 import { source as objSource, result as objResult } from './refinery/obj-to-yaml';
 import { source as jsInYamlSource, result as jsInYamlResult, newData } from './refinery/js-in-yaml';
 
+const DEFAULT_INDENT = '  ';
+
 describe('Token Refinery', () => {
   it('refines plain object data into the correct yaml format', () => {
     const mappingToken = factory.createToken(objSource);
-    const refinery = new TokenRefinery(mappingToken, '');
+    const refinery = new TokenRefinery(mappingToken, DEFAULT_INDENT, '');
     const { yaml } = refinery.refineTree();
     expect(yaml).to.equal(objResult);
   });

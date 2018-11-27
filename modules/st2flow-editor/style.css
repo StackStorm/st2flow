@@ -1,6 +1,11 @@
 .component {
   flex: 1;
   position: relative;
+  border-left: 2px solid #f0f0f0;
+}
+
+.has-error {
+  border-left-color: var(--red-darken-1)
 }
 
 .notifications {
@@ -17,4 +22,11 @@
   z-index: 2;
   background-color: var(--yellow-lighten-5);
   border-left: 4px solid var(--yellow-base);
+}
+
+.error-line {
+  position: absolute;
+  z-index: 2;
+  background-color: var(--red-lighten-3);
+  border-left: 4px solid var(--red-darken-1);
 }

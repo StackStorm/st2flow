@@ -118,18 +118,52 @@
   stroke: var(--transition-color);
   stroke-width: 5;
   fill: transparent;
+  pointer-events: none;
+
+  &-button {
+    position: absolute;
+    top: -13px;
+    left: -13px;
+
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+    border: 1px solid #ffa256;
+    background-color: #fff3e6;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    &:after {
+      content: ' ';
+    }
+  }
 }
 
 .transition-active {
-  stroke: var(--selected-bg);
   stroke-width: 12;
   fill: transparent;
+  stroke: transparent;
+
+  &.selected {
+    stroke: var(--selected-bg);
+    pointer-events: none;
+  }
 }
 
 .transition-active-border {
-  stroke: var(--transition-color);
   stroke-width: 13;
   fill: transparent;
+  stroke: transparent;
+  pointer-events: stroke;
+
+  &.selected {
+    stroke: var(--transition-color);
+    pointer-events: none;
+  }
 }
 
 .transition-arrow {
@@ -201,6 +235,18 @@
   &:after {
     content: ' ';
   }
+
+  &.success {
+    animation: ok .2s linear 3s forwards;
+    background-color: var(--green-base);
+    color: white;
+  }
+
+  &.error {
+    animation: fail .2s linear 3s forwards;
+    background-color: var(--red-base);
+    color: white;
+  }
 }
 
 .collapse-button {
@@ -235,5 +281,27 @@
     background-color: rgba(30, 29, 31, 0.22);
     width: initial;
     padding: 5px 0;
+  }
+}
+
+@keyframes ok {
+  0% {
+    background-color: var(--green-base);
+    color: white;
+  }
+  100% {
+    background-color: white;
+    color: var(--gray);
+  }
+}
+
+@keyframes fail {
+  0% {
+    background-color: var(--red-base);
+    color: white;
+  }
+  100% {
+    background-color: white;
+    color: var(--gray);
   }
 }

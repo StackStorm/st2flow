@@ -1,24 +1,25 @@
 //@flow
 
 import type {
-  ModelInterface,
   CanvasPoint,
   TaskRefInterface,
+  TaskInterface,
   TransitionInterface,
 } from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+import type { Node } from 'react';
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+import fp from 'lodash/fp';
 
 import Notifications from '@stackstorm/st2flow-notifications';
-import { connect, layout } from '@stackstorm/st2flow-model';
 
 import Task from './task';
-import Transition from './transition';
+import TransitionGroup from './transition';
 import Vector from './vector';
-import Toolbar from './toolbar';
 import CollapseButton from './collapse-button';
 
 import { origin } from './const';
@@ -29,26 +30,63 @@ type Wheel = WheelEvent & {
   wheelDelta: number
 }
 
-@connect(({ model, collapseModel, navigationModel }) => ({ model, collapseModel, navigationModel }))
+@connect(
+  ({ flow: { tasks, transitions, errors, lastTaskIndex, panels, navigation }}) => ({ tasks, transitions, errors, lastTaskIndex, isCollapsed: panels, navigation }),
+  (dispatch) => ({
+    issueModelCommand: (command, ...args) => {
+      dispatch({
+        type: 'MODEL_ISSUE_COMMAND',
+        command,
+        args,
+      });
+    },
+    toggleCollapse: name => dispatch({
+      type: 'PANEL_TOGGLE_COLLAPSE',
+      name,
+    }),
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+  })
+)
 export default class Canvas extends Component<{
+      children: Node,
       className?: string,
-      model: ModelInterface,
-      collapseModel: Object,
-      navigationModel: Object,
+      
+      navigation: Object,
+      navigate: Function,
+
+      tasks: Array<TaskInterface>,
+      transitions: Array<Object>,
+      errors: Array<Error>,
+      issueModelCommand: Function,
+      lastTaskIndex: number,
+
+      isCollapsed: Object,
+      toggleCollapse: Function,
     }, {
       scale: number,
-      errors: Array<Error>,
     }> {
   static propTypes = {
+    children: PropTypes.node,
     className: PropTypes.string,
-    model: PropTypes.object,
-    collapseModel: PropTypes.object,
-    navigationModel: PropTypes.object,
+
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
+    tasks: PropTypes.array,
+    transitions: PropTypes.array,
+    errors: PropTypes.array,
+    issueModelCommand: PropTypes.func,
+    lastTaskIndex: PropTypes.number,
+
+    isCollapsed: PropTypes.object,
+    toggleCollapse: PropTypes.func,
   }
 
   state = {
     scale: 0,
-    errors: [],
   }
 
   componentDidMount() {
@@ -62,12 +100,9 @@ export default class Canvas extends Component<{
     el.addEventListener('mousedown', this.handleMouseDown);
     window.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
+    window.addEventListener('resize', this.handleUpdate);
     el.addEventListener('dragover', this.handleDragOver);
     el.addEventListener('drop', this.handleDrop);
-
-    const { model } = this.props;
-    model.on('change', this.handleModelChange);
-    model.on('schema-error', this.handleModelError);
 
     this.handleUpdate();
   }
@@ -87,12 +122,9 @@ export default class Canvas extends Component<{
     el.removeEventListener('mousedown', this.handleMouseDown);
     window.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
+    window.removeEventListener('resize', this.handleUpdate);
     el.removeEventListener('dragover', this.handleDragOver);
     el.removeEventListener('drop', this.handleDrop);
-
-    const { model } = this.props;
-    model.removeListener('change', this.handleModelChange);
-    model.removeListener('schema-error', this.handleModelError);
   }
 
   size: CanvasPoint
@@ -100,7 +132,7 @@ export default class Canvas extends Component<{
   startx: number
   starty: number
 
-  handleUpdate() {
+  handleUpdate = () => {
     const canvasEl = this.canvasRef.current;
     const surfaceEl = this.surfaceRef.current;
 
@@ -108,12 +140,12 @@ export default class Canvas extends Component<{
       return;
     }
 
-    const { model }: { model: ModelInterface } = this.props;
+    const { tasks } = this.props;
     const { width, height } = canvasEl.getBoundingClientRect();
 
     const scale = Math.E ** this.state.scale;
 
-    this.size = model.tasks.reduce((acc, item) => {
+    this.size = tasks.reduce((acc, item) => {
       const coords = new Vector(item.coords);
       const size = new Vector(item.size);
       const { x, y } = coords.add(size).add(50);
@@ -127,8 +159,8 @@ export default class Canvas extends Component<{
       y: height / scale,
     });
 
-    surfaceEl.style.width = `${(this.size.x - 1).toFixed()}px`;
-    surfaceEl.style.height = `${(this.size.y - 1).toFixed()}px`;
+    surfaceEl.style.width = `${(this.size.x).toFixed()}px`;
+    surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
   }
 
   handleMouseWheel = (e: Wheel) => {
@@ -231,8 +263,8 @@ export default class Canvas extends Component<{
 
     const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle)).subtract(new Vector(origin));
 
-    this.props.model.addTask({
-      name: `task${this.props.model.lastTaskIndex + 1}`,
+    this.props.issueModelCommand('addTask', {
+      name: `task${this.props.lastTaskIndex + 1}`,
       action: action.ref,
       coords: Vector.max(coords, new Vector(0, 0)),
     });
@@ -241,62 +273,41 @@ export default class Canvas extends Component<{
   }
 
   handleTaskMove = (task: TaskRefInterface, coords: CanvasPoint) => {
-    this.props.model.updateTask(task, { coords });
+    this.props.issueModelCommand('updateTask', task, { coords });
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
+    this.props.navigate({ task: task.name, toTasks: undefined, type: 'execution', section: 'input' });
   }
 
-  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
+  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
+    this.props.navigate({ task: transition.from.name, toTasks: transition.to.map(t => t.name), type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
-  }
-
-  handleModelChange = () => {
-    // clear any errors
-    if(this.state.errors && this.state.errors.length) {
-      this.setState({ errors: [] });
-    }
-  }
-
-  handleModelChange = () => {
-    // clear any errors
-    if(this.state.errors && this.state.errors.length) {
-      this.setState({ errors: [] });
-    }
-  }
-
-  handleModelError = (e: Error) => {
-    // error may or may not be an array
-    this.setState({ errors: e && [].concat(e) || [] });
-  }
-
-  handleNotificationRemove = (notification: NotificationInterface) => {
-    switch(notification.type) {
-      case 'error':
-        this.setState({
-          errors: this.state.errors.filter(err => err.message !== notification.message),
-        });
-        break;
-    }
+    this.props.navigate({ task: undefined, toTasks: undefined, section: undefined, type: 'metadata' });
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ toTask: undefined, task: task.name });
+    this.props.navigate({ toTasks: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
-    this.props.model.deleteTask(task);
+    this.props.issueModelCommand('deleteTask', task);
+  }
+
+  handleTaskConnect = (to: TaskRefInterface, from: TaskRefInterface) => {
+    this.props.issueModelCommand('addTransition', { from, to });
+  }
+
+  handleTransitionDelete = (transition: TransitionInterface) => {
+    this.props.issueModelCommand('deleteTransition', transition);
   }
 
   get notifications() : Array<NotificationInterface> {
-    return this.state.errors.map(err => ({
+    return this.props.errors.map(err => ({
       type: 'error',
       message: err.message,
     }));
@@ -307,78 +318,129 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { model, collapseModel, navigationModel } = this.props;
+    const { children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
-
-    if (!model || !collapseModel) {
-      return false;
-    }
 
     const surfaceStyle = {
       transform: `scale(${Math.E ** scale})`,
     };
 
+    const transitionGroups = transitions
+      .map(transition => {
+        const from = {
+          task: tasks.find(({ name }) => name === transition.from.name),
+          anchor: 'bottom',
+        };
+
+        const group = transition.to.map(tto => {
+          const to = {
+            task: tasks.find(({ name }) => name === tto.name) || {},
+            anchor: 'top',
+          };
+
+          return {
+            from,
+            to,
+          };
+        });
+
+        return {
+          transition,
+          group,
+        };
+      });
+
+    const selectedTransitionGroups = transitionGroups
+      .filter(({ transition }) => {
+        const { task, toTasks = [] } = navigation;
+        return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+      });
+    
     return (
       <div
         className={cx(this.props.className, this.style.component)}
         onClick={e => this.handleCanvasClick(e)}
       >
-        <Toolbar>
-          <div key="undo" icon="icon-redirect" onClick={() => model.undo()} />
-          <div key="redo" icon="icon-redirect2" onClick={() => model.redo()} />
-          <div key="rearrange" icon="icon-arrange" onClick={() => layout(model)} />
-          <div key="save" icon="icon-save" onClick={() => console.log('save')} />
-          <div key="run" icon="icon-play" onClick={() => console.log('run')} />
-        </Toolbar>
-        <CollapseButton position="left" state={collapseModel.isCollapsed('palette')} onClick={() => collapseModel.toggle('palette')} />
-        <CollapseButton position="right" state={collapseModel.isCollapsed('details')} onClick={() => collapseModel.toggle('details')} />
+        { children }
+        <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
+        <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />
         <div className={this.style.canvas} ref={this.canvasRef}>
           <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
             {
-              model.tasks.map((task) => {
+              tasks.map((task) => {
                 return (
                   <Task
                     key={task.name}
                     task={task}
-                    selected={task.name === navigationModel.current.task}
+                    selected={task.name === navigation.task && !selectedTransitionGroups.length}
                     scale={scale}
                     onMove={(...a) => this.handleTaskMove(task, ...a)}
+                    onConnect={(...a) => this.handleTaskConnect(task, ...a)}
                     onClick={() => this.handleTaskSelect(task)}
                     onDelete={() => this.handleTaskDelete(task)}
                   />
                 );
               })
             }
+            {
+              transitionGroups
+                .filter(({ transition }) => {
+                  const { task, toTasks = [] } = navigation;
+                  return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+                })
+                .map(({ transition }) => {
+                  const toPoint = transition.to
+                    .map(task => tasks.find(({ name }) => name === task.name))
+                    .map(task => new Vector(task.size).multiply(new Vector(.5, 0)).add(new Vector(0, -10)).add(new Vector(task.coords)))
+                    ;
+
+                  const fromPoint = [ transition.from ]
+                    .map((task: TaskRefInterface): any => tasks.find(({ name }) => name === task.name))
+                    .map((task: TaskInterface) => new Vector(task.size).multiply(new Vector(.5, 1)).add(new Vector(task.coords)))
+                    ;
+
+                  const point = fromPoint.concat(toPoint)
+                    .reduce((acc, point) => (acc || point).add(point).divide(2))
+                    ;
+
+                  const { x, y } = point.add(origin);
+                  return (
+                    <div
+                      key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                      className={cx(this.style.transitionButton, this.style.delete, 'icon-delete')}
+                      style={{ transform: `translate(${x}px, ${y}px)`}}
+                      onClick={() => this.handleTransitionDelete(transition)}
+                    />
+                  );
+                })
+            }
             <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
               {
-                model.transitions
-                  .reduce((arr, transition) => {
-                    const from = {
-                      task: model.tasks.find(({ name }) => name === transition.from.name),
-                      anchor: 'bottom',
-                    };
-                    transition.to.forEach(tto => {
-                      const to = {
-                        task: model.tasks.find(({ name }) => name === tto.name),
-                        anchor: 'top',
-                      };
-                      arr.push(
-                        <Transition
-                          key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
-                          from={from}
-                          to={to}
-                          selected={transition.from.name === navigationModel.current.task && tto.name === navigationModel.current.toTask}
-                          onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
-                        />
-                      );
-                    });
-                    return arr;
-                  }, [])
+                transitionGroups
+                  .map(({ id, transition, group }, i) => (
+                    <TransitionGroup
+                      key={`${transition.from.name}-${window.btoa(transition.condition)}`}
+                      transitions={group}
+                      selected={false}
+                      onClick={(e) => this.handleTransitionSelect(e, transition)}
+                    />
+                  ))
+              }
+              {
+                selectedTransitionGroups
+                  .map(({ id, transition, group }, i) => (
+                    <TransitionGroup
+                      key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                      transitions={group}
+                      selected={true}
+                      onClick={(e) => this.handleTransitionSelect(e, transition)}
+                    />
+                  ))
               }
             </svg>
           </div>
         </div>
-        <Notifications position="top" notifications={this.notifications} onRemove={this.handleNotificationRemove} />
+        <Notifications position="bottom" notifications={this.notifications} />
       </div>
     );
   }
