@@ -20,7 +20,7 @@ import store from './store';
 import style from './style.css';
 
 @connect(
-  ({ flow: { panels, actions, meta } }) => ({ isCollapsed: panels, actions, meta }),
+  ({ flow: { panels, actions, meta, metaSource, workflowSource, pack } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack }),
   (dispatch) => ({
     toggleCollapse: name => dispatch({
       type: 'PANEL_TOGGLE_COLLAPSE',
@@ -37,6 +37,8 @@ import style from './style.css';
   })
 )
 class Window extends Component<{
+  pack: string,
+
   meta: Object,
   metaSource: string,
   workflowSource: string,
@@ -52,6 +54,8 @@ class Window extends Component<{
   layout: Function,
 }> {
   static propTypes = {
+    pack: PropTypes.string,
+
     meta: PropTypes.object,
     metaSource: PropTypes.string,
     workflowSource: PropTypes.string,
@@ -72,10 +76,11 @@ class Window extends Component<{
   }
 
   save() {
-    const { meta, actions, workflowSource, metaSource } = this.props;
+    const { pack, meta, actions, workflowSource, metaSource } = this.props;
 
-    const existingAction = actions.find(e => e.name === meta.name && e.pack === meta.pack);
+    const existingAction = actions.find(e => e.name === meta.name && e.pack === pack);
 
+    meta.pack = pack;
     meta.data_files = [{
       file_path: meta.entry_point,
       content: workflowSource,
@@ -85,7 +90,7 @@ class Window extends Component<{
     }];
     
     if (existingAction) {
-      return api.request({ method: 'put', path: `/actions/${meta.pack}.${meta.name}` }, meta);
+      return api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
     }
     else {
       return api.request({ method: 'post', path: '/actions' }, meta);

@@ -40,8 +40,8 @@ const flowReducer = (state = {}, input) => {
   const {
     workflowSource = '',
     metaSource = '',
+    pack = 'default',
     meta = {
-      pack: 'default',
       runner_type: 'orquesta',
     },
     tasks = [],
@@ -61,6 +61,7 @@ const flowReducer = (state = {}, input) => {
     ...state,
     workflowSource,
     metaSource,
+    pack,
     meta,
     tasks,
     transitions,
@@ -160,8 +161,11 @@ const flowReducer = (state = {}, input) => {
     case 'LOAD_WORKFLOW': {
       const { currentWorkflow, status, payload } = input;
 
+      const [ pack ] = currentWorkflow.split('.');
+
       const newState = {
         ...state,
+        pack,
         currentWorkflow,
       };
 
@@ -305,6 +309,14 @@ const undoReducer = (prevState = {}, state = {}, input) => {
       prevRecords.push(pastRecord);
 
       return state;
+    }
+
+    case 'SET_PACK': {
+      const { pack } = input;
+      return {
+        ...state,
+        pack,
+      };
     }
 
     default:

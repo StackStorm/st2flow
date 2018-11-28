@@ -13,7 +13,7 @@ import Parameters from './parameters-panel';
 
 
 @connect(
-  ({ flow: { actions, navigation, meta }}) => ({ actions, navigation, meta }),
+  ({ flow: { pack, actions, navigation, meta }}) => ({ pack, actions, navigation, meta }),
   (dispatch) => ({
     navigate: (navigation) => dispatch({
       type: 'CHANGE_NAVIGATION',
@@ -24,9 +24,16 @@ import Parameters from './parameters-panel';
       command: 'set',
       args: [ field, value ],
     }),
+    setPack: (pack) => dispatch({
+      type: 'SET_PACK',
+      pack,
+    }),
   })
 )
 export default class Meta extends Component<{
+  pack: string,
+  setPack: Function,
+
   meta: Object,
   setMeta: Function,
 
@@ -36,6 +43,9 @@ export default class Meta extends Component<{
   actions: Array<Object>,
 }> {
   static propTypes = {
+    pack: PropTypes.object,
+    setPack: PropTypes.func,
+
     meta: PropTypes.object,
     setMeta: PropTypes.func,
 
@@ -50,10 +60,10 @@ export default class Meta extends Component<{
   }
 
   render() {
-    const { meta, setMeta, navigation, actions } = this.props;
+    const { pack, setPack, meta, setMeta, navigation, actions } = this.props;
     const { section = 'meta' } = navigation;
 
-    const packs = [ ...new Set(actions.map(a => a.pack)).add(meta.pack) ];
+    const packs = [ ...new Set(actions.map(a => a.pack)).add(pack) ];
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
@@ -63,7 +73,7 @@ export default class Meta extends Component<{
       section === 'meta' && (
         <Panel key="meta">
           <EnumField name="Runner Type" value={meta.runner_type} spec={{enum: [ ...new Set([ 'mistral', 'orquesta', 'action-chain', meta.runner_type ]) ]}} onChange={(v) => setMeta('runner_type', v)} />
-          <EnumField name="Pack" value={meta.pack} spec={{enum: packs}} onChange={(v) => setMeta('pack', v)} />
+          <EnumField name="Pack" value={pack} spec={{enum: packs}} onChange={(v) => setPack(v)} />
           <StringField name="Name" value={meta.name} onChange={(v) => setMeta('name', v)} />
           <StringField name="Description" value={meta.description} onChange={(v) => setMeta('description', v)} />
           <BooleanField name="Enabled" value={meta.enabled} spec={{}} onChange={(v) => setMeta('enabled', v)} />
