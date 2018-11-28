@@ -20,7 +20,7 @@ type TransitionProps = {
   },
   taskNames: Array<string> | string,
   selected: boolean,
-  onChange: Function,
+  onChange?: Function,
 };
 
 @connect(
@@ -73,9 +73,10 @@ export default class Transition extends Component<TransitionProps, {
   cache = {} // used to cache togglable data
 
   onPublishToggle = (val: boolean) => {
+    const { onChange } = this.props;
     if(val) {
       if(this.cache.publish) {
-        this.props.onChange('publish', this.cache.publish);
+        onChange && onChange('publish', this.cache.publish);
         delete this.cache.publish;
       }
       else {
@@ -88,7 +89,7 @@ export default class Transition extends Component<TransitionProps, {
     }
     else {
       this.cache.publish = this.props.transition.publish;
-      this.props.onChange('publish', null);
+      onChange && onChange('publish', null);
     }
 
     this.setState({ publishOn: val });
@@ -100,7 +101,7 @@ export default class Transition extends Component<TransitionProps, {
 
     // Make sure to mutate the copy
     val[index] = { [key]: value };
-    onChange('publish', val);
+    onChange && onChange('publish', val);
   }
 
   handleDoChange(index: number, value: string | Array<string>) {
@@ -109,7 +110,7 @@ export default class Transition extends Component<TransitionProps, {
 
     // Make sure to mutate the copy
     val[index] = value;
-    onChange('do', val);
+    onChange && onChange('do', val);
   }
 
   addPublishField = () => {
@@ -117,13 +118,13 @@ export default class Transition extends Component<TransitionProps, {
     const newVal = { key: '<% result().val %>' };
     const val = this.state.publishOn ? publish.concat(newVal) : [ newVal ];
 
-    onChange('publish', val);
+    onChange && onChange('publish', val);
   }
 
   addDoItem = (value) => {
     const { transition: { to }, onChange } = this.props;
     const val = (to || []).map(t => t.name).concat(value);
-    onChange('do', val);
+    onChange && onChange('do', val);
   }
 
   removePublishField = (index: number) => {
@@ -136,7 +137,7 @@ export default class Transition extends Component<TransitionProps, {
       this.setState({ publishOn: false });
     }
 
-    onChange('publish', val);
+    onChange && onChange('publish', val);
   }
 
   removeDoItem = (index: number) => {
@@ -145,7 +146,7 @@ export default class Transition extends Component<TransitionProps, {
 
     // make sure to splice the copy!
     val.splice(index, 1);
-    onChange('do', val);
+    onChange && onChange('do', val);
   }
 
   render() {

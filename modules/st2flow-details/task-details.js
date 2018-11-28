@@ -1,7 +1,5 @@
 //@flow
 
-import type { TransitionRefInterface } from '@stackstorm/st2flow-model/interfaces';
-
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';

@@ -19,7 +19,7 @@ type TransitionProps = {
   },
   taskNames: Array<string> | string,
   selected: boolean,
-  onChange: Function,
+  onChange?: Function,
 };
 
 @connect(
@@ -52,14 +52,14 @@ export default class Transition extends Component<TransitionProps, {}> {
     const { transition, onChange } = this.props;
     const { from, to } = transition;
 
-    onChange(transition, { condition, from, to });
+    onChange && onChange(transition, { condition, from, to });
   }
 
   handleDoChange(to: string) {
     const { transition, onChange } = this.props;
     const { condition, from } = transition;
 
-    onChange(transition, { condition, from, to: [{ name: to }] });
+    onChange && onChange(transition, { condition, from, to: [{ name: to }] });
   }
 
   render() {

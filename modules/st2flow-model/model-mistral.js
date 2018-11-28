@@ -28,7 +28,7 @@ type RawTask = {
   'on-complete'?: Array<NextItem>,
 };
 
-class MistralModel extends BaseModel implements ModelInterface {
+export default class MistralModel extends BaseModel implements ModelInterface {
   static runner_types = [
     'mistral',
     'mistral-v2',
@@ -465,5 +465,3 @@ function splitTaskName(name: string, tokenSet: TokenSet): Array<string> {
 
   return [ workflowName, name.slice(workflowName.length + 1) ];
 }
-
-export default MistralModel;
