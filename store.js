@@ -1,10 +1,10 @@
 import { createScopedStore } from '@stackstorm/module-store';
 
-import { OrquestaModel } from '@stackstorm/st2flow-model';
+import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
 
-const workflowModel = new OrquestaModel();
+let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
 
 function workflowModelGetter(model) {
@@ -40,6 +40,10 @@ const flowReducer = (state = {}, input) => {
   const {
     workflowSource = '',
     metaSource = '',
+    meta = {
+      pack: 'default',
+      runner_type: 'orquesta',
+    },
     tasks = [],
     transitions = [],
     ranges = {},
@@ -57,6 +61,7 @@ const flowReducer = (state = {}, input) => {
     ...state,
     workflowSource,
     metaSource,
+    meta,
     tasks,
     transitions,
     ranges,
@@ -71,11 +76,6 @@ const flowReducer = (state = {}, input) => {
   };
 
   switch (input.type) {
-    case 'CHANGE_LOCATION': {
-      // To intercept address bar changes
-      return state;
-    }
-
     // Workflow Model
     case 'MODEL_ISSUE_COMMAND': {
       const { command, args } = input;
@@ -155,6 +155,45 @@ const flowReducer = (state = {}, input) => {
           ...navigation,
         },
       };
+    }
+
+    case 'LOAD_WORKFLOW': {
+      const { currentWorkflow, status, payload } = input;
+
+      const newState = {
+        ...state,
+        currentWorkflow,
+      };
+
+      if (status === 'success') {
+        const { workflowSource, metaSource } = payload;
+
+        metaModel.applyDelta(null, metaSource);
+
+        const runner_type = metaModel.get('runner_type');
+        const Model = models[runner_type];
+
+        if (workflowModel instanceof Model) {
+          workflowModel.applyDelta(null, workflowSource);
+        }
+        else {
+          workflowModel = new Model(workflowSource);
+        }
+
+        if (workflowModel.tasks.every(({ coords }) => !coords.x && !coords.y)) {
+          layout(workflowModel);
+        }
+
+        return {
+          ...newState,
+          metaSource,
+          workflowSource,
+          ...metaModelGetter(metaModel),
+          ...workflowModelGetter(workflowModel),
+        };
+      }
+
+      return newState;
     }
 
     default:

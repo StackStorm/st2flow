@@ -9,7 +9,6 @@ import Canvas from '@stackstorm/st2flow-canvas';
 import Details from '@stackstorm/st2flow-details';
 
 import api from '@stackstorm/module-api';
-// import { models } from '@stackstorm/st2flow-model';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
 import Toolbar from '@stackstorm/st2flow-canvas/toolbar';
@@ -122,99 +121,52 @@ class Window extends Component<{
   }
 }
 
-const tmpYAML = `---
-version: 1.0
+globalStore.subscribe(() => {
+  const { location } = globalStore.getState();
 
-description: >
-  A sample workflow that demonstrates how to use conditions
-  to determine which path in the workflow to take.
+  let match;
 
-input:
-  - which
+  match = location.pathname.match('^/import/(.+)/(.+)');
+  if (match) {
+    const [ ,, action ] = match;
+    
+    globalStore.dispatch({
+      type: 'CHANGE_LOCATION',
+      location: {
+        ...location,
+        pathname: `/action/${action}`,
+      },
+    });
+    return;
+  }
 
-tasks:
-  # [100, 200]
-  t1:
-    action: core.local
-    input:
-      cmd: printf <% $.which %>
-    next:
-      - when: <% succeeded() and result().stdout = 'a' %>
-        publish: path=<% result().stdout %>
-        do:
-          - a
-          - b
-      - when: <% succeeded() and result().stdout = 'b' %>
-        publish: path=<% result().stdout %>
-        do: b
-      - when: <% succeeded() and not result().stdout in list(a, b) %>
-        publish: path=<% result().stdout %>
-        do: c
-  # [200, 300]
-  a:
-    action: core.local cmd="echo 'Took path A.'"
-  # [10, 300]
-  b:
-    action: core.local cmd="echo 'Took path B.'"
-    next:
-      - do: 'foobar'
-  # [100, 500]
-  c:
-    action: core.local cmd="echo 'Took path C.'"
-  # [300, 400]
-  foobar:
-    action: core.local
-`;
+  match = location.pathname.match('^/action/(.+)');
+  if (match) {
+    const [ , ref ] = match;
 
-store.dispatch({
-  type: 'MODEL_ISSUE_COMMAND',
-  command: 'applyDelta',
-  args: [ null, tmpYAML ],
+    const { currentWorkflow } = store.getState();
+
+    if (currentWorkflow !== ref) {
+      store.dispatch({
+        type: 'LOAD_WORKFLOW',
+        currentWorkflow: ref,
+        promise: (async () => {
+          const action = await api.request({ path: `/actions/${ref}` });
+          const [ pack ] = ref.split('.');
+          const [ metaSource, workflowSource ] = await Promise.all([
+            api.request({ path: `/packs/views/file/${pack}/${action.metadata_file}`}),
+            api.request({ path: `/packs/views/file/${pack}/actions/${action.entry_point}`}),
+          ]);
+          return {
+            metaSource,
+            workflowSource,
+          };
+        })(),
+      });
+    }
+    return;
+  }
 });
-
-const tmpMeta = `---
-description: Build node automation workflow.
-enabled: true
-entry_point: workflows/build-controller.yaml
-name: build-controller
-pack: st2cicd
-runner_type: orquesta
-parameters:
-  # build_num:
-  #   required: true
-  #   type: integer
-  working_branch:
-    required: false
-    type: string
-    default: NOMERGE/build-node
-  st2_password:
-    required: false
-    type: string
-    secret: true
-    default: "{{st2kv.system.st2_password}}"
-  keep_previous:
-    type: boolean
-    default: false
-`;
-
-store.dispatch({
-  type: 'META_ISSUE_COMMAND',
-  command: 'applyDelta',
-  args: [ null, tmpMeta ],
-});
-
-// subscribe('metaModel', m => {
-//   const model = get('model');
-
-//   if (model.constructor.runner_types.indexOf(m.runner_type) === -1) {
-//     const NewModel = models[m.runner_type];
-
-//     if (NewModel) {
-//       register('model', new NewModel(model.toYAML()));
-//     }
-//   }
-
-// });
 
 const routes = [{
   url: '/',

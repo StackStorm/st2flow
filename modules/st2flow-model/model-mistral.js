@@ -31,6 +31,7 @@ type RawTask = {
 class MistralModel extends BaseModel implements ModelInterface {
   static runner_types = [
     'mistral',
+    'mistral-v2',
   ]
 
   constructor(yaml: ?string) {
@@ -199,7 +200,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     if (coords) {
-      const comments = crawler.getCommentsForKey(this.tokenSet, key);
+      const comments = crawler.getCommentsForKey(this.tokenSet, key) || '[0, 0]';
       crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${coords.x.toFixed()}, ${coords.y.toFixed()}]`));
     }
 
@@ -390,6 +391,11 @@ class MistralModel extends BaseModel implements ModelInterface {
 
     this.endMutation(oldTree);
   }
+
+  getRangeForTask(task: TaskRefInterface) {
+    const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
+    return crawler.getRangeForKey(this.tokenSet, [ workflowName, 'tasks', taskName ]);
+  }
 }
 
 /**
@@ -407,7 +413,11 @@ function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
     Object.keys(workflows).forEach(workflowName => {
       const workflow = workflows[ workflowName ];
       workflow.tasks && Object.keys(workflow.tasks).forEach(taksName =>
-        flatTasks.set([ workflowName, taksName ], workflow.tasks[taksName])
+        flatTasks.set([ workflowName, taksName ], {
+          ...workflow.tasks[taksName],
+          workflow: workflowName,
+          __meta: workflow.tasks[taksName].__meta,
+        })
       );
     }, []);
   }
