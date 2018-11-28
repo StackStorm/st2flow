@@ -84,6 +84,7 @@ const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
 class OrquestaModel extends BaseModel implements ModelInterface {
   static runner_types = [
     'orquesta',
+    'orchestra',
   ]
 
   constructor(yaml: ?string) {

@@ -15,12 +15,35 @@ import Property from './property';
 import StringField from '@stackstorm/module-auto-form/fields/string';
 
 import Task from './task';
-import Transition from './transition';
+import MistralTransition from './mistral-transition';
+import OrquestaTransition from './orquesta-transition';
 
 import style from './style.css';
 
+class EmptyTransition extends Component<{},{}> {
+  render() {
+    return false;
+  }
+}
+
+type TaskDetailsProps = {
+  meta: Object,
+
+  tasks: Array<Object>,
+  transitions: Array<Object>,
+  issueModelCommand: Function,
+
+  navigation: Object,
+  navigate: Function,
+
+  actions: Array<Object>,
+
+  selected: string,
+  onBack: Function,
+};
+
 @connect(
-  ({ flow: { actions, navigation, tasks, transitions }}) => ({ actions, navigation, tasks, transitions }),
+  ({ flow: { actions, navigation, tasks, transitions, meta }}) => ({ actions, navigation, tasks, transitions, meta }),
   (dispatch) => ({
     issueModelCommand: (command, ...args) => {
       dispatch({
@@ -35,23 +58,13 @@ import style from './style.css';
     }),
   })
 )
-export default class TaskDetails extends Component<{
-  tasks: Array<Object>,
-  transitions: Array<Object>,
-  issueModelCommand: Function,
-
-  navigation: Object,
-  navigate: Function,
-
-  actions: Array<Object>,
-
-  selected: string,
-  onBack: Function,
-}, {
+export default class TaskDetails extends Component<TaskDetailsProps, {
   rename: bool,
   name: string,
 }> {
   static propTypes = {
+    meta: PropTypes.object,
+
     tasks: PropTypes.array,
     transitions: PropTypes.array,
     issueModelCommand: PropTypes.func,
@@ -65,7 +78,7 @@ export default class TaskDetails extends Component<{
     onBack: PropTypes.func.isRequired,
   }
 
-  constructor(props) {
+  constructor(props: TaskDetailsProps) {
     super(props);
     this.state = {
       rename: false,
@@ -73,7 +86,7 @@ export default class TaskDetails extends Component<{
     };
   }
 
-  handleNameChange(name) {
+  handleNameChange(name: string) {
     this.setState({ name });
   }
 
@@ -83,7 +96,7 @@ export default class TaskDetails extends Component<{
     this.setState({ rename: !rename, name: selected });
   }
 
-  handleTaskRename(ref, name) {
+  handleTaskRename(ref: string, name: string) {
     const { selected, issueModelCommand } = this.props;
 
     issueModelCommand('updateTask', { name: ref }, { name });
@@ -94,12 +107,12 @@ export default class TaskDetails extends Component<{
     this.setState({ rename: false });
   }
 
-  handleTaskFieldChange(field, value) {
+  handleTaskFieldChange(field: string, value: Object) {
     const { selected, issueModelCommand } = this.props;
     issueModelCommand('updateTask', { name: selected }, { [field]: value });
   }
 
-  handleTaskProperty(name, value) {
+  handleTaskProperty(name: string | Array<string>, value: any) {
     const { selected, issueModelCommand } = this.props;
 
     if (value) {
@@ -110,18 +123,7 @@ export default class TaskDetails extends Component<{
     }
   }
 
-  handleTransitionProperty(transition: TransitionRefInterface, name, value) {
-    const { issueModelCommand } = this.props;
-
-    if (value !== null && value !== void 0) {
-      issueModelCommand('setTransitionProperty', transition, name, value);
-    }
-    else {
-      issueModelCommand('model.deleteTransitionProperty', transition, name);
-    }
-  }
-
-  handleSectionSwitch(section) {
+  handleSectionSwitch(section: string) {
     this.props.navigate({ section });
   }
 
@@ -129,7 +131,7 @@ export default class TaskDetails extends Component<{
   joinFieldRef = React.createRef();
 
   render() {
-    const { selected, onBack, actions, navigation, tasks, transitions } = this.props;
+    const { selected, onBack, actions, navigation, tasks, transitions, meta } = this.props;
     const { section = 'input', toTasks } = navigation;
     const { name, rename } = this.state;
 
@@ -152,6 +154,18 @@ export default class TaskDetails extends Component<{
       }, []);
 
     const action = actions.find(({ref}) => ref === task.action);
+
+    const Transition = (() => {
+      switch (meta.runner_type) {
+        case 'mistral':
+        case 'mistral-v2':
+          return MistralTransition;
+        case 'orquesta':
+          return OrquestaTransition;
+        default:
+          return EmptyTransition;
+      }
+    })();
 
     return ([
       <Toolbar key="toolbar" secondary={true} >
@@ -231,7 +245,7 @@ export default class TaskDetails extends Component<{
             (trans || []).map((transition, index) => {
               // TODO: this logic could result in false positives - we need to compare conidtions too
               const selected = toTasks && toTasks.length === transition.to.length && transition.to.every((t, i) => toTasks[i] === t.name);
-              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} onChange={(name, value) => this.handleTransitionProperty(transition, name, value)} />;
+              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} />;
             })
           }
           <div className={this.style.transitionInfo}>
