@@ -146,7 +146,7 @@ export default class Transition extends Component<TransitionProps, {
           </div>
         </div>
         <div className={this.style.transitionPublish}>
-          {publish.map((obj, i) => {
+          {publish && publish.map((obj, i) => {
             const key = Object.keys(obj)[0];
             const val = obj[key];
 

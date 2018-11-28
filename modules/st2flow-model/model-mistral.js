@@ -157,7 +157,7 @@ class MistralModel extends BaseModel implements ModelInterface {
   addTransition(transition: TransitionInterface) {
     const { oldData, oldTree } = this.startMutation();
     const [ fromWorkflowName, fromTaskName ] = splitTaskName(transition.from.name, this.tokenSet);
-    const [ toWorkflowName, toTaskName ] = splitTaskName(transition.to[0].name, this.tokenSet);
+    const [ toWorkflowName, toTaskName ] = splitTaskName(transition.to.name, this.tokenSet);
 
     if(fromWorkflowName !== toWorkflowName) {
       this.emitError(new Error('Cannot create transitions between two different workflows'));
@@ -336,13 +336,13 @@ class MistralModel extends BaseModel implements ModelInterface {
       throw new Error(`No transition type "${typeKey}" found coming from task "${fromTaskName}"`);
     }
 
-    key.concat(fromTaskName, typeKey);
+    key.push(fromTaskName, typeKey);
 
     const transitionIndex = task[typeKey].findIndex(tr =>
       (typeof tr === 'string' && tr === toTaskName) || tr.hasOwnProperty(toTaskName) && tr[toTaskName] === condition
     );
 
-    if (!transitionIndex) {
+    if (transitionIndex === -1) {
       if (condition) {
         throw new Error(`No transition to "${toTaskName}" with condition "${condition}" found in task "${fromTaskName}"`);
       }
