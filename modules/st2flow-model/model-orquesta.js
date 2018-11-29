@@ -84,6 +84,7 @@ const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
 class OrquestaModel extends BaseModel implements ModelInterface {
   static runner_types = [
     'orquesta',
+    'orchestra',
   ]
 
   constructor(yaml: ?string) {
@@ -157,18 +158,24 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         // remove transitions to tasks which don't exist
         // .filter(t => tasks.hasOwnProperty(t.to.name))
         // add the common "from" to all transitions
-        .map(t => Object.assign(t, { from: { name } }));
+        .map(t => Object.assign(t, {from: { name } }))
+        .map(t => {
+          try {
+            const { jpath } = getRawTransitionInfo(t, { tasks });
+            t.color = crawler.getCommentsForKey(this.tokenSet, jpath.concat('when'));
+          }
+          catch(e) {
+            // pass
+          }
+
+          return t;
+        })
+        ;
 
       return arr.concat(transitions || []);
     }, []);
 
     return transitions;
-  }
-
-  get lastTaskIndex(): number {
-    return crawler.getValueByKey(this.tokenSet, 'tasks').__meta.keys
-      .map(item => (item.match(/task(\d+)/) || [])[1])
-      .reduce((acc, item) => Math.max(acc, item || 0), 0);
   }
 
   addTask(task: TaskInterface) {
@@ -196,7 +203,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }
 
     if (coords) {
-      const comments = crawler.getCommentsForKey(this.tokenSet, key);
+      const comments = crawler.getCommentsForKey(this.tokenSet, key) || '[0, 0]';
       crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${coords.x.toFixed()}, ${coords.y.toFixed()}]`));
     }
 
@@ -333,7 +340,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       return;
     }
 
-    const key = jpath.concat(path);
+    const key = [].concat(jpath).concat(path);
 
     switch(key[key.length - 1]) {
       case 'do':
@@ -343,6 +350,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       case 'publish':
         value = getPublishValue(value, nextItem);
         break;
+
+      case 'color':
+        crawler.setCommentForKey(this.tokenSet, jpath.concat('when'), value.toString());
+        this.endMutation(oldTree);
+        return;
     }
 
     if(value === undefined) {
@@ -361,6 +373,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     if(error) {
       this.emitError(error);
+      return;
+    }
+
+    if (path !== 'color') {
+      this.endMutation(oldTree);
       return;
     }
 

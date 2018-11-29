@@ -12,7 +12,9 @@ export function layout(model: ModelInterface) {
 
   model.tasks.forEach(task => {
     const { size } = task;
-    g.setNode(task.name, { width: size.x, height: size.y });
+    if (size) {
+      g.setNode(task.name, { width: size.x, height: size.y });
+    }
   });
 
   model.transitions.forEach(transition => {

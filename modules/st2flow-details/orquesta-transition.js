@@ -4,6 +4,7 @@ import type { TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import { connect } from 'react-redux';
 import cx from 'classnames';
 
 import { StringField, SelectField } from '@stackstorm/module-auto-form/fields';
@@ -16,13 +17,42 @@ type TransitionProps = {
     to: Array<TaskRefInterface>,
     condition?: string,
     publish?: string,
+    color: string,
   },
   taskNames: Array<string> | string,
   selected: boolean,
-  onChange: Function,
+  onChange?: Function,
 };
 
-export default class Transition extends Component<TransitionProps, {
+@connect(
+  null,
+  (dispatch, { transition }) => ({
+    onChange: (name: string, value: any) => {
+      if (value !== null && value !== void 0) {
+        dispatch({
+          type: 'MODEL_ISSUE_COMMAND',
+          command: 'setTransitionProperty',
+          args: [
+            transition,
+            name,
+            value,
+          ],
+        });
+      }
+      else {
+        dispatch({
+          type: 'MODEL_ISSUE_COMMAND',
+          command: 'deleteTransitionProperty',
+          args: [
+            transition,
+            name,
+          ],
+        });
+      }
+    },
+  })
+)
+export default class OrquestaTransition extends Component<TransitionProps, {
   publishOn: boolean,
 }> {
   static propTypes = {
@@ -43,10 +73,11 @@ export default class Transition extends Component<TransitionProps, {
   style = style
   cache = {} // used to cache togglable data
 
-  onPublishToggle = (val) => {
+  onPublishToggle = (val: boolean) => {
+    const { onChange } = this.props;
     if(val) {
       if(this.cache.publish) {
-        this.props.onChange('publish', this.cache.publish);
+        onChange && onChange('publish', this.cache.publish);
         delete this.cache.publish;
       }
       else {
@@ -59,28 +90,28 @@ export default class Transition extends Component<TransitionProps, {
     }
     else {
       this.cache.publish = this.props.transition.publish;
-      this.props.onChange('publish', null);
+      onChange && onChange('publish', null);
     }
 
     this.setState({ publishOn: val });
   }
 
-  handlePublishChange(index, key, value) {
+  handlePublishChange(index: number, key: string, value: string) {
     const { transition: { publish }, onChange } = this.props;
-    const val = publish.slice(0);
+    const val = publish ? publish.slice(0) : [];
 
     // Make sure to mutate the copy
     val[index] = { [key]: value };
-    onChange('publish', val);
+    onChange && onChange('publish', val);
   }
 
-  handleDoChange(index, value) {
+  handleDoChange(index: number, value: string | Array<string>) {
     const { transition: { to }, onChange } = this.props;
     const val = to.map(t => t.name);
 
     // Make sure to mutate the copy
     val[index] = value;
-    onChange('do', val);
+    onChange && onChange('do', val);
   }
 
   addPublishField = () => {
@@ -88,16 +119,16 @@ export default class Transition extends Component<TransitionProps, {
     const newVal = { key: '<% result().val %>' };
     const val = this.state.publishOn ? publish.concat(newVal) : [ newVal ];
 
-    onChange('publish', val);
+    onChange && onChange('publish', val);
   }
 
   addDoItem = (value) => {
     const { transition: { to }, onChange } = this.props;
     const val = (to || []).map(t => t.name).concat(value);
-    onChange('do', val);
+    onChange && onChange('do', val);
   }
 
-  removePublishField = (index) => {
+  removePublishField = (index: number) => {
     const { transition: { publish }, onChange } = this.props;
     const val = publish.slice(0);
 
@@ -107,16 +138,16 @@ export default class Transition extends Component<TransitionProps, {
       this.setState({ publishOn: false });
     }
 
-    onChange('publish', val);
+    onChange && onChange('publish', val);
   }
 
-  removeDoItem = (index) => {
+  removeDoItem = (index: number) => {
     const { transition: { to }, onChange } = this.props;
     const val = to.map(t => t.name);
 
     // make sure to splice the copy!
     val.splice(index, 1);
-    onChange('do', val);
+    onChange && onChange('do', val);
   }
 
   render() {
@@ -133,7 +164,7 @@ export default class Transition extends Component<TransitionProps, {
             When
           </div>
           <div className={this.style.transitionField}>
-            <StringField value={transition.condition} onChange={v => onChange('when', v)} />
+            <StringField value={transition.condition} onChange={v => onChange && onChange('when', v)} />
           </div>
           <div className={this.style.transitionButton} />
         </div>
@@ -146,7 +177,7 @@ export default class Transition extends Component<TransitionProps, {
           </div>
         </div>
         <div className={this.style.transitionPublish}>
-          {publish.map((obj, i) => {
+          {publish && publish.map((obj, i) => {
             const key = Object.keys(obj)[0];
             const val = obj[key];
 
@@ -202,7 +233,7 @@ export default class Transition extends Component<TransitionProps, {
             Color
           </div>
           <div className={this.style.transitionField}>
-            <StringField />
+            <StringField value={transition.color} onChange={v => this.props.onChange && this.props.onChange('color', v)} />
           </div>
         </div>
       </div>

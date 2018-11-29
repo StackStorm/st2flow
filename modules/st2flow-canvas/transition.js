@@ -74,6 +74,7 @@ export default class TransitionGroup extends Component<{
     from: Target,
     to: Target,
   }>,
+  color: string,
   selected: boolean,
   onClick: Function,
 }> {
@@ -149,27 +150,27 @@ export default class TransitionGroup extends Component<{
   }
 
   render(): Array<Node> {
-    const { transitions, selected, ...props } = this.props;
+    const { color, transitions, selected, ...props } = this.props;
 
     const transitionPaths = transitions
       .map(({ from, to }) => ({
         from: from.task.name,
-        to: to.task.name, 
+        to: to.task.name,
         path: this.makePath(from, to),
       }));
 
     const markers = (
       <defs key="marker">
         {selected && [
-          <marker id={`${this.uniqId}${selected && 'selected'}ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
+          <marker id={`${this.uniqId}-${selected && 'selected'}-${color}-ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} style={{ fill: color }} />
           </marker>,
-          <marker id={`${this.uniqId}${selected && 'selected'}Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+          <marker id={`${this.uniqId}-${selected && 'selected'}-Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
             <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrowActive} />
           </marker>,
         ]}
-        <marker id={this.uniqId} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-          <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
+        <marker id={`${this.uniqId}-${color}`} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} style={{ fill: color }} />
         </marker>
       </defs>
     );
@@ -177,9 +178,10 @@ export default class TransitionGroup extends Component<{
     const activeBorders = transitionPaths.map(({ from, to, path }) => (
       <Path
         className={cx(this.style.transitionActiveBorder, selected && this.style.selected)}
+        style={{ stroke: color }}
         key={`${from}-${to}-pathActiveBorder`}
         d={path}
-        markerEnd={`url(#${this.uniqId}${selected && 'selected' || ''}ActiveBorder)`}
+        markerEnd={`url(#${this.uniqId}-${selected && 'selected' || ''}-${color}-ActiveBorder)`}
         onClick={this.props.onClick}
         {...props}
       />
@@ -190,7 +192,7 @@ export default class TransitionGroup extends Component<{
         className={cx(this.style.transitionActive, selected && this.style.selected)}
         key={`${from}-${to}-pathActive`}
         d={path}
-        markerEnd={`url(#${this.uniqId}${selected && 'selected' || ''}Active)`}
+        markerEnd={`url(#${this.uniqId}-${selected && 'selected' || ''}-Active)`}
         {...props}
       />
     ));
@@ -198,9 +200,10 @@ export default class TransitionGroup extends Component<{
     const paths = transitionPaths.map(({ from, to, path }) => (
       <Path
         className={this.style.transition}
+        style={{ stroke: color }}
         key={`${from}-${to}-path`}
         d={path}
-        markerEnd={`url(#${this.uniqId})`}
+        markerEnd={`url(#${this.uniqId}-${color})`}
         {...props}
       />
     ));

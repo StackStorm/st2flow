@@ -31,7 +31,7 @@ type Wheel = WheelEvent & {
 }
 
 @connect(
-  ({ flow: { tasks, transitions, errors, lastTaskIndex, panels, navigation }}) => ({ tasks, transitions, errors, lastTaskIndex, isCollapsed: panels, navigation }),
+  ({ flow: { tasks, transitions, errors, nextTask, panels, navigation }}) => ({ tasks, transitions, errors, nextTask, isCollapsed: panels, navigation }),
   (dispatch) => ({
     issueModelCommand: (command, ...args) => {
       dispatch({
@@ -61,7 +61,7 @@ export default class Canvas extends Component<{
       transitions: Array<Object>,
       errors: Array<Error>,
       issueModelCommand: Function,
-      lastTaskIndex: number,
+      nextTask: string,
 
       isCollapsed: Object,
       toggleCollapse: Function,
@@ -79,7 +79,7 @@ export default class Canvas extends Component<{
     transitions: PropTypes.array,
     errors: PropTypes.array,
     issueModelCommand: PropTypes.func,
-    lastTaskIndex: PropTypes.number,
+    nextTask: PropTypes.string,
 
     isCollapsed: PropTypes.object,
     toggleCollapse: PropTypes.func,
@@ -264,7 +264,7 @@ export default class Canvas extends Component<{
     const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle)).subtract(new Vector(origin));
 
     this.props.issueModelCommand('addTask', {
-      name: `task${this.props.lastTaskIndex + 1}`,
+      name: this.props.nextTask,
       action: action.ref,
       coords: Vector.max(coords, new Vector(0, 0)),
     });
@@ -347,6 +347,7 @@ export default class Canvas extends Component<{
         return {
           transition,
           group,
+          color: transition.color,
         };
       });
 
@@ -417,9 +418,10 @@ export default class Canvas extends Component<{
             <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
               {
                 transitionGroups
-                  .map(({ id, transition, group }, i) => (
+                  .map(({ id, transition, group, color }, i) => (
                     <TransitionGroup
                       key={`${transition.from.name}-${window.btoa(transition.condition)}`}
+                      color={color}
                       transitions={group}
                       selected={false}
                       onClick={(e) => this.handleTransitionSelect(e, transition)}
@@ -428,9 +430,10 @@ export default class Canvas extends Component<{
               }
               {
                 selectedTransitionGroups
-                  .map(({ id, transition, group }, i) => (
+                  .map(({ id, transition, group, color }, i) => (
                     <TransitionGroup
                       key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                      color={color}
                       transitions={group}
                       selected={true}
                       onClick={(e) => this.handleTransitionSelect(e, transition)}

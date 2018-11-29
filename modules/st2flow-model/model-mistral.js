@@ -21,16 +21,31 @@ type NextItem = string | { [string]: string };
 type RawTask = {
   __meta: TokenMeta,
   action: string,
-  input?: Object,
-  publish?: Object,
+  input: Object,
   'on-success'?: Array<NextItem>,
   'on-error'?: Array<NextItem>,
   'on-complete'?: Array<NextItem>,
+  'with-items'?: string,
+  join?: string,
+  concurrency: number | string,
+  'pause-before': number | string,
+  'wait-before': number | string,
+  'wait-after': number | string,
+  timeout: number | string,
+  retry: {
+    count: number | string,
+    delay: number | string,
+    'continue-on': string,
+    'break-on': string,
+  },
+  publish: Object,
+  'publish-on-error': Object,
 };
 
-class MistralModel extends BaseModel implements ModelInterface {
+export default class MistralModel extends BaseModel implements ModelInterface {
   static runner_types = [
     'mistral',
+    'mistral-v2',
   ]
 
   constructor(yaml: ?string) {
@@ -75,7 +90,11 @@ class MistralModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action = '', input = {} } = task;
+      const {
+        action = '',
+        input = {}, 
+        ...restTask
+      } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       if (inputPartials.length) {
@@ -90,6 +109,16 @@ class MistralModel extends BaseModel implements ModelInterface {
         input: {
           ...input,
         },
+        'with-items': restTask['with-items'],
+        join: restTask.join,
+        concurrency: restTask.concurrency,
+        'pause-before': restTask['pause-before'],
+        'wait-before': restTask['wait-before'],
+        'wait-after': restTask['wait-after'],
+        timeout: restTask.timeout,
+        retry: restTask.retry,
+        publish: restTask.publish,
+        'publish-on-error': restTask['publish-on-error'],
       };
     });
 
@@ -199,7 +228,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     if (coords) {
-      const comments = crawler.getCommentsForKey(this.tokenSet, key);
+      const comments = crawler.getCommentsForKey(this.tokenSet, key) || '[0, 0]';
       crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${coords.x.toFixed()}, ${coords.y.toFixed()}]`));
     }
 
@@ -335,13 +364,13 @@ class MistralModel extends BaseModel implements ModelInterface {
       throw new Error(`No transition type "${typeKey}" found coming from task "${fromTaskName}"`);
     }
 
-    key.concat(fromTaskName, typeKey);
+    key.push(fromTaskName, typeKey);
 
     const transitionIndex = task[typeKey].findIndex(tr =>
       (typeof tr === 'string' && tr === toTaskName) || tr.hasOwnProperty(toTaskName) && tr[toTaskName] === condition
     );
 
-    if (!transitionIndex) {
+    if (transitionIndex === -1) {
       if (condition) {
         throw new Error(`No transition to "${toTaskName}" with condition "${condition}" found in task "${fromTaskName}"`);
       }
@@ -390,6 +419,11 @@ class MistralModel extends BaseModel implements ModelInterface {
 
     this.endMutation(oldTree);
   }
+
+  getRangeForTask(task: TaskRefInterface) {
+    const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
+    return crawler.getRangeForKey(this.tokenSet, [ workflowName, 'tasks', taskName ]);
+  }
 }
 
 /**
@@ -407,7 +441,11 @@ function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
     Object.keys(workflows).forEach(workflowName => {
       const workflow = workflows[ workflowName ];
       workflow.tasks && Object.keys(workflow.tasks).forEach(taksName =>
-        flatTasks.set([ workflowName, taksName ], workflow.tasks[taksName])
+        flatTasks.set([ workflowName, taksName ], {
+          ...workflow.tasks[taksName],
+          workflow: workflowName,
+          __meta: workflow.tasks[taksName].__meta,
+        })
       );
     }, []);
   }
@@ -455,5 +493,3 @@ function splitTaskName(name: string, tokenSet: TokenSet): Array<string> {
 
   return [ workflowName, name.slice(workflowName.length + 1) ];
 }
-
-export default MistralModel;

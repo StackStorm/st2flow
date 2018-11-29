@@ -53,7 +53,7 @@ export default class Action extends Component<{
           onClick={e => this.handleTogglePack(e)}
         >
           <div>
-            <i className={open ? 'icon-chevron-down' : 'icon-chevron_right'} />
+            <i className={open ? 'icon-chevron_down' : 'icon-chevron_right'} />
           </div>
           <div>
             <img ref={this.imgRef} src={api.route({ path: `/packs/views/file/${name}/icon.png` })} width="32" height="32" onError={() => this.handleImageError()} />
