@@ -10,10 +10,15 @@ const metaModel = new MetaModel();
 function workflowModelGetter(model) {
   const { tasks, transitions, errors } = model;
 
+  const lastIndex = tasks
+    .map(task => (task.name.match(/task(\d+)/) || [])[1])
+    .reduce((acc, item) => Math.max(acc, item || 0), 0);
+
   return {
     workflowSource: model.toYAML(),
     ranges: getRanges(model),
     tasks,
+    nextTask: `task${lastIndex + 1}`,
     transitions,
     errors,
   };
@@ -48,7 +53,7 @@ const flowReducer = (state = {}, input) => {
     transitions = [],
     ranges = {},
     errors = [],
-    lastTaskIndex = 0,
+    nextTask = 'task1',
 
     panels = [],
 
@@ -67,7 +72,7 @@ const flowReducer = (state = {}, input) => {
     transitions,
     ranges,
     errors,
-    lastTaskIndex,
+    nextTask,
 
     panels,
 

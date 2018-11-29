@@ -178,12 +178,6 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     return transitions;
   }
 
-  get lastTaskIndex(): number {
-    return crawler.getValueByKey(this.tokenSet, 'tasks').__meta.keys
-      .map(item => (item.match(/task(\d+)/) || [])[1])
-      .reduce((acc, item) => Math.max(acc, item || 0), 0);
-  }
-
   addTask(task: TaskInterface) {
     const { oldTree } = this.startMutation();
     const { name, coords, ...data } = task;
