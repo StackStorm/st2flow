@@ -21,11 +21,25 @@ type NextItem = string | { [string]: string };
 type RawTask = {
   __meta: TokenMeta,
   action: string,
-  input?: Object,
-  publish?: Object,
+  input: Object,
   'on-success'?: Array<NextItem>,
   'on-error'?: Array<NextItem>,
   'on-complete'?: Array<NextItem>,
+  'with-items'?: string,
+  join?: string,
+  concurrency: number | string,
+  'pause-before': number | string,
+  'wait-before': number | string,
+  'wait-after': number | string,
+  timeout: number | string,
+  retry: {
+    count: number | string,
+    delay: number | string,
+    'continue-on': string,
+    'break-on': string,
+  },
+  publish: Object,
+  'publish-on-error': Object,
 };
 
 export default class MistralModel extends BaseModel implements ModelInterface {
@@ -76,7 +90,11 @@ export default class MistralModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action = '', input = {} } = task;
+      const {
+        action = '',
+        input = {}, 
+        ...restTask
+      } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       if (inputPartials.length) {
@@ -91,6 +109,16 @@ export default class MistralModel extends BaseModel implements ModelInterface {
         input: {
           ...input,
         },
+        'with-items': restTask['with-items'],
+        join: restTask.join,
+        concurrency: restTask.concurrency,
+        'pause-before': restTask['pause-before'],
+        'wait-before': restTask['wait-before'],
+        'wait-after': restTask['wait-after'],
+        timeout: restTask.timeout,
+        retry: restTask.retry,
+        publish: restTask.publish,
+        'publish-on-error': restTask['publish-on-error'],
       };
     });
 

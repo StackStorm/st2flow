@@ -37,7 +37,7 @@ type TransitionProps = {
     },
   })
 )
-export default class Transition extends Component<TransitionProps, {}> {
+export default class MistralTransition extends Component<TransitionProps, {}> {
   static propTypes = {
     transition: PropTypes.object.isRequired,
     taskNames: PropTypes.arrayOf(PropTypes.string),

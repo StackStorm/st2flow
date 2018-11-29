@@ -8,17 +8,41 @@ import cx from 'classnames';
 import AutoForm from '@stackstorm/module-auto-form';
 import Button from '@stackstorm/module-forms/button.component';
 import { Panel, Toolbar, ToolbarButton } from './layout';
-import Property from './property';
+import { models } from '@stackstorm/st2flow-model';
 
 import StringField from '@stackstorm/module-auto-form/fields/string';
 
 import Task from './task';
+import MistralProperties from './mistral-properties';
 import MistralTransition from './mistral-transition';
+import OrquestaProperties from './orquesta-properties';
 import OrquestaTransition from './orquesta-transition';
 
 import style from './style.css';
 
-class EmptyTransition extends Component<{},{}> {
+function makePanels(runnerType) {
+  const model = models[runnerType];
+
+  switch (model) {
+    case models.mistral:
+      return {
+        properties: MistralProperties,
+        transition: MistralTransition,
+      };
+    case models.orquesta:
+      return {
+        properties: OrquestaProperties,
+        transition: OrquestaTransition,
+      };
+    default:
+      return {
+        properties: EmptyPanel,
+        transition: EmptyPanel,
+      };
+  }
+}
+
+class EmptyPanel extends Component<{},{}> {
   render() {
     return false;
   }
@@ -126,7 +150,6 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
   }
 
   style = style
-  joinFieldRef = React.createRef();
 
   render() {
     const { selected, onBack, actions, navigation, tasks, transitions, meta } = this.props;
@@ -153,17 +176,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
 
     const action = actions.find(({ref}) => ref === task.action);
 
-    const Transition = (() => {
-      switch (meta.runner_type) {
-        case 'mistral':
-        case 'mistral-v2':
-          return MistralTransition;
-        case 'orquesta':
-          return OrquestaTransition;
-        default:
-          return EmptyTransition;
-      }
-    })();
+    const Panels = makePanels(meta.runner_type);
 
     return ([
       <Toolbar key="toolbar" secondary={true} >
@@ -211,30 +224,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
       ),
       section === 'properties' && (
         <Panel key="properties">
-          <Property name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data."  value={!!task.join} onChange={value => this.handleTaskProperty('join', value ? 'all' : false)}>
-            {
-              task.join && (
-                <div className={cx(this.style.propertyChild, this.style.radioGroup)}>
-                  <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleTaskProperty('join', 'all')}>
-                    Join all tasks
-                  </div>
-                  <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value, 10))} >
-                    Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value, 10))} /> tasks
-                  </label>
-                </div>
-              )
-            }
-          </Property>
-          <Property name="With Items" description="Run an action or workflow associated with a task multiple times." value={!!task.with} onChange={value => this.handleTaskProperty('with', value ? { items: 'x in <% ctx(y) %>' } : false)}>
-            {
-              task.with && (
-                <div className={this.style.propertyChild}>
-                  <StringField name="items" value={task.with.items} onChange={value => this.handleTaskProperty([ 'with', 'items' ], value)} />
-                  <StringField name="concurrency" value={task.with.concurrency} onChange={value => this.handleTaskProperty([ 'with', 'concurrency' ], value)} />
-                </div>
-              )
-            }
-          </Property>
+          <Panels.properties task={task} />
         </Panel>
       ),
       section === 'transitions' && (
@@ -243,7 +233,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
             (trans || []).map((transition, index) => {
               // TODO: this logic could result in false positives - we need to compare conidtions too
               const selected = toTasks && toTasks.length === transition.to.length && transition.to.every((t, i) => toTasks[i] === t.name);
-              return <Transition key={index} selected={selected} transition={transition} taskNames={taskNames} />;
+              return <Panels.transition key={index} selected={selected} transition={transition} taskNames={taskNames} />;
             })
           }
           <div className={this.style.transitionInfo}>

@@ -51,7 +51,7 @@ type TransitionProps = {
     },
   })
 )
-export default class Transition extends Component<TransitionProps, {
+export default class OrquestaTransition extends Component<TransitionProps, {
   publishOn: boolean,
 }> {
   static propTypes = {
@@ -163,7 +163,7 @@ export default class Transition extends Component<TransitionProps, {
             When
           </div>
           <div className={this.style.transitionField}>
-            <StringField value={transition.condition} onChange={v => onChange('when', v)} />
+            <StringField value={transition.condition} onChange={v => onChange && onChange('when', v)} />
           </div>
           <div className={this.style.transitionButton} />
         </div>
