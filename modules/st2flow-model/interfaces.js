@@ -43,6 +43,8 @@ export interface TransitionInterface {
 
     // Orquesta Only
     publish?: Array<Object>;
+
+    color?: string,
 }
 
 export interface TransitionRefInterface {

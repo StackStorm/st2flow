@@ -1,6 +1,6 @@
 //@flow
 
-import type { TaskRefInterface, TransitionRefInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { TaskRefInterface } from '@stackstorm/st2flow-model/interfaces';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
@@ -17,6 +17,7 @@ type TransitionProps = {
     to: Array<TaskRefInterface>,
     condition?: string,
     publish?: string,
+    color: string,
   },
   taskNames: Array<string> | string,
   selected: boolean,
@@ -25,8 +26,8 @@ type TransitionProps = {
 
 @connect(
   null,
-  (dispatch) => ({
-    onChange: (transition: TransitionRefInterface, value: any) => {
+  (dispatch, { transition }) => ({
+    onChange: (name: string, value: any) => {
       if (value !== null && value !== void 0) {
         dispatch({
           type: 'MODEL_ISSUE_COMMAND',
@@ -232,7 +233,7 @@ export default class OrquestaTransition extends Component<TransitionProps, {
             Color
           </div>
           <div className={this.style.transitionField}>
-            <StringField />
+            <StringField value={transition.color} onChange={v => this.props.onChange && this.props.onChange('color', v)} />
           </div>
         </div>
       </div>

@@ -158,7 +158,19 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         // remove transitions to tasks which don't exist
         // .filter(t => tasks.hasOwnProperty(t.to.name))
         // add the common "from" to all transitions
-        .map(t => Object.assign(t, { from: { name } }));
+        .map(t => Object.assign(t, {from: { name } }))
+        .map(t => {
+          try {
+            const { jpath } = getRawTransitionInfo(t, { tasks });
+            t.color = crawler.getCommentsForKey(this.tokenSet, jpath.concat('when'));
+          }
+          catch(e) {
+            // pass
+          }
+
+          return t;
+        })
+        ;
 
       return arr.concat(transitions || []);
     }, []);
@@ -334,7 +346,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       return;
     }
 
-    const key = jpath.concat(path);
+    const key = [].concat(jpath).concat(path);
 
     switch(key[key.length - 1]) {
       case 'do':
@@ -344,6 +356,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       case 'publish':
         value = getPublishValue(value, nextItem);
         break;
+
+      case 'color':
+        crawler.setCommentForKey(this.tokenSet, jpath.concat('when'), value.toString());
+        this.endMutation(oldTree);
+        return;
     }
 
     if(value === undefined) {
@@ -362,6 +379,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     if(error) {
       this.emitError(error);
+      return;
+    }
+
+    if (path !== 'color') {
+      this.endMutation(oldTree);
       return;
     }
 

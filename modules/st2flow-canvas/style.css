@@ -147,8 +147,10 @@
   stroke-width: 12;
   fill: transparent;
   stroke: transparent;
+  visibility: hidden;
 
   &.selected {
+    visibility: visible;
     stroke: var(--selected-bg);
     pointer-events: none;
   }
@@ -159,8 +161,10 @@
   fill: transparent;
   stroke: transparent;
   pointer-events: stroke;
+  visibility: hidden;
 
   &.selected {
+    visibility: visible;
     stroke: var(--transition-color);
     pointer-events: none;
   }
