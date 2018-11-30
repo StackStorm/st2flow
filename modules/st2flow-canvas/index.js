@@ -299,7 +299,7 @@ export default class Canvas extends Component<{
   }
 
   handleTaskConnect = (to: TaskRefInterface, from: TaskRefInterface) => {
-    this.props.issueModelCommand('addTransition', { from, to });
+    this.props.issueModelCommand('addTransition', { from, to: [ to ] });
   }
 
   handleTransitionDelete = (transition: TransitionInterface) => {
