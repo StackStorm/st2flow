@@ -33,8 +33,29 @@
   width: 50px;
   margin: 20px auto;
 
-  img {
-    width: 50px;
+  /* We need to specify it here so the logo on login screen would match the menu one */
+  font-size: 16px;
+
+  display: flex;
+
+  min-width: 200px;
+  height: 62px;
+  margin: 10px;
+
+  text-decoration: none;
+
+  color: transparent;
+  background-image: url(../static/logo.svg);
+  background-repeat: no-repeat;
+  background-size: 180px;
+
+  align-items: flex-end;
+
+  &:after {
+    content: 'Workflow composer';
+    white-space: nowrap;
+
+    color: var(--gray-2);
   }
 }
 

@@ -4,7 +4,6 @@ import cx from 'classnames';
 import api from '@stackstorm/module-api';
 
 import componentStyle from './style.css';
-import menuStyle from '@stackstorm/module-menu/style.css';
 
 class LoginForm extends React.Component {
   static propTypes = {
@@ -126,7 +125,6 @@ export default class Login extends React.Component {
   static defaultProps = {
     style: {
       ...componentStyle,
-      logo: menuStyle.logo,
     },
   }
 

@@ -58,7 +58,7 @@ export default class ParameterEditor extends Component<{
           { this.props.parameter ? 'Edit parameter' : 'New parameter' }
         </div>
         <StringField name="Name" spec={{ required: true }} value={parameter.name} onChange={value => this.handleChange('name', value)} />
-        <EnumField name="Type" spec={{ required: true , enum: [ 'a', 'b', 'c' ] }} value={parameter.type} onChange={value => this.handleChange('type', value)} />
+        <EnumField name="Type" spec={{ required: true , enum: [ 'string', 'boolean', 'number', 'object', 'integer', 'array' ] }} value={parameter.type} onChange={value => this.handleChange('type', value)} />
         <StringField name="Description" value={parameter.description} onChange={value => this.handleChange('description', value)} />
 
         <ArrayField name="Enum" value={parameter.enum} onChange={value => this.handleChange('enum', value)} />
