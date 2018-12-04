@@ -1,5 +1,7 @@
 # st2flow - StackStorm Workflow Editor
 
+[![CircleCI](https://circleci.com/gh/StackStorm/st2flow.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/StackStorm/st2web)
+
 Visual editor for creating and updating StackStorm workflows. This editor is currently only available for enterprise licenses.
 
 ## Requirements
@@ -13,21 +15,21 @@ Visual editor for creating and updating StackStorm workflows. This editor is cur
 
 ## Installation
 
-This project uses Lerna and should be considered a "subset" of the [st2web](https://github.com/StackStorm/st2web) project. It is currently required that the st2web repo be cloned next to the st2flow repo:
+This project uses Lerna and should be considered a "subset" of the [st2flow](https://github.com/StackStorm/st2web) project. It is currently required that the st2web repo be cloned next to the st2flow repo:
 
 ```
 ├── StackStorm
-|   ├── st2web
+|   ├── st2flow
 |   └── st2flow
 ```
 
 Here is the basic flow of commands to get started:
 
 ```
-git clone git@github.com:StackStorm/st2web.git
-# ...or https: https://github.com/StackStorm/st2web.git
+git clone git@github.com:StackStorm/st2flow.git
+# ...or https: https://github.com/StackStorm/st2flow.git
 
-cd st2web
+cd st2flow
 lerna bootstrap
 
 cd ../
