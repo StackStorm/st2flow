@@ -1,6 +1,6 @@
 # st2flow - StackStorm Workflow Editor
 
-[![CircleCI](https://circleci.com/gh/StackStorm/st2flow.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/StackStorm/st2web)
+[![CircleCI](https://circleci.com/gh/StackStorm/st2flow.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/StackStorm/st2flow)
 
 Visual editor for creating and updating StackStorm workflows. This editor is currently only available for enterprise licenses.
 
