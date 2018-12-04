@@ -5,7 +5,7 @@ jobs:
   build:
     machine: true
     environment:
-      DEB: trusty xenial
+      DEB: trusty xenial bionic
       RPM: el6 el7
       IS_ENTERPRISE: 1
       DEPLOY_PACKAGES: 1
@@ -70,6 +70,7 @@ jobs:
           paths:
             - trusty
             - xenial
+            - bionic
             - el6
             - el7
   deploy:
@@ -77,7 +78,7 @@ jobs:
       - image: ruby:2.4.4
     environment:
       ARTIFACTS: /home/circleci/artifacts
-      DISTROS: trusty xenial el6 el7
+      DISTROS: trusty xenial bionic el6 el7
     steps:
       - checkout
       - attach_workspace:
