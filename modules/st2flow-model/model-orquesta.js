@@ -87,6 +87,8 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     'orchestra',
   ]
 
+  static minimum = 'version: 1.0\ntasks: {}\n';
+
   constructor(yaml: ?string) {
     super(schema, yaml);
   }

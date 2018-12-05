@@ -8,6 +8,8 @@ class MetaModel extends BaseClass {
     super(schema, yaml);
   }
 
+  static minimum = 'pack: default\n';
+
   get name(): string {
     return this.get('name');
   }

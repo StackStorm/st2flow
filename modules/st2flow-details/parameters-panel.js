@@ -63,7 +63,7 @@ export default class Parameters extends Component<{
     return (
       <Panel>
         {
-          edit === false && meta.parameters.__meta.keys.map(name => (
+          edit === false && meta.parameters && meta.parameters.__meta.keys.map(name => (
             <Parameter
               key={name}
               name={name}

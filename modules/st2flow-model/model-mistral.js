@@ -48,6 +48,8 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     'mistral-v2',
   ]
 
+  static minimum = 'version: \'2.0\'\nmain:\n  tasks: {}\n';
+
   constructor(yaml: ?string) {
     super(schema, yaml);
   }
