@@ -81,6 +81,7 @@ class Window extends Component<{
     const existingAction = actions.find(e => e.name === meta.name && e.pack === pack);
 
     meta.pack = pack;
+    meta.metadata_file = existingAction && existingAction.metadata_file && existingAction.metadata_file.replace(/^actions\//, '') || `actions/${meta.name}.meta.yaml`;
     meta.data_files = [{
       file_path: meta.entry_point,
       content: workflowSource,
@@ -88,7 +89,7 @@ class Window extends Component<{
       file_path: existingAction && existingAction.metadata_file && existingAction.metadata_file.replace(/^actions\//, '') || `${meta.name}.meta.yaml`,
       content: metaSource,
     }];
-    
+
     if (existingAction) {
       return api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
     }
