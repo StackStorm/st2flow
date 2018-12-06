@@ -16,6 +16,7 @@
     "static": [
       "index.html",
       "img/*",
+      "static/*",
       "font/*",
       "favicon.ico"
     ],
