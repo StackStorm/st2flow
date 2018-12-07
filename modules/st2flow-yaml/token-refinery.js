@@ -424,7 +424,7 @@ class Refinery {
           return this.reIndexToken(t, pos);
         }, startPos);
 
-        if(token.suffix && !token.mappings.length) {
+        if(token.suffix) {
           this.newYaml += token.suffix.reduce((s, t) => stringifier.stringifyToken(t, s), '');
         }
 
@@ -437,7 +437,7 @@ class Refinery {
           return this.reIndexToken(t, pos);
         }, startPos);
 
-        if(token.suffix && !token.items.length) {
+        if(token.suffix) {
           this.newYaml += token.suffix.reduce((s, t) => stringifier.stringifyToken(t, s), '');
         }
 

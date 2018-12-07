@@ -30,16 +30,12 @@ const stringifier = {
 
       case 2:
         str += token.mappings.reduce((s, t) => this.stringifyToken(t, s), '');
-        if(!token.mappings.length) {
-          str += token.suffix ? token.suffix.reduce(strReducer, '') : '';
-        }
+        str += token.suffix ? token.suffix.reduce(strReducer, '') : '';
         break;
 
       case 3:
         str += token.items.reduce((s, t) => this.stringifyToken(t, s), '');
-        if(!token.items.length) {
-          str += token.suffix ? token.suffix.reduce(strReducer, '') : '';
-        }
+        str += token.suffix ? token.suffix.reduce(strReducer, '') : '';
         break;
 
       case 4:

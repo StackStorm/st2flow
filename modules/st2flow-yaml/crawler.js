@@ -155,7 +155,7 @@ const crawler = {
         parentToken.value = factory.createToken(value);
 
         const newFirst = this.findFirstValueToken(parentToken.value);
-        newFirst.prefix = oldFirst.prefix;
+        newFirst.prefix = oldFirst && oldFirst.prefix;
         tokenSet.refineTree();
         break;
       }
