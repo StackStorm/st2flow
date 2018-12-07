@@ -90,6 +90,10 @@ const flowReducer = (state = {}, input) => {
         return state;
       }
 
+      if (!workflowModel.tokenSet) {
+        workflowModel.fromYAML(workflowModel.constructor.minimum);
+      }
+
       workflowModel[command](...args);
 
       return {
@@ -116,6 +120,20 @@ const flowReducer = (state = {}, input) => {
       }
 
       metaModel[command](...args);
+
+      const runner_type = metaModel.get('runner_type');
+      if (runner_type && runner_type !== meta.runner_type) {
+        const Model = models[runner_type];
+        workflowModel = new Model(workflowSource);
+        if (!workflowModel.tokenSet) {
+          workflowModel.fromYAML(workflowModel.constructor.minimum);
+        }
+
+        state = {
+          ...state,
+          ...workflowModelGetter(workflowModel),
+        };
+      }
 
       return {
         ...state,
