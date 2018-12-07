@@ -62,8 +62,13 @@ export default class Meta extends Component<{
   render() {
     const { pack, setPack, meta, setMeta, navigation, actions } = this.props;
     const { section = 'meta' } = navigation;
+    const default_runner_type = 'orquesta';
 
     const packs = [ ...new Set(actions.map(a => a.pack)).add(pack) ];
+
+    if (!meta.runner_type) {
+      setMeta('runner_type', default_runner_type);
+    }
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
@@ -72,7 +77,7 @@ export default class Meta extends Component<{
       </Toolbar>,
       section === 'meta' && (
         <Panel key="meta">
-          <EnumField name="Runner Type" value={meta.runner_type} spec={{enum: [ ...new Set([ 'mistral-v2', 'orquesta', meta.runner_type ]) ]}} onChange={(v) => setMeta('runner_type', v)} />
+          <EnumField name="Runner Type" value={meta.runner_type} spec={{enum: [ ...new Set([ 'mistral-v2', 'orquesta' ]) ], default: default_runner_type}} onChange={(v) => setMeta('runner_type', v)} />
           <EnumField name="Pack" value={pack} spec={{enum: packs}} onChange={(v) => setPack(v)} />
           <StringField name="Name" value={meta.name} onChange={(v) => setMeta('name', v)} />
           <StringField name="Description" value={meta.description} onChange={(v) => setMeta('description', v)} />
