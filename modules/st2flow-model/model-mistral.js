@@ -48,6 +48,8 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     'mistral-v2',
   ]
 
+  static minimum = 'version: \'2.0\'\nmain:\n  tasks: {}\n';
+
   constructor(yaml: ?string) {
     super(schema, yaml);
   }
@@ -172,13 +174,19 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     }
 
     const [ workflowName, taskName ] = splitTaskName(name, this.tokenSet);
-    const key = [ workflowName, 'tasks', taskName ];
+    const parentKey = [ workflowName, 'tasks' ];
 
     if(oldData.workflows) {
-      key.unshift('workflows');
+      parentKey.unshift('workflows');
     }
 
-    crawler.set(this.tokenSet, key, data);
+    if (crawler.getValueByKey(this.tokenSet, parentKey).__meta.keys.length) {
+      crawler.set(this.tokenSet, parentKey.concat(taskName), data);
+    }
+    else {
+      crawler.set(this.tokenSet, parentKey, { [taskName]: data });
+    }
+
     this.endMutation(oldTree);
   }
 

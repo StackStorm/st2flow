@@ -87,6 +87,8 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     'orchestra',
   ]
 
+  static minimum = 'version: 1.0\ntasks: {}\n';
+
   constructor(yaml: ?string) {
     super(schema, yaml);
   }
@@ -181,12 +183,17 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   addTask(task: TaskInterface) {
     const { oldTree } = this.startMutation();
     const { name, coords, ...data } = task;
-    const key = [ 'tasks', name ];
+    const parentKey = [ 'tasks' ];
 
-    crawler.set(this.tokenSet, key, data);
+    if (crawler.getValueByKey(this.tokenSet, parentKey).__meta.keys.length) {
+      crawler.set(this.tokenSet, parentKey.concat(name), data);
+    }
+    else {
+      crawler.set(this.tokenSet, parentKey, { [name]: data });
+    }
 
     if(coords) {
-      crawler.setCommentForKey(this.tokenSet, key, `[${coords.x}, ${coords.y}]`);
+      crawler.setCommentForKey(this.tokenSet, parentKey.concat(name), `[${coords.x}, ${coords.y}]`);
     }
 
     this.endMutation(oldTree);
