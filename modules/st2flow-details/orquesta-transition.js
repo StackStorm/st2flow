@@ -101,7 +101,7 @@ export default class OrquestaTransition extends Component<TransitionProps, {
     const val = publish ? publish.slice(0) : [];
 
     // Make sure to mutate the copy
-    val[index] = { [key]: value };
+    val[index] = { [key || '']: value };
     onChange && onChange('publish', val);
   }
 
