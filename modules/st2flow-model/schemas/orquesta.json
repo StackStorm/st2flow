@@ -168,7 +168,7 @@
           }
         }
       },
-      "minProperties": 1
+      "minProperties": 0
     },
     "description": {
       "minLength": 1,
