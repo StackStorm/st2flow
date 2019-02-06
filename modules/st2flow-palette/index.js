@@ -54,7 +54,7 @@ export default class Palette extends Component<{
         <div className={this.style.list}>
           {
             actions
-              .filter(action => action.ref.indexOf(search) > -1)
+              .filter(action => action.ref.toLocaleLowerCase().indexOf(search.toLocaleLowerCase()) > -1)
               .reduce((acc, action) => {
                 let pack = acc.find(pack => pack.name === action.pack);
                 if (!pack) {
