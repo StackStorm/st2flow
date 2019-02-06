@@ -43,7 +43,7 @@ function getRanges(model) {
 
 const flowReducer = (state = {}, input) => {
   const {
-    workflowSource = '',
+    workflowSource = 'version: 1.0\ntasks: {}',
     metaSource = '',
     pack = 'default',
     meta = {
