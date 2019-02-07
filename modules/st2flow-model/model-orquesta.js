@@ -1,4 +1,5 @@
 // @flow
+import _ from 'lodash';
 
 import type { ModelInterface, TaskInterface, TaskRefInterface, TransitionInterface } from './interfaces';
 import type { TokenMeta, JPath, JpathKey } from '@stackstorm/st2flow-yaml';
@@ -199,14 +200,39 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
+  updateTransitions(ref: TaskRefInterface, name: string) {
+    const tasks = crawler.getValueByKey(this.tokenSet, [ 'tasks' ]);
+    Object.keys(tasks).map((taskKey) => {
+      const nextElements = _.get(tasks[taskKey], 'next', []);
+      nextElements.map((nextElement, elementIndex) => {
+        const nextTasks = _.get(nextElement, 'do', []);
+        nextTasks.map((nextTask, taskIndex) => {
+          if (nextTask === ref.name) {
+            const transitionPath = [
+              'tasks',
+              taskKey,
+              'next',
+              elementIndex,
+              'do',
+              taskIndex,
+            ];
+            crawler.renameMappingKey(this.tokenSet, transitionPath, name);
+          }
+        });
+      });
+    });
+  }
+
   updateTask(ref: TaskRefInterface, newData: $Shape<TaskInterface>) {
     const { oldTree } = this.startMutation();
     const { name, coords, ...data } = newData;
     const key = [ 'tasks', ref.name ];
 
     if (name && ref.name !== name) {
+      this.updateTransitions(ref, name);
       crawler.renameMappingKey(this.tokenSet, key, name);
       key.splice(-1, 1, name);
+
     }
 
     if (coords) {
