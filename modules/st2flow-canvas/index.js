@@ -26,6 +26,11 @@ import { origin } from './const';
 
 import style from './style.css';
 
+type DOMMatrix = {
+  m11: number,
+  m22: number
+};
+
 type Wheel = WheelEvent & {
   wheelDelta: number
 }
@@ -53,7 +58,7 @@ type Wheel = WheelEvent & {
 export default class Canvas extends Component<{
       children: Node,
       className?: string,
-      
+
       navigation: Object,
       navigate: Function,
 
@@ -164,19 +169,56 @@ export default class Canvas extends Component<{
   }
 
   handleMouseWheel = (e: Wheel) => {
-    e.preventDefault();
-    e.stopPropagation();
+    if(e.getModifierState('Alt')) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const { scale }: { scale: number } = this.state;
-    const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+      const SCALE_FACTOR_MACOSX = .05;
 
-    this.setState({
-      scale: scale + delta * .1,
-    });
+      const { scale }: { scale: number } = this.state;
+      const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
 
-    this.handleUpdate();
+      // Zoom around the mouse pointer, by finding it's position normalized to the
+      //  canvas and surface elements' coordinates, and moving the scroll on the
+      //  canvas element to match the same proportions as before the scale.
+      const canvasEl = this.canvasRef.current;
+      const surfaceEl = this.surfaceRef.current;
+      if(canvasEl instanceof HTMLElement && surfaceEl instanceof HTMLElement) {
+        let canvasParentEl = canvasEl;
+        let canvasOffsetLeft = 0;
+        let canvasOffsetTop = 0;
+        do {
+          if(getComputedStyle(canvasParentEl).position !== 'static') {
+            canvasOffsetLeft += canvasParentEl.offsetLeft || 0;
+            canvasOffsetTop += canvasParentEl.offsetTop || 0;
+          }
+          canvasParentEl = canvasParentEl.parentNode;
+        } while (canvasParentEl && canvasParentEl !== document);
+        const surfaceScaleBefore: DOMMatrix = new window.DOMMatrix(getComputedStyle(surfaceEl).transform);
+        const mousePosCanvasX = (e.clientX - canvasOffsetLeft) / canvasEl.clientWidth;
+        const mousePosCanvasY = (e.clientY - canvasOffsetTop) / canvasEl.clientHeight;
+        const mousePosSurfaceX = (e.clientX - canvasOffsetLeft + canvasEl.scrollLeft) /
+                                  (surfaceEl.clientWidth * surfaceScaleBefore.m11);
+        const mousePosSurfaceY = (e.clientY - canvasOffsetTop + canvasEl.scrollTop) /
+                                  (surfaceEl.clientHeight * surfaceScaleBefore.m22);
+        this.setState({
+          scale: scale + delta * SCALE_FACTOR_MACOSX,
+        });
 
-    return false;
+        const surfaceScaleAfter: DOMMatrix = new window.DOMMatrix(getComputedStyle(surfaceEl).transform);
+        canvasEl.scrollLeft = surfaceEl.clientWidth * surfaceScaleAfter.m11 * mousePosSurfaceX -
+                                canvasEl.clientWidth * mousePosCanvasX;
+        canvasEl.scrollTop = surfaceEl.clientHeight * surfaceScaleAfter.m22 * mousePosSurfaceY -
+                                canvasEl.clientHeight * mousePosCanvasY;
+      }
+
+      this.handleUpdate();
+
+      return false;
+    }
+    else {
+      return undefined;
+    }
   }
 
   handleMouseDown = (e: MouseEvent) => {
@@ -356,7 +398,7 @@ export default class Canvas extends Component<{
         const { task, toTasks = [] } = navigation;
         return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
       });
-    
+
     return (
       <div
         className={cx(this.props.className, this.style.component)}
