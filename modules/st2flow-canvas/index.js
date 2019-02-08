@@ -26,6 +26,11 @@ import { origin } from './const';
 
 import style from './style.css';
 
+type DOMMatrix = {
+  m11: number,
+  m22: number
+};
+
 type Wheel = WheelEvent & {
   wheelDelta: number
 }
@@ -53,7 +58,7 @@ type Wheel = WheelEvent & {
 export default class Canvas extends Component<{
       children: Node,
       className?: string,
-      
+
       navigation: Object,
       navigate: Function,
 
@@ -163,20 +168,96 @@ export default class Canvas extends Component<{
     surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
   }
 
-  handleMouseWheel = (e: Wheel) => {
-    e.preventDefault();
-    e.stopPropagation();
+  handleMouseWheel = (e: Wheel): ?false => {
+    // considerations on scale factor (BM, 2019-02-07)
+    // on Chrome Mac and Safari Mac:
+    // For Mac trackpads with continuous scroll, wheelDelta is reported in multiples of 3,
+    //   but for a fast scoll, the delta value may be >1000.
+    //   deltaY is always wheelDelta / -3.
+    // For traditional mouse wheels with clicky scroll, wheelDelta is reported in multiples of 120.
+    //   deltaY is non-integer and does not neatly gazinta wheelDelta.
+    //
+    // Firefox Mac:  wheelDelta is undefined. deltaY increments by 1 for trackpad or mouse wheel.
+    //
+    // On Windows w/Edge, I see a ratio of -20:7 between wheelDelta and deltaY. I'm using a VM, but the Mac
+    //   trackpad and the mouse report the same ratio. (increments of 120:-42)
+    // On Windows w/Chrome, the ratio is -6:5. The numbers don't seem to go above 360 for wheelDelta on a mousewheel
+    //    or 600 for the trackpad
+    //
+    // Firefox Linux: wheelDelta is undefined, wheelY is always 3 or -3
+    // Chromium Linus: wheelY is always in multiples of 53.  Fifty-three!  (wheelDelta is in multiples of 120)
+    //   There's very little variation.  I can sometimes get the trackpad to do -212:480, but not a real mouse wheel
+    const SCALE_FACTOR_MAC_TRACKPAD = .05;
+    const SCROLL_FACTOR_MAC_TRACKPAD = 15;
+    const SCALE_FACTOR_DEFAULT = .1;
+    const SCROLL_FACTOR_DEFAULT = 30;
 
-    const { scale }: { scale: number } = this.state;
-    const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+    const getModifierState = (e.getModifierState || function(mod) {
+      mod = mod === 'Control' ? 'ctrl' : mod;
+      return this[`${mod.toLowerCase()}Key`];
+    }).bind(e);
 
-    this.setState({
-      scale: scale + delta * .1,
-    });
+    if(getModifierState('Control')) {
+      e.preventDefault();
+      const canvasEl = this.canvasRef.current;
+      if(canvasEl instanceof HTMLElement) {
+        const scrollFactor = e.wheelDelta && Math.abs(e.wheelDelta) < 120
+          ? SCROLL_FACTOR_MAC_TRACKPAD
+          : Math.abs(e.wheelDelta) < 3 ? SCROLL_FACTOR_DEFAULT / 2 : SCROLL_FACTOR_DEFAULT;
+        canvasEl.scrollLeft += (e.deltaY < 0) ? -scrollFactor : scrollFactor;
+      }
 
-    this.handleUpdate();
+      return undefined;
+    }
 
-    return false;
+    if(getModifierState('Alt')) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const { scale }: { scale: number } = this.state;
+      const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+
+      // Zoom around the mouse pointer, by finding it's position normalized to the
+      //  canvas and surface elements' coordinates, and moving the scroll on the
+      //  canvas element to match the same proportions as before the scale.
+      const canvasEl = this.canvasRef.current;
+      const surfaceEl = this.surfaceRef.current;
+      if(canvasEl instanceof HTMLElement && surfaceEl instanceof HTMLElement) {
+        let canvasParentEl = canvasEl;
+        let canvasOffsetLeft = 0;
+        let canvasOffsetTop = 0;
+        do {
+          if(getComputedStyle(canvasParentEl).position !== 'static') {
+            canvasOffsetLeft += canvasParentEl.offsetLeft || 0;
+            canvasOffsetTop += canvasParentEl.offsetTop || 0;
+          }
+          canvasParentEl = canvasParentEl.parentNode;
+        } while (canvasParentEl && canvasParentEl !== document);
+        const surfaceScaleBefore: DOMMatrix = new window.DOMMatrix(getComputedStyle(surfaceEl).transform);
+        const mousePosCanvasX = (e.clientX - canvasOffsetLeft) / canvasEl.clientWidth;
+        const mousePosCanvasY = (e.clientY - canvasOffsetTop) / canvasEl.clientHeight;
+        const mousePosSurfaceX = (e.clientX - canvasOffsetLeft + canvasEl.scrollLeft) /
+                                  (surfaceEl.clientWidth * surfaceScaleBefore.m11);
+        const mousePosSurfaceY = (e.clientY - canvasOffsetTop + canvasEl.scrollTop) /
+                                  (surfaceEl.clientHeight * surfaceScaleBefore.m22);
+        this.setState({
+          scale: scale + delta * (e.wheelDelta && Math.abs(e.wheelDelta) < 120 ? SCALE_FACTOR_MAC_TRACKPAD: SCALE_FACTOR_DEFAULT),
+        });
+
+        const surfaceScaleAfter: DOMMatrix = new window.DOMMatrix(getComputedStyle(surfaceEl).transform);
+        canvasEl.scrollLeft = surfaceEl.clientWidth * surfaceScaleAfter.m11 * mousePosSurfaceX -
+                                canvasEl.clientWidth * mousePosCanvasX;
+        canvasEl.scrollTop = surfaceEl.clientHeight * surfaceScaleAfter.m22 * mousePosSurfaceY -
+                                canvasEl.clientHeight * mousePosCanvasY;
+      }
+
+      this.handleUpdate();
+
+      return false;
+    }
+    else {
+      return undefined;
+    }
   }
 
   handleMouseDown = (e: MouseEvent) => {
@@ -356,7 +437,7 @@ export default class Canvas extends Component<{
         const { task, toTasks = [] } = navigation;
         return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
       });
-    
+
     return (
       <div
         className={cx(this.props.className, this.style.component)}
