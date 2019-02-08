@@ -205,7 +205,10 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     Object.keys(tasks).map((taskKey) => {
       const nextElements = _.get(tasks[taskKey], 'next', []);
       nextElements.map((nextElement, elementIndex) => {
-        const nextTasks = _.get(nextElement, 'do', []);
+        let nextTasks = _.get(nextElement, 'do', []);
+        if (typeof nextTasks === 'string') {
+          nextTasks = [ nextTasks ];
+        }
         nextTasks.map((nextTask, taskIndex) => {
           if (nextTask === ref.name) {
             const transitionPath = [
