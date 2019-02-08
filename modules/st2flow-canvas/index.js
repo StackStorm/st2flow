@@ -14,6 +14,7 @@ import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 import fp from 'lodash/fp';
+import { uniqueId } from 'lodash';
 
 import Notifications from '@stackstorm/st2flow-notifications';
 
@@ -426,6 +427,7 @@ export default class Canvas extends Component<{
         });
 
         return {
+          id: uniqueId(`${transition.from.name}-`),
           transition,
           group,
           color: transition.color,
@@ -501,7 +503,7 @@ export default class Canvas extends Component<{
                 transitionGroups
                   .map(({ id, transition, group, color }, i) => (
                     <TransitionGroup
-                      key={`${transition.from.name}-${window.btoa(transition.condition)}`}
+                      key={`${id}-${window.btoa(transition.condition)}`}
                       color={color}
                       transitions={group}
                       selected={false}
@@ -513,7 +515,7 @@ export default class Canvas extends Component<{
                 selectedTransitionGroups
                   .map(({ id, transition, group, color }, i) => (
                     <TransitionGroup
-                      key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                      key={`${id}-${window.btoa(transition.condition)}-selected`}
                       color={color}
                       transitions={group}
                       selected={true}
