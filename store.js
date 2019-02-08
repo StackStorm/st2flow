@@ -43,7 +43,7 @@ function getRanges(model) {
 
 const flowReducer = (state = {}, input) => {
   const {
-    workflowSource = '',
+    workflowSource = workflowModel.constructor.minimum,
     metaSource = '',
     pack = 'default',
     meta = {
