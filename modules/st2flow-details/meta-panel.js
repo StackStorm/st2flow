@@ -79,10 +79,10 @@ export default class Meta extends Component<{
         <Panel key="meta">
           <EnumField name="Runner Type" value={meta.runner_type} spec={{enum: [ ...new Set([ 'mistral-v2', 'orquesta' ]) ], default: default_runner_type}} onChange={(v) => setMeta('runner_type', v)} />
           <EnumField name="Pack" value={pack} spec={{enum: packs}} onChange={(v) => setPack(v)} />
-          <StringField name="Name" value={meta.name} onChange={(v) => setMeta('name', v)} />
+          <StringField name="Name" value={meta.name} onChange={(v) => setMeta('name', v || '')} />
           <StringField name="Description" value={meta.description} onChange={(v) => setMeta('description', v)} />
           <BooleanField name="Enabled" value={meta.enabled} spec={{}} onChange={(v) => setMeta('enabled', v)} />
-          <StringField name="Entry point" value={meta.entry_point} onChange={(v) => setMeta('entry_point', v)} />
+          <StringField name="Entry point" value={meta.entry_point} onChange={(v) => setMeta('entry_point', v || '')} />
         </Panel>
       ),
       section === 'parameters' && (

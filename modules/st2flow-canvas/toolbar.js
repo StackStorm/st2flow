@@ -4,6 +4,7 @@ import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import cx from 'classnames';
+import _ from 'lodash';
 
 import style from './style.css';
 
@@ -56,8 +57,14 @@ export class ToolbarButton extends Component<
       }
       catch (e) {
         this.setState({ status: 'error' });
-        if (errorMessage) {
-          pushError(errorMessage);
+
+        const faultString = _.get(e, 'response.data.faultstring');
+
+        if (errorMessage && faultString) {
+          pushError(`${errorMessage}: ${faultString}`);
+        }
+        else if (errorMessage || faultString) {
+          pushError(`${errorMessage || ''}${faultString || ''}`);
         }
       }
     }
