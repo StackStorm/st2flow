@@ -131,7 +131,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         name,
         coords,
         action: actionRef,
-        size: { x: 120, y: 48 },
+        size: { x: 211, y: 55 },
         input: {
           ...input,
           ...matchAll(inputPartials.join(' '), REGEX_INLINE_PARAMS),

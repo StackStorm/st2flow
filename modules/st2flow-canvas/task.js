@@ -10,6 +10,7 @@ import Vector from './vector';
 import { origin } from './const';
 
 import style from './style.css';
+import api from '@stackstorm/module-api';
 
 export default class Task extends Component<{
   task: TaskInterface,
@@ -117,7 +118,7 @@ export default class Task extends Component<{
       const y = coords.y + dy / scale;
       this.props.onMove(Vector.max(new Vector(x, y), new Vector(0, 0)));
     }
-    
+
     this.setState({
       delta: {
         x: 0,
@@ -206,6 +207,8 @@ export default class Task extends Component<{
     const { task, selected, onDelete } = this.props;
     const { delta } = this.state;
 
+    const packName = task.action.replace(/\..*$/, '');
+
     const scale = Math.E ** this.props.scale;
 
     const coords = new Vector(delta).divide(scale).add(new Vector(task.coords)).add(origin);
@@ -226,8 +229,29 @@ export default class Task extends Component<{
           }}
           ref={this.taskRef}
         >
-          <div className={cx(this.style.taskName)}>{task.name}</div>
-          <div className={cx(this.style.taskAction)}>{task.action}</div>
+          <img src={api.route({ path: `/packs/views/file/${packName}/icon.png` })} width="32" height="32" />
+          <div>
+            <div className={cx(this.style.taskName)}>{task.name}</div>
+            <div className={cx(this.style.taskAction)}>{task.action}</div>
+            <div className={cx(this.style.taskBadges)}>
+              {
+                task.with && (
+                  <span className={cx(this.style.taskBadge)}>
+                    <i className={cx(this.style.taskBadgeWithItems)} />
+                    { task.with && +task.with.concurrency ? task.with.concurrency : ''}
+                  </span>
+                )
+              }
+              {
+                task.join && (
+                  <span className={cx(this.style.taskBadge)}>
+                    <i className={cx(this.style.taskBadgeJoin)} />
+                    {+task.join ? task.join : ''}
+                  </span>
+                )
+              }
+            </div>
+          </div>
         </div>
         <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} onClick={() => onDelete()} />
         <div className={this.style.taskHandle} style={{ top: '100%', left: '50%' }}  draggable ref={this.handleRef} />
