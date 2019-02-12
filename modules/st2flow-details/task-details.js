@@ -112,6 +112,16 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
     this.setState({ name });
   }
 
+  checkExistingTasksName(name: string) {
+    const {tasks} = this.props;
+    for(var i=0; i<tasks.length; i++) {
+      if(tasks[i].name===name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   handleToggleRename() {
     const { rename } = this.state;
     const { selected } = this.props;
@@ -119,7 +129,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
   }
 
   handleTaskRename(ref: string, name: string) {
-    const { selected, issueModelCommand } = this.props;
+    const { selected, issueModelCommand, tasks } = this.props;
 
     issueModelCommand('updateTask', { name: ref }, { name });
 
@@ -163,7 +173,16 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
       return false;
     }
 
-    const trans = !!selected && transitions;
+    const trans = !!selected && transitions
+      .filter(transition => transition.from.name === task.name)
+      .reduce((acc, transition) => {
+        const t = acc.find(t => t.condition === transition.condition);
+        if (!t) {
+          return acc.concat({ ...transition });
+        }
+        t.to = t.to.concat(transition.to);
+        return acc;
+      }, []);
 
     const action = actions.find(({ref}) => ref === task.action);
 
@@ -188,7 +207,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
           rename
             && (
               <div className={cx(this.style.button, this.style.rename)} >
-                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={task.name === name ? 'disabled' : ''} />
+                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={this.checkExistingTasksName(name) ? 'disabled' : ''} />
               </div>
             )
         }
