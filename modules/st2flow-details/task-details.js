@@ -114,7 +114,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
 
   checkExistingTasksName(name: string) {
     const {tasks} = this.props;
-    for(var i=0; i<tasks.length; i++) {
+    for(let i=0; i<tasks.length; i++) {
       if(tasks[i].name===name) {
         return true;
       }
@@ -129,7 +129,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
   }
 
   handleTaskRename(ref: string, name: string) {
-    const { selected, issueModelCommand, tasks } = this.props;
+    const { selected, issueModelCommand } = this.props;
 
     issueModelCommand('updateTask', { name: ref }, { name });
 
