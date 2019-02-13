@@ -189,7 +189,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
           rename
             && (
               <div className={cx(this.style.button, this.style.rename)} >
-                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={_.includes(tasks.map(task=>task.name),name) ? 'disabled' : ''} />
+                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={_.includes(tasks.map(task => task.name),name) ? 'disabled' : ''} />
               </div>
             )
         }
