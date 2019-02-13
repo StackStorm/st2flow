@@ -17,6 +17,7 @@ import fp from 'lodash/fp';
 import { uniqueId } from 'lodash';
 
 import Notifications from '@stackstorm/st2flow-notifications';
+import {HotKeys} from 'react-hotkeys';
 
 import Task from './task';
 import TransitionGroup from './transition';
@@ -399,6 +400,10 @@ export default class Canvas extends Component<{
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
 
+  keyMap = {
+    'handleTaskDelete': [ 'del', 'backspace' ],
+  };
+
   render() {
     const { children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
@@ -434,100 +439,123 @@ export default class Canvas extends Component<{
         };
       });
 
+    const selectedTask = tasks.filter(task => task.name === navigation.task)[0];
+
     const selectedTransitionGroups = transitionGroups
       .filter(({ transition }) => {
         const { task, toTasks = [] } = navigation;
         return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
       });
 
+    // Currently this component is registering global key handlers (attach = document.body)
+    //   At some point it may be desirable to pull the global keyMap up to main.js (handlers
+    //   can stay here), but for now since all key commands affect the canvas, this is fine.
     return (
-      <div
-        className={cx(this.props.className, this.style.component)}
-        onClick={e => this.handleCanvasClick(e)}
-      >
-        { children }
-        <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
-        <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />
-        <div className={this.style.canvas} ref={this.canvasRef}>
-          <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
-            {
-              tasks.map((task) => {
-                return (
-                  <Task
-                    key={task.name}
-                    task={task}
-                    selected={task.name === navigation.task && !selectedTransitionGroups.length}
-                    scale={scale}
-                    onMove={(...a) => this.handleTaskMove(task, ...a)}
-                    onConnect={(...a) => this.handleTaskConnect(task, ...a)}
-                    onClick={() => this.handleTaskSelect(task)}
-                    onDelete={() => this.handleTaskDelete(task)}
-                  />
-                );
-              })
+      <HotKeys
+        style={{ flex: 1 }}
+        keyMap={this.keyMap}
+        focused={true}
+        attach={document.body}
+        handlers={{handleTaskDelete: e => {
+          // This will break if canvas elements (tasks/transitions) become focus targets with
+          //  tabindex or automatically focusing elements.  But in that case, the Task already
+          //  has a handler for delete waiting.
+          if(e.target === document.body) {
+            e.preventDefault();
+            if(selectedTask) {
+              this.handleTaskDelete(selectedTask);
             }
-            {
-              transitionGroups
-                .filter(({ transition }) => {
-                  const { task, toTasks = [] } = navigation;
-                  return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
-                })
-                .map(({ transition }) => {
-                  const toPoint = transition.to
-                    .map(task => tasks.find(({ name }) => name === task.name))
-                    .map(task => new Vector(task.size).multiply(new Vector(.5, 0)).add(new Vector(0, -10)).add(new Vector(task.coords)))
-                    ;
-
-                  const fromPoint = [ transition.from ]
-                    .map((task: TaskRefInterface): any => tasks.find(({ name }) => name === task.name))
-                    .map((task: TaskInterface) => new Vector(task.size).multiply(new Vector(.5, 1)).add(new Vector(task.coords)))
-                    ;
-
-                  const point = fromPoint.concat(toPoint)
-                    .reduce((acc, point) => (acc || point).add(point).divide(2))
-                    ;
-
-                  const { x, y } = point.add(origin);
+          }
+        }}}
+      >
+        <div
+          className={cx(this.props.className, this.style.component)}
+          onClick={e => this.handleCanvasClick(e)}
+        >
+          { children }
+          <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
+          <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />
+          <div className={this.style.canvas} ref={this.canvasRef}>
+            <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
+              {
+                tasks.map((task) => {
                   return (
-                    <div
-                      key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
-                      className={cx(this.style.transitionButton, this.style.delete, 'icon-delete')}
-                      style={{ transform: `translate(${x}px, ${y}px)`}}
-                      onClick={() => this.handleTransitionDelete(transition)}
+                    <Task
+                      key={task.name}
+                      task={task}
+                      selected={task.name === navigation.task && !selectedTransitionGroups.length}
+                      scale={scale}
+                      onMove={(...a) => this.handleTaskMove(task, ...a)}
+                      onConnect={(...a) => this.handleTaskConnect(task, ...a)}
+                      onClick={() => this.handleTaskSelect(task)}
+                      onDelete={() => this.handleTaskDelete(task)}
                     />
                   );
                 })
-            }
-            <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+              }
               {
                 transitionGroups
-                  .map(({ id, transition, group, color }, i) => (
-                    <TransitionGroup
-                      key={`${id}-${window.btoa(transition.condition)}`}
-                      color={color}
-                      transitions={group}
-                      selected={false}
-                      onClick={(e) => this.handleTransitionSelect(e, transition)}
-                    />
-                  ))
+                  .filter(({ transition }) => {
+                    const { task, toTasks = [] } = navigation;
+                    return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+                  })
+                  .map(({ transition }) => {
+                    const toPoint = transition.to
+                      .map(task => tasks.find(({ name }) => name === task.name))
+                      .map(task => new Vector(task.size).multiply(new Vector(.5, 0)).add(new Vector(0, -10)).add(new Vector(task.coords)))
+                      ;
+
+                    const fromPoint = [ transition.from ]
+                      .map((task: TaskRefInterface): any => tasks.find(({ name }) => name === task.name))
+                      .map((task: TaskInterface) => new Vector(task.size).multiply(new Vector(.5, 1)).add(new Vector(task.coords)))
+                      ;
+
+                    const point = fromPoint.concat(toPoint)
+                      .reduce((acc, point) => (acc || point).add(point).divide(2))
+                      ;
+
+                    const { x, y } = point.add(origin);
+                    return (
+                      <div
+                        key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                        className={cx(this.style.transitionButton, this.style.delete, 'icon-delete')}
+                        style={{ transform: `translate(${x}px, ${y}px)`}}
+                        onClick={() => this.handleTransitionDelete(transition)}
+                      />
+                    );
+                  })
               }
-              {
-                selectedTransitionGroups
-                  .map(({ id, transition, group, color }, i) => (
-                    <TransitionGroup
-                      key={`${id}-${window.btoa(transition.condition)}-selected`}
-                      color={color}
-                      transitions={group}
-                      selected={true}
-                      onClick={(e) => this.handleTransitionSelect(e, transition)}
-                    />
-                  ))
-              }
-            </svg>
+              <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+                {
+                  transitionGroups
+                    .map(({ id, transition, group, color }, i) => (
+                      <TransitionGroup
+                        key={`${id}-${window.btoa(transition.condition)}`}
+                        color={color}
+                        transitions={group}
+                        selected={false}
+                        onClick={(e) => this.handleTransitionSelect(e, transition)}
+                      />
+                    ))
+                }
+                {
+                  selectedTransitionGroups
+                    .map(({ id, transition, group, color }, i) => (
+                      <TransitionGroup
+                        key={`${id}-${window.btoa(transition.condition)}-selected`}
+                        color={color}
+                        transitions={group}
+                        selected={true}
+                        onClick={(e) => this.handleTransitionSelect(e, transition)}
+                      />
+                    ))
+                }
+              </svg>
+            </div>
           </div>
+          <Notifications position="bottom" notifications={this.notifications} />
         </div>
-        <Notifications position="bottom" notifications={this.notifications} />
-      </div>
+      </HotKeys>
     );
   }
 }
