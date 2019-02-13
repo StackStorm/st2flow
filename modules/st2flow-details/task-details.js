@@ -4,6 +4,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+import _ from 'lodash';
 
 import AutoForm from '@stackstorm/module-auto-form';
 import Button from '@stackstorm/module-forms/button.component';
@@ -188,7 +189,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
           rename
             && (
               <div className={cx(this.style.button, this.style.rename)} >
-                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={task.name === name ? 'disabled' : ''} />
+                <Button onClick={() => this.handleTaskRename(task.name, name)} value="Rename" disabled={_.includes(tasks.map(task=>task.name),name) ? 'disabled' : ''} />
               </div>
             )
         }
