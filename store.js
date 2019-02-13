@@ -33,7 +33,7 @@ function metaModelGetter(model) {
 
 function getRanges(model) {
   const ranges = {};
-  
+
   model.tasks.forEach(task => {
     ranges[task.name] = workflowModel.getRangeForTask(task);
   });
@@ -102,7 +102,7 @@ const flowReducer = (state = {}, input) => {
       };
     }
 
-    case 'MODEL_LAYOUT' : {
+    case 'MODEL_LAYOUT': {
       layout(workflowModel);
 
       return {
@@ -144,6 +144,15 @@ const flowReducer = (state = {}, input) => {
       return {
         ...state,
         ...metaModelGetter(metaModel),
+      };
+    }
+
+    case 'PUSH_ERROR': {
+      const { error } = input;
+
+      return {
+        ...state,
+        errors: [ ...errors, { message: error }],
       };
     }
 

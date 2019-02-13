@@ -11,7 +11,7 @@ import Details from '@stackstorm/st2flow-details';
 import api from '@stackstorm/module-api';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
-import Toolbar from '@stackstorm/st2flow-canvas/toolbar';
+import { Toolbar, ToolbarButton } from '@stackstorm/st2flow-canvas/toolbar';
 
 import { Router } from '@stackstorm/module-router';
 import globalStore from '@stackstorm/module-store';
@@ -113,11 +113,14 @@ class Window extends Component<{
           { !isCollapsed.palette && <Palette className="palette" actions={actions} /> }
           <Canvas className="canvas">
             <Toolbar>
-              <div key="undo" icon="icon-redirect" onClick={() => undo()} />
-              <div key="redo" icon="icon-redirect2" onClick={() => redo()} />
-              <div key="rearrange" icon="icon-arrange" onClick={() => layout()} />
-              <div key="save" icon="icon-save" onClick={() => this.save()} />
-              <div key="run" icon="icon-play" onClick={() => console.log('run')} />
+              <ToolbarButton key="undo" icon="icon-redirect" errorMessage="Could not undo." onClick={() => undo()} />
+              <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
+              <ToolbarButton key="rearrange" icon="icon-arrange" errorMessage="Error rearranging workflows." onClick={() => layout()} />
+              <ToolbarButton key="save" icon="icon-save" errorMessage="Error saving workflow." onClick={() => this.save()} />
+              {
+                // TODO: Implement this.
+                // <ToolbarButton key="run" icon="icon-play" onClick={() => (undefined)} />
+              }
             </Toolbar>
           </Canvas>
           { !isCollapsed.details && <Details className="details" actions={actions} /> }
