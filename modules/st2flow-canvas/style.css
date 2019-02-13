@@ -33,6 +33,13 @@
     border-radius: 3px;
     box-shadow: 3px 3px 0 rgba(0, 0, 0, .3);
     box-sizing: border-box;
+
+    img {
+      float: left;
+    }
+    > div {
+      margin-left: 40px;
+    }
   }
 
   &.selected &-body {
@@ -86,6 +93,37 @@
     pointer-events: none;
   }
 
+  &-badges {
+    right: 0;
+    bottom: 1px;
+    position: absolute;
+  }
+
+  &-badge {
+    border: 1px solid black;
+    margin: 1px;
+    padding: 1px;
+    padding-right: 2px;
+    border-radius: 2px;
+
+    &-with-items {
+      composes: icon-repeat from global;
+      &:before {
+        margin: 0;
+        font-weight: bold !important;
+      }
+    }
+
+    &-join {
+      composes: icon-merge_type from global;
+      display: inline-block;
+      transform: rotateZ(180deg) translateY(1px);
+      &:before {
+        margin: 0;
+        font-weight: bold !important;
+      }
+    }
+  }
 
   &-handle {
     position: absolute;
@@ -267,7 +305,7 @@
 
   display: flex;
   align-items: center;
-  
+
 
   &.left {
     left: 0;
