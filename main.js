@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import { Provider, connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
+import { HotKeys } from 'react-hotkeys';
+import { pick, mapValues } from 'lodash';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -18,6 +20,18 @@ import globalStore from '@stackstorm/module-store';
 
 import store from './store';
 import style from './style.css';
+
+function guardKeyHandlers(obj, names) {
+  const filteredObj = pick(obj, names);
+  return mapValues(filteredObj, fn => {
+    return e => {
+      if(e.target === document.body) {
+        e.preventDefault();
+        fn.call(obj);
+      }
+    };
+  });
+}
 
 @connect(
   ({ flow: { panels, actions, meta, metaSource, workflowSource, pack } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack }),
@@ -100,6 +114,12 @@ class Window extends Component<{
 
   style = style
 
+  keyMap = {
+    undo: [ 'ctrl+z', 'meta+z' ],
+    redo: [ 'ctrl+shift+z', 'meta+shift+z' ],
+    handleTaskDelete: [ 'del', 'backspace' ],
+  }
+
   render() {
     const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout } = this.props;
 
@@ -111,18 +131,26 @@ class Window extends Component<{
         </div>
         <div className="component-row-content">
           { !isCollapsed.palette && <Palette className="palette" actions={actions} /> }
-          <Canvas className="canvas">
-            <Toolbar>
-              <ToolbarButton key="undo" icon="icon-redirect" errorMessage="Could not undo." onClick={() => undo()} />
-              <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
-              <ToolbarButton key="rearrange" icon="icon-arrange" errorMessage="Error rearranging workflows." onClick={() => layout()} />
-              <ToolbarButton key="save" icon="icon-save" errorMessage="Error saving workflow." onClick={() => this.save()} />
-              {
-                // TODO: Implement this.
-                // <ToolbarButton key="run" icon="icon-play" onClick={() => (undefined)} />
-              }
-            </Toolbar>
-          </Canvas>
+          <HotKeys
+            style={{ flex: 1 }}
+            keyMap={this.keyMap}
+            focused={true}
+            attach={document.body}
+            handlers={guardKeyHandlers(this.props, [ 'undo', 'redo' ])}
+          >
+            <Canvas className="canvas">
+              <Toolbar>
+                <ToolbarButton key="undo" icon="icon-redirect" errorMessage="Could not undo." onClick={() => undo()} />
+                <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
+                <ToolbarButton key="rearrange" icon="icon-arrange" errorMessage="Error rearranging workflows." onClick={() => layout()} />
+                <ToolbarButton key="save" icon="icon-save" errorMessage="Error saving workflow." onClick={() => this.save()} />
+                {
+                  // TODO: Implement this.
+                  // <ToolbarButton key="run" icon="icon-play" onClick={() => (undefined)} />
+                }
+              </Toolbar>
+            </Canvas>
+          </HotKeys>
           { !isCollapsed.details && <Details className="details" actions={actions} /> }
         </div>
       </div>
@@ -138,7 +166,7 @@ globalStore.subscribe(() => {
   match = location.pathname.match('^/import/(.+)/(.+)');
   if (match) {
     const [ ,, action ] = match;
-    
+
     globalStore.dispatch({
       type: 'CHANGE_LOCATION',
       location: {

@@ -400,10 +400,6 @@ export default class Canvas extends Component<{
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
 
-  keyMap = {
-    'handleTaskDelete': [ 'del', 'backspace' ],
-  };
-
   render() {
     const { children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
@@ -452,8 +448,7 @@ export default class Canvas extends Component<{
     //   can stay here), but for now since all key commands affect the canvas, this is fine.
     return (
       <HotKeys
-        style={{ flex: 1 }}
-        keyMap={this.keyMap}
+        style={{height: '100%'}}
         focused={true}
         attach={document.body}
         handlers={{handleTaskDelete: e => {
