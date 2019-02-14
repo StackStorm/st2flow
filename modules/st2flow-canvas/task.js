@@ -5,6 +5,7 @@ import type { CanvasPoint, TaskInterface } from '@stackstorm/st2flow-model/inter
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+import {HotKeys} from 'react-hotkeys';
 
 import Vector from './vector';
 import { origin } from './const';
@@ -214,48 +215,51 @@ export default class Task extends Component<{
     const coords = new Vector(delta).divide(scale).add(new Vector(task.coords)).add(origin);
 
     return (
-      <div
-        className={cx(this.style.task, selected && this.style.selected)}
-        style={{
-          transform: `translate(${coords.x}px, ${coords.y}px)`,
-        }}
-        onClick={e => this.handleClick(e)}
-      >
+      <HotKeys handlers={{ handleTaskDelete: onDelete }}>
         <div
-          className={cx(this.style.taskBody)}
+          className={cx(this.style.task, selected && this.style.selected)}
           style={{
-            width: task.size && task.size.x,
-            height: task.size && task.size.y,
+            transform: `translate(${coords.x}px, ${coords.y}px)`,
           }}
-          ref={this.taskRef}
+          tabIndex='0'
+          onClick={e => this.handleClick(e)}
         >
-          <img src={api.route({ path: `/packs/views/file/${packName}/icon.png` })} width="32" height="32" />
-          <div>
-            <div className={cx(this.style.taskName)}>{task.name}</div>
-            <div className={cx(this.style.taskAction)}>{task.action}</div>
-            <div className={cx(this.style.taskBadges)}>
-              {
-                task.with && (
-                  <span className={cx(this.style.taskBadge)}>
-                    <i className={cx(this.style.taskBadgeWithItems)} />
-                    { task.with && +task.with.concurrency ? task.with.concurrency : ''}
-                  </span>
-                )
-              }
-              {
-                task.join && (
-                  <span className={cx(this.style.taskBadge)}>
-                    <i className={cx(this.style.taskBadgeJoin)} />
-                    {+task.join ? task.join : ''}
-                  </span>
-                )
-              }
+          <div
+            className={cx(this.style.taskBody)}
+            style={{
+              width: task.size && task.size.x,
+              height: task.size && task.size.y,
+            }}
+            ref={this.taskRef}
+          >
+            <img src={api.route({ path: `/packs/views/file/${packName}/icon.png` })} width="32" height="32" />
+            <div>
+              <div className={cx(this.style.taskName)}>{task.name}</div>
+              <div className={cx(this.style.taskAction)}>{task.action}</div>
+              <div className={cx(this.style.taskBadges)}>
+                {
+                  task.with && (
+                    <span className={cx(this.style.taskBadge)}>
+                      <i className={cx(this.style.taskBadgeWithItems)} />
+                      { task.with && +task.with.concurrency ? task.with.concurrency : ''}
+                    </span>
+                  )
+                }
+                {
+                  task.join && (
+                    <span className={cx(this.style.taskBadge)}>
+                      <i className={cx(this.style.taskBadgeJoin)} />
+                      {+task.join ? task.join : ''}
+                    </span>
+                  )
+                }
+              </div>
             </div>
           </div>
+          <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} onClick={() => onDelete()} />
+          <div className={this.style.taskHandle} style={{ top: '100%', left: '50%' }}  draggable ref={this.handleRef} />
         </div>
-        <div className={cx(this.style.taskButton, this.style.delete, 'icon-delete')} onClick={() => onDelete()} />
-        <div className={this.style.taskHandle} style={{ top: '100%', left: '50%' }}  draggable ref={this.handleRef} />
-      </div>
+      </HotKeys>
     );
   }
 }
