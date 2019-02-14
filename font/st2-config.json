@@ -295,6 +295,34 @@
       ]
     },
     {
+      "uid": "a10cf65bdb3d80670aa31851c77d5ffb",
+      "css": "merge_type",
+      "code": 59833,
+      "src": "custom_icons",
+      "selected": true,
+      "svg": {
+        "path": "M312.5 334L500 146.5 687.5 334H541V599.6L291 849.6 232.4 791 459 566.4V334H312.5ZM709 849.6L566.4 709 625 650.4 767.6 791Z",
+        "width": 1000
+      },
+      "search": [
+        "merge_type"
+      ]
+    },
+    {
+      "uid": "356d4f5174e52a2ca78aed57df9b2723",
+      "css": "repeat",
+      "code": 59987,
+      "src": "custom_icons",
+      "selected": true,
+      "svg": {
+        "path": "M709 709V541H791V791H291V916L125 750 291 584V709H709ZM291 291V459H209V209H709V84L875 250 709 416V291H291Z",
+        "width": 1000
+      },
+      "search": [
+        "repeat"
+      ]
+    },
+    {
       "uid": "ce9423804b638f1f004069ad72426e86",
       "css": "ac_unit",
       "code": 59408,
@@ -6077,20 +6105,6 @@
       ]
     },
     {
-      "uid": "a10cf65bdb3d80670aa31851c77d5ffb",
-      "css": "merge_type",
-      "code": 59833,
-      "src": "custom_icons",
-      "selected": false,
-      "svg": {
-        "path": "M312.5 334L500 146.5 687.5 334H541V599.6L291 849.6 232.4 791 459 566.4V334H312.5ZM709 849.6L566.4 709 625 650.4 767.6 791Z",
-        "width": 1000
-      },
-      "search": [
-        "merge_type"
-      ]
-    },
-    {
       "uid": "31de8f9adceefab209223d8fb2b9ba3f",
       "css": "message",
       "code": 59834,
@@ -8132,20 +8146,6 @@
       },
       "search": [
         "repeat_one"
-      ]
-    },
-    {
-      "uid": "356d4f5174e52a2ca78aed57df9b2723",
-      "css": "repeat",
-      "code": 59987,
-      "src": "custom_icons",
-      "selected": false,
-      "svg": {
-        "path": "M709 709V541H791V791H291V916L125 750 291 584V709H709ZM291 291V459H209V209H709V84L875 250 709 416V291H291Z",
-        "width": 1000
-      },
-      "search": [
-        "repeat"
       ]
     },
     {

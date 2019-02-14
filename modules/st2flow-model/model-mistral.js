@@ -94,7 +94,7 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
       const {
         action = '',
-        input = {}, 
+        input = {},
         ...restTask
       } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
@@ -106,7 +106,7 @@ export default class MistralModel extends BaseModel implements ModelInterface {
       return {
         name: joinTaskName(key, this.tokenSet),
         action: actionRef,
-        size: { x: 120, y: 48 },
+        size: { x: 211, y: 55 },
         coords: { x: 0, y: 0, ...coords },
         input: {
           ...input,
