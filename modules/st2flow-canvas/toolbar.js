@@ -16,12 +16,18 @@ import style from './style.css';
         type: 'PUSH_ERROR',
         error,
       }),
+    pushSuccess: message =>
+      dispatch({
+        type: 'PUSH_SUCCESS',
+        message,
+      }),
   })
 )
 export class ToolbarButton extends Component<
   {
     icon: string,
     errorMessage?: string,
+    successMessage?: string,
     onClick: Function,
     pushError: Function
   },
@@ -32,6 +38,7 @@ export class ToolbarButton extends Component<
   static propTypes = {
     icon: PropTypes.string,
     errorMessage: PropTypes.string,
+    successMessage: PropTypes.string,
     onClick: PropTypes.func,
     pushError: PropTypes.func,
   };
@@ -47,13 +54,17 @@ export class ToolbarButton extends Component<
   async handleClick(e: Event) {
     e.stopPropagation();
 
-    const { onClick, errorMessage, pushError } = this.props;
+    const { onClick, errorMessage, successMessage, pushError, pushSuccess } = this.props;
 
     if (onClick) {
       this.setState({ status: 'pending' });
       try {
         await onClick();
         this.setState({ status: 'success' });
+
+        if (successMessage) {
+          pushSuccess(successMessage);
+        }
       }
       catch (e) {
         this.setState({ status: 'error' });
