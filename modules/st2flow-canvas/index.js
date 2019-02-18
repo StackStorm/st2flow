@@ -38,7 +38,7 @@ type Wheel = WheelEvent & {
 }
 
 @connect(
-  ({ flow: { tasks, transitions, errors, nextTask, panels, navigation }}) => ({ tasks, transitions, errors, nextTask, isCollapsed: panels, navigation }),
+  ({ flow: { tasks, transitions, notifications, nextTask, panels, navigation }}) => ({ tasks, transitions, notifications, nextTask, isCollapsed: panels, navigation }),
   (dispatch) => ({
     issueModelCommand: (command, ...args) => {
       dispatch({
@@ -66,7 +66,7 @@ export default class Canvas extends Component<{
 
       tasks: Array<TaskInterface>,
       transitions: Array<Object>,
-      errors: Array<Error>,
+      notifications: Array<NotificationInterface>,
       issueModelCommand: Function,
       nextTask: string,
 
@@ -84,7 +84,7 @@ export default class Canvas extends Component<{
 
     tasks: PropTypes.array,
     transitions: PropTypes.array,
-    errors: PropTypes.array,
+    notifications: PropTypes.array,
     issueModelCommand: PropTypes.func,
     nextTask: PropTypes.string,
 
@@ -390,10 +390,10 @@ export default class Canvas extends Component<{
   }
 
   get notifications() : Array<NotificationInterface> {
-    return this.props.errors.map(err => ({
-      type: 'error',
-      message: err.message,
-    }));
+    return this.props.notifications;
+  }
+  get errors() : Array<NotificationInterface> {
+    return this.props.notifications.filter(n => n.type === 'error');
   }
 
   style = style
@@ -401,7 +401,7 @@ export default class Canvas extends Component<{
   surfaceRef = React.createRef();
 
   render() {
-    const { children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
+    const { notifications, children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
 
     const surfaceStyle = {
@@ -548,7 +548,7 @@ export default class Canvas extends Component<{
               </svg>
             </div>
           </div>
-          <Notifications position="bottom" notifications={this.notifications} />
+          <Notifications position="bottom" notifications={notifications} />
         </div>
       </HotKeys>
     );

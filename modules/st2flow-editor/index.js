@@ -2,6 +2,7 @@
 
 import type { TaskInterface, DeltaInterface } from '@stackstorm/st2flow-model';
 import type { GenericError } from '@stackstorm/st2flow-model';
+import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
 
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
@@ -20,12 +21,12 @@ const DELTA_DEBOUNCE = 300; // ms
 const DEFAULT_TAB_SIZE = 2;
 
 @connect(
-  ({ ranges, errors }) => ({ ranges, errors })
+  ({ ranges, notifications }) => ({ ranges, notifications })
 )
 export default class Editor extends Component<{
   className?: string,
   ranges?: Object,
-  errors?: Array<Error>,
+  notifications?: Array<NotificationInterface>,
   selectedTaskName?: string,
   onTaskSelect?: Function,
   source?: string,
@@ -34,7 +35,7 @@ export default class Editor extends Component<{
   static propTypes = {
     className: PropTypes.string,
     ranges: PropTypes.object,
-    errors: PropTypes.array,
+    notifications: PropTypes.array,
     selectedTaskName: PropTypes.string,
     onTaskSelect: PropTypes.func,
     source: PropTypes.string,
@@ -67,7 +68,7 @@ export default class Editor extends Component<{
   }
 
   componentDidUpdate(prevProps: Object) {
-    const { selectedTaskName, source, errors } = this.props;
+    const { selectedTaskName, source, notifications } = this.props;
     if (selectedTaskName !== prevProps.selectedTaskName) {
       this.handleTaskSelect({ name: selectedTaskName });
     }
@@ -76,8 +77,8 @@ export default class Editor extends Component<{
       this.handleModelChange([], source);
     }
 
-    if (errors && errors !== prevProps.errors) {
-      this.handleModelError(errors);
+    if (notifications && notifications !== prevProps.notifications) {
+      this.handleModelError(notifications);
     }
   }
 
@@ -179,10 +180,10 @@ export default class Editor extends Component<{
   }
 
   get notifications() {
-    return this.props.errors && this.props.errors.map(err => ({
-      type: 'error',
-      message: err.message,
-    }));
+    return this.props.notifications;
+  }
+  get errors() {
+    return this.props.notifications ? this.props.notifications.filter(n => n.type === 'error') : [];
   }
 
 
@@ -195,7 +196,7 @@ export default class Editor extends Component<{
   style = style;
 
   render() {
-    const { errors } = this.props;
+    const { errors } = this;
 
     return (
       <div className={cx(this.props.className, this.style.component, { [this.style.hasError]: errors && errors.length })}>

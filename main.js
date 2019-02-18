@@ -142,8 +142,8 @@ class Window extends Component<{
               <Toolbar>
                 <ToolbarButton key="undo" icon="icon-redirect" errorMessage="Could not undo." onClick={() => undo()} />
                 <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
-                <ToolbarButton key="rearrange" icon="icon-arrange" errorMessage="Error rearranging workflows." onClick={() => layout()} />
-                <ToolbarButton key="save" icon="icon-save" errorMessage="Error saving workflow." onClick={() => this.save()} />
+                <ToolbarButton key="rearrange" icon="icon-arrange" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
+                <ToolbarButton key="save" icon="icon-save" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
                 {
                   // TODO: Implement this.
                   // <ToolbarButton key="run" icon="icon-play" onClick={() => (undefined)} />

@@ -20,7 +20,7 @@ function workflowModelGetter(model) {
     tasks,
     nextTask: `task${lastIndex + 1}`,
     transitions,
-    errors,
+    notifications: errors.map(e => ({ type: 'error', message: e.message })),
   };
 }
 
@@ -52,7 +52,7 @@ const flowReducer = (state = {}, input) => {
     tasks = [],
     transitions = [],
     ranges = {},
-    errors = [],
+    notifications = [],
     nextTask = 'task1',
 
     panels = [],
@@ -71,7 +71,7 @@ const flowReducer = (state = {}, input) => {
     tasks,
     transitions,
     ranges,
-    errors,
+    notifications,
     nextTask,
 
     panels,
@@ -152,7 +152,16 @@ const flowReducer = (state = {}, input) => {
 
       return {
         ...state,
-        errors: [ ...errors, { message: error }],
+        notifications: [ ...notifications, { type: 'error', message: error }],
+      };
+    }
+
+    case 'PUSH_SUCCESS': {
+      const { message } = input;
+
+      return {
+        ...state,
+        notifications: [ ...notifications, { type: 'success', message }],
       };
     }
 
@@ -282,10 +291,12 @@ const undoReducer = (prevState = {}, state = {}, input) => {
         futureRecord.workflowSource = state.workflowSource;
 
         workflowModel.applyDelta(null, workflowSource);
+        const parsedWorkflow = workflowModelGetter(workflowModel);
 
         state = {
           ...state,
-          ...workflowModelGetter(workflowModel),
+          ...parsedWorkflow,
+          notifications: [ ...(state.notifications || []), ...(parsedWorkflow.notifications || []) ],
         };
       }
 
@@ -319,16 +330,12 @@ const undoReducer = (prevState = {}, state = {}, input) => {
         pastRecord.workflowSource = state.workflowSource;
 
         workflowModel.applyDelta(null, workflowSource);
-
-        const { tasks, transitions, errors } = workflowModel;
+        const parsedWorkflow = workflowModelGetter(workflowModel);
 
         state = {
           ...state,
-          workflowSource: workflowModel.toYAML(),
-          ranges: getRanges(workflowModel),
-          tasks,
-          transitions,
-          errors,
+          ...parsedWorkflow,
+          notifications: [ ...(state.notifications || []), ...(parsedWorkflow.notifications || []) ],
         };
       }
 
@@ -339,8 +346,7 @@ const undoReducer = (prevState = {}, state = {}, input) => {
 
         state = {
           ...state,
-          metaSource: metaModel.toYAML(),
-          meta: metaModel.tokenSet.toObject(),
+          ...metaModelGetter(metaModel),
         };
       }
 
