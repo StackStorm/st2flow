@@ -29,7 +29,8 @@ export class ToolbarButton extends Component<
     errorMessage?: string,
     successMessage?: string,
     onClick: Function,
-    pushError: Function
+    pushError?: Function,
+    pushSuccess?: Function,
   },
   {
     status: "initial" | "pending" | "success" | "error"
@@ -41,6 +42,7 @@ export class ToolbarButton extends Component<
     successMessage: PropTypes.string,
     onClick: PropTypes.func,
     pushError: PropTypes.func,
+    pushSuccess: PropTypes.func,
   };
 
   static defaultProps = {
@@ -96,15 +98,17 @@ export class ToolbarButton extends Component<
 }
 
 export class Toolbar extends Component<{
-  children: any
+  children: any,
+  position?: string
 }> {
   static propTypes = {
     children: PropTypes.node,
+    position: PropTypes.string,
   };
 
   style = style;
 
   render() {
-    return <div className={cx(this.style.toolbar)}>{this.props.children}</div>;
+    return <div className={cx(this.style.toolbar, this.props.position && `${this.style.toolbar}-${this.props.position}`)}>{this.props.children}</div>;
   }
 }

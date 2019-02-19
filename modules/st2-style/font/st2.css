@@ -76,3 +76,6 @@
 .icon-play:before { content: '\e993'; } /* '' */
 .icon-merge_type:before { content: '\e9b9'; } /* '' */
 .icon-repeat:before { content: '\ea53'; } /* '' */
+.icon-zoom_in:before { content: '\eb43'; } /* '' */
+.icon-zoom_out:before { content: '\eb45'; } /* '' */
+.icon-zoom_reset:before { content: '\ee65'; } /* '' */
