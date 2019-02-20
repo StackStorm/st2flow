@@ -251,6 +251,15 @@
 
   display: flex;
   justify-content: center;
+
+  &-right {
+    right: 16px;
+    flex-flow: column;
+    width: 50px;
+    height: 140px;
+    left: auto;
+    top: 55px;
+  }
 }
 
 .toolbar-button {

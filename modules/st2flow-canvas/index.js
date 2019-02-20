@@ -23,6 +23,7 @@ import Task from './task';
 import TransitionGroup from './transition';
 import Vector from './vector';
 import CollapseButton from './collapse-button';
+import { Toolbar, ToolbarButton } from './toolbar';
 
 import { origin } from './const';
 
@@ -468,6 +469,11 @@ export default class Canvas extends Component<{
           onClick={e => this.handleCanvasClick(e)}
         >
           { children }
+          <Toolbar position="right">
+            <ToolbarButton key="zoomIn" icon="icon-zoom_in" onClick={() => this.setState({ scale: this.state.scale + .1 })} />
+            <ToolbarButton key="zoomReset" icon="icon-zoom_reset" onClick={() => this.setState({ scale: 0 })} />
+            <ToolbarButton key="zoomOut" icon="icon-zoom_out" onClick={() => this.setState({ scale: this.state.scale - .1 })} />
+          </Toolbar>
           <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
           <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />
           <div className={this.style.canvas} ref={this.canvasRef}>
