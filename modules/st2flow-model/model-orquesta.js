@@ -200,7 +200,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  updateTransitions(ref: TaskRefInterface, name: string) {
+  updateTransitions(ref: TaskRefInterface, name: string, updateType: string='rename') {
     const tasks = crawler.getValueByKey(this.tokenSet, [ 'tasks' ]);
     Object.keys(tasks).map((taskKey) => {
       const nextElements = _.get(tasks[taskKey], 'next', []);
@@ -215,7 +215,13 @@ class OrquestaModel extends BaseModel implements ModelInterface {
               elementIndex,
               'do',
             ];
-            crawler.renameMappingKey(this.tokenSet, transitionPath, name);
+            switch(updateType) {
+              case 'rename':
+                crawler.renameMappingKey(this.tokenSet, transitionPath, name);
+                break;
+              case 'delete':
+                crawler.delete(this.tokenSet, transitionPath);
+            }
           }
         }
         else {
@@ -229,7 +235,20 @@ class OrquestaModel extends BaseModel implements ModelInterface {
                 'do',
                 taskIndex,
               ];
-              crawler.renameMappingKey(this.tokenSet, transitionPath, name);
+
+              const lastTask = crawler.getValueByKey(this.tokenSet, transitionPath.slice(0, -1)).length === 1;
+              switch(updateType) {
+                case 'rename':
+                  crawler.renameMappingKey(this.tokenSet, transitionPath, name);
+                  break;
+                case 'delete':
+                  if (lastTask) {
+                    crawler.delete(this.tokenSet, transitionPath.slice(0, -1));
+                  }
+                  else {
+                    crawler.delete(this.tokenSet, transitionPath);
+                  }
+              }
             }
           });
         }
@@ -278,6 +297,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   deleteTask(ref: TaskRefInterface) {
     const { oldTree } = this.startMutation();
+    this.updateTransitions(ref, ref.name, 'delete');
     crawler.deleteMappingItem(this.tokenSet, [ 'tasks', ref.name ]);
 
     this.endMutation(oldTree);
