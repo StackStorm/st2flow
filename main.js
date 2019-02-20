@@ -104,6 +104,10 @@ class Window extends Component<{
       content: metaSource,
     }];
 
+    if (!meta.entry_point) {
+      throw { response: { data: { faultstring: 'You must add an Entry point.'}}};
+    }
+
     if (existingAction) {
       return api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
     }
