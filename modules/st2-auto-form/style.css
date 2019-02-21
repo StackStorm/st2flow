@@ -185,6 +185,7 @@
     &-options {
       position: absolute;
       background-color: white;
+      z-index: 1;
 
       &-menu {
         display: flex;
