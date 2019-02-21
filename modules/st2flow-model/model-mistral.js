@@ -146,6 +146,11 @@ export default class MistralModel extends BaseModel implements ModelInterface {
           if(keys.find(k => k[0] === key[0] && k[1] === toName)) {
             const [ workflowName, taskName ] = key;
             const parentKey = [ workflowName, 'tasks' ];
+            let color = '';
+            try {
+              color = crawler.getCommentsForKey(this.tokenSet, parentKey.concat([ taskName, 'on-complete', tidx ], typeof next === 'string' ? [] : [ toName ]));
+            }
+            catch(e) {/*noop*/}
             transitions.push({
               type: status,
               condition: typeof next === 'string' ? null : next[toName],
@@ -156,7 +161,7 @@ export default class MistralModel extends BaseModel implements ModelInterface {
                 // The first item in the fromKey will be the workflow name
                 name: joinTaskName([ key[0], toName ], this.tokenSet),
               }],
-              color: crawler.getCommentsForKey(this.tokenSet, parentKey.concat([ taskName, 'on-complete', tidx ])),
+              color,
             });
           }
         });
@@ -391,7 +396,8 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     }
 
     if(path === 'color') {
-      crawler.setCommentForKey(this.tokenSet, key.concat(transitionIndex), value.toString());
+      const extraPath = typeof task[typeKey][transitionIndex] === 'string' ? [] : [ getToName(task[typeKey][transitionIndex]) ];
+      crawler.setCommentForKey(this.tokenSet, key.concat(transitionIndex, extraPath), value.toString());
     }
     else {
       crawler.set(this.tokenSet, key.concat(transitionIndex, path), value);
