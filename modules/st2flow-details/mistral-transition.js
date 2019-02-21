@@ -7,7 +7,7 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import cx from 'classnames';
 
-import { StringField, EnumField } from '@stackstorm/module-auto-form/fields';
+import { StringField, EnumField, ColorStringField } from '@stackstorm/module-auto-form/fields';
 
 import style from './style.css';
 
@@ -16,6 +16,7 @@ type TransitionProps = {
     from: TaskRefInterface,
     to: Array<TaskRefInterface>,
     condition?: string,
+    color?: string
   },
   taskNames: Array<string> | string,
   selected: boolean,
@@ -26,14 +27,27 @@ type TransitionProps = {
   null,
   (dispatch) => ({
     onChange: (transition: TransitionRefInterface, value: any) => {
-      dispatch({
-        type: 'MODEL_ISSUE_COMMAND',
-        command: 'updateTransition',
-        args: [
-          transition,
-          value,
-        ],
-      });
+      if(value.hasOwnProperty('color')) {
+        dispatch({
+          type: 'MODEL_ISSUE_COMMAND',
+          command: 'setTransitionProperty',
+          args: [
+            transition,
+            'color',
+            value.color,
+          ],
+        });
+      }
+      else {
+        dispatch({
+          type: 'MODEL_ISSUE_COMMAND',
+          command: 'updateTransition',
+          args: [
+            transition,
+            value,
+          ],
+        });
+      }
     },
   })
 )
@@ -55,6 +69,12 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
     onChange && onChange(transition, { condition, from, to });
   }
 
+  handleColorChange(color: string) {
+    const { transition, onChange } = this.props;
+
+    onChange && onChange(transition, { color });
+  }
+
   handleDoChange(to: string) {
     const { transition, onChange } = this.props;
     const { condition, from } = transition;
@@ -65,6 +85,7 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
   render() {
     const { transition, taskNames, selected } = this.props;
     const [ to ] = transition.to.map(t => t.name);
+    const colorOptions = [ '#fecb2f', '#d1583b', '#aa5dd1', '#629e47', '#fd9d32', '#d14c83', '#5b5dd0', '#1072c6' ];
 
     return (
       <div className={cx(this.style.transition, { [this.style.transitionSelected]: selected })}>
@@ -90,7 +111,11 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
             Color
           </div>
           <div className={this.style.transitionField}>
-            <StringField />
+            <ColorStringField
+              options={colorOptions}
+              value={transition.color}
+              onChange={v => this.handleColorChange(v || '')}
+            />
           </div>
         </div>
       </div>
