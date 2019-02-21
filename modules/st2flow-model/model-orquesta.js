@@ -165,7 +165,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         .map(t => {
           try {
             const { jpath } = getRawTransitionInfo(t, { tasks });
-            t.color = crawler.getCommentsForKey(this.tokenSet, jpath.concat('when'));
+            t.color = crawler.getCommentsForKey(this.tokenSet, jpath.concat('do'));
           }
           catch(e) {
             // pass
@@ -399,7 +399,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         break;
 
       case 'color':
-        crawler.setCommentForKey(this.tokenSet, jpath.concat('when'), value.toString());
+        crawler.setCommentForKey(this.tokenSet, jpath.concat('do'), value.toString());
         this.endMutation(oldTree);
         return;
     }
