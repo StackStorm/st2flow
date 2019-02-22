@@ -1,11 +1,13 @@
 import { createScopedStore } from '@stackstorm/module-store';
 
 import { models, OrquestaModel } from '@stackstorm/st2flow-model';
+import Graph from '@stackstorm/st2flow-graph';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
 
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
+const graph = new Graph();
 
 function workflowModelGetter(model) {
   const { tasks, transitions, errors } = model;
@@ -86,8 +88,17 @@ const flowReducer = (state = {}, input) => {
     case 'MODEL_ISSUE_COMMAND': {
       const { command, args } = input;
 
+      console.log(command);
+
       if (!workflowModel[command]) {
         return state;
+      }
+
+      if (graph[command]) {
+        graph[command](...args);
+      }
+      else{
+        console.log(`No graph function for ${command}`);
       }
 
       if (!workflowModel.tokenSet) {
