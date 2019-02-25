@@ -146,7 +146,7 @@ export default class TransitionGroup extends Component<{
   }
 
   render(): Array<Node> {
-    const { color, transitions, selected, taskRefs, ...props } = this.props;
+    const { color, transitions, selected, taskRefs, ...props } = this.props; //eslint-disable-line no-unused-vars
 
     const transitionPaths = transitions
       .map(({ from, to }) => ({
