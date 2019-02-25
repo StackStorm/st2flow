@@ -4,7 +4,6 @@ import type {
   CanvasPoint,
   TaskInterface,
   TaskRefInterface,
-  TaskInterface,
   TransitionInterface,
 } from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
@@ -445,6 +444,10 @@ export default class Canvas extends Component<{
       }
     });
 
+    if (boundingBoxes.length < 1) {
+      return new Graph([], {});
+    }
+
     /*  Let I be the set of interesting points (x, y) in the diagram, i.e. the connector
     points and corners of the bounding box of each object. Let XI be the set of x
     coordinates in I and YI the set of y coordinates in I. The orthogonal visibility
@@ -503,10 +506,10 @@ export default class Canvas extends Component<{
       return a;
     }, {});
     const E = {};
-    const V = [].concat(...Object.keys(XI).map(_x => {
-      const x = +_x;
-      return Object.keys(YI).filter(_y => {
-        const y = +_y;
+    const V = [].concat(...Object.keys(XI).map(interestingX => {
+      const x = +interestingX;
+      return Object.keys(YI).map(interestingY => {
+        const y = +interestingY;
         // optimization: find nearest neighbor first.
         //  if nearest neighbors are blocked then all are.
         let nearestNeighborUp = -Infinity;
@@ -541,80 +544,114 @@ export default class Canvas extends Component<{
           // (interesting neighbors are the points in I which share either an X or Y coordinate)
           // remove that nearest neighbor.
           if(nearestNeighborUp > -Infinity) {
-            if(x > box.left && x < box.right && y > box.top && nearestNeighborUp < box.bottom) {
+            if (x > box.left && x < box.right && y === box.bottom) {
+              // in this case y is the interesting point. Mark it as not having nearest neighbor
+              nearestNeighborUp = NaN;
+            }
+            else if(x > box.left && x < box.right && y > box.top && nearestNeighborUp < box.bottom) {
               nearestNeighborUp = -Infinity;
             }
           }
           if(nearestNeighborDown < Infinity) {
-            if(x > box.left && x < box.right && y < box.bottom && nearestNeighborDown > box.top) {
+            if (x > box.left && x < box.right && y === box.top) {
+              // in this case y is the interesting point. Mark it as not having nearest neighbor
+              nearestNeighborDown = NaN;
+            }
+            else if(x > box.left && x < box.right && y < box.bottom && nearestNeighborDown > box.top) {
               nearestNeighborDown = Infinity;
             }
           }
           if(nearestNeighborLeft > -Infinity) {
-            if(y > box.top && y < box.bottom && x > box.left && nearestNeighborLeft < box.right) {
+            if (y > box.top && y < box.bottom && x === box.right) {
+              // in this case y is the interesting point. Mark it as not having nearest neighbor
+              nearestNeighborLeft = NaN;
+            }
+            else if(y > box.top && y < box.bottom && x > box.left && nearestNeighborLeft < box.right) {
               nearestNeighborLeft = -Infinity;
             }
           }
           if(nearestNeighborRight < Infinity) {
-            if(y > box.top && y < box.bottom && x < box.right && nearestNeighborRight > box.left) {
+            if (y > box.top && y < box.bottom && x === box.left) {
+              // in this case y is the interesting point. Mark it as not having nearest neighbor
+              nearestNeighborRight = NaN;
+            }
+            else if(y > box.top && y < box.bottom && x < box.right && nearestNeighborRight > box.left) {
               nearestNeighborRight = Infinity;
             }
           }
         });
 
         if (XI[x].indexOf(y) > -1 ||
-          +(nearestNeighborUp !== -Infinity) +
-          +(nearestNeighborDown !== Infinity) +
-          +(nearestNeighborLeft !== -Infinity) +
-          +(nearestNeighborRight !== Infinity) > 1
+          ((nearestNeighborUp > -Infinity ||
+            nearestNeighborDown < Infinity) &&
+          (nearestNeighborLeft > -Infinity ||
+            nearestNeighborRight < Infinity))
         ) {
           E[`${x}|${y}`] = E[`${x}|${y}`] || [];
-          if(nearestNeighborUp !== -Infinity) {
-            // for what to put in the graph edges, now we want to look
-            // at any point in V, not just interesting ones.
-            // If there exists a point of interest (x, yi) such that there
-            // is no bounding box intervening, then all points
-            // (x, yj), y < yj < yi or y > yj > yi, will also not have a bounding
-            // box intervening.
-            nearestNeighborUp = Object.keys(YI).reduce((bestY, _yStr) => {
-              const _y = +_yStr;
-              return _y < y && _y > bestY ? _y : bestY;
-            }, nearestNeighborUp);
-            E[`${x}|${y}`].push({x, y: nearestNeighborUp});
-          }
-          if(nearestNeighborDown !== Infinity) {
-            nearestNeighborDown = Object.keys(YI).reduce((bestY, _yStr) => {
-              const _y = +_yStr;
-              return _y > y && _y < bestY ? _y : bestY;
-            }, nearestNeighborDown);
-            E[`${x}|${y}`].push({x, y: nearestNeighborDown});
-          }
-          if(nearestNeighborLeft !== -Infinity) {
-            nearestNeighborLeft = Object.keys(XI).reduce((bestX, _xStr) => {
-              const _x = +_xStr;
-              return _x < x && _x > bestX ? _x : bestX;
-            }, nearestNeighborLeft);
-            E[`${x}|${y}`].push({x: nearestNeighborLeft, y});
-          }
-          if(nearestNeighborRight !== Infinity) {
-            nearestNeighborRight = Object.keys(XI).reduce((bestX, _xStr) => {
-              const _x = +_xStr;
-              return _x > x && _x < bestX ? _x : bestX;
-            }, nearestNeighborRight);
-            E[`${x}|${y}`].push({x: nearestNeighborRight, y});
-          }
-          return true;
+          return {
+            x,
+            y,
+            nearestNeighborUp,
+            nearestNeighborDown,
+            nearestNeighborRight,
+            nearestNeighborLeft,
+          };
         }
         else {
-          return false;
+          return {x, y: -Infinity, nearestNeighborLeft, nearestNeighborRight, nearestNeighborDown, nearestNeighborUp};
         }
-      }).map(y => ({ x, y: +y }));
+      }).filter(({y}) => y > -Infinity && `${x}|${y}` in E);
     }));
-    // filter out edges to nowhere
-    Object.keys(E).forEach(eKey => {
-      E[eKey] = E[eKey].filter(node => {
-        return `${node.x}|${node.y}` in E;
-      });
+
+    V.forEach(v => {
+      const {
+        x,
+        y,
+      } = v;
+      let {
+        nearestNeighborUp,
+        nearestNeighborDown,
+        nearestNeighborLeft,
+        nearestNeighborRight,
+      } = v;
+      // for what to put in the graph edges, now we want to look
+      // at any point in V, not just interesting ones.
+      // If there exists a point of interest (x, yi) such that there
+      // is no bounding box intervening, then all points
+      // (x, yj), y < yj < yi or y > yj > yi, will also not have a bounding
+      // box intervening, so we don't have to check again.  Above, a bounding
+      // box being to the immediate left/top/right/bottom of a point caused
+      // that nearest neighbot to be set to NaN.
+      if((nearestNeighborUp = Object.keys(YI).reduce((bestY, _yStr) => {
+        const _y = +_yStr;
+        // 1. ensure nearest neighbor is a point in V (`x|y` in E means that a set of edges was set up for a point,
+        //      and that's easier than iterating through V and doing deep comparisons)
+        // 2. Make sure it's not the same point and actually upward (_y < y) (NaN fails here, as NaN fails all < and > comparisons)
+        // 3. Check if it's closer than the previous candidate (_y > bestY)
+        // 4. if all are true, choose it instead of the previous candidate.
+        // 4a. if any are false, use the previous candidate instead.
+        return `${x}|${_y}` in E && _y < y && _y > bestY ? _y : bestY;
+      }, nearestNeighborUp)) !== -Infinity && nearestNeighborUp === nearestNeighborUp) {
+        E[`${x}|${y}`].push({x, y: nearestNeighborUp});
+      }
+      if((nearestNeighborDown = Object.keys(YI).reduce((bestY, _yStr) => {
+        const _y = +_yStr;
+        return `${x}|${_y}` in E && _y > y && _y < bestY ? _y : bestY;
+      }, nearestNeighborDown)) !== Infinity && nearestNeighborDown === nearestNeighborDown) {
+        E[`${x}|${y}`].push({x, y: nearestNeighborDown});
+      }
+      if((nearestNeighborLeft = Object.keys(XI).reduce((bestX, _xStr) => {
+        const _x = +_xStr;
+        return `${_x}|${y}` in E && _x < x && _x > bestX ? _x : bestX;
+      }, nearestNeighborLeft)) !== -Infinity && nearestNeighborLeft === nearestNeighborLeft) {
+        E[`${x}|${y}`].push({x: nearestNeighborLeft, y});
+      }
+      if((nearestNeighborRight = Object.keys(XI).reduce((bestX, _xStr) => {
+        const _x = +_xStr;
+        return `${_x}|${y}` in E && _x > x && _x < bestX ? _x : bestX;
+      }, nearestNeighborRight)) !== Infinity && nearestNeighborRight === nearestNeighborRight) {
+        E[`${x}|${y}`].push({x: nearestNeighborRight, y});
+      }
     });
 
     return new Graph(V, E);
@@ -748,21 +785,6 @@ export default class Canvas extends Component<{
                     );
                   })
               }
-              {/*
-                Here's a debug routing graph visualizer, in case you need to see how the graph is connected.
-                ((graph) => {
-                  return [ Object.keys(graph.grid).map(e => {
-                    const [ x, y ] = e.split('|');
-                    return graph.grid[e].map(et => {
-                      const [ xt, yt ] = et.split('|');
-                      return <path key={e+et} stroke="red" strokeWidth="1" d={`M ${x} ${y} L ${xt} ${yt}`} />;
-                    });
-                  }).concat(Object.values(graph.nodes).map((node) => {
-                    const { x, y } = (node: any);
-                    return <circle key={`${x}|${y}`} cx={x} cy={y} r="3" fill="black" />;
-                  })) ];
-                })(this.transitionRoutingGraph)
-              */}
               <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
                 {
                   transitionGroups
@@ -792,6 +814,21 @@ export default class Canvas extends Component<{
                       />
                     ))
                 }
+                {/*
+                  //Here's a debug routing graph visualizer, in case you need to see how the graph is connected.
+                  ((graph) => {
+                    return [ Object.keys(graph.grid).map(e => {
+                      const [ x, y ] = e.split('|');
+                      return graph.grid[e].map(et => {
+                        const [ xt, yt ] = et.split('|');
+                        return <path key={e+et} stroke="red" strokeWidth="1" d={`M ${x} ${y} L ${xt} ${yt}`} />;
+                      });
+                    }).concat(Object.values(graph.nodes).map((node: GridNode) => {
+                      const { x, y } = (node: any);
+                      return <circle key={`${x}|${y}`} cx={x} cy={y} r="3" fill={node.visited ? 'blue' : 'black'} />;
+                    })) ];
+                  })(transitionRoutingGraph)
+                */}
               </svg>
             </div>
           </div>

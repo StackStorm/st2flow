@@ -146,7 +146,7 @@ export default class TransitionGroup extends Component<{
   }
 
   render(): Array<Node> {
-    const { color, transitions, selected, ...props } = this.props;
+    const { color, transitions, selected, taskRefs, ...props } = this.props;
 
     const transitionPaths = transitions
       .map(({ from, to }) => ({
@@ -208,6 +208,20 @@ export default class TransitionGroup extends Component<{
       .concat(activeBorders)
       .concat(actives)
       .concat(paths);
+    // .concat(
+    //   ((graph) => {
+    //     return [ Object.keys(graph.grid).map(e => {
+    //       const [ x, y ] = e.split('|');
+    //       return graph.grid[e].map(et => {
+    //         const [ xt, yt ] = et.split('|');
+    //         return <path key={e+et} stroke="red" strokeWidth="1" d={`M ${x} ${y} L ${xt} ${yt}`} />;
+    //       });
+    //     }).concat(Object.values(graph.nodes).map((node: GridNode) => {
+    //       const { x, y } = (node: any);
+    //       return <circle key={`${x}|${y}`} cx={x} cy={y} r="3" fill={node.visited ? 'blue' : 'black'} />;
+    //     })) ];
+    //   })(this.props.graph)
+    // );
 
   }
 }
