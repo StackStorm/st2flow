@@ -4,6 +4,8 @@
 // Includes Binary Heap (with modifications) from Marijn Haverbeke.
 // http://eloquentjavascript.net/appendix2.html
 
+import { ORBIT_DISTANCE } from '@stackstorm/st2flow-canvas/const';
+
 function pathTo(node) {
   let curr = node;
   const path = [];
@@ -96,10 +98,10 @@ export const astar = {
     // We have to do a little setup here.  First, we also create a node for the
     //   arrow point at the end, which is what actually ends at the task box.
     //   This is 20px below the supplied "end" for this graph.
-    const endTag = `${end.x}|${end.y + 20}|S`;
+    const endTag = `${end.x}|${end.y + ORBIT_DISTANCE / 2}|S`;
     let postEnd;
     if(!graph.nodes[endTag]) {
-      postEnd = new GridNode(end.x, end.y + 20, 'S', 1);
+      postEnd = new GridNode(end.x, end.y + ORBIT_DISTANCE / 2, 'S', 1);
       graph.nodes[endTag] = postEnd;
       graph.grid[endTag] = [];
       [ 'S', 'E', 'W' ].forEach(dir => {
