@@ -543,41 +543,33 @@ export default class Canvas extends Component<{
           // Make visibility checks.  If a box is beween (x, y) and the nearest "interesting" neighbor,
           // (interesting neighbors are the points in I which share either an X or Y coordinate)
           // remove that nearest neighbor.
-          if(nearestNeighborUp > -Infinity) {
-            if (x > box.left && x < box.right && y === box.bottom) {
-              // in this case y is the interesting point. Mark it as not having nearest neighbor
-              nearestNeighborUp = NaN;
-            }
-            else if(x > box.left && x < box.right && y > box.top && nearestNeighborUp < box.bottom) {
-              nearestNeighborUp = -Infinity;
-            }
+          if (x > box.left && x < box.right && y === box.bottom) {
+            // in this case y is the interesting point. Mark it as not having nearest neighbor
+            nearestNeighborUp = NaN;
           }
-          if(nearestNeighborDown < Infinity) {
-            if (x > box.left && x < box.right && y === box.top) {
-              // in this case y is the interesting point. Mark it as not having nearest neighbor
-              nearestNeighborDown = NaN;
-            }
-            else if(x > box.left && x < box.right && y < box.bottom && nearestNeighborDown > box.top) {
-              nearestNeighborDown = Infinity;
-            }
+          else if(nearestNeighborUp > -Infinity && x > box.left && x < box.right && y > box.top && nearestNeighborUp < box.bottom) {
+            nearestNeighborUp = -Infinity;
           }
-          if(nearestNeighborLeft > -Infinity) {
-            if (y > box.top && y < box.bottom && x === box.right) {
-              // in this case y is the interesting point. Mark it as not having nearest neighbor
-              nearestNeighborLeft = NaN;
-            }
-            else if(y > box.top && y < box.bottom && x > box.left && nearestNeighborLeft < box.right) {
-              nearestNeighborLeft = -Infinity;
-            }
+          if (x > box.left && x < box.right && y === box.top) {
+            // in this case y is the interesting point. Mark it as not having nearest neighbor
+            nearestNeighborDown = NaN;
           }
-          if(nearestNeighborRight < Infinity) {
-            if (y > box.top && y < box.bottom && x === box.left) {
-              // in this case y is the interesting point. Mark it as not having nearest neighbor
-              nearestNeighborRight = NaN;
-            }
-            else if(y > box.top && y < box.bottom && x < box.right && nearestNeighborRight > box.left) {
-              nearestNeighborRight = Infinity;
-            }
+          else if(nearestNeighborDown < Infinity && x > box.left && x < box.right && y < box.bottom && nearestNeighborDown > box.top) {
+            nearestNeighborDown = Infinity;
+          }
+          if (y > box.top && y < box.bottom && x === box.right) {
+            // in this case y is the interesting point. Mark it as not having nearest neighbor
+            nearestNeighborLeft = NaN;
+          }
+          else if(nearestNeighborLeft > -Infinity && y > box.top && y < box.bottom && x > box.left && nearestNeighborLeft < box.right) {
+            nearestNeighborLeft = -Infinity;
+          }
+          if (y > box.top && y < box.bottom && x === box.left) {
+            // in this case y is the interesting point. Mark it as not having nearest neighbor
+            nearestNeighborRight = NaN;
+          }
+          else if(nearestNeighborRight < Infinity && y > box.top && y < box.bottom && x < box.right && nearestNeighborRight > box.left) {
+            nearestNeighborRight = Infinity;
           }
         });
 

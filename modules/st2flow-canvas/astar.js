@@ -87,11 +87,48 @@ export const astar = {
     graph: Graph,
     _start: {x: number, y: number},
     _end: {x: number, y: number}) {
-    const start = graph.nodes[`${_start.x}|${_start.y}`];
-    const end = graph.nodes[`${_end.x}|${_end.y}`];
+    const start = graph.nodes[`${_start.x}|${_start.y}|S`];
+    let end = graph.nodes[`${_end.x}|${_end.y}|S`];
     if(!start || !end) {
       return [];
     }
+
+    // We have to do a little setup here.  First, we also create a node for the
+    //   arrow point at the end, which is what actually ends at the task box.
+    //   This is 20px below the supplied "end" for this graph.
+    const endTag = `${end.x}|${end.y + 20}|S`;
+    let postEnd;
+    if(!graph.nodes[endTag]) {
+      postEnd = new GridNode(end.x, end.y + 20, 'S', 1);
+      graph.nodes[endTag] = postEnd;
+      graph.grid[endTag] = [];
+      [ 'S', 'E', 'W' ].forEach(dir => {
+        if(graph.grid[`${end.toString()}|${dir}`].indexOf(endTag) < 0) {
+          graph.grid[`${end.toString()}|${dir}`].push(endTag);
+        }
+      });
+    }
+    else {
+      postEnd = graph.nodes[endTag];
+    }
+    // Then make that the new end point
+    const preEnd = end;
+    end = postEnd;
+    // and make sure the pre-end node can be accessed. If it's within the orbit
+    //   of another task box, it might be disconnected from the graph.
+    function reverse(from) {
+      return { N: 'S', W: 'E', S: 'N', E: 'W'}[from];
+    }
+    graph.neighbors(preEnd).forEach(neighbor => {
+      const revDir = reverse(neighbor.dir);
+      [ 'N', 'S', 'E', 'W' ].forEach(dir => {
+        if(graph.grid[`${neighbor.toString()}|${dir}`] &&
+            graph.grid[`${neighbor.toString()}|${dir}`].indexOf(`${preEnd.toString()}|${revDir}`) < 0
+        ) {
+          graph.grid[`${neighbor.toString()}|${dir}`].push(`${preEnd.toString()}|${revDir}`);
+        }
+      });
+    });
 
     const heuristic = astar.heuristic;
 
@@ -123,7 +160,7 @@ export const astar = {
       for (let i = 0, il = neighbors.length; i < il; ++i) {
         const neighbor = neighbors[i];
 
-        if (neighbor.closed || graph.neighbors(neighbor).length < 2) {
+        if (neighbor.closed || graph.neighbors(neighbor).length < 2 && neighbor !== end) {
           // Not a valid node to process, skip to next neighbor.
           continue;
         }
@@ -161,9 +198,60 @@ export const astar = {
   },
   // See list of heuristics: http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
   heuristic: function(pos0, pos1) {
-    const d1 = Math.abs(pos1.x - pos0.x);
-    const d2 = Math.abs(pos1.y - pos0.y);
-    return d1 + d2;
+    const d1 = pos1.x - pos0.x;
+    const d2 = pos1.y - pos0.y;
+    let h = Math.abs(d1) + Math.abs(d2);
+
+    let dirV = '';
+    if(d2 < 0) {
+      dirV = 'N';
+    }
+    else if(d2 > 0) {
+      dirV = 'S';
+    }
+    if(d1 > 0) {
+      dirV += 'E';
+    }
+    else if(d1 < 0) {
+      dirV += 'W';
+    }
+
+    function left(from) {
+      return { N: 'W', W: 'S', S: 'E', E: 'N'}[from];
+    }
+    function right(from) {
+      return { N: 'E', W: 'N', S: 'W', E: 'S'}[from];
+    }
+    function reverse(from) {
+      return { N: 'S', W: 'E', S: 'N', E: 'W'}[from];
+    }
+
+    // 0: if D0 = Dd and dirns(v0, d) = {D0};  (if we are moving straight towards the destination in the final direction)
+    if(pos0.dir === pos1.dir && dirV === pos0.dir) {
+      // don't add anything to the weight.  We're moving toward the destination.
+    }
+    // 1: if left(Dd) = D0 ∨ right(Dd) = D0
+    //     and D0 ∈ dirns(v0, d); (i.e. if you can turn 90 degrees or less to the final direction)
+    else if(dirV.indexOf(pos0.dir) > -1 && (left(pos0.dir) === pos1.dir || right(pos0.dir) === pos1.dir)) {
+      h += 1;
+    }
+    // 2: if D0 = Dd and dirns(v0, d) != {D0}
+    //     but D0 ∈ dirns(v0, d),
+    //     or D0 = reverse(Dd) and dirns(v0, d) != {Dd};  (two turns to chicane into alignment with Dd or turn around)
+    else if(pos0.dir === pos1.dir && (dirV.indexOf(pos0.dir) > -1 || pos0.dir === reverse(pos1.dir) && dirV !== pos1.dir)) {
+      h += 2;
+    }
+    // 3: if left(Dd) = D0 ∨ right(Dd) = D0 and D0 !∈ dirns(v0, d); (we're going away from d in a perpendicular direction to final)
+    else if((left(pos1.dir) === pos0.dir || right(pos1.dir) === pos0.dir) && dirV.indexOf(pos0.dir) < 0) {
+      h += 3;
+    }
+    // 4: if D0 = reverse(Dd) and dirns(v0, d) = {Dd},
+    //     or D0 = Dd and D0 !∈ dirns(v0, d).  (going directly away from d in the opposite direction, or at d in the wrong direction)
+    else if(reverse(pos1.dir) === pos0.dir && dirV === pos1.dir || pos1.dir === pos0.dir && dirV.indexOf(pos0.dir) < 0) {
+      h += 4;
+    }
+
+    return h;
   },
   cleanNode: function(node: GridNode) {
     node.f = 0;
@@ -183,10 +271,19 @@ export class Graph {
 
   constructor(vertices: Array<{x: number, y: number}>, edges: { [string]: Array<{x: number, y: number}> }) {
     this.nodes = vertices.reduce((nodes, v) => {
-      const gn = new GridNode(v.x, v.y, 1);
-      this.grid[gn.toString()] = edges[gn.toString()].map(({x, y}) => `${x}|${y}`);
-
-      nodes[gn.toString()] = gn;
+      [ 'N', 'S', 'E', 'W' ].forEach(dir => {
+        const gn = new GridNode(v.x, v.y, dir, 1);
+        this.grid[`${gn.toString()}|${gn.dir}`] = edges[gn.toString()].map(({x, y}) => {
+          switch(true) {
+            case (x > v.x): return `${x}|${y}|E`;
+            case (x < v.x): return `${x}|${y}|W`;
+            case (y > v.y): return `${x}|${y}|S`;
+            case (y < v.y): return `${x}|${y}|N`;
+            default: return `${x}|${y}`;
+          }
+        });
+        nodes[`${gn.toString()}|${gn.dir}`] = gn;
+      });
       return nodes;
     }, {});
     this.init();
@@ -211,7 +308,7 @@ export class Graph {
   }
 
   neighbors(node: GridNode) {
-    return this.grid[node.toString()].map(vStr => this.nodes[vStr]).filter(node => node);
+    return this.grid[`${node.toString()}|${node.dir}`].map(vStr => this.nodes[vStr]).filter(node => node);
   }
 }
 
@@ -220,6 +317,8 @@ export class GridNode {
   // grid coordinates
   x: number;
   y: number;
+  // inbound direction of node.
+  dir: string;
   // weight of node itself
   weight: number;
   // calculated forms
@@ -232,9 +331,10 @@ export class GridNode {
   parent: GridNode = null;
   // direction: Direction = null;
 
-  constructor(x, y, weight) {
+  constructor(x, y, dir, weight) {
     this.x = x;
     this.y = y;
+    this.dir = dir;
     this.weight = weight;
   }
 
@@ -243,14 +343,15 @@ export class GridNode {
   }
 
   getCost(fromNeighbor: GridNode): number {
-    // Take diagonal weight into consideration.
-    //
-    // Notes from B. Momberger on 2018-11-21 -- the block of comments
-    // at the top of this file should be here.
-    if (fromNeighbor && fromNeighbor.x !== this.x && fromNeighbor.y !== this.y) {
-      return this.weight * 1.41421;
+    let weight = this.weight;
+    const length = (Math.abs(fromNeighbor.x - this.x) + Math.abs(fromNeighbor.y - this.y));
+
+    // This path *bends* if the dirs don't match up, so increase the cost
+    if(fromNeighbor.dir !== this.dir) {
+      weight += 1;
     }
-    return this.weight;
+
+    return weight + length;
   }
 }
 
