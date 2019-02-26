@@ -71,7 +71,15 @@ sd is the estimation of the remaining segments required for the route from
 4: if D0 = reverse(Dd) and dirns(v0, d) = {Dd},
     or D0 = Dd and D0 !∈ dirns(v0, d).  (going directly away from d in the opposite direction, or at d in the wrong direction)
 */
-
+function left(from) {
+  return { N: 'W', W: 'S', S: 'E', E: 'N'}[from];
+}
+function right(from) {
+  return { N: 'E', W: 'N', S: 'W', E: 'S'}[from];
+}
+function reverse(from) {
+  return { N: 'S', W: 'E', S: 'N', E: 'W'}[from];
+}
 
 export const astar = {
   /**
@@ -97,7 +105,8 @@ export const astar = {
 
     // We have to do a little setup here.  First, we also create a node for the
     //   arrow point at the end, which is what actually ends at the task box.
-    //   This is 20px below the supplied "end" for this graph.
+    //   This is 10px below the supplied "end" for this graph; if we did the full
+    //   orbit of 20px, then the arrow point would be under the task bubble.
     const endTag = `${end.x}|${end.y + ORBIT_DISTANCE / 2}|S`;
     let postEnd;
     if(!graph.nodes[endTag]) {
@@ -118,9 +127,6 @@ export const astar = {
     end = postEnd;
     // and make sure the pre-end node can be accessed. If it's within the orbit
     //   of another task box, it might be disconnected from the graph.
-    function reverse(from) {
-      return { N: 'S', W: 'E', S: 'N', E: 'W'}[from];
-    }
     graph.neighbors(preEnd).forEach(neighbor => {
       const revDir = reverse(neighbor.dir);
       [ 'N', 'S', 'E', 'W' ].forEach(dir => {
@@ -216,16 +222,6 @@ export const astar = {
     }
     else if(d1 < 0) {
       dirV += 'W';
-    }
-
-    function left(from) {
-      return { N: 'W', W: 'S', S: 'E', E: 'N'}[from];
-    }
-    function right(from) {
-      return { N: 'E', W: 'N', S: 'W', E: 'S'}[from];
-    }
-    function reverse(from) {
-      return { N: 'S', W: 'E', S: 'N', E: 'W'}[from];
     }
 
     // 0: if D0 = Dd and dirns(v0, d) = {D0};  (if we are moving straight towards the destination in the final direction)
