@@ -598,21 +598,6 @@ export default class Canvas extends Component<{
                       />
                     ))
                 }
-                {/*
-                  //Here's a debug routing graph visualizer, in case you need to see how the graph is connected.
-                  ((graph) => {
-                    return [ Object.keys(graph.grid).map(e => {
-                      const [ x, y ] = e.split('|');
-                      return graph.grid[e].map(et => {
-                        const [ xt, yt ] = et.split('|');
-                        return <path key={e+et} stroke="red" strokeWidth="1" d={`M ${x} ${y} L ${xt} ${yt}`} />;
-                      });
-                    }).concat(Object.values(graph.nodes).map((node: GridNode) => {
-                      const { x, y } = (node: any);
-                      return <circle key={`${x}|${y}`} cx={x} cy={y} r="3" fill={node.visited ? 'blue' : 'black'} />;
-                    })) ];
-                  })(transitionRoutingGraph)
-                */}
               </svg>
             </div>
           </div>

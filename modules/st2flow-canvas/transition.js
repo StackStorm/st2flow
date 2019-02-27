@@ -208,20 +208,6 @@ export default class TransitionGroup extends Component<{
       .concat(activeBorders)
       .concat(actives)
       .concat(paths);
-    /*  .concat(
-        ((graph) => {
-          return [ Object.keys(graph.grid).filter(e => e.endsWith('S')).map(e => {
-            const [ x, y ] = e.split('|');
-            return graph.grid[e].map(et => {
-              const [ xt, yt ] = et.split('|');
-              return <path key={e+et} stroke="red" strokeWidth="1" d={`M ${x} ${y} l ${(xt-x)/2} ${(yt-y)/2}`} />;
-            });
-          }).concat(Object.values(graph.nodes).map((node ) => {
-            const { x, y, dir } = (node: any);
-            return dir === 'S' && <circle key={`${x}|${y}`} cx={x} cy={y} r="3" fill={node.visited ? 'blue' : 'black'} />;
-          })) ];
-        })(this.props.graph)
-      );*/
 
   }
 }
