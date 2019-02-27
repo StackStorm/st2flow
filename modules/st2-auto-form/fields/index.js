@@ -7,6 +7,7 @@ import ObjectField from './object';
 import PasswordField from './password';
 import SelectField from './select';
 import StringField from './string';
+import ColorStringField from './color-string';
 
 export {
   ArrayField,
@@ -18,4 +19,5 @@ export {
   PasswordField,
   SelectField,
   StringField,
+  ColorStringField,
 };

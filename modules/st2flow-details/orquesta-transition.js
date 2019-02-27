@@ -7,7 +7,7 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import cx from 'classnames';
 
-import { StringField, SelectField } from '@stackstorm/module-auto-form/fields';
+import { StringField, SelectField, ColorStringField } from '@stackstorm/module-auto-form/fields';
 import { Toggle } from '@stackstorm/module-forms/button.component';
 
 import style from './style.css';
@@ -156,6 +156,7 @@ export default class OrquestaTransition extends Component<TransitionProps, {
     const to = transition.to.map(t => t.name);
     const taskOptions = taskNames.map(n => ({ text: n, value: n }));
     const publish = transition.publish;
+    const colorOptions = [ '#fecb2f', '#d1583b', '#aa5dd1', '#629e47', '#fd9d32', '#d14c83', '#5b5dd0', '#1072c6' ];
 
     return (
       <div className={cx(this.style.transition, { [this.style.transitionSelected]: selected })}>
@@ -233,7 +234,11 @@ export default class OrquestaTransition extends Component<TransitionProps, {
             Color
           </div>
           <div className={this.style.transitionField}>
-            <StringField value={transition.color} onChange={v => this.props.onChange && this.props.onChange('color', v)} />
+            <ColorStringField
+              value={transition.color}
+              options={colorOptions}
+              onChange={v => this.props.onChange && this.props.onChange('color', v || '')}
+            />
           </div>
         </div>
       </div>

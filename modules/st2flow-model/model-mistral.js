@@ -138,12 +138,19 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
     tasks.forEach((task: RawTask, key: Array<string>) => {
       STATUSES.forEach(status => {
-        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach(next => {
+        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach((next, tidx) => {
           // NOTE: The first item in the "key" array will always be
           // the workflow name at this point in time.
           const toName = getToName(next);
 
           if(keys.find(k => k[0] === key[0] && k[1] === toName)) {
+            const [ workflowName, taskName ] = key;
+            const parentKey = [ workflowName, 'tasks' ];
+            let color = '';
+            try {
+              color = crawler.getCommentsForKey(this.tokenSet, parentKey.concat([ taskName, 'on-complete', tidx ], typeof next === 'string' ? [] : [ toName ]));
+            }
+            catch(e) {/*noop*/}
             transitions.push({
               type: status,
               condition: typeof next === 'string' ? null : next[toName],
@@ -154,6 +161,7 @@ export default class MistralModel extends BaseModel implements ModelInterface {
                 // The first item in the fromKey will be the workflow name
                 name: joinTaskName([ key[0], toName ], this.tokenSet),
               }],
+              color,
             });
           }
         });
@@ -387,7 +395,13 @@ export default class MistralModel extends BaseModel implements ModelInterface {
       }
     }
 
-    crawler.set(this.tokenSet, key.concat(transitionIndex, path), value);
+    if(path === 'color') {
+      const extraPath = typeof task[typeKey][transitionIndex] === 'string' ? [] : [ getToName(task[typeKey][transitionIndex]) ];
+      crawler.setCommentForKey(this.tokenSet, key.concat(transitionIndex, extraPath), value.toString());
+    }
+    else {
+      crawler.set(this.tokenSet, key.concat(transitionIndex, path), value);
+    }
 
     this.endMutation(oldTree);
   }
