@@ -5501,11 +5501,6 @@ liftoff@^2.3.0:
     rechoir "^0.6.2"
     resolve "^1.1.7"
 
-linemate@^0.1.6:
-  version "0.1.6"
-  resolved "https://registry.yarnpkg.com/linemate/-/linemate-0.1.6.tgz#762c6eeaa7ec7cdd2e3ec201d5d3ba079c5b5bd9"
-  integrity sha1-dixu6qfsfN0uPsIB1dO6B5xbW9k=
-
 load-json-file@^1.0.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/load-json-file/-/load-json-file-1.1.0.tgz#956905708d58b4bab4c2261b04f59f31c99374c0"
