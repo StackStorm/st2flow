@@ -83,17 +83,15 @@ type RawTasks = {
 function poissonDiscSampler(
   width: number,
   height: number,
-  radius: number,
+  radiusX: number,
+  radiusY: number,
 ): {|
   getNext: (string) => {| x: number, y: number |},
   prefillPoint: (number, number) => {| x: number, y: number |}
 |} {
   const k = 30; // maximum number of samples before rejection
-  const radius2 = radius * radius;
-  const R = 3 * radius2;
-  const cellSize = radius * Math.SQRT1_2;
-  const gridWidth = Math.ceil(width / cellSize);
-  const gridHeight = Math.ceil(height / cellSize);
+  const gridWidth = Math.ceil(width / radiusX);
+  const gridHeight = Math.ceil(height / radiusY);
   const grid = new Array(gridWidth * gridHeight);
   const queue = [];
   let queueSize = 0;
@@ -102,7 +100,7 @@ function poissonDiscSampler(
 
   return {
     getNext: function(randomSeed: string): {| x: number, y:number |} {
-      prandSeed = parseInt(randomSeed.replace(/[A-Z0-9]/ig, ''), 36) % 2147483647;
+      prandSeed = parseInt(randomSeed.replace(/[^A-Z0-9]/ig, ''), 36) % 2147483647;
       if (!sampleSize) {
         return sample(prand() * width, prand() * height);
       }
@@ -114,10 +112,13 @@ function poissonDiscSampler(
 
         // Make a new candidate between [radius, 2 * radius] from the existing sample.
         for (let j = 0; j < k; ++j) {
-          const a = 2 * Math.PI * prand();
-          const r = Math.sqrt(prand() * R + radius2);
-          const x = s.x + r * Math.cos(a);
-          const y = s.y + r * Math.sin(a);
+          //since we're looking in a rectangle, we'll first pick one of the 12 cells around the
+          //  2w * 2h rectangle which are of size (w, h)
+          const cell = Math.floor(prand() * 12);
+          const adjustmentX = [ -2, -1, 0, 1, -2, 1, -2, 1, -2, -1, 0, 1 ][cell] * radiusX;
+          const adjustmentY = [ -2, -2, -2, -2, -1, -1, 0, 0, 1, 1, 1, 1 ][cell] * radiusY;
+          const x = s.x + adjustmentX + prand() * radiusX;
+          const y = s.y + adjustmentY + prand() * radiusY;
 
           // Reject candidates that are outside the allowed extent,
           // or closer than 2 * radius to any existing sample.
@@ -140,8 +141,8 @@ function poissonDiscSampler(
   }
 
   function far(x, y) {
-    let i = Math.floor(x / cellSize);
-    let j = Math.floor(y / cellSize);
+    let i = Math.floor(x / radiusX);
+    let j = Math.floor(y / radiusY);
     const i0 = Math.max(i - 2, 0);
     const j0 = Math.max(j - 2, 0);
     const i1 = Math.min(i + 3, gridWidth);
@@ -152,9 +153,9 @@ function poissonDiscSampler(
       for (i = i0; i < i1; ++i) {
         const s = grid[o + i];
         if (s) {
-          const dx = s.x - x;
-          const dy = s.y - y;
-          if (dx * dx + dy * dy < radius2) {
+          const dx = Math.abs(s.x - x);
+          const dy = Math.abs(s.y - y);
+          if (dx < radiusX && dy < radiusY) {
             return false;
           }
         }
@@ -167,7 +168,7 @@ function poissonDiscSampler(
   function sample(x: number, y: number): {| x: number, y: number |} {
     const s = { x, y };
     queue.push(s);
-    grid[gridWidth * Math.floor(y / cellSize) + Math.floor(x / cellSize)] = s;
+    grid[gridWidth * Math.floor(y / radiusY) + Math.floor(x / radiusX)] = s;
     ++sampleSize;
     ++queueSize;
     return s;
@@ -249,7 +250,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       return retVal;
     });
 
-    const sampler = poissonDiscSampler(maxX + 100, maxY + 100, 100);
+    const sampler = poissonDiscSampler(maxX + 211, maxY + 55, 211, 55);
     returnTasks.forEach(task => {
       if(task.coords.x > 0 || task.coords.y > 0) {
         const { x, y } = task.coords;
