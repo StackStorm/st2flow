@@ -80,101 +80,6 @@ type RawTasks = {
   [string]: RawTask,
 };
 
-function poissonDiscSampler(
-  width: number,
-  height: number,
-  radiusX: number,
-  radiusY: number,
-): {|
-  getNext: (string) => {| x: number, y: number |},
-  prefillPoint: (number, number) => {| x: number, y: number |}
-|} {
-  const k = 30; // maximum number of samples before rejection
-  const gridWidth = Math.ceil(width / radiusX);
-  const gridHeight = Math.ceil(height / radiusY);
-  const grid = new Array(gridWidth * gridHeight);
-  const queue = [];
-  let queueSize = 0;
-  let sampleSize = 0;
-  let prandSeed;
-
-  return {
-    getNext: function(randomSeed: string): {| x: number, y:number |} {
-      prandSeed = parseInt(randomSeed.replace(/[^A-Z0-9]/ig, ''), 36) % 2147483647;
-      if (!sampleSize) {
-        return sample(prand() * width, prand() * height);
-      }
-
-      // Pick a random existing sample and remove it from the queue.
-      while (queueSize) {
-        const i = Math.floor(prand() * queueSize);
-        const s = queue[i];
-
-        // Make a new candidate between [radius, 2 * radius] from the existing sample.
-        for (let j = 0; j < k; ++j) {
-          //since we're looking in a rectangle, we'll first pick one of the 12 cells around the
-          //  2w * 2h rectangle which are of size (w, h)
-          const cell = Math.floor(prand() * 12);
-          const adjustmentX = [ -2, -1, 0, 1, -2, 1, -2, 1, -2, -1, 0, 1 ][cell] * radiusX;
-          const adjustmentY = [ -2, -2, -2, -2, -1, -1, 0, 0, 1, 1, 1, 1 ][cell] * radiusY;
-          const x = s.x + adjustmentX + prand() * radiusX;
-          const y = s.y + adjustmentY + prand() * radiusY;
-
-          // Reject candidates that are outside the allowed extent,
-          // or closer than 2 * radius to any existing sample.
-          if (0 <= x && x < width && 0 <= y && y < height && far(x, y)) {
-            return sample(x, y);
-          }
-        }
-
-        queue[i] = queue[--queueSize];
-        queue.length = queueSize;
-      }
-      return { x: NaN, y: NaN };
-    },
-    prefillPoint: sample,
-  };
-
-  function prand() {
-    prandSeed = prandSeed * 16807 % 2147483647;
-    return (prandSeed - 1) / 2147483646;
-  }
-
-  function far(x, y) {
-    let i = Math.floor(x / radiusX);
-    let j = Math.floor(y / radiusY);
-    const i0 = Math.max(i - 2, 0);
-    const j0 = Math.max(j - 2, 0);
-    const i1 = Math.min(i + 3, gridWidth);
-    const j1 = Math.min(j + 3, gridHeight);
-
-    for (j = j0; j < j1; ++j) {
-      const o = j * gridWidth;
-      for (i = i0; i < i1; ++i) {
-        const s = grid[o + i];
-        if (s) {
-          const dx = Math.abs(s.x - x);
-          const dy = Math.abs(s.y - y);
-          if (dx < radiusX && dy < radiusY) {
-            return false;
-          }
-        }
-      }
-    }
-
-    return true;
-  }
-
-  function sample(x: number, y: number): {| x: number, y: number |} {
-    const s = { x, y };
-    queue.push(s);
-    grid[gridWidth * Math.floor(y / radiusY) + Math.floor(x / radiusX)] = s;
-    ++sampleSize;
-    ++queueSize;
-    return s;
-  }
-}
-
 const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
 
 class OrquestaModel extends BaseModel implements ModelInterface {
@@ -196,26 +101,17 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       return [];
     }
 
-    const needCoords = [];
-    let maxX = 0;
-    let maxY = 0;
-
-    const returnTasks = tasks.__meta.keys.filter(n => !!tasks[n]).map(name => {
+    return tasks.__meta.keys.filter(n => !!tasks[n]).map(name => {
       const task = tasks[name];
-      let thisNeedsCoords = true;
-
       let coords = { x: 0, y: 0 };
       if(task.__meta && REG_COORDS.test(task.__meta.comments)) {
         const match = task.__meta.comments.match(REG_COORDS);
         if (match) {
           const [ , x, y ] = match;
-          maxX = Math.max(maxX, +x);
-          maxY = Math.max(maxY, +y);
           coords = {
             x: +x,
             y: +y,
           };
-          thisNeedsCoords = false;
         }
       }
 
@@ -243,25 +139,8 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         join,
       };
 
-      if(thisNeedsCoords) {
-        needCoords.push(retVal);
-      }
-
       return retVal;
     });
-
-    const sampler = poissonDiscSampler(maxX + 211, maxY + 55, 211, 55);
-    returnTasks.forEach(task => {
-      if(task.coords.x > 0 || task.coords.y > 0) {
-        const { x, y } = task.coords;
-        sampler.prefillPoint(x, y);
-      }
-    });
-    needCoords.forEach(task => {
-      task.coords = sampler.getNext(task.name);
-    });
-
-    return returnTasks;
   }
 
   get transitions() {
