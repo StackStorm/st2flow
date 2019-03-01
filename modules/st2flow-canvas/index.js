@@ -2,8 +2,8 @@
 
 import type {
   CanvasPoint,
-  TaskRefInterface,
   TaskInterface,
+  TaskRefInterface,
   TransitionInterface,
 } from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
@@ -19,11 +19,15 @@ import { uniqueId } from 'lodash';
 import Notifications from '@stackstorm/st2flow-notifications';
 import {HotKeys} from 'react-hotkeys';
 
+import type { BoundingBox } from './routing-graph';
 import Task from './task';
 import TransitionGroup from './transition';
 import Vector from './vector';
 import CollapseButton from './collapse-button';
+import { Graph } from './astar';
+import { ORBIT_DISTANCE } from './const';
 import { Toolbar, ToolbarButton } from './toolbar';
+import makeRoutingGraph from './routing-graph';
 
 import { origin } from './const';
 
@@ -59,23 +63,23 @@ type Wheel = WheelEvent & {
   })
 )
 export default class Canvas extends Component<{
-      children: Node,
+  children: Node,
       className?: string,
 
-      navigation: Object,
-      navigate: Function,
+  navigation: Object,
+  navigate: Function,
 
-      tasks: Array<TaskInterface>,
-      transitions: Array<Object>,
-      notifications: Array<NotificationInterface>,
-      issueModelCommand: Function,
-      nextTask: string,
+  tasks: Array<TaskInterface>,
+  transitions: Array<Object>,
+  notifications: Array<NotificationInterface>,
+  issueModelCommand: Function,
+  nextTask: string,
 
-      isCollapsed: Object,
-      toggleCollapse: Function,
-    }, {
+  isCollapsed: Object,
+  toggleCollapse: Function,
+}, {
       scale: number,
-    }> {
+}> {
   static propTypes = {
     children: PropTypes.node,
     className: PropTypes.string,
@@ -400,10 +404,47 @@ export default class Canvas extends Component<{
   style = style
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
+  taskRefs = {};
+
+  get transitionRoutingGraph(): Graph {
+    const { taskRefs } = this;
+
+    const boundingBoxes: Array<BoundingBox> = Object.keys(taskRefs).map((key: string): BoundingBox => {
+
+      if(taskRefs[key].current) {
+        const task: TaskInterface = taskRefs[key].current.props.task;
+
+        const coords = new Vector(task.coords).add(origin);
+        const size = new Vector(task.size);
+
+        return {
+          left: coords.x - ORBIT_DISTANCE,
+          top: coords.y - ORBIT_DISTANCE,
+          bottom: coords.y + size.y + ORBIT_DISTANCE,
+          right: coords.x + size.x + ORBIT_DISTANCE,
+          midpointY: coords.y + size.y / 2,
+          midpointX: coords.x + size.x / 2,
+        };
+      }
+      else {
+        return {
+          left: NaN,
+          top: NaN,
+          bottom: NaN,
+          right: NaN,
+          midpointY: NaN,
+          midpointX: NaN,
+        };
+      }
+    });
+
+    return makeRoutingGraph(boundingBoxes);
+  }
 
   render() {
     const { notifications, children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
+    const { transitionRoutingGraph } = this;
 
     const surfaceStyle = {
       transform: `scale(${Math.E ** scale})`,
@@ -480,6 +521,7 @@ export default class Canvas extends Component<{
             <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
               {
                 tasks.map((task) => {
+                  this.taskRefs[task.name] = this.taskRefs[task.name] || React.createRef();
                   return (
                     <Task
                       key={task.name}
@@ -490,6 +532,7 @@ export default class Canvas extends Component<{
                       onConnect={(...a) => this.handleTaskConnect(task, ...a)}
                       onClick={() => this.handleTaskSelect(task)}
                       onDelete={() => this.handleTaskDelete(task)}
+                      ref={this.taskRefs[task.name]}
                     />
                   );
                 })
@@ -534,6 +577,8 @@ export default class Canvas extends Component<{
                         key={`${id}-${window.btoa(transition.condition)}`}
                         color={color}
                         transitions={group}
+                        taskRefs={this.taskRefs}
+                        graph={transitionRoutingGraph}
                         selected={false}
                         onClick={(e) => this.handleTransitionSelect(e, transition)}
                       />
@@ -546,6 +591,8 @@ export default class Canvas extends Component<{
                         key={`${id}-${window.btoa(transition.condition)}-selected`}
                         color={color}
                         transitions={group}
+                        taskRefs={this.taskRefs}
+                        graph={transitionRoutingGraph}
                         selected={true}
                         onClick={(e) => this.handleTransitionSelect(e, transition)}
                       />

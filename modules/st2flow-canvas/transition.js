@@ -8,7 +8,10 @@ import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 
 import Vector from './vector';
-import { origin } from './const';
+import { origin, ORBIT_DISTANCE } from './const';
+import Path from './path/';
+import type { Task } from './task';
+import astar, { Graph } from './astar';
 
 import style from './style.css';
 
@@ -29,23 +32,12 @@ const CONTROLS = {
   right: new Vector(1, 0),
 };
 
-const ORBIT_DISTANCE = 20;
-const APPROACH_DISTANCE = 10;
-
-function roundCorner(from, origin, to) {
-  return {
-    origin,
-    approach: from.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
-    departure: to.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
-  };
-}
-
 type Target = {
   task: TaskInterface,
   anchor: string
 }
 
-class Path extends Component<{
+class SVGPath extends Component<{
   onClick: Function
 }> {
   componentDidMount() {
@@ -77,6 +69,8 @@ export default class TransitionGroup extends Component<{
   color: string,
   selected: boolean,
   onClick: Function,
+  taskRefs: {| [taskname: string]: { current: Task } |},
+  graph: Graph
 }> {
   static propTypes = {
     transitions: PropTypes.arrayOf(
@@ -85,6 +79,8 @@ export default class TransitionGroup extends Component<{
         to: PropTypes.object.isRequired,
       })
     ),
+    taskRefs: PropTypes.object.isRequired,
+    graph: PropTypes.object.isRequired,
     selected: PropTypes.bool,
     onClick: PropTypes.func,
   }
@@ -94,19 +90,22 @@ export default class TransitionGroup extends Component<{
   style = style
 
   makePath(from: Target, to: Target) {
+    const { taskRefs, graph } = this.props;
     if (!from.task || !to.task) {
       return '';
     }
-
-    const path = [];
+    if (!taskRefs[from.task.name].current || !taskRefs[to.task.name].current) {
+      return '';
+    }
 
     const fromAnchor = ANCHORS[from.anchor];
     const fromControl = CONTROLS[from.anchor];
     const fromCoords = new Vector(from.task.coords).add(origin);
-    const fromSize = new Vector(from.task.size);
+    const fromSize = new Vector(from.task && from.task.size);
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
     const fromOrbit = fromControl.multiply(ORBIT_DISTANCE).add(fromPoint);
+    const path = new Path(fromPoint, 'down');
 
     const toAnchor = ANCHORS[to.anchor];
     const toControl = CONTROLS[to.anchor];
@@ -121,36 +120,33 @@ export default class TransitionGroup extends Component<{
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-    const fromOrbitCorner = roundCorner(fromPoint, fromOrbit, fromLagrange);
-    const fromLagrangeCorner = roundCorner(fromOrbit, fromLagrange, toLagrange);
-    const toLagrangeCorner = roundCorner(fromLagrange, toLagrange, toOrbit);
-    const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
 
-    path.push(`M ${fromPoint.x} ${fromPoint.y}`);
 
-    if (lagrangePoint.y <= 0) {
-      path.push(`L ${fromOrbitCorner.approach.x} ${fromOrbitCorner.approach.y}`);
-      path.push(`Q ${fromOrbitCorner.origin.x} ${fromOrbitCorner.origin.y}, ${fromOrbitCorner.departure.x} ${fromOrbitCorner.departure.y}`);
+    // now for the A* algorithm
+    if(graph) {
+      const pathElements = astar.search(
+        graph,
+        fromPoint.add(new Vector(0, ORBIT_DISTANCE)),
+        toPoint.add(new Vector(0, -ORBIT_DISTANCE/2))
+      );
+
+      if(pathElements.length > 0) {
+        pathElements.forEach(nextPoint => {
+          path.moveTo(new Vector(nextPoint.x, nextPoint.y));
+        });
+        //path.moveTo(toPoint); <-- this is now handled by astar.search
+      }
+      else {
+        // If the pathfinder can't find a path, use this as a fallback
+        [ fromOrbit, fromLagrange, toLagrange, toOrbit, toPoint ].forEach(path.moveTo.bind(path));
+      }
     }
 
-    path.push(`L ${fromLagrangeCorner.approach.x} ${fromLagrangeCorner.approach.y}`);
-    path.push(`Q ${fromLagrangeCorner.origin.x} ${fromLagrangeCorner.origin.y}, ${fromLagrangeCorner.departure.x} ${fromLagrangeCorner.departure.y}`);
-
-    path.push(`L ${toLagrangeCorner.approach.x} ${toLagrangeCorner.approach.y}`);
-    path.push(`Q ${toLagrangeCorner.origin.x} ${toLagrangeCorner.origin.y}, ${toLagrangeCorner.departure.x} ${toLagrangeCorner.departure.y}`);
-
-    if (lagrangePoint.y <= 0) {
-      path.push(`L ${toOrbitCorner.approach.x} ${toOrbitCorner.approach.y}`);
-      path.push(`Q ${toOrbitCorner.origin.x} ${toOrbitCorner.origin.y}, ${toOrbitCorner.departure.x} ${toOrbitCorner.departure.y}`);
-    }
-
-    path.push(`L ${toPoint.x} ${toPoint.y}`);
-
-    return path.join(' ');
+    return path.toString();
   }
 
   render(): Array<Node> {
-    const { color, transitions, selected, ...props } = this.props;
+    const { color, transitions, selected, taskRefs, ...props } = this.props; //eslint-disable-line no-unused-vars
 
     const transitionPaths = transitions
       .map(({ from, to }) => ({
@@ -176,7 +172,7 @@ export default class TransitionGroup extends Component<{
     );
 
     const activeBorders = transitionPaths.map(({ from, to, path }) => (
-      <Path
+      <SVGPath
         className={cx(this.style.transitionActiveBorder, selected && this.style.selected)}
         style={{ stroke: color }}
         key={`${from}-${to}-pathActiveBorder`}
@@ -188,7 +184,7 @@ export default class TransitionGroup extends Component<{
     ));
 
     const actives = transitionPaths.map(({ from, to, path }) => (
-      <Path
+      <SVGPath
         className={cx(this.style.transitionActive, selected && this.style.selected)}
         key={`${from}-${to}-pathActive`}
         d={path}
@@ -198,7 +194,7 @@ export default class TransitionGroup extends Component<{
     ));
 
     const paths = transitionPaths.map(({ from, to, path }) => (
-      <Path
+      <SVGPath
         className={this.style.transition}
         style={{ stroke: color }}
         key={`${from}-${to}-path`}
