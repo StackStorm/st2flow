@@ -286,7 +286,7 @@ export default class Canvas extends Component<{
             .map(t => t.to)
         ).map(t => t.name);
 
-        if(task.coords.x === 0 && task.coords.y === 0) {
+        if(task.coords.x < 0 || task.coords.y < 0) {
           needsCoords.push({task, transitionsTo});
         }
         else {
