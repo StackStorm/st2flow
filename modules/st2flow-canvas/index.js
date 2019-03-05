@@ -14,7 +14,7 @@ import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 import fp from 'lodash/fp';
-import { uniqueId } from 'lodash';
+import { uniqueId, uniq } from 'lodash';
 
 import Notifications from '@stackstorm/st2flow-notifications';
 import {HotKeys} from 'react-hotkeys';
@@ -28,6 +28,7 @@ import { Graph } from './astar';
 import { ORBIT_DISTANCE } from './const';
 import { Toolbar, ToolbarButton } from './toolbar';
 import makeRoutingGraph from './routing-graph';
+import PoissonRectangleSampler from './poisson-rect';
 
 import { origin } from './const';
 
@@ -40,120 +41,6 @@ type DOMMatrix = {
 
 type Wheel = WheelEvent & {
   wheelDelta: number
-}
-
-function poissonDiscSampler(
-  width: number,
-  height: number,
-  radiusX: number,
-  radiusY: number,
-): {|
-  getNext: (string, Array<string>) => {| x: number, y: number |},
-  prefillPoint: (number, number, Array<string>) => {| x: number, y: number |}
-|} {
-  const k = 30; // maximum number of samples before rejection
-  const gridWidth = Math.ceil(width / radiusX);
-  const gridHeight = Math.ceil(height / radiusY);
-  const grid = new Array(gridWidth * gridHeight);
-  const queue = [];
-  let queueSize = 0;
-  let sampleSize = 0;
-  let prandSeed;
-
-  return {
-    getNext: function(taskName: string, transitionsTo: Array<string>): {| x: number, y:number |} {
-      prandSeed = parseInt(taskName.replace(/[^A-Z0-9]/ig, ''), 36) % 2147483647;
-      if (!sampleSize) {
-        // for placing the first item, put it near the upper left.
-        return sample(prand() * radiusX, prand() * radiusY, transitionsTo);
-      }
-
-      // Pick a random existing sample and remove it from the queue.
-      // Favor any task that's connected to the one we're trying to place via a transition
-      while (queueSize) {
-        const connectedTasks = queue.filter(s => s.transitionsTo.indexOf(taskName) > -1);
-        const i = connectedTasks.length
-          ? queue.indexOf(connectedTasks[Math.floor(prand() * connectedTasks.length)])
-          : Math.floor(prand() * queueSize);
-        const s = queue[i];
-
-        // Make a new candidate between [radius, 2 * radius] from the existing sample.
-        for (let j = 0; j < k; ++j) {
-          //since we're looking in a rectangle, we'll first pick one of the 12 cells around the
-          //  2w * 2h rectangle which are of size (w, h)
-          let adjustmentX;
-          let adjustmentY;
-
-          // If there is a transition from the randomly selected task to the new on, put the
-          //  new task 1 or 2 heights below the base task.
-          if(s.transitionsTo.indexOf(taskName) > -1) {
-            const cell = Math.floor(prand() * 8);
-            adjustmentX = [ -2, -1, 0, 1, -2, -1, 0, 1 ][cell] * radiusX;
-            adjustmentY = [ 1, 1, 1, 1, 2, 2, 2, 2 ][cell] * radiusY;
-          }
-          // otherwise place up to 1 height/width away in any orthogonal or diagonal dir.
-          else {
-            const cell = Math.floor(prand() * 12);
-            adjustmentX = [ -2, -1, 0, 1, -2, 1, -2, 1, -2, -1, 0, 1 ][cell] * radiusX;
-            adjustmentY = [ -2, -2, -2, -2, -1, -1, 0, 0, 1, 1, 1, 1 ][cell] * radiusY;
-          }
-          const x = s.x + adjustmentX + prand() * radiusX;
-          const y = s.y + adjustmentY + prand() * radiusY;
-
-          // Reject candidates that are outside the allowed extent,
-          // or closer than 2 * radius to any existing sample.
-          if (0 <= x && x < width && 0 <= y && y < height && far(x, y)) {
-            return sample(x, y, transitionsTo);
-          }
-        }
-
-        queue[i] = queue[--queueSize];
-        queue.length = queueSize;
-      }
-      return { x: NaN, y: NaN };
-    },
-    prefillPoint: sample,
-  };
-
-  function prand() {
-    prandSeed = prandSeed * 16807 % 2147483647;
-    return (prandSeed - 1) / 2147483646;
-  }
-
-  function far(x, y) {
-    let i = Math.floor(x / radiusX);
-    let j = Math.floor(y / radiusY);
-    const i0 = Math.max(i - 2, 0);
-    const j0 = Math.max(j - 2, 0);
-    const i1 = Math.min(i + 3, gridWidth);
-    const j1 = Math.min(j + 3, gridHeight);
-
-    for (j = j0; j < j1; ++j) {
-      const o = j * gridWidth;
-      for (i = i0; i < i1; ++i) {
-        const s = grid[o + i];
-        if (s) {
-          const dx = Math.abs(s.x - x);
-          const dy = Math.abs(s.y - y);
-          if (dx < radiusX && dy < radiusY) {
-            return false;
-          }
-        }
-      }
-    }
-
-    return true;
-  }
-
-  function sample(x: number, y: number, transitionsTo: Array<string>): {| x: number, y: number |} {
-    const s = { x, y };
-    const t = { x, y, transitionsTo };
-    queue.push(t);
-    grid[gridWidth * Math.floor(y / radiusY) + Math.floor(x / radiusX)] = s;
-    ++sampleSize;
-    ++queueSize;
-    return s;
-  }
 }
 
 @connect(
@@ -266,38 +153,11 @@ export default class Canvas extends Component<{
       return;
     }
 
-    const { tasks, transitions } = this.props;
+    const { transitions } = this.props;
+    let tasks = this.props.tasks.slice(0);
     const { width, height } = canvasEl.getBoundingClientRect();
 
     const scale = Math.E ** this.state.scale;
-
-    if(this.surfaceRef.current && this.surfaceRef.current.style.width) {
-      const needsCoords = [];
-      const sampler = poissonDiscSampler(
-        parseInt(this.surfaceRef.current.style.width) - 211,
-        parseInt(this.surfaceRef.current.style.height) - 55,
-        211 + ORBIT_DISTANCE * 2,
-        55 + ORBIT_DISTANCE * 2,
-      );
-      this.props.tasks.forEach(task => {
-        const transitionsTo = [].concat(
-          ...transitions
-            .filter(t => t.from.name === task.name)
-            .map(t => t.to)
-        ).map(t => t.name);
-
-        if(task.coords.x < 0 || task.coords.y < 0) {
-          needsCoords.push({task, transitionsTo});
-        }
-        else {
-          const { x, y } = task.coords;
-          sampler.prefillPoint(x, y, transitionsTo);
-        }
-      });
-      needsCoords.forEach(({task, transitionsTo}) => {
-        this.handleTaskMove(task, sampler.getNext(task.name, transitionsTo));
-      });
-    }
 
     this.size = tasks.reduce((acc, item) => {
       const coords = new Vector(item.coords);
@@ -315,6 +175,91 @@ export default class Canvas extends Component<{
 
     surfaceEl.style.width = `${(this.size.x).toFixed()}px`;
     surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
+
+    const logTaskCount = Math.log(tasks.length) / Math.log(Math.sqrt(2));
+
+    if(surfaceEl.style.width) {
+      const needsCoords = [];
+      const sampler = new PoissonRectangleSampler(
+        Math.max(parseInt(surfaceEl.style.width) - 211, logTaskCount * (108 + ORBIT_DISTANCE / 2)),
+        Math.max(parseInt(surfaceEl.style.height) - 55, logTaskCount * (108 + ORBIT_DISTANCE / 2)),
+        211 + ORBIT_DISTANCE * 2,
+        55 + ORBIT_DISTANCE * 4,
+      );
+      // start by ordering the transitions so a comes before b if there's an a->b transition.
+      //   If there are cycles, a perfect ordering is impossible, but this will be the best
+      //   approximation
+      const taskInDegree = {};
+      const transitionsByTask = tasks.reduce((tbt, task) => {
+        tbt[task.name] = uniq([].concat(
+          ...transitions
+            .filter(t => t.from.name === task.name)
+            .map(t => t.to)
+        ).map(t => t.name));
+        taskInDegree[task.name] = 0;
+        return tbt;
+      }, {});
+      function runPath(task, nextTasks, inDegree, nonVisitedTransitions) {
+        const recurseNext = nextTasks.map(nextTask => {
+          const recurseThis = nextTask in nonVisitedTransitions ? nonVisitedTransitions[nextTask] : null;
+          taskInDegree[nextTask] = Math.max(taskInDegree[nextTask], inDegree);
+          delete nonVisitedTransitions[nextTask];
+          return recurseThis;
+        });
+        nextTasks.forEach((nextTask, idx) => {
+          if(recurseNext[idx]) {
+            runPath(nextTask, recurseNext[idx], inDegree + 1, nonVisitedTransitions);
+          }
+        });
+      }
+      const origTransitionsByTask = Object.assign({}, transitionsByTask);
+      while(Object.keys(transitionsByTask).length) {
+        const nextTask = Object.keys(transitionsByTask)[0];
+        runPath(
+          nextTask,
+          transitionsByTask[nextTask],
+          Object.keys(origTransitionsByTask).length - Object.keys(transitionsByTask).length,
+          Object.assign({}, origTransitionsByTask)
+        );
+        delete transitionsByTask[nextTask];
+      }
+
+      tasks = tasks.map((task) => ({task, weight: taskInDegree[task.name] })).sort((a, b) => {
+        if (a.weight < b.weight) {
+          return -1;
+        }
+        else if (a.weight > b.weight) {
+          return 1;
+        }
+        else {
+          return 0;
+        }
+      }).map(t => t.task);
+      // Now take each task and the transitions starting from that task, and prefill them
+      //   into the sampler if placed (i.e. if has coordinates).  If not placed, queue for
+      //   placement.  Placement has to happen after prefill because the sampler has to
+      //   know where all the items with fixed placement are before placing new ones.
+      tasks.forEach(task => {
+        const transitionsTo = [].concat(
+          ...transitions
+            .filter(t => t.from.name === task.name)
+            .map(t => t.to)
+        ).map(t => t.name);
+
+        if(task.coords.x < 0 || task.coords.y < 0) {
+          needsCoords.push({task, transitionsTo});
+        }
+        else {
+          const { x, y } = task.coords;
+          sampler.prefillPoint(x, y, transitionsTo);
+        }
+      });
+      // finally, place the unplaced tasks.  using handleTaskMove will also ensure
+      //   that the placement gets set on the model and the YAML.
+      needsCoords.forEach(({task, transitionsTo}) => {
+        this.handleTaskMove(task, sampler.getNext(task.name, transitionsTo));
+      });
+    }
   }
 
   handleMouseWheel = (e: Wheel): ?false => {
