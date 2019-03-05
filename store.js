@@ -3,6 +3,7 @@ import { createScopedStore } from '@stackstorm/module-store';
 import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
+import { debounce } from 'lodash';
 
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
@@ -255,29 +256,36 @@ const flowReducer = (state = {}, input) => {
 const prevRecords = [];
 const nextRecords = [];
 
+const handleModelCommand = debounce((prevState = {}, state = {}, input) => {
+  const historyRecord = {};
+
+  if (prevState.workflowSource !== state.workflowSource) {
+    historyRecord.workflowSource = prevState.workflowSource;
+  }
+
+  if (prevState.metaSource !== state.metaSource) {
+    historyRecord.metaSource = prevState.metaSource;
+  }
+
+  if (Object.keys(historyRecord).length !== 0) {
+    prevRecords.push(historyRecord);
+  }
+
+  return state;
+}, 250, { leading: true, trailing: false });
+
 const undoReducer = (prevState = {}, state = {}, input) => {
   switch (input.type) {
     case 'META_ISSUE_COMMAND':
     case 'MODEL_LAYOUT':
     case 'MODEL_ISSUE_COMMAND': {
-      const historyRecord = {};
-
-      if (prevState.workflowSource !== state.workflowSource) {
-        historyRecord.workflowSource = prevState.workflowSource;
-      }
-
-      if (prevState.metaSource !== state.metaSource) {
-        historyRecord.metaSource = prevState.metaSource;
-      }
-
-      if (Object.keys(historyRecord).length !== 0) {
-        prevRecords.push(historyRecord);
-      }
-
+      handleModelCommand(prevState, state, input);
       return state;
     }
 
     case 'FLOW_UNDO': {
+      handleModelCommand.flush();
+
       const historyRecord = prevRecords.pop();
 
       if (!historyRecord) {
@@ -317,6 +325,8 @@ const undoReducer = (prevState = {}, state = {}, input) => {
     }
 
     case 'FLOW_REDO': {
+      handleModelCommand.flush();
+
       const historyRecord = nextRecords.pop();
 
       if (!historyRecord) {
