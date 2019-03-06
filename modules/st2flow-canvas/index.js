@@ -311,15 +311,17 @@ export default class Canvas extends Component<{
     surfaceEl.style.width = `${(this.size.x).toFixed()}px`;
     surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
 
+    // take the log base sqrt(2) of the number of
     const logTaskCount = Math.log(tasks.length) / Math.log(Math.sqrt(2));
 
     if(surfaceEl.style.width) {
       const needsCoords = [];
       const sampler = new PoissonRectangleSampler(
-        Math.max(parseInt(surfaceEl.style.width) - 211, logTaskCount * (108 + ORBIT_DISTANCE / 2)),
-        Math.max(parseInt(surfaceEl.style.height) - 55, logTaskCount * (108 + ORBIT_DISTANCE / 2)),
+        Math.max(parseInt(surfaceEl.style.width) - 211, logTaskCount * (150 + ORBIT_DISTANCE / 2)),
+        Math.max(parseInt(surfaceEl.style.height) - 55, logTaskCount * (76 + ORBIT_DISTANCE)),
         211 + ORBIT_DISTANCE * 2,
-        55 + ORBIT_DISTANCE * 2,
+        55 + ORBIT_DISTANCE * 3,
+        50
       );
       // start by indexing the transitions by task, both in the directed form for determining ordering
       //  and in the bidirectional (undirected) form for determining connected subgraphs.
