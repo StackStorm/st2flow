@@ -11,6 +11,7 @@ import EnumField from '@stackstorm/module-auto-form/fields/enum';
 import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
 
+const default_runner_type = 'orquesta';
 
 @connect(
   ({ flow: { pack, actions, navigation, meta }}) => ({ pack, actions, navigation, meta }),
@@ -55,6 +56,14 @@ export default class Meta extends Component<{
     actions: PropTypes.array,
   }
 
+  componentDidUpdate() {
+    const { meta, setMeta } = this.props;
+
+    if (!meta.runner_type) {
+      setMeta('runner_type', default_runner_type);
+    }
+  }
+
   handleSectionSwitch(section: string) {
     this.props.navigate({ section });
   }
@@ -62,13 +71,8 @@ export default class Meta extends Component<{
   render() {
     const { pack, setPack, meta, setMeta, navigation, actions } = this.props;
     const { section = 'meta' } = navigation;
-    const default_runner_type = 'orquesta';
 
     const packs = [ ...new Set(actions.map(a => a.pack)).add(pack) ];
-
-    if (!meta.runner_type) {
-      setMeta('runner_type', default_runner_type);
-    }
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
