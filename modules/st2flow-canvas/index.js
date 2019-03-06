@@ -43,6 +43,141 @@ type Wheel = WheelEvent & {
   wheelDelta: number
 }
 
+// Order tasks before placement based on "weight" (bucket size)
+//  and "order" (longest non-looping transition path to task)
+function weightedOrderedTaskSort(a, b) {
+  if (a.weight > b.weight) {
+    return -1;
+  }
+  else if (a.weight < b.weight) {
+    return 1;
+  }
+  else if (a.priority < b.priority) {
+    return -1;
+  }
+  else if (a.priority > b.priority) {
+    return 1;
+  }
+  else if (a.order < b.order) {
+    return -1;
+  }
+  else if (a.order > b.order) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+// given tasks and their undirected connections to other tasks,
+//  sort the tasks into buckets of connected tasks.
+// This helps layout because it ensures that connected tasks can be drawn
+// near each other.
+function constructTaskBuckets(
+  tasks: Array<TaskInterface>,
+  transitionsByTaskBidi: {[string]: Array<string>}
+): Array<Array<string>> {
+  // start by creating buckets of connected tasks.
+  const taskBuckets = tasks.map(task => [ task.name ]);
+  let foundChange = true;
+  const doBucketPass = taskBucket => {
+    const bucketsByTask = {};
+    taskBuckets.forEach(bucket => {
+      bucket.forEach(taskName => {
+        bucketsByTask[taskName] = bucket;
+      });
+    });
+    taskBucket.forEach(taskName => {
+      if (transitionsByTaskBidi[taskName].length) {
+        transitionsByTaskBidi[taskName].forEach(newTask => {
+          const connectedTaskBucket = bucketsByTask[newTask];
+          if(connectedTaskBucket && connectedTaskBucket !== taskBucket) {
+            taskBucket.push(...connectedTaskBucket);
+            taskBuckets.splice(taskBuckets.indexOf(connectedTaskBucket), 1);
+            connectedTaskBucket.forEach(connectedTask => {
+              bucketsByTask[connectedTask] = taskBucket;
+            });
+            foundChange = true;
+          }
+        });
+      }
+    });
+  };
+  while(foundChange) {
+    foundChange = false;
+    taskBuckets.forEach(doBucketPass);
+  }
+  return taskBuckets;
+}
+
+// given tasks, their buckets from constructTaskBuckets(), and outward transitions for each task,
+//   determine the order that items should be placed in, expecting that if there is a transition
+//   a->b, a should be placed before b so b can be placed south of a.  also size the buckets for
+//   each task so the larget bucket gets placed first.
+function constructPathOrdering(
+  tasks: Array<TaskInterface>,
+  taskBuckets: Array<Array<string>>,
+  transitionsByTask: { [string]: Array<string> }
+): {
+  taskInDegree: {[string]: number},
+  taskBucketSize: {[string]: number},
+  taskBucketPriority: {[string]: number},
+} {
+  const taskBucketSize: {[string]: number} = tasks.reduce((tbs, task: TaskInterface) => {
+    tbs[task.name] = 0;
+    return tbs;
+  }, {});
+  const taskInDegree = { ...taskBucketSize };
+  const taskBucketPriority = { ...taskBucketSize };
+
+  const followPaths = (task, nextTasks, inDegree, nonVisitedTransitions) => {
+    const recurseNext = nextTasks.map(nextTask => {
+      const recurseThis = nextTask in nonVisitedTransitions ? nonVisitedTransitions[nextTask] : null;
+      taskInDegree[nextTask] = Math.max(taskInDegree[nextTask], inDegree);
+      delete nonVisitedTransitions[nextTask];
+      return recurseThis;
+    });
+    nextTasks.forEach((nextTask, idx) => {
+      if(recurseNext[idx]) {
+        followPaths(nextTask, recurseNext[idx], inDegree + 1, nonVisitedTransitions);
+      }
+    });
+  };
+  // sort each bucket by perceived in-degree;
+  taskBuckets.forEach(keyBucket => {
+    // start by ordering the bucket in original task order
+    let firstIndex;
+    const bucket = tasks.filter((task, idx) => {
+      if(keyBucket.includes(task.name)) {
+        if (typeof firstIndex === 'undefined') {
+          firstIndex = idx;
+        }
+        return true;
+      }
+      else {
+        return false;
+      }
+    }).map(task => task.name);
+    bucket.forEach(taskName => {
+      taskBucketSize[taskName] = bucket.length;
+      taskBucketPriority[taskName] = firstIndex;
+    });
+    bucket.forEach(nextTask => {
+      followPaths(
+        nextTask,
+        transitionsByTask[nextTask],
+        1,
+        Object.assign({}, transitionsByTask)
+      );
+    });
+  });
+  return {
+    taskInDegree,
+    taskBucketSize,
+    taskBucketPriority,
+  };
+}
+
 @connect(
   ({ flow: { tasks, transitions, notifications, nextTask, panels, navigation }}) => ({ tasks, transitions, notifications, nextTask, isCollapsed: panels, navigation }),
   (dispatch) => ({
@@ -184,22 +319,19 @@ export default class Canvas extends Component<{
         Math.max(parseInt(surfaceEl.style.width) - 211, logTaskCount * (108 + ORBIT_DISTANCE / 2)),
         Math.max(parseInt(surfaceEl.style.height) - 55, logTaskCount * (108 + ORBIT_DISTANCE / 2)),
         211 + ORBIT_DISTANCE * 2,
-        55 + ORBIT_DISTANCE * 4,
+        55 + ORBIT_DISTANCE * 2,
       );
-      // start by ordering the transitions so a comes before b if there's an a->b transition.
-      //   If there are cycles, a perfect ordering is impossible, but this will be the best
-      //   approximation
-      const taskInDegree = {};
-      const taskBucketSize = {};
+      // start by indexing the transitions by task, both in the directed form for determining ordering
+      //  and in the bidirectional (undirected) form for determining connected subgraphs.
       const transitionsByTask = tasks.reduce((tbt, task) => {
         tbt[task.name] = uniq([].concat(
           ...transitions
             .filter(t => t.from.name === task.name)
             .map(t => t.to),
         ).map(t => t.name));
-        taskInDegree[task.name] = 0;
         return tbt;
       }, {});
+
       const transitionsByTaskBidi = tasks.reduce((tbt, task) => {
         tbt[task.name] = uniq(transitionsByTask[task.name].concat(
           transitions
@@ -208,84 +340,28 @@ export default class Canvas extends Component<{
         ));
         return tbt;
       }, {});
-      // start by creating buckets of connected tasks.
-      const taskBuckets = tasks.map(task => [ task.name ]);
-      let foundChange = true;
-      const doBucketPass = taskBucket => {
-        const bucketsByTask = {};
-        taskBuckets.forEach(bucket => {
-          bucket.forEach(taskName => {
-            bucketsByTask[taskName] = bucket;
-          });
-        });
-        taskBucket.forEach(taskName => {
-          if (transitionsByTaskBidi[taskName].length) {
-            transitionsByTaskBidi[taskName].forEach(newTask => {
-              const connectedTaskBucket = bucketsByTask[newTask];
-              if(connectedTaskBucket && connectedTaskBucket !== taskBucket) {
-                taskBucket.push(...connectedTaskBucket);
-                taskBuckets.splice(taskBuckets.indexOf(connectedTaskBucket), 1);
-                connectedTaskBucket.forEach(connectedTask => {
-                  bucketsByTask[connectedTask] = taskBucket;
-                });
-                foundChange = true;
-              }
-            });
-          }
-        });
-      };
-      while(foundChange) {
-        foundChange = false;
-        taskBuckets.forEach(doBucketPass);
-      }
-      const followPaths = (task, nextTasks, inDegree, nonVisitedTransitions) => {
-        const recurseNext = nextTasks.map(nextTask => {
-          const recurseThis = nextTask in nonVisitedTransitions ? nonVisitedTransitions[nextTask] : null;
-          taskInDegree[nextTask] = Math.max(taskInDegree[nextTask], inDegree);
-          delete nonVisitedTransitions[nextTask];
-          return recurseThis;
-        });
-        nextTasks.forEach((nextTask, idx) => {
-          if(recurseNext[idx]) {
-            followPaths(nextTask, recurseNext[idx], inDegree + 1, nonVisitedTransitions);
-          }
-        });
-      };
-      // sort each bucket by perceived in-degree;
-      taskBuckets.forEach(keyBucket => {
-        // start by ordering the bucket in original task order
-        const bucket = tasks.filter(task => keyBucket.includes(task.name)).map(task => task.name);
-        bucket.forEach(taskName => {
-          taskBucketSize[taskName] = bucket.length;
-        });
-        bucket.forEach(nextTask => {
-          followPaths(
-            nextTask,
-            transitionsByTask[nextTask],
-            1,
-            Object.assign({}, transitionsByTask)
-          );
-        });
-      });
+      // Get the "buckets" (subgraphs) of connected tasks in the graph.
+      const taskBuckets = constructTaskBuckets(tasks, transitionsByTaskBidi);
+      // For each task, determine its bucket size (biggest bucket gets rendered first)
+      //   and the longest non-looping path of transitions to it
+      //   (misnamed in-degree here for want of a better word).
+      // Where there is a loop in transitions, the ordering may be arbitrary
+      //  but it makes an attempt to place downward then loop to
+      //  the top from the bottom.
+      const {
+        taskInDegree,
+        taskBucketSize,
+        taskBucketPriority,
+      } = constructPathOrdering(tasks, taskBuckets, transitionsByTask);
 
-
-      tasks = tasks.map((task) => ({task, weight: taskBucketSize[task.name], order: taskInDegree[task.name]})).sort((a, b) => {
-        if (a.weight > b.weight) {
-          return -1;
-        }
-        else if (a.weight < b.weight) {
-          return 1;
-        }
-        else if (a.order < b.order) {
-          return -1;
-        }
-        else if (a.order > b.order) {
-          return 1;
-        }
-        else {
-          return 0;
-        }
-      }).map(t => t.task);
+      tasks = tasks.map((task) => ({
+        task,
+        weight: taskBucketSize[task.name],
+        order: taskInDegree[task.name],
+        priority: taskBucketPriority[task.name],
+      }))
+        .sort(weightedOrderedTaskSort)
+        .map(t => t.task);
       // Now take each task and the transitions starting from that task, and prefill them
       //   into the sampler if placed (i.e. if has coordinates).  If not placed, queue for
       //   placement.  Placement has to happen after prefill because the sampler has to

@@ -19,7 +19,7 @@ export class PoissonRectangleSampler implements Sampler {
   prandSeed: number;
   snapDistance: number;
 
-  constructor(width: number, height: number, radiusX: number, radiusY: number, snapDistance: number = 50) {
+  constructor(width: number, height: number, radiusX: number, radiusY: number, snapDistance: number = 20) {
     Object.assign(this, { width, height, radiusX, radiusY, snapDistance});
     this.gridWidth = Math.ceil(width / radiusX);
     this.gridHeight = Math.ceil(height / radiusY);
@@ -36,7 +36,7 @@ export class PoissonRectangleSampler implements Sampler {
     // Pick a random existing sample and remove it from the queue.
     // Favor any task that's connected to the one we're trying to place via a transition
     while (this.queueSize) {
-      const connectedTasks = this.queue.filter(s => s.transitionsTo.indexOf(taskName) > -1);
+      const connectedTasks = this.queue.filter(s => s.transitionsTo.includes(taskName));
       const i = connectedTasks.length
         ? this.queue.indexOf(connectedTasks[Math.floor(this.prand() * connectedTasks.length)])
         : Math.floor(this.prand() * this.queueSize);
@@ -44,31 +44,36 @@ export class PoissonRectangleSampler implements Sampler {
 
       // Make a new candidate between [radius, 2 * radius] from the existing sample.
       for (let j = 0; j < this.k; ++j) {
-        //since we're looking in a rectangle, we'll first pick one of the 12 cells around the
-        //  2w * 2h rectangle which are of size (w, h)
-        let adjustmentX;
-        let adjustmentY;
-
-        // If there is a transition from the randomly selected task to the new on, put the
-        //  new task 1 or 2 heights below the base task.
-        if(s.transitionsTo.indexOf(taskName) > -1) {
-          const cell = Math.floor(this.prand() * 8);
-          adjustmentX = [ -2, -1, 0, 1, -2, -1, 0, 1 ][cell] * this.radiusX;
-          adjustmentY = [ 1, 1, 1, 1, 2, 2, 2, 2 ][cell] * this.radiusY;
+        // If there is a transition from the selected task to the new on, throw out most of the pseudo-random
+        //   placement and place preferentially directly below.
+        if(s.transitionsTo.includes(taskName)) {
+          for(let adjustmentY of [ 1, 2 ]) {
+            for(let adjustmentX of [ -1, 0, -2, 1 ]) {
+              adjustmentX *= this.radiusX;
+              adjustmentY = this.radiusY; // y adjustment is fixed at +1 no matter which x is chosen
+              const x = s.x + Math.round((adjustmentX + this.prand() * this.radiusX) / this.snapDistance) * this.snapDistance;
+              const y = s.y + Math.round((adjustmentY + this.prand() * this.radiusY) / this.snapDistance) * this.snapDistance;
+              if (0 <= x && x < this.width && 0 <= y && y < this.height && this.far(x, y)) {
+                return this.sample(x, y, transitionsTo);
+              }
+            }
+          }
         }
         // otherwise place up to 1 height/width away in any orthogonal or diagonal dir.
         else {
+          //since we're looking in a rectangle, we'll first pick one of the 12 cells around the
+          //  2w * 2h rectangle which are of size (w, h)
           const cell = Math.floor(this.prand() * 12);
-          adjustmentX = [ -2, -1, 0, 1, -2, 1, -2, 1, -2, -1, 0, 1 ][cell] * this.radiusX;
-          adjustmentY = [ -2, -2, -2, -2, -1, -1, 0, 0, 1, 1, 1, 1 ][cell] * this.radiusY;
-        }
-        const x = s.x + Math.round((adjustmentX + this.prand() * this.radiusX) / this.snapDistance) * this.snapDistance;
-        const y = s.y + Math.round((adjustmentY + this.prand() * this.radiusY) / this.snapDistance) * this.snapDistance;
+          const adjustmentX = [ -2, -1, 0, 1, -2, 1, -2, 1, -2, -1, 0, 1 ][cell] * this.radiusX;
+          const adjustmentY = [ -2, -2, -2, -2, -1, -1, 0, 0, 1, 1, 1, 1 ][cell] * this.radiusY;
+          const x = s.x + Math.round((adjustmentX + this.prand() * this.radiusX) / this.snapDistance) * this.snapDistance;
+          const y = s.y + Math.round((adjustmentY + this.prand() * this.radiusY) / this.snapDistance) * this.snapDistance;
 
-        // Reject candidates that are outside the allowed extent,
-        // or closer than 2 * radius to any existing sample.
-        if (0 <= x && x < this.width && 0 <= y && y < this.height && this.far(x, y)) {
-          return this.sample(x, y, transitionsTo);
+          // Reject candidates that are outside the allowed extent,
+          // or closer than 2 * radius to any existing sample.
+          if (0 <= x && x < this.width && 0 <= y && y < this.height && this.far(x, y)) {
+            return this.sample(x, y, transitionsTo);
+          }
         }
       }
 
