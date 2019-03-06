@@ -190,16 +190,55 @@ export default class Canvas extends Component<{
       //   If there are cycles, a perfect ordering is impossible, but this will be the best
       //   approximation
       const taskInDegree = {};
+      const taskBucketSize = {};
       const transitionsByTask = tasks.reduce((tbt, task) => {
         tbt[task.name] = uniq([].concat(
           ...transitions
             .filter(t => t.from.name === task.name)
-            .map(t => t.to)
+            .map(t => t.to),
         ).map(t => t.name));
         taskInDegree[task.name] = 0;
         return tbt;
       }, {});
-      function runPath(task, nextTasks, inDegree, nonVisitedTransitions) {
+      const transitionsByTaskBidi = tasks.reduce((tbt, task) => {
+        tbt[task.name] = uniq(transitionsByTask[task.name].concat(
+          transitions
+            .filter(t => t.to.map(tt => tt.name).includes(task.name))
+            .map(t => t.from.name)
+        ));
+        return tbt;
+      }, {});
+      // start by creating buckets of connected tasks.
+      const taskBuckets = tasks.map(task => [ task.name ]);
+      let foundChange = true;
+      const doBucketPass = taskBucket => {
+        const bucketsByTask = {};
+        taskBuckets.forEach(bucket => {
+          bucket.forEach(taskName => {
+            bucketsByTask[taskName] = bucket;
+          });
+        });
+        taskBucket.forEach(taskName => {
+          if (transitionsByTaskBidi[taskName].length) {
+            transitionsByTaskBidi[taskName].forEach(newTask => {
+              const connectedTaskBucket = bucketsByTask[newTask];
+              if(connectedTaskBucket && connectedTaskBucket !== taskBucket) {
+                taskBucket.push(...connectedTaskBucket);
+                taskBuckets.splice(taskBuckets.indexOf(connectedTaskBucket), 1);
+                connectedTaskBucket.forEach(connectedTask => {
+                  bucketsByTask[connectedTask] = taskBucket;
+                });
+                foundChange = true;
+              }
+            });
+          }
+        });
+      };
+      while(foundChange) {
+        foundChange = false;
+        taskBuckets.forEach(doBucketPass);
+      }
+      const followPaths = (task, nextTasks, inDegree, nonVisitedTransitions) => {
         const recurseNext = nextTasks.map(nextTask => {
           const recurseThis = nextTask in nonVisitedTransitions ? nonVisitedTransitions[nextTask] : null;
           taskInDegree[nextTask] = Math.max(taskInDegree[nextTask], inDegree);
@@ -208,27 +247,39 @@ export default class Canvas extends Component<{
         });
         nextTasks.forEach((nextTask, idx) => {
           if(recurseNext[idx]) {
-            runPath(nextTask, recurseNext[idx], inDegree + 1, nonVisitedTransitions);
+            followPaths(nextTask, recurseNext[idx], inDegree + 1, nonVisitedTransitions);
           }
         });
-      }
-      const origTransitionsByTask = Object.assign({}, transitionsByTask);
-      while(Object.keys(transitionsByTask).length) {
-        const nextTask = Object.keys(transitionsByTask)[0];
-        runPath(
-          nextTask,
-          transitionsByTask[nextTask],
-          Object.keys(origTransitionsByTask).length - Object.keys(transitionsByTask).length,
-          Object.assign({}, origTransitionsByTask)
-        );
-        delete transitionsByTask[nextTask];
-      }
+      };
+      // sort each bucket by perceived in-degree;
+      taskBuckets.forEach(keyBucket => {
+        // start by ordering the bucket in original task order
+        const bucket = tasks.filter(task => keyBucket.includes(task.name)).map(task => task.name);
+        bucket.forEach(taskName => {
+          taskBucketSize[taskName] = bucket.length;
+        });
+        bucket.forEach(nextTask => {
+          followPaths(
+            nextTask,
+            transitionsByTask[nextTask],
+            1,
+            Object.assign({}, transitionsByTask)
+          );
+        });
+      });
 
-      tasks = tasks.map((task) => ({task, weight: taskInDegree[task.name] })).sort((a, b) => {
-        if (a.weight < b.weight) {
+
+      tasks = tasks.map((task) => ({task, weight: taskBucketSize[task.name], order: taskInDegree[task.name]})).sort((a, b) => {
+        if (a.weight > b.weight) {
           return -1;
         }
-        else if (a.weight > b.weight) {
+        else if (a.weight < b.weight) {
+          return 1;
+        }
+        else if (a.order < b.order) {
+          return -1;
+        }
+        else if (a.order > b.order) {
           return 1;
         }
         else {
