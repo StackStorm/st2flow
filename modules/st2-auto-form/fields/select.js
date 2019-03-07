@@ -38,14 +38,16 @@ export default class SelectField extends BaseTextField {
     }
 
     return (
-      <select {...selectProps}>
-        { spec.default ? null : (
-          <option value='' />
-        ) }
-        { _.map(spec.options, (o) => (
-          <option key={o.value} value={o.value}>{ o.text }</option>
-        ) ) }
-      </select>
+      <div className="st2-auto-form__select">
+        <select {...selectProps}>
+          { spec.default ? null : (
+            <option value='' />
+          ) }
+          { _.map(spec.options, (o) => (
+            <option key={o.value} value={o.value}>{ o.text }</option>
+          ) ) }
+        </select>
+      </div>
     );
   }
 }
