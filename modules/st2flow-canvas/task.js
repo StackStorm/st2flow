@@ -200,9 +200,16 @@ export class Task extends Component<{
     return false;
   }
 
+  handleImageError() {
+    if (this.imgRef.current) {
+      this.imgRef.current.src = 'static/icon.png';
+    }
+  }
+
   style = style
   taskRef = React.createRef();
   handleRef = React.createRef();
+  imgRef = React.createRef();
 
   render() {
     const { task, selected, onDelete } = this.props;
@@ -232,7 +239,13 @@ export class Task extends Component<{
             }}
             ref={this.taskRef}
           >
-            <img src={api.route({ path: `/packs/views/file/${packName}/icon.png` })} width="32" height="32" />
+            <img
+              ref={this.imgRef}
+              src={api.route({ path: `/packs/views/file/${packName}/icon.png` })}
+              onError={() => this.handleImageError()}
+              width="32"
+              height="32"
+            />
             <div>
               <div className={cx(this.style.taskName)}>{task.name}</div>
               <div className={cx(this.style.taskAction)}>{task.action}</div>
