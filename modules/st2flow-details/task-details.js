@@ -164,7 +164,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
       return false;
     }
 
-    const trans = !!selected && transitions;
+    const trans = !!selected && transitions.filter(t => t.from.name === selected);
 
     const action = actions.find(({ref}) => ref === task.action);
 
