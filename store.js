@@ -116,6 +116,10 @@ const flowReducer = (state = {}, input) => {
     case 'META_ISSUE_COMMAND': {
       const { command, args } = input;
 
+      if (command === 'set' && args[0] === 'runner_type' && state.tasks.length > 0) {
+        throw 'Cannot change runner_type of workflow that has existing tasks';
+      }
+
       if (!metaModel[command]) {
         return state;
       }
@@ -130,11 +134,8 @@ const flowReducer = (state = {}, input) => {
       if (runner_type && runner_type !== meta.runner_type) {
         const Model = models[runner_type];
 
-        workflowModel = new Model(workflowSource);
-
-        if (!workflowModel.tokenSet) {
-          workflowModel.fromYAML(workflowModel.constructor.minimum);
-        }
+        workflowModel = new Model();
+        workflowModel.fromYAML(workflowModel.constructor.minimum);
 
         state = {
           ...state,

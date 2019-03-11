@@ -20,11 +20,21 @@ const default_runner_type = 'orquesta';
       type: 'CHANGE_NAVIGATION',
       navigation,
     }),
-    setMeta: (field, value) => dispatch({
-      type: 'META_ISSUE_COMMAND',
-      command: 'set',
-      args: [ field, value ],
-    }),
+    setMeta: (field, value) => {
+      try{
+        dispatch({
+          type: 'META_ISSUE_COMMAND',
+          command: 'set',
+          args: [ field, value ],
+        });
+      }
+      catch(error) {
+        dispatch({
+          type: 'PUSH_ERROR',
+          error,
+        });
+      }
+    },
     setPack: (pack) => dispatch({
       type: 'SET_PACK',
       pack,
