@@ -1,9 +1,8 @@
 //@flow
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
-
-import { connect, ModelInterface } from '@stackstorm/st2flow-model';
 
 import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
@@ -12,28 +11,68 @@ import EnumField from '@stackstorm/module-auto-form/fields/enum';
 import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
 
+const default_runner_type = 'orquesta';
 
-@connect(({ metaModel, navigationModel }) => ({ metaModel, navigationModel }))
+@connect(
+  ({ flow: { pack, actions, navigation, meta }}) => ({ pack, actions, navigation, meta }),
+  (dispatch) => ({
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+    setMeta: (field, value) => dispatch({
+      type: 'META_ISSUE_COMMAND',
+      command: 'set',
+      args: [ field, value ],
+    }),
+    setPack: (pack) => dispatch({
+      type: 'SET_PACK',
+      pack,
+    }),
+  })
+)
 export default class Meta extends Component<{
-  metaModel: ModelInterface,
-  navigationModel: Object,
+  pack: string,
+  setPack: Function,
+
+  meta: Object,
+  setMeta: Function,
+
+  navigation: Object,
+  navigate: Function,
+
+  actions: Array<Object>,
 }> {
   static propTypes = {
-    metaModel: PropTypes.object,
-    navigationModel: PropTypes.object,
+    pack: PropTypes.object,
+    setPack: PropTypes.func,
+
+    meta: PropTypes.object,
+    setMeta: PropTypes.func,
+
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
+    actions: PropTypes.array,
+  }
+
+  componentDidUpdate() {
+    const { meta, setMeta } = this.props;
+
+    if (!meta.runner_type) {
+      setMeta('runner_type', default_runner_type);
+    }
   }
 
   handleSectionSwitch(section: string) {
-    this.props.navigationModel.change({ section });
+    this.props.navigate({ section });
   }
 
   render() {
-    const { metaModel, navigationModel } = this.props;
-    const { section = 'meta' } = navigationModel.current;
+    const { pack, setPack, meta, setMeta, navigation, actions } = this.props;
+    const { section = 'meta' } = navigation;
 
-    if (!metaModel) {
-      return false;
-    }
+    const packs = [ ...new Set(actions.map(a => a.pack)).add(pack) ];
 
     return ([
       <Toolbar key="subtoolbar" secondary={true} >
@@ -42,12 +81,12 @@ export default class Meta extends Component<{
       </Toolbar>,
       section === 'meta' && (
         <Panel key="meta">
-          <EnumField name="Runner Type" value={metaModel.get('runner_type')} spec={{enum: [ 'mistral', 'orquesta', 'action-chain' ]}} onChange={(v) => metaModel.set('runner_type', v)} />
-          <EnumField name="Pack" value={metaModel.get('pack')} spec={{enum: [ 'some', 'thing', 'else' ]}} onChange={(v) => metaModel.set('pack', v)} />
-          <StringField name="Name" value={metaModel.get('name')} onChange={(v) => metaModel.set('name', v)} />
-          <StringField name="Description" value={metaModel.get('description')} onChange={(v) => metaModel.set('description', v)} />
-          <BooleanField name="Enabled" value={metaModel.get('enabled')} spec={{}} onChange={(v) => metaModel.set('enabled', v)} />
-          <StringField name="Entry point" value={metaModel.get('entry_point')} onChange={(v) => metaModel.set('entry_point', v)} />
+          <EnumField name="Runner Type" value={meta.runner_type} spec={{enum: [ ...new Set([ 'mistral-v2', 'orquesta' ]) ], default: default_runner_type}} onChange={(v) => setMeta('runner_type', v)} />
+          <EnumField name="Pack" value={pack} spec={{enum: packs}} onChange={(v) => setPack(v)} />
+          <StringField name="Name" value={meta.name} onChange={(v) => setMeta('name', v || '')} />
+          <StringField name="Description" value={meta.description} onChange={(v) => setMeta('description', v)} />
+          <BooleanField name="Enabled" value={meta.enabled} spec={{}} onChange={(v) => setMeta('enabled', v)} />
+          <StringField name="Entry point" value={meta.entry_point} onChange={(v) => setMeta('entry_point', v || '')} />
         </Panel>
       ),
       section === 'parameters' && (

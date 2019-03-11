@@ -21,14 +21,35 @@ type NextItem = string | { [string]: string };
 type RawTask = {
   __meta: TokenMeta,
   action: string,
-  input?: Object,
-  publish?: Object,
+  input: Object,
   'on-success'?: Array<NextItem>,
   'on-error'?: Array<NextItem>,
   'on-complete'?: Array<NextItem>,
+  'with-items'?: string,
+  join?: string,
+  concurrency: number | string,
+  'pause-before': number | string,
+  'wait-before': number | string,
+  'wait-after': number | string,
+  timeout: number | string,
+  retry: {
+    count: number | string,
+    delay: number | string,
+    'continue-on': string,
+    'break-on': string,
+  },
+  publish: Object,
+  'publish-on-error': Object,
 };
 
-class MistralModel extends BaseModel implements ModelInterface {
+export default class MistralModel extends BaseModel implements ModelInterface {
+  static runner_types = [
+    'mistral',
+    'mistral-v2',
+  ]
+
+  static minimum = 'version: \'2.0\'\nmain:\n  tasks: {}\n';
+
   constructor(yaml: ?string) {
     super(schema, yaml);
   }
@@ -71,7 +92,11 @@ class MistralModel extends BaseModel implements ModelInterface {
         }
       }
 
-      const { action = '', input = {} } = task;
+      const {
+        action = '',
+        input = {},
+        ...restTask
+      } = task;
       const [ actionRef, ...inputPartials ] = action.split(' ');
 
       if (inputPartials.length) {
@@ -81,11 +106,21 @@ class MistralModel extends BaseModel implements ModelInterface {
       return {
         name: joinTaskName(key, this.tokenSet),
         action: actionRef,
-        size: { x: 120, y: 48 },
+        size: { x: 211, y: 55 },
         coords: { x: 0, y: 0, ...coords },
         input: {
           ...input,
         },
+        'with-items': restTask['with-items'],
+        join: restTask.join,
+        concurrency: restTask.concurrency,
+        'pause-before': restTask['pause-before'],
+        'wait-before': restTask['wait-before'],
+        'wait-after': restTask['wait-after'],
+        timeout: restTask.timeout,
+        retry: restTask.retry,
+        publish: restTask.publish,
+        'publish-on-error': restTask['publish-on-error'],
       };
     });
 
@@ -103,12 +138,19 @@ class MistralModel extends BaseModel implements ModelInterface {
 
     tasks.forEach((task: RawTask, key: Array<string>) => {
       STATUSES.forEach(status => {
-        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach(next => {
+        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach((next, tidx) => {
           // NOTE: The first item in the "key" array will always be
           // the workflow name at this point in time.
           const toName = getToName(next);
 
           if(keys.find(k => k[0] === key[0] && k[1] === toName)) {
+            const [ workflowName, taskName ] = key;
+            const parentKey = [ workflowName, 'tasks' ];
+            let color = '';
+            try {
+              color = crawler.getCommentsForKey(this.tokenSet, parentKey.concat([ taskName, 'on-complete', tidx ], typeof next === 'string' ? [] : [ toName ]));
+            }
+            catch(e) {/*noop*/}
             transitions.push({
               type: status,
               condition: typeof next === 'string' ? null : next[toName],
@@ -119,6 +161,7 @@ class MistralModel extends BaseModel implements ModelInterface {
                 // The first item in the fromKey will be the workflow name
                 name: joinTaskName([ key[0], toName ], this.tokenSet),
               }],
+              color,
             });
           }
         });
@@ -139,13 +182,19 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     const [ workflowName, taskName ] = splitTaskName(name, this.tokenSet);
-    const key = [ workflowName, 'tasks', taskName ];
+    const parentKey = [ workflowName, 'tasks' ];
 
     if(oldData.workflows) {
-      key.unshift('workflows');
+      parentKey.unshift('workflows');
     }
 
-    crawler.set(this.tokenSet, key, data);
+    if (crawler.getValueByKey(this.tokenSet, parentKey).__meta.keys.length) {
+      crawler.set(this.tokenSet, parentKey.concat(taskName), data);
+    }
+    else {
+      crawler.set(this.tokenSet, parentKey, { [taskName]: data });
+    }
+
     this.endMutation(oldTree);
   }
 
@@ -195,7 +244,7 @@ class MistralModel extends BaseModel implements ModelInterface {
     }
 
     if (coords) {
-      const comments = crawler.getCommentsForKey(this.tokenSet, key);
+      const comments = crawler.getCommentsForKey(this.tokenSet, key) || '[0, 0]';
       crawler.setCommentForKey(this.tokenSet, key, comments.replace(REG_COORDS, `[${coords.x.toFixed()}, ${coords.y.toFixed()}]`));
     }
 
@@ -331,13 +380,13 @@ class MistralModel extends BaseModel implements ModelInterface {
       throw new Error(`No transition type "${typeKey}" found coming from task "${fromTaskName}"`);
     }
 
-    key.concat(fromTaskName, typeKey);
+    key.push(fromTaskName, typeKey);
 
     const transitionIndex = task[typeKey].findIndex(tr =>
       (typeof tr === 'string' && tr === toTaskName) || tr.hasOwnProperty(toTaskName) && tr[toTaskName] === condition
     );
 
-    if (!transitionIndex) {
+    if (transitionIndex === -1) {
       if (condition) {
         throw new Error(`No transition to "${toTaskName}" with condition "${condition}" found in task "${fromTaskName}"`);
       }
@@ -346,7 +395,13 @@ class MistralModel extends BaseModel implements ModelInterface {
       }
     }
 
-    crawler.set(this.tokenSet, key.concat(transitionIndex, path), value);
+    if(path === 'color') {
+      const extraPath = typeof task[typeKey][transitionIndex] === 'string' ? [] : [ getToName(task[typeKey][transitionIndex]) ];
+      crawler.setCommentForKey(this.tokenSet, key.concat(transitionIndex, extraPath), value.toString());
+    }
+    else {
+      crawler.set(this.tokenSet, key.concat(transitionIndex, path), value);
+    }
 
     this.endMutation(oldTree);
   }
@@ -386,6 +441,11 @@ class MistralModel extends BaseModel implements ModelInterface {
 
     this.endMutation(oldTree);
   }
+
+  getRangeForTask(task: TaskRefInterface) {
+    const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
+    return crawler.getRangeForKey(this.tokenSet, [ workflowName, 'tasks', taskName ]);
+  }
 }
 
 /**
@@ -402,8 +462,12 @@ function getWorkflowTasksMap(tokenSet: TokenSet): Map<Array<string>, RawTask>  {
 
     Object.keys(workflows).forEach(workflowName => {
       const workflow = workflows[ workflowName ];
-      Object.keys(workflow.tasks).forEach(taksName =>
-        flatTasks.set([ workflowName, taksName ], workflow.tasks[taksName])
+      workflow.tasks && Object.keys(workflow.tasks).forEach(taksName =>
+        flatTasks.set([ workflowName, taksName ], {
+          ...workflow.tasks[taksName],
+          workflow: workflowName,
+          __meta: workflow.tasks[taksName].__meta,
+        })
       );
     }, []);
   }
@@ -451,5 +515,3 @@ function splitTaskName(name: string, tokenSet: TokenSet): Array<string> {
 
   return [ workflowName, name.slice(workflowName.length + 1) ];
 }
-
-export default MistralModel;

@@ -1,12 +1,17 @@
 //@flow
 
 import type { TaskInterface } from '@stackstorm/st2flow-model/interfaces';
+import type { Node } from 'react';
 
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
+import cx from 'classnames';
 
 import Vector from './vector';
-import { origin } from './const';
+import { origin, ORBIT_DISTANCE } from './const';
+import Path from './path/';
+import type { Task } from './task';
+import astar, { Graph } from './astar';
 
 import style from './style.css';
 
@@ -27,67 +32,80 @@ const CONTROLS = {
   right: new Vector(1, 0),
 };
 
-const ORBIT_DISTANCE = 20;
-const APPROACH_DISTANCE = 10;
-
-function roundCorner(from, origin, to) {
-  return {
-    origin,
-    approach: from.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
-    departure: to.subtract(origin).unit().multiply(APPROACH_DISTANCE).add(origin),
-  };
-}
-
 type Target = {
-  task?: TaskInterface,
+  task: TaskInterface,
   anchor: string
 }
 
-export default class Transition extends Component<{
-  from: Target,
-  to: Target,
-  selected: boolean,
+class SVGPath extends Component<{
   onClick: Function
 }> {
-  static propTypes = {
-    from: PropTypes.object.isRequired,
-    to: PropTypes.object.isRequired,
-  }
-
   componentDidMount() {
     // React fail: onClick isn't supported for SVG elements, so
     // manually set up the click handler here.
-    if(this.pathElement && this.pathElement instanceof Element) {
-      this.pathElement.addEventListener('click', this.props.onClick);
+    if(this.pathElement.current && this.pathElement.current instanceof Element) {
+      this.pathElement.current.addEventListener('click', () => this.props.onClick);
     }
   }
 
   componentWillUnmount() {
-    if(this.pathElement && this.pathElement instanceof Element) {
-      this.pathElement.removeEventListener('click', this.props.onClick);
+    if(this.pathElement.current && this.pathElement.current instanceof Element) {
+      this.pathElement.current.removeEventListener('click', this.props.onClick);
     }
+  }
+
+  pathElement = React.createRef()
+
+  render() {
+    return <path ref={this.pathElement} {...this.props} />;
+  }
+}
+
+export default class TransitionGroup extends Component<{
+  transitions: Array<{
+    from: Target,
+    to: Target,
+  }>,
+  color: string,
+  selected: boolean,
+  onClick: Function,
+  taskRefs: {| [taskname: string]: { current: Task } |},
+  graph: Graph
+}> {
+  static propTypes = {
+    transitions: PropTypes.arrayOf(
+      PropTypes.shape({
+        from: PropTypes.object.isRequired,
+        to: PropTypes.object.isRequired,
+      })
+    ),
+    taskRefs: PropTypes.object.isRequired,
+    graph: PropTypes.object.isRequired,
+    selected: PropTypes.bool,
+    onClick: PropTypes.func,
   }
 
   uniqId = 'some'
 
-  pathElement = undefined
-
   style = style
 
   makePath(from: Target, to: Target) {
+    const { taskRefs, graph } = this.props;
     if (!from.task || !to.task) {
       return '';
     }
-
-    const path = [];
+    if (!taskRefs[from.task.name].current || !taskRefs[to.task.name].current) {
+      return '';
+    }
 
     const fromAnchor = ANCHORS[from.anchor];
     const fromControl = CONTROLS[from.anchor];
     const fromCoords = new Vector(from.task.coords).add(origin);
-    const fromSize = new Vector(from.task.size);
+    const fromSize = new Vector(from.task && from.task.size);
 
     const fromPoint = fromSize.multiply(fromAnchor).add(fromCoords);
     const fromOrbit = fromControl.multiply(ORBIT_DISTANCE).add(fromPoint);
+    const path = new Path(fromPoint, 'down');
 
     const toAnchor = ANCHORS[to.anchor];
     const toControl = CONTROLS[to.anchor];
@@ -102,80 +120,94 @@ export default class Transition extends Component<{
     const fromLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).add(fromOrbit);
     const toLagrange = lagrangePoint.multiply(lagrangePoint.y > 0 ? VERTICAL_MASK : HORISONTAL_MASK).multiply(-1).add(toOrbit);
 
-    const fromOrbitCorner = roundCorner(fromPoint, fromOrbit, fromLagrange);
-    const fromLagrangeCorner = roundCorner(fromOrbit, fromLagrange, toLagrange);
-    const toLagrangeCorner = roundCorner(fromLagrange, toLagrange, toOrbit);
-    const toOrbitCorner = roundCorner(toLagrange, toOrbit, toPoint);
 
-    path.push(`M ${fromPoint.x} ${fromPoint.y}`);
 
-    if (lagrangePoint.y <= 0) {
-      path.push(`L ${fromOrbitCorner.approach.x} ${fromOrbitCorner.approach.y}`);
-      path.push(`Q ${fromOrbitCorner.origin.x} ${fromOrbitCorner.origin.y}, ${fromOrbitCorner.departure.x} ${fromOrbitCorner.departure.y}`);
+    // now for the A* algorithm
+    if(graph) {
+      const pathElements = astar.search(
+        graph,
+        fromPoint.add(new Vector(0, ORBIT_DISTANCE)),
+        toPoint.add(new Vector(0, -ORBIT_DISTANCE/2))
+      );
+
+      if(pathElements.length > 0) {
+        pathElements.forEach(nextPoint => {
+          path.moveTo(new Vector(nextPoint.x, nextPoint.y));
+        });
+        //path.moveTo(toPoint); <-- this is now handled by astar.search
+      }
+      else {
+        // If the pathfinder can't find a path, use this as a fallback
+        [ fromOrbit, fromLagrange, toLagrange, toOrbit, toPoint ].forEach(path.moveTo.bind(path));
+      }
     }
 
-    path.push(`L ${fromLagrangeCorner.approach.x} ${fromLagrangeCorner.approach.y}`);
-    path.push(`Q ${fromLagrangeCorner.origin.x} ${fromLagrangeCorner.origin.y}, ${fromLagrangeCorner.departure.x} ${fromLagrangeCorner.departure.y}`);
-
-    path.push(`L ${toLagrangeCorner.approach.x} ${toLagrangeCorner.approach.y}`);
-    path.push(`Q ${toLagrangeCorner.origin.x} ${toLagrangeCorner.origin.y}, ${toLagrangeCorner.departure.x} ${toLagrangeCorner.departure.y}`);
-
-    if (lagrangePoint.y <= 0) {
-      path.push(`L ${toOrbitCorner.approach.x} ${toOrbitCorner.approach.y}`);
-      path.push(`Q ${toOrbitCorner.origin.x} ${toOrbitCorner.origin.y}, ${toOrbitCorner.departure.x} ${toOrbitCorner.departure.y}`);
-    }
-
-    path.push(`L ${toPoint.x} ${toPoint.y}`);
-
-    return path.join(' ');
+    return path.toString();
   }
 
-  render() {
-    const { from, to, selected, ...props } = this.props;
+  render(): Array<Node> {
+    const { color, transitions, selected, taskRefs, ...props } = this.props; //eslint-disable-line no-unused-vars
 
-    const path = this.makePath(from, to);
+    const transitionPaths = transitions
+      .map(({ from, to }) => ({
+        from: from.task.name,
+        to: to.task.name,
+        path: this.makePath(from, to),
+      }));
 
-    return (
-      [
-        <defs key="marker">
-          {selected && [
-            <marker id={`${this.uniqId}ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
-            </marker>,
-            <marker id={`${this.uniqId}Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-              <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrowActive} />
-            </marker>,
-          ]}
-          <marker id={this.uniqId} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} />
-          </marker>
-        </defs>,
-        selected && [
-          <path
-            className={this.style.transitionActiveBorder}
-            key="pathActiveBorder"
-            d={path}
-            markerEnd={`url(#${this.uniqId}ActiveBorder)`}
-            {...props}
-          />,
-          <path
-            className={this.style.transitionActive}
-            key="pathActive"
-            d={path}
-            markerEnd={`url(#${this.uniqId}Active)`}
-            {...props}
-          />,
-        ],
-        <path
-          className={this.style.transition}
-          key="path"
-          d={path}
-          markerEnd={`url(#${this.uniqId})`}
-          pointerEvents="visibleStroke"
-          ref={(ref) => this.pathElement = ref}
-          {...props}
-        />,
-      ]
+    const markers = (
+      <defs key="marker">
+        {selected && [
+          <marker id={`${this.uniqId}-${selected && 'selected'}-${color}-ActiveBorder`} key="activeBorderMarker" markerWidth="13" markerHeight="13" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} style={{ fill: color }} />
+          </marker>,
+          <marker id={`${this.uniqId}-${selected && 'selected'}-Active`} key="activeMarker" markerWidth="12" markerHeight="12" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrowActive} />
+          </marker>,
+        ]}
+        <marker id={`${this.uniqId}-${color}`} markerWidth="10" markerHeight="10" refX="1" refY="1" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,2 L3,1 z" className={this.style.transitionArrow} style={{ fill: color }} />
+        </marker>
+      </defs>
     );
+
+    const activeBorders = transitionPaths.map(({ from, to, path }) => (
+      <SVGPath
+        className={cx(this.style.transitionActiveBorder, selected && this.style.selected)}
+        style={{ stroke: color }}
+        key={`${from}-${to}-pathActiveBorder`}
+        d={path}
+        markerEnd={`url(#${this.uniqId}-${selected && 'selected' || ''}-${color}-ActiveBorder)`}
+        onClick={this.props.onClick}
+        {...props}
+      />
+    ));
+
+    const actives = transitionPaths.map(({ from, to, path }) => (
+      <SVGPath
+        className={cx(this.style.transitionActive, selected && this.style.selected)}
+        key={`${from}-${to}-pathActive`}
+        d={path}
+        markerEnd={`url(#${this.uniqId}-${selected && 'selected' || ''}-Active)`}
+        {...props}
+      />
+    ));
+
+    const paths = transitionPaths.map(({ from, to, path }) => (
+      <SVGPath
+        className={this.style.transition}
+        style={{ stroke: color }}
+        key={`${from}-${to}-path`}
+        d={path}
+        markerEnd={`url(#${this.uniqId}-${color})`}
+        {...props}
+      />
+    ));
+
+    return [ markers ]
+      .concat(activeBorders)
+      .concat(actives)
+      .concat(paths);
+
   }
 }

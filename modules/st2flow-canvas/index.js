@@ -1,54 +1,104 @@
 //@flow
 
 import type {
-  ModelInterface,
   CanvasPoint,
+  TaskInterface,
   TaskRefInterface,
   TransitionInterface,
 } from '@stackstorm/st2flow-model/interfaces';
 import type { NotificationInterface } from '@stackstorm/st2flow-notifications';
+import type { Node } from 'react';
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+import fp from 'lodash/fp';
+import { uniqueId } from 'lodash';
 
 import Notifications from '@stackstorm/st2flow-notifications';
-import { connect, layout } from '@stackstorm/st2flow-model';
+import {HotKeys} from 'react-hotkeys';
 
+import type { BoundingBox } from './routing-graph';
 import Task from './task';
-import Transition from './transition';
+import TransitionGroup from './transition';
 import Vector from './vector';
-import Toolbar from './toolbar';
 import CollapseButton from './collapse-button';
+import { Graph } from './astar';
+import { ORBIT_DISTANCE } from './const';
+import { Toolbar, ToolbarButton } from './toolbar';
+import makeRoutingGraph from './routing-graph';
 
 import { origin } from './const';
 
 import style from './style.css';
 
+type DOMMatrix = {
+  m11: number,
+  m22: number
+};
+
 type Wheel = WheelEvent & {
   wheelDelta: number
 }
 
-@connect(({ model, collapseModel, navigationModel }) => ({ model, collapseModel, navigationModel }))
+@connect(
+  ({ flow: { tasks, transitions, notifications, nextTask, panels, navigation }}) => ({ tasks, transitions, notifications, nextTask, isCollapsed: panels, navigation }),
+  (dispatch) => ({
+    issueModelCommand: (command, ...args) => {
+      dispatch({
+        type: 'MODEL_ISSUE_COMMAND',
+        command,
+        args,
+      });
+    },
+    toggleCollapse: name => dispatch({
+      type: 'PANEL_TOGGLE_COLLAPSE',
+      name,
+    }),
+    navigate: (navigation) => dispatch({
+      type: 'CHANGE_NAVIGATION',
+      navigation,
+    }),
+  })
+)
 export default class Canvas extends Component<{
+  children: Node,
       className?: string,
-      model: ModelInterface,
-      collapseModel: Object,
-      navigationModel: Object,
-    }, {
+
+  navigation: Object,
+  navigate: Function,
+
+  tasks: Array<TaskInterface>,
+  transitions: Array<Object>,
+  notifications: Array<NotificationInterface>,
+  issueModelCommand: Function,
+  nextTask: string,
+
+  isCollapsed: Object,
+  toggleCollapse: Function,
+}, {
       scale: number,
-      errors: Array<Error>,
-    }> {
+}> {
   static propTypes = {
+    children: PropTypes.node,
     className: PropTypes.string,
-    model: PropTypes.object,
-    collapseModel: PropTypes.object,
-    navigationModel: PropTypes.object,
+
+    navigation: PropTypes.object,
+    navigate: PropTypes.func,
+
+    tasks: PropTypes.array,
+    transitions: PropTypes.array,
+    notifications: PropTypes.array,
+    issueModelCommand: PropTypes.func,
+    nextTask: PropTypes.string,
+
+    isCollapsed: PropTypes.object,
+    toggleCollapse: PropTypes.func,
   }
 
   state = {
     scale: 0,
-    errors: [],
   }
 
   componentDidMount() {
@@ -65,10 +115,6 @@ export default class Canvas extends Component<{
     window.addEventListener('resize', this.handleUpdate);
     el.addEventListener('dragover', this.handleDragOver);
     el.addEventListener('drop', this.handleDrop);
-
-    const { model } = this.props;
-    model.on('change', this.handleModelChange);
-    model.on('schema-error', this.handleModelError);
 
     this.handleUpdate();
   }
@@ -91,10 +137,6 @@ export default class Canvas extends Component<{
     window.removeEventListener('resize', this.handleUpdate);
     el.removeEventListener('dragover', this.handleDragOver);
     el.removeEventListener('drop', this.handleDrop);
-
-    const { model } = this.props;
-    model.removeListener('change', this.handleModelChange);
-    model.removeListener('schema-error', this.handleModelError);
   }
 
   size: CanvasPoint
@@ -110,12 +152,12 @@ export default class Canvas extends Component<{
       return;
     }
 
-    const { model }: { model: ModelInterface } = this.props;
+    const { tasks } = this.props;
     const { width, height } = canvasEl.getBoundingClientRect();
 
     const scale = Math.E ** this.state.scale;
 
-    this.size = model.tasks.reduce((acc, item) => {
+    this.size = tasks.reduce((acc, item) => {
       const coords = new Vector(item.coords);
       const size = new Vector(item.size);
       const { x, y } = coords.add(size).add(50);
@@ -133,20 +175,96 @@ export default class Canvas extends Component<{
     surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
   }
 
-  handleMouseWheel = (e: Wheel) => {
-    e.preventDefault();
-    e.stopPropagation();
+  handleMouseWheel = (e: Wheel): ?false => {
+    // considerations on scale factor (BM, 2019-02-07)
+    // on Chrome Mac and Safari Mac:
+    // For Mac trackpads with continuous scroll, wheelDelta is reported in multiples of 3,
+    //   but for a fast scoll, the delta value may be >1000.
+    //   deltaY is always wheelDelta / -3.
+    // For traditional mouse wheels with clicky scroll, wheelDelta is reported in multiples of 120.
+    //   deltaY is non-integer and does not neatly gazinta wheelDelta.
+    //
+    // Firefox Mac:  wheelDelta is undefined. deltaY increments by 1 for trackpad or mouse wheel.
+    //
+    // On Windows w/Edge, I see a ratio of -20:7 between wheelDelta and deltaY. I'm using a VM, but the Mac
+    //   trackpad and the mouse report the same ratio. (increments of 120:-42)
+    // On Windows w/Chrome, the ratio is -6:5. The numbers don't seem to go above 360 for wheelDelta on a mousewheel
+    //    or 600 for the trackpad
+    //
+    // Firefox Linux: wheelDelta is undefined, wheelY is always 3 or -3
+    // Chromium Linus: wheelY is always in multiples of 53.  Fifty-three!  (wheelDelta is in multiples of 120)
+    //   There's very little variation.  I can sometimes get the trackpad to do -212:480, but not a real mouse wheel
+    const SCALE_FACTOR_MAC_TRACKPAD = .05;
+    const SCROLL_FACTOR_MAC_TRACKPAD = 15;
+    const SCALE_FACTOR_DEFAULT = .1;
+    const SCROLL_FACTOR_DEFAULT = 30;
 
-    const { scale }: { scale: number } = this.state;
-    const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+    const getModifierState = (e.getModifierState || function(mod) {
+      mod = mod === 'Control' ? 'ctrl' : mod;
+      return this[`${mod.toLowerCase()}Key`];
+    }).bind(e);
 
-    this.setState({
-      scale: scale + delta * .1,
-    });
+    if(getModifierState('Control')) {
+      e.preventDefault();
+      const canvasEl = this.canvasRef.current;
+      if(canvasEl instanceof HTMLElement) {
+        const scrollFactor = e.wheelDelta && Math.abs(e.wheelDelta) < 120
+          ? SCROLL_FACTOR_MAC_TRACKPAD
+          : Math.abs(e.wheelDelta) < 3 ? SCROLL_FACTOR_DEFAULT / 2 : SCROLL_FACTOR_DEFAULT;
+        canvasEl.scrollLeft += (e.deltaY < 0) ? -scrollFactor : scrollFactor;
+      }
 
-    this.handleUpdate();
+      return undefined;
+    }
 
-    return false;
+    if(getModifierState('Alt')) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const { scale }: { scale: number } = this.state;
+      const delta = Math.max(-1, Math.min(1, e.wheelDelta || -e.deltaY));
+
+      // Zoom around the mouse pointer, by finding it's position normalized to the
+      //  canvas and surface elements' coordinates, and moving the scroll on the
+      //  canvas element to match the same proportions as before the scale.
+      const canvasEl = this.canvasRef.current;
+      const surfaceEl = this.surfaceRef.current;
+      if(canvasEl instanceof HTMLElement && surfaceEl instanceof HTMLElement) {
+        let canvasParentEl = canvasEl;
+        let canvasOffsetLeft = 0;
+        let canvasOffsetTop = 0;
+        do {
+          if(getComputedStyle(canvasParentEl).position !== 'static') {
+            canvasOffsetLeft += canvasParentEl.offsetLeft || 0;
+            canvasOffsetTop += canvasParentEl.offsetTop || 0;
+          }
+          canvasParentEl = canvasParentEl.parentNode;
+        } while (canvasParentEl && canvasParentEl !== document);
+        const surfaceScaleBefore: DOMMatrix = new window.DOMMatrix(getComputedStyle(surfaceEl).transform);
+        const mousePosCanvasX = (e.clientX - canvasOffsetLeft) / canvasEl.clientWidth;
+        const mousePosCanvasY = (e.clientY - canvasOffsetTop) / canvasEl.clientHeight;
+        const mousePosSurfaceX = (e.clientX - canvasOffsetLeft + canvasEl.scrollLeft) /
+                                  (surfaceEl.clientWidth * surfaceScaleBefore.m11);
+        const mousePosSurfaceY = (e.clientY - canvasOffsetTop + canvasEl.scrollTop) /
+                                  (surfaceEl.clientHeight * surfaceScaleBefore.m22);
+        this.setState({
+          scale: scale + delta * (e.wheelDelta && Math.abs(e.wheelDelta) < 120 ? SCALE_FACTOR_MAC_TRACKPAD: SCALE_FACTOR_DEFAULT),
+        });
+
+        const surfaceScaleAfter: DOMMatrix = new window.DOMMatrix(getComputedStyle(surfaceEl).transform);
+        canvasEl.scrollLeft = surfaceEl.clientWidth * surfaceScaleAfter.m11 * mousePosSurfaceX -
+                                canvasEl.clientWidth * mousePosCanvasX;
+        canvasEl.scrollTop = surfaceEl.clientHeight * surfaceScaleAfter.m22 * mousePosSurfaceY -
+                                canvasEl.clientHeight * mousePosCanvasY;
+      }
+
+      this.handleUpdate();
+
+      return false;
+    }
+    else {
+      return undefined;
+    }
   }
 
   handleMouseDown = (e: MouseEvent) => {
@@ -233,8 +351,8 @@ export default class Canvas extends Component<{
 
     const coords = new Vector(e.offsetX, e.offsetY).subtract(new Vector(handle)).subtract(new Vector(origin));
 
-    this.props.model.addTask({
-      name: `task${this.props.model.lastTaskIndex + 1}`,
+    this.props.issueModelCommand('addTask', {
+      name: this.props.nextTask,
       action: action.ref,
       coords: Vector.max(coords, new Vector(0, 0)),
     });
@@ -243,145 +361,249 @@ export default class Canvas extends Component<{
   }
 
   handleTaskMove = (task: TaskRefInterface, coords: CanvasPoint) => {
-    this.props.model.updateTask(task, { coords });
+    this.props.issueModelCommand('updateTask', task, { coords });
   }
 
   handleTaskSelect = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ task: task.name, toTask: undefined, type: 'execution', section: 'input' });
+    this.props.navigate({ task: task.name, toTasks: undefined, type: 'execution', section: 'input' });
   }
 
-  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface, toTask: TaskRefInterface) => {
+  handleTransitionSelect = (e: MouseEvent, transition: TransitionInterface) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: transition.from.name, toTask: transition.to.name, type: 'execution', section: 'transitions' });
+    this.props.navigate({ task: transition.from.name, toTasks: transition.to.map(t => t.name), type: 'execution', section: 'transitions' });
   }
 
   handleCanvasClick = (e: MouseEvent) => {
     e.stopPropagation();
-    this.props.navigationModel.change({ task: undefined, toTask: undefined, section: undefined, type: 'metadata' });
-  }
-
-  handleModelChange = () => {
-    // clear any errors
-    if(this.state.errors && this.state.errors.length) {
-      this.setState({ errors: [] });
-    }
-  }
-
-  handleModelChange = () => {
-    // clear any errors
-    if(this.state.errors && this.state.errors.length) {
-      this.setState({ errors: [] });
-    }
-  }
-
-  handleModelError = (e: Error) => {
-    // error may or may not be an array
-    this.setState({ errors: e && [].concat(e) || [] });
-  }
-
-  handleNotificationRemove = (notification: NotificationInterface) => {
-    switch(notification.type) {
-      case 'error':
-        this.setState({
-          errors: this.state.errors.filter(err => err.message !== notification.message),
-        });
-        break;
-    }
+    this.props.navigate({ task: undefined, toTasks: undefined, section: undefined, type: 'metadata' });
   }
 
   handleTaskEdit = (task: TaskRefInterface) => {
-    this.props.navigationModel.change({ toTask: undefined, task: task.name });
+    this.props.navigate({ toTasks: undefined, task: task.name });
   }
 
   handleTaskDelete = (task: TaskRefInterface) => {
-    this.props.model.deleteTask(task);
+    this.props.issueModelCommand('deleteTask', task);
+  }
+
+  handleTaskConnect = (to: TaskRefInterface, from: TaskRefInterface) => {
+    this.props.issueModelCommand('addTransition', { from, to: [ to ] });
+  }
+
+  handleTransitionDelete = (transition: TransitionInterface) => {
+    this.props.issueModelCommand('deleteTransition', transition);
   }
 
   get notifications() : Array<NotificationInterface> {
-    return this.state.errors.map(err => ({
-      type: 'error',
-      message: err.message,
-    }));
+    return this.props.notifications;
+  }
+  get errors() : Array<NotificationInterface> {
+    return this.props.notifications.filter(n => n.type === 'error');
   }
 
   style = style
   canvasRef = React.createRef();
   surfaceRef = React.createRef();
+  taskRefs = {};
+
+  get transitionRoutingGraph(): Graph {
+    const { taskRefs } = this;
+
+    const boundingBoxes: Array<BoundingBox> = Object.keys(taskRefs).map((key: string): BoundingBox => {
+
+      if(taskRefs[key].current) {
+        const task: TaskInterface = taskRefs[key].current.props.task;
+
+        const coords = new Vector(task.coords).add(origin);
+        const size = new Vector(task.size);
+
+        return {
+          left: coords.x - ORBIT_DISTANCE,
+          top: coords.y - ORBIT_DISTANCE,
+          bottom: coords.y + size.y + ORBIT_DISTANCE,
+          right: coords.x + size.x + ORBIT_DISTANCE,
+          midpointY: coords.y + size.y / 2,
+          midpointX: coords.x + size.x / 2,
+        };
+      }
+      else {
+        return {
+          left: NaN,
+          top: NaN,
+          bottom: NaN,
+          right: NaN,
+          midpointY: NaN,
+          midpointX: NaN,
+        };
+      }
+    });
+
+    return makeRoutingGraph(boundingBoxes);
+  }
 
   render() {
-    const { model, collapseModel, navigationModel } = this.props;
+    const { notifications, children, navigation, tasks=[], transitions=[], isCollapsed, toggleCollapse } = this.props;
     const { scale } = this.state;
-
-    if (!model || !collapseModel) {
-      return false;
-    }
+    const { transitionRoutingGraph } = this;
 
     const surfaceStyle = {
       transform: `scale(${Math.E ** scale})`,
     };
 
+    const transitionGroups = transitions
+      .map(transition => {
+        const from = {
+          task: tasks.find(({ name }) => name === transition.from.name),
+          anchor: 'bottom',
+        };
+
+        const group = transition.to.map(tto => {
+          const to = {
+            task: tasks.find(({ name }) => name === tto.name) || {},
+            anchor: 'top',
+          };
+
+          return {
+            from,
+            to,
+          };
+        });
+
+        return {
+          id: uniqueId(`${transition.from.name}-`),
+          transition,
+          group,
+          color: transition.color,
+        };
+      });
+
+    const selectedTask = tasks.filter(task => task.name === navigation.task)[0];
+
+    const selectedTransitionGroups = transitionGroups
+      .filter(({ transition }) => {
+        const { task, toTasks = [] } = navigation;
+        return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+      });
+
+    // Currently this component is registering global key handlers (attach = document.body)
+    //   At some point it may be desirable to pull the global keyMap up to main.js (handlers
+    //   can stay here), but for now since all key commands affect the canvas, this is fine.
     return (
-      <div
-        className={cx(this.props.className, this.style.component)}
-        onClick={e => this.handleCanvasClick(e)}
-      >
-        <Toolbar>
-          <div key="undo" icon="icon-redirect" onClick={() => model.undo()} />
-          <div key="redo" icon="icon-redirect2" onClick={() => model.redo()} />
-          <div key="rearrange" icon="icon-arrange" onClick={() => layout(model)} />
-          <div key="save" icon="icon-save" onClick={() => console.log('save')} />
-          <div key="run" icon="icon-play" onClick={() => console.log('run')} />
-        </Toolbar>
-        <CollapseButton position="left" state={collapseModel.isCollapsed('palette')} onClick={() => collapseModel.toggle('palette')} />
-        <CollapseButton position="right" state={collapseModel.isCollapsed('details')} onClick={() => collapseModel.toggle('details')} />
-        <div className={this.style.canvas} ref={this.canvasRef}>
-          <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
-            {
-              model.tasks.map((task) => {
-                return (
-                  <Task
-                    key={task.name}
-                    task={task}
-                    selected={task.name === navigationModel.current.task}
-                    scale={scale}
-                    onMove={(...a) => this.handleTaskMove(task, ...a)}
-                    onClick={() => this.handleTaskSelect(task)}
-                    onDelete={() => this.handleTaskDelete(task)}
-                  />
-                );
-              })
+      <HotKeys
+        style={{height: '100%'}}
+        focused={true}
+        attach={document.body}
+        handlers={{handleTaskDelete: e => {
+          // This will break if canvas elements (tasks/transitions) become focus targets with
+          //  tabindex or automatically focusing elements.  But in that case, the Task already
+          //  has a handler for delete waiting.
+          if(e.target === document.body) {
+            e.preventDefault();
+            if(selectedTask) {
+              this.handleTaskDelete(selectedTask);
             }
-            <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+          }
+        }}}
+      >
+        <div
+          className={cx(this.props.className, this.style.component)}
+          onClick={e => this.handleCanvasClick(e)}
+        >
+          { children }
+          <Toolbar position="right">
+            <ToolbarButton key="zoomIn" icon="icon-zoom_in" onClick={() => this.setState({ scale: this.state.scale + .1 })} />
+            <ToolbarButton key="zoomReset" icon="icon-zoom_reset" onClick={() => this.setState({ scale: 0 })} />
+            <ToolbarButton key="zoomOut" icon="icon-zoom_out" onClick={() => this.setState({ scale: this.state.scale - .1 })} />
+          </Toolbar>
+          <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
+          <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />
+          <div className={this.style.canvas} ref={this.canvasRef}>
+            <div className={this.style.surface} style={surfaceStyle} ref={this.surfaceRef}>
               {
-                model.transitions
-                  .reduce((arr, transition) => {
-                    const from = {
-                      task: model.tasks.find(({ name }) => name === transition.from.name),
-                      anchor: 'bottom',
-                    };
-                    transition.to.forEach(tto => {
-                      const to = {
-                        task: model.tasks.find(({ name }) => name === tto.name),
-                        anchor: 'top',
-                      };
-                      arr.push(
-                        <Transition
-                          key={`${transition.from.name}-${tto.name}-${window.btoa(transition.condition)}`}
-                          from={from}
-                          to={to}
-                          selected={transition.from.name === navigationModel.current.task && tto.name === navigationModel.current.toTask}
-                          onClick={(e) => this.handleTransitionSelect(e, { from: transition.from, to: tto })}
-                        />
-                      );
-                    });
-                    return arr;
-                  }, [])
+                tasks.map((task) => {
+                  this.taskRefs[task.name] = this.taskRefs[task.name] || React.createRef();
+                  return (
+                    <Task
+                      key={task.name}
+                      task={task}
+                      selected={task.name === navigation.task && !selectedTransitionGroups.length}
+                      scale={scale}
+                      onMove={(...a) => this.handleTaskMove(task, ...a)}
+                      onConnect={(...a) => this.handleTaskConnect(task, ...a)}
+                      onClick={() => this.handleTaskSelect(task)}
+                      onDelete={() => this.handleTaskDelete(task)}
+                      ref={this.taskRefs[task.name]}
+                    />
+                  );
+                })
               }
-            </svg>
+              {
+                transitionGroups
+                  .filter(({ transition }) => {
+                    const { task, toTasks = [] } = navigation;
+                    return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+                  })
+                  .map(({ transition }) => {
+                    const toPoint = transition.to
+                      .map(task => tasks.find(({ name }) => name === task.name))
+                      .map(task => new Vector(task.size).multiply(new Vector(.5, 0)).add(new Vector(0, -10)).add(new Vector(task.coords)))
+                      ;
+
+                    const fromPoint = [ transition.from ]
+                      .map((task: TaskRefInterface): any => tasks.find(({ name }) => name === task.name))
+                      .map((task: TaskInterface) => new Vector(task.size).multiply(new Vector(.5, 1)).add(new Vector(task.coords)))
+                      ;
+
+                    const point = fromPoint.concat(toPoint)
+                      .reduce((acc, point) => (acc || point).add(point).divide(2))
+                      ;
+
+                    const { x, y } = point.add(origin);
+                    return (
+                      <div
+                        key={`${transition.from.name}-${window.btoa(transition.condition)}-selected`}
+                        className={cx(this.style.transitionButton, this.style.delete, 'icon-delete')}
+                        style={{ transform: `translate(${x}px, ${y}px)`}}
+                        onClick={() => this.handleTransitionDelete(transition)}
+                      />
+                    );
+                  })
+              }
+              <svg className={this.style.svg} xmlns="http://www.w3.org/2000/svg">
+                {
+                  transitionGroups
+                    .map(({ id, transition, group, color }, i) => (
+                      <TransitionGroup
+                        key={`${id}-${window.btoa(transition.condition)}`}
+                        color={color}
+                        transitions={group}
+                        taskRefs={this.taskRefs}
+                        graph={transitionRoutingGraph}
+                        selected={false}
+                        onClick={(e) => this.handleTransitionSelect(e, transition)}
+                      />
+                    ))
+                }
+                {
+                  selectedTransitionGroups
+                    .map(({ id, transition, group, color }, i) => (
+                      <TransitionGroup
+                        key={`${id}-${window.btoa(transition.condition)}-selected`}
+                        color={color}
+                        transitions={group}
+                        taskRefs={this.taskRefs}
+                        graph={transitionRoutingGraph}
+                        selected={true}
+                        onClick={(e) => this.handleTransitionSelect(e, transition)}
+                      />
+                    ))
+                }
+              </svg>
+            </div>
           </div>
+          <Notifications position="bottom" notifications={notifications} />
         </div>
-        <Notifications position="top" notifications={this.notifications} onRemove={this.handleNotificationRemove} />
-      </div>
+      </HotKeys>
     );
   }
 }

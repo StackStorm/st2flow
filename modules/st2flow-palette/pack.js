@@ -5,18 +5,18 @@ import type { Node } from 'react';
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 
+import api from '@stackstorm/module-api';
+
 import style from './style.css';
 
 export default class Action extends Component<{
   name: string,
-  icon: string,
   children?: Node,
 }, {
   open: bool,
 }> {
   static propTypes = {
     name: PropTypes.string.isRequired,
-    icon: PropTypes.string.isRequired,
     children: PropTypes.node,
   }
 
@@ -25,6 +25,14 @@ export default class Action extends Component<{
   }
 
   style = style
+
+  imgRef = React.createRef()
+
+  handleImageError() {
+    if (this.imgRef.current) {
+      this.imgRef.current.src = 'static/icon.png';
+    }
+  }
 
   handleTogglePack(e: Event) {
     e.stopPropagation();
@@ -35,7 +43,7 @@ export default class Action extends Component<{
   }
 
   render() {
-    const { name, icon, children } = this.props;
+    const { name, children } = this.props;
     const { open } = this.state;
 
     return (
@@ -45,10 +53,10 @@ export default class Action extends Component<{
           onClick={e => this.handleTogglePack(e)}
         >
           <div>
-            <i className={open ? 'icon-chevron-down' : 'icon-chevron_right'} />
+            <i className={open ? 'icon-chevron_down' : 'icon-chevron_right'} />
           </div>
           <div>
-            <img src={icon} width="32" height="32" />
+            <img ref={this.imgRef} src={api.route({ path: `/packs/views/file/${name}/icon.png` })} width="32" height="32" onError={() => this.handleImageError()} />
           </div>
           <div>
             { name }

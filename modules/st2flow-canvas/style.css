@@ -33,6 +33,13 @@
     border-radius: 3px;
     box-shadow: 3px 3px 0 rgba(0, 0, 0, .3);
     box-sizing: border-box;
+
+    img {
+      float: left;
+    }
+    > div {
+      margin-left: 40px;
+    }
   }
 
   &.selected &-body {
@@ -86,6 +93,37 @@
     pointer-events: none;
   }
 
+  &-badges {
+    right: 0;
+    bottom: 1px;
+    position: absolute;
+  }
+
+  &-badge {
+    border: 1px solid black;
+    margin: 1px;
+    padding: 1px;
+    padding-right: 2px;
+    border-radius: 2px;
+
+    &-with-items {
+      composes: icon-repeat from global;
+      &:before {
+        margin: 0;
+        font-weight: bold !important;
+      }
+    }
+
+    &-join {
+      composes: icon-merge_type from global;
+      display: inline-block;
+      transform: rotateZ(180deg) translateY(1px);
+      &:before {
+        margin: 0;
+        font-weight: bold !important;
+      }
+    }
+  }
 
   &-handle {
     position: absolute;
@@ -118,18 +156,56 @@
   stroke: var(--transition-color);
   stroke-width: 5;
   fill: transparent;
+  pointer-events: none;
+
+  &-button {
+    position: absolute;
+    top: -13px;
+    left: -13px;
+
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+    border: 1px solid #ffa256;
+    background-color: #fff3e6;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    &:after {
+      content: ' ';
+    }
+  }
 }
 
 .transition-active {
-  stroke: var(--selected-bg);
   stroke-width: 12;
   fill: transparent;
+  stroke: transparent;
+  visibility: hidden;
+
+  &.selected {
+    visibility: visible;
+    stroke: var(--selected-bg);
+    pointer-events: none;
+  }
 }
 
 .transition-active-border {
-  stroke: var(--transition-color);
   stroke-width: 13;
   fill: transparent;
+  stroke: transparent;
+  pointer-events: stroke;
+  visibility: hidden;
+
+  &.selected {
+    visibility: visible;
+    stroke: var(--transition-color);
+    pointer-events: none;
+  }
 }
 
 .transition-arrow {
@@ -175,6 +251,15 @@
 
   display: flex;
   justify-content: center;
+
+  &-right {
+    right: 16px;
+    flex-flow: column;
+    width: 50px;
+    height: 140px;
+    left: auto;
+    top: 55px;
+  }
 }
 
 .toolbar-button {
@@ -201,6 +286,18 @@
   &:after {
     content: ' ';
   }
+
+  &.success {
+    animation: ok .2s linear 3s forwards;
+    background-color: var(--green-base);
+    color: white;
+  }
+
+  &.error {
+    animation: fail .2s linear 3s forwards;
+    background-color: var(--red-base);
+    color: white;
+  }
 }
 
 .collapse-button {
@@ -217,7 +314,7 @@
 
   display: flex;
   align-items: center;
-  
+
 
   &.left {
     left: 0;
@@ -235,5 +332,27 @@
     background-color: rgba(30, 29, 31, 0.22);
     width: initial;
     padding: 5px 0;
+  }
+}
+
+@keyframes ok {
+  0% {
+    background-color: var(--green-base);
+    color: white;
+  }
+  100% {
+    background-color: white;
+    color: var(--gray);
+  }
+}
+
+@keyframes fail {
+  0% {
+    background-color: var(--red-base);
+    color: white;
+  }
+  100% {
+    background-color: white;
+    color: var(--gray);
   }
 }

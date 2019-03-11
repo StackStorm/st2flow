@@ -155,7 +155,7 @@ const crawler = {
         parentToken.value = factory.createToken(value);
 
         const newFirst = this.findFirstValueToken(parentToken.value);
-        newFirst.prefix = oldFirst.prefix;
+        newFirst.prefix = oldFirst && oldFirst.prefix;
         tokenSet.refineTree();
         break;
       }
@@ -450,7 +450,7 @@ const crawler = {
     }
 
     if(token) {
-      token = this.findFirstValueToken(token);
+      token = fromEnd ? this.findLastValueToken(token) : this.findFirstValueToken(token);
     }
 
     return token;

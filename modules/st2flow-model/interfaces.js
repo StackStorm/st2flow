@@ -26,6 +26,7 @@ export interface TaskInterface {
         concurrency?: string,
     };
     join?: ?string;
+    ref?: any;
 }
 
 export interface TaskRefInterface {
@@ -43,6 +44,8 @@ export interface TransitionInterface {
 
     // Orquesta Only
     publish?: Array<Object>;
+
+    color?: string,
 }
 
 export interface TransitionRefInterface {

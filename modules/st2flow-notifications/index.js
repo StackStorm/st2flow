@@ -1,3 +1,5 @@
+// @flow
+
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
@@ -9,10 +11,49 @@ export type NotificationInterface = {
   message: string,
 };
 
-class Notifications extends Component {
+class Notification extends Component<{
+  notification: Object
+}, {
+  hide: boolean
+}> {
+  static propTypes = {
+    notification: PropTypes.object,
+  }
+
+  state = {
+    hide: false,
+  }
+
+  handleRemove = (e: Event) => {
+    e.stopPropagation();
+
+    this.setState({ hide: true });
+  }
+
+  style = style
+
+  render() {
+    const { notification } = this.props;
+    const { hide } = this.state;
+
+    return !hide && (
+      <div className={cx(this.style.notification, this.style[notification.type])}>
+        <button className={cx(style.notification, style.close)} aria-label="Close" onClick={this.handleRemove}>
+          <span aria-hidden="true">&times;</span>
+        </button>
+        { notification.message }
+      </div>
+    );
+  }
+}
+
+class Notifications extends Component<{
+  className?: string,
+  position: 'top' | 'bottom' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right',
+  notifications: Array<Object>
+}> {
   static propTypes = {
     className: PropTypes.string,
-    onRemove: PropTypes.func,
     position: PropTypes.oneOf([ 'top', 'bottom', 'top-left', 'top-right', 'bottom-left', 'bottom-right' ]),
     notifications: PropTypes.arrayOf(
       PropTypes.shape({
@@ -26,26 +67,12 @@ class Notifications extends Component {
     position: 'top',
   }
 
-  handleRemove = (ev) => {
-    ev.stopPropagation();
-
-    if(this.props.onRemove) {
-      const index = ev.currentTarget.dataset.index;
-      this.props.onRemove(this.props.notifications[index]);
-    }
-  }
+  style = style
 
   render() {
     return (
       <div className={cx(this.props.className, style.component, style[this.props.position])}>
-        {this.props.notifications.map((notif, i) => (
-          <div className={cx(style.notification, style[notif.type])} key={i}>
-            <button data-index={i} className={cx(style.notification, style.close)} aria-label="Close" onClick={this.handleRemove}>
-              <span aria-hidden="true">&times;</span>
-            </button>
-            {notif.message}
-          </div>
-        ))}
+        {this.props.notifications.map((notif, i) => <Notification key={i} notification={notif} />)}
       </div>
     );
   }

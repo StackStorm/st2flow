@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { expect } from 'chai';
 import TokenSet from '../token-set';
+import crawler from '../crawler';
 
 describe('TokenSet', () => {
   [ 'basic', 'simple', 'long', 'complex' ].forEach(file => {
@@ -23,7 +24,7 @@ describe('TokenSet', () => {
         expect(set.toYAML()).to.equal(yaml);
       });
 
-      it.skip(`refining maintains source identity with ${filename}`, () => {
+      it(`refining maintains source identity with ${filename}`, () => {
         set.refineTree();
         expect(set.toYAML()).to.equal(yaml);
       });
@@ -48,6 +49,15 @@ describe('TokenSet', () => {
         set.refineTree();
         expect(set.toYAML()).to.equal(yaml);
       });
+    });
+  });
+
+  describe('Special cases', () => {
+    it('set a key inside an empty mapping', () => {
+      const set = new TokenSet('tasks: {}\n');
+      crawler.set(set, 'tasks', { some: 'thing' });
+
+      expect(set.toYAML()).to.equal('tasks:\n  some: thing\n');
     });
   });
 });

@@ -1,9 +1,8 @@
 //@flow
 
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
-
-import { connect, ModelInterface } from '@stackstorm/st2flow-model';
 
 import Parameter from './parameter';
 import ParameterEditor from './parameter-editor';
@@ -11,14 +10,25 @@ import Button from '@stackstorm/module-forms/button.component';
 
 import { Panel } from './layout';
 
-@connect(({ metaModel }) => ({ metaModel }))
+@connect(
+  ({ flow: { meta }}) => ({ meta }),
+  (dispatch) => ({
+    setMeta: (field, value) => dispatch({
+      type: 'META_ISSUE_COMMAND',
+      command: 'set',
+      args: [ field, value ],
+    }),
+  })
+)
 export default class Parameters extends Component<{
-  metaModel: ModelInterface,
+  meta: Object,
+  setMeta: Function,
 }, {
   edit: bool,
 }> {
   static propTypes = {
-    metaModel: PropTypes.object,
+    meta: PropTypes.object,
+    setMeta: PropTypes.func,
   }
 
   state = {
@@ -26,39 +36,38 @@ export default class Parameters extends Component<{
   }
 
   handleAdd({ name, ...properties }: { name: string }) {
-    const parameters = this.props.metaModel.get('parameters');
-    this.props.metaModel.set('parameters', { ...parameters, [name]: properties});
+    const parameters = this.props.meta.parameters;
+    this.props.setMeta('parameters', { ...parameters, [name]: properties});
     this.setState({ edit: false });
   }
 
   handleChange(oldName: string, { name, ...properties }: { name: string }) {
-    const { ...parameters } = this.props.metaModel.get('parameters');
+    const { ...parameters } = this.props.meta.parameters;
     if (oldName !== name) {
       delete parameters[name];
     }
-    this.props.metaModel.set('parameters', { ...parameters, [name]: properties});
+    this.props.setMeta('parameters', { ...parameters, [name]: properties});
     this.setState({ edit: false });
   }
 
   handleDelete(name: string) {
-    const { ...parameters } = this.props.metaModel.get('parameters');
+    const { ...parameters } = this.props.meta.parameters;
     delete parameters[name];
-    this.props.metaModel.set('parameters', parameters);
+    this.props.setMeta('parameters', parameters);
   }
 
   render() {
-    const { metaModel } = this.props;
+    const { meta } = this.props;
     const { edit } = this.state;
-    const parameters = metaModel.get('parameters');
 
     return (
       <Panel>
         {
-          edit === false && parameters.__meta.keys.map(name => (
+          edit === false && meta.parameters && meta.parameters.__meta.keys.map(name => (
             <Parameter
               key={name}
               name={name}
-              parameter={parameters[name]}
+              parameter={meta.parameters[name]}
               onEdit={parameter => this.setState({ edit: name })}
               onDelete={() => this.handleDelete(name)}
             />
@@ -75,7 +84,7 @@ export default class Parameters extends Component<{
         {
           typeof edit === 'string' && (
             <ParameterEditor 
-              parameter={{ ...parameters[edit], name: edit }}
+              parameter={{ ...meta.parameters[edit], name: edit }}
               onChange={parameter => this.handleChange(edit, parameter)}
               onCancel={() => this.setState({ edit: false })}
             />

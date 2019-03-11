@@ -58,7 +58,8 @@ describe('st2flow-model: Orquesta Model', () => {
         const lines = raw.split('\n');
 
         model.deleteTask(model.tasks[1]);
-        lines.splice(26, 2);
+        lines.splice(18, 1);
+        lines.splice(25, 2);
 
         expect(model.toYAML()).to.equal(lines.join('\n'));
       });

@@ -63,10 +63,14 @@ export default class Router extends React.Component {
     }
  
     for (const { url, Component } of routes) {
-      if (location.pathname.startsWith(url)) {
+      const regex = url instanceof RegExp ? regex : new RegExp(`^${url}`);
+      const match = location.pathname.match(regex);
+      if (match) {
+        const [ , ...args ] = match;
         return (
           <Component
             routes={routes}
+            args={args}
           />
         );
       }
