@@ -157,7 +157,7 @@ export default class Editor extends Component<{
     this.clearErrorMarkers();
 
     this.errorMarkers = err.filter(e => !!e.mark).map((e, i) => {
-      const { line: row, column } = e.mark;
+      const { row, column } = e.mark;
       const selection = new Range(row, 0, row, Infinity);
 
       annotations.push({

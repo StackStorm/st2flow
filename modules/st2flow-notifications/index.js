@@ -9,7 +9,7 @@ import style from './style.css';
 export type NotificationInterface = {
   type: 'error' | 'warning' | 'info' | 'success',
   message: string,
-}
+};
 
 class Notification extends Component<{
   notification: Object

@@ -8,6 +8,9 @@ plugins:
 extends:
   - eslint:recommended
   - plugin:react/recommended
+settings:
+  react:
+    version: 16.2
 parser: babel-eslint
 parserOptions:
   ecmaVersion: 6

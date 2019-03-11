@@ -117,7 +117,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       }
 
       const { action = '', input, 'with': _with, join } = task;
-      const [ actionRef, ...inputPartials ] = action.split(' ');
+      const [ actionRef, ...inputPartials ] = `${action}`.split(' ');
 
       // if (inputPartials.length) {
       //   task.__meta.inlineInput = true;

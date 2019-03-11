@@ -1,7 +1,7 @@
 // @flow
 
 // Some lodashy (and other) functions without all the dashy
-const REG_KEY_DELIM = /[.[\]]/g;
+const REG_KEY_DELIM = /[.[\]'"]/g;
 
 function isPlainObject(data: any) {
   return Object.prototype.toString.call(data) === '[object Object]';
