@@ -7,7 +7,7 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import cx from 'classnames';
 
-import { StringField, EnumField, ColorStringField } from '@stackstorm/module-auto-form/fields';
+import { StringField, SelectField, ColorStringField } from '@stackstorm/module-auto-form/fields';
 
 import style from './style.css';
 
@@ -85,6 +85,7 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
   render() {
     const { transition, taskNames, selected } = this.props;
     const [ to ] = transition.to.map(t => t.name);
+    const taskOptions = taskNames.map(n => ({ text: n, value: n }));
     const colorOptions = [ '#fecb2f', '#d1583b', '#aa5dd1', '#629e47', '#fd9d32', '#d14c83', '#5b5dd0', '#1072c6' ];
 
     return (
@@ -103,7 +104,7 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
             Do
           </div>
           <div className={this.style.transitionField}>
-            <EnumField value={to} spec={{ enum: taskNames }} onChange={v => this.handleDoChange(v)} />
+            <SelectField value={to} spec={{ default: true, options: taskOptions }} onChange={v => this.handleDoChange(v)} />
           </div>
         </div>
         <div className={this.style.transitionLine} >
