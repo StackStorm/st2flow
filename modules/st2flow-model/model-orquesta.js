@@ -80,7 +80,7 @@ type RawTasks = {
   [string]: RawTask,
 };
 
-const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
+const REG_COORDS = /\[\s*(-?\d+)\s*,\s*(-?\d+)\s*\]/;
 
 class OrquestaModel extends BaseModel implements ModelInterface {
   static runner_types = [
@@ -103,8 +103,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
     return tasks.__meta.keys.filter(n => !!tasks[n]).map(name => {
       const task = tasks[name];
-
-      let coords = { x: 0, y: 0 };
+      let coords = { x: -1, y: -1 };
       if(task.__meta && REG_COORDS.test(task.__meta.comments)) {
         const match = task.__meta.comments.match(REG_COORDS);
         if (match) {
@@ -127,7 +126,7 @@ class OrquestaModel extends BaseModel implements ModelInterface {
       //   task.__meta.withString = true;
       // }
 
-      return {
+      const retVal = {
         name,
         coords,
         action: actionRef,
@@ -139,6 +138,8 @@ class OrquestaModel extends BaseModel implements ModelInterface {
         with: typeof _with === 'string' ? { items: _with } : _with,
         join,
       };
+
+      return retVal;
     });
   }
 

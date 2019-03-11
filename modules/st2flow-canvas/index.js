@@ -14,7 +14,7 @@ import { connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
 import fp from 'lodash/fp';
-import { uniqueId } from 'lodash';
+import { uniqueId, uniq } from 'lodash';
 
 import Notifications from '@stackstorm/st2flow-notifications';
 import {HotKeys} from 'react-hotkeys';
@@ -28,6 +28,7 @@ import { Graph } from './astar';
 import { ORBIT_DISTANCE } from './const';
 import { Toolbar, ToolbarButton } from './toolbar';
 import makeRoutingGraph from './routing-graph';
+import PoissonRectangleSampler from './poisson-rect';
 
 import { origin } from './const';
 
@@ -40,6 +41,141 @@ type DOMMatrix = {
 
 type Wheel = WheelEvent & {
   wheelDelta: number
+}
+
+// Order tasks before placement based on "weight" (bucket size)
+//  and "order" (longest non-looping transition path to task)
+function weightedOrderedTaskSort(a, b) {
+  if (a.weight > b.weight) {
+    return -1;
+  }
+  else if (a.weight < b.weight) {
+    return 1;
+  }
+  else if (a.priority < b.priority) {
+    return -1;
+  }
+  else if (a.priority > b.priority) {
+    return 1;
+  }
+  else if (a.order < b.order) {
+    return -1;
+  }
+  else if (a.order > b.order) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+// given tasks and their undirected connections to other tasks,
+//  sort the tasks into buckets of connected tasks.
+// This helps layout because it ensures that connected tasks can be drawn
+// near each other.
+function constructTaskBuckets(
+  tasks: Array<TaskInterface>,
+  transitionsByTaskBidi: {[string]: Array<string>}
+): Array<Array<string>> {
+  // start by creating buckets of connected tasks.
+  const taskBuckets = tasks.map(task => [ task.name ]);
+  let foundChange = true;
+  const doBucketPass = taskBucket => {
+    const bucketsByTask = {};
+    taskBuckets.forEach(bucket => {
+      bucket.forEach(taskName => {
+        bucketsByTask[taskName] = bucket;
+      });
+    });
+    taskBucket.forEach(taskName => {
+      if (transitionsByTaskBidi[taskName].length) {
+        transitionsByTaskBidi[taskName].forEach(newTask => {
+          const connectedTaskBucket = bucketsByTask[newTask];
+          if(connectedTaskBucket && connectedTaskBucket !== taskBucket) {
+            taskBucket.push(...connectedTaskBucket);
+            taskBuckets.splice(taskBuckets.indexOf(connectedTaskBucket), 1);
+            connectedTaskBucket.forEach(connectedTask => {
+              bucketsByTask[connectedTask] = taskBucket;
+            });
+            foundChange = true;
+          }
+        });
+      }
+    });
+  };
+  while(foundChange) {
+    foundChange = false;
+    taskBuckets.forEach(doBucketPass);
+  }
+  return taskBuckets;
+}
+
+// given tasks, their buckets from constructTaskBuckets(), and outward transitions for each task,
+//   determine the order that items should be placed in, expecting that if there is a transition
+//   a->b, a should be placed before b so b can be placed south of a.  also size the buckets for
+//   each task so the larget bucket gets placed first.
+function constructPathOrdering(
+  tasks: Array<TaskInterface>,
+  taskBuckets: Array<Array<string>>,
+  transitionsByTask: { [string]: Array<string> }
+): {
+  taskInDegree: {[string]: number},
+  taskBucketSize: {[string]: number},
+  taskBucketPriority: {[string]: number},
+} {
+  const taskBucketSize: {[string]: number} = tasks.reduce((tbs, task: TaskInterface) => {
+    tbs[task.name] = 0;
+    return tbs;
+  }, {});
+  const taskInDegree = { ...taskBucketSize };
+  const taskBucketPriority = { ...taskBucketSize };
+
+  const followPaths = (task, nextTasks, inDegree, nonVisitedTransitions) => {
+    const recurseNext = nextTasks.map(nextTask => {
+      const recurseThis = nextTask in nonVisitedTransitions ? nonVisitedTransitions[nextTask] : null;
+      taskInDegree[nextTask] = Math.max(taskInDegree[nextTask], inDegree);
+      delete nonVisitedTransitions[nextTask];
+      return recurseThis;
+    });
+    nextTasks.forEach((nextTask, idx) => {
+      if(recurseNext[idx]) {
+        followPaths(nextTask, recurseNext[idx], inDegree + 1, nonVisitedTransitions);
+      }
+    });
+  };
+  // sort each bucket by perceived in-degree;
+  taskBuckets.forEach(keyBucket => {
+    // start by ordering the bucket in original task order
+    let firstIndex;
+    const bucket = tasks.filter((task, idx) => {
+      if(keyBucket.includes(task.name)) {
+        if (typeof firstIndex === 'undefined') {
+          firstIndex = idx;
+        }
+        return true;
+      }
+      else {
+        return false;
+      }
+    }).map(task => task.name);
+    bucket.forEach(taskName => {
+      taskBucketSize[taskName] = bucket.length;
+      taskBucketPriority[taskName] = firstIndex;
+    });
+    bucket.forEach(nextTask => {
+      followPaths(
+        nextTask,
+        transitionsByTask[nextTask],
+        1,
+        Object.assign({}, transitionsByTask)
+      );
+    });
+  });
+  return {
+    taskInDegree,
+    taskBucketSize,
+    taskBucketPriority,
+  };
 }
 
 @connect(
@@ -152,7 +288,8 @@ export default class Canvas extends Component<{
       return;
     }
 
-    const { tasks } = this.props;
+    const { transitions } = this.props;
+    let tasks = this.props.tasks.slice(0);
     const { width, height } = canvasEl.getBoundingClientRect();
 
     const scale = Math.E ** this.state.scale;
@@ -173,6 +310,85 @@ export default class Canvas extends Component<{
 
     surfaceEl.style.width = `${(this.size.x).toFixed()}px`;
     surfaceEl.style.height = `${(this.size.y).toFixed()}px`;
+
+    // take the log base sqrt(2) of the number of
+    const logTaskCount = Math.log(tasks.length) / Math.log(Math.sqrt(2));
+
+    if(surfaceEl.style.width) {
+      const needsCoords = [];
+      const sampler = new PoissonRectangleSampler(
+        Math.max(parseInt(surfaceEl.style.width) - 211, logTaskCount * (150 + ORBIT_DISTANCE / 2)),
+        Math.max(parseInt(surfaceEl.style.height) - 55, logTaskCount * (76 + ORBIT_DISTANCE)),
+        211 + ORBIT_DISTANCE * 2,
+        55 + ORBIT_DISTANCE * 3,
+        50
+      );
+      // start by indexing the transitions by task, both in the directed form for determining ordering
+      //  and in the bidirectional (undirected) form for determining connected subgraphs.
+      const transitionsByTask = tasks.reduce((tbt, task) => {
+        tbt[task.name] = uniq([].concat(
+          ...transitions
+            .filter(t => t.from.name === task.name)
+            .map(t => t.to),
+        ).map(t => t.name));
+        return tbt;
+      }, {});
+
+      const transitionsByTaskBidi = tasks.reduce((tbt, task) => {
+        tbt[task.name] = uniq(transitionsByTask[task.name].concat(
+          transitions
+            .filter(t => t.to.map(tt => tt.name).includes(task.name))
+            .map(t => t.from.name)
+        ));
+        return tbt;
+      }, {});
+      // Get the "buckets" (subgraphs) of connected tasks in the graph.
+      const taskBuckets = constructTaskBuckets(tasks, transitionsByTaskBidi);
+      // For each task, determine its bucket size (biggest bucket gets rendered first)
+      //   and the longest non-looping path of transitions to it
+      //   (misnamed in-degree here for want of a better word).
+      // Where there is a loop in transitions, the ordering may be arbitrary
+      //  but it makes an attempt to place downward then loop to
+      //  the top from the bottom.
+      const {
+        taskInDegree,
+        taskBucketSize,
+        taskBucketPriority,
+      } = constructPathOrdering(tasks, taskBuckets, transitionsByTask);
+
+      tasks = tasks.map((task) => ({
+        task,
+        weight: taskBucketSize[task.name],
+        order: taskInDegree[task.name],
+        priority: taskBucketPriority[task.name],
+      }))
+        .sort(weightedOrderedTaskSort)
+        .map(t => t.task);
+      // Now take each task and the transitions starting from that task, and prefill them
+      //   into the sampler if placed (i.e. if has coordinates).  If not placed, queue for
+      //   placement.  Placement has to happen after prefill because the sampler has to
+      //   know where all the items with fixed placement are before placing new ones.
+      tasks.forEach(task => {
+        const transitionsTo = [].concat(
+          ...transitions
+            .filter(t => t.from.name === task.name)
+            .map(t => t.to)
+        ).map(t => t.name);
+
+        if(task.coords.x < 0 || task.coords.y < 0) {
+          needsCoords.push({task, transitionsTo});
+        }
+        else {
+          const { x, y } = task.coords;
+          sampler.prefillPoint(x, y, transitionsTo);
+        }
+      });
+      // finally, place the unplaced tasks.  using handleTaskMove will also ensure
+      //   that the placement gets set on the model and the YAML.
+      needsCoords.forEach(({task, transitionsTo}) => {
+        this.handleTaskMove(task, sampler.getNext(task.name, transitionsTo));
+      });
+    }
   }
 
   handleMouseWheel = (e: Wheel): ?false => {

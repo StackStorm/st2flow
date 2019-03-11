@@ -14,7 +14,7 @@ const EMPTY_ARRAY = [];
 const STATUSES = [ 'Success', 'Error', 'Complete' ];
 const OMIT_KEYS = [ 'version', 'name', 'description', 'tags' ];
 const STR_KEY_SEPERATOR = '/';
-const REG_COORDS = /\[\s*(\d+)\s*,\s*(\d+)\s*\]/;
+const REG_COORDS = /\[\s*(-?\d+)\s*,\s*(-?\d+)\s*\]/;
 
 type NextItem = string | { [string]: string };
 
@@ -107,7 +107,7 @@ export default class MistralModel extends BaseModel implements ModelInterface {
         name: joinTaskName(key, this.tokenSet),
         action: actionRef,
         size: { x: 211, y: 55 },
-        coords: { x: 0, y: 0, ...coords },
+        coords: { x: -1, y: -1, ...coords },
         input: {
           ...input,
         },
