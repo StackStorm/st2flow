@@ -8,6 +8,9 @@ import { debounce } from 'lodash';
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
 
+metaModel.fromYAML(metaModel.constructor.minimum);
+metaModel.set('runner_type', 'orquesta');
+
 function workflowModelGetter(model) {
   const { tasks, transitions, errors } = model;
 
@@ -47,9 +50,7 @@ const flowReducer = (state = {}, input) => {
     workflowSource = workflowModel.constructor.minimum,
     metaSource = '',
     pack = 'default',
-    meta = {
-      runner_type: 'orquesta',
-    },
+    meta = metaModel,
     tasks = [],
     transitions = [],
     ranges = {},
@@ -116,10 +117,6 @@ const flowReducer = (state = {}, input) => {
     case 'META_ISSUE_COMMAND': {
       const { command, args } = input;
 
-      if (command === 'set' && args[0] === 'runner_type' && state.tasks.length > 0) {
-        throw 'Cannot change runner_type of workflow that has existing tasks';
-      }
-
       if (!metaModel[command]) {
         return state;
       }
@@ -132,6 +129,9 @@ const flowReducer = (state = {}, input) => {
 
       const runner_type = metaModel.get('runner_type');
       if (runner_type && runner_type !== meta.runner_type) {
+        if (state.tasks.length > 0) {
+          throw 'Cannot change runner_type of workflow that has existing tasks';
+        }
         const Model = models[runner_type];
 
         workflowModel = new Model();
