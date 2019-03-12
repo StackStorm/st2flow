@@ -67,7 +67,7 @@ const factory = {
     if(options.escape && /\n/.test(val)) {
       token.rawValue = `"${val.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
     }
-    else if(/^"|"$/.test(val)) {
+    else if(/^"|"$/.test(val.trim())) {
       // quotes need to be escaped if they bookend the value.
       token.rawValue = `"${val.replace(/"/g, '\\"')}"`;
     }

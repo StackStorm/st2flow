@@ -42,6 +42,8 @@ const source = {
       'booboo',
     ],
   ],
+  multilineString: `foo
+  bar`,
 };
 
 // This is expected YAML representation of the object above. If new
@@ -73,6 +75,7 @@ arr2:
   -
     -
       - boohoo
-    - booboo`;
+    - booboo
+multilineString: "foo\\n  bar"`;
 
 export { source, result };
