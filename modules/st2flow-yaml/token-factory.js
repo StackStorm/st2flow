@@ -12,6 +12,10 @@ const baseToken = {
   range: [{ row: 0, column: 0 }, { row: 0, column: 0 }],
 };
 
+type TokenOptions = {
+  escape?: boolean,
+};
+
 /**
  * Factory used to create tokens from raw data.
  */
@@ -23,7 +27,7 @@ const factory = {
   /**
    * Given any type of YAML compatable data, creates an AST token.
    */
-  createToken(data: any): ValueToken {
+  createToken(data: any, options: TokenOptions = {}): ValueToken {
     if(Array.isArray(data)) {
       return this.createCollectionToken(data);
     }
@@ -33,7 +37,7 @@ const factory = {
     }
 
     if(typeof data === 'string' || data instanceof String) {
-      return this.createRawValueToken(data);
+      return this.createRawValueToken(data, undefined, options);
     }
 
     if(typeof data === 'undefined') {
@@ -50,7 +54,7 @@ const factory = {
    * The startPosition, endPosition, prefix, and jpath should be set
    * by the token-refinery.
    */
-  createRawValueToken(val: string, valObj: any): TokenRawValue {
+  createRawValueToken(val: string, valObj: any, options: TokenOptions = {}): TokenRawValue {
     const token: TokenRawValue = Object.assign({}, this.baseToken, {
       kind: 0,
       value: val,
@@ -59,6 +63,14 @@ const factory = {
       plainScalar: true,
       prefix: [],
     });
+
+    if(options.escape && /\n/.test(val)) {
+      token.rawValue = `"${val.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
+    }
+    else if(/^"|"$/.test(val)) {
+      // quotes need to be escaped if they bookend the value.
+      token.rawValue = `"${val.replace(/"/g, '\\"')}"`;
+    }
 
     if(typeof valObj !== 'undefined' && val !== valObj) {
       token.valueObject = valObj;
@@ -75,7 +87,7 @@ const factory = {
     const token = Object.assign({}, this.baseToken, {
       kind: 1,
       key: this.createRawValueToken(key),
-      value: this.createToken(val),
+      value: this.createToken(val, { escape: true }),
     });
 
     if(isPlainObject(val) && val.__meta && val.__meta.comments) {
