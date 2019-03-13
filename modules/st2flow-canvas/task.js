@@ -251,7 +251,7 @@ export class Task extends Component<{
               <div className={cx(this.style.taskAction)}>{task.action}</div>
               <div className={cx(this.style.taskBadges)}>
                 {
-                  task.with && (
+                  !!task.with && (
                     <span className={cx(this.style.taskBadge)}>
                       <i className={cx(this.style.taskBadgeWithItems)} />
                       { task.with && +task.with.concurrency ? task.with.concurrency : ''}
