@@ -36,10 +36,10 @@ export default class OrquestaTransition extends Component<TransitionProps, {}> {
     issueModelCommand: PropTypes.func,
   }
 
-  handleTaskProperty(name: string | Array<string>, value: any) {
+  handleTaskProperty(name: string | Array<string>, value: any, noDelete: boolean = false) {
     const { task, issueModelCommand } = this.props;
 
-    if (value) {
+    if (value || noDelete) {
       issueModelCommand && issueModelCommand('setTaskProperty', task, name, value);
     }
     else {
@@ -54,15 +54,32 @@ export default class OrquestaTransition extends Component<TransitionProps, {}> {
     const { task } = this.props;
 
     return [
-      <Property key="join" name="Join" description="Allows to synchronize multiple parallel workflow branches and aggregate their data."  value={!!task.join} onChange={value => this.handleTaskProperty('join', value ? 'all' : false)}>
+      <Property
+        key="join"
+        name="Join"
+        description="Allows to synchronize multiple parallel workflow branches and aggregate their data."
+        value={task.join != null}
+        onChange={value => this.handleTaskProperty('join', value ? 'all' : false)}
+      >
         {
-          task.join && (
+          task.join != null && (
             <div className={cx(this.style.propertyChild, this.style.radioGroup)}>
               <div className={cx(this.style.radio, task.join === 'all' && this.style.checked)} onClick={() => this.handleTaskProperty('join', 'all')}>
                 Join all tasks
               </div>
               <label htmlFor="joinField" className={cx(this.style.radio, task.join !== 'all' && this.style.checked)} onClick={(e) => this.handleTaskProperty('join', parseInt((this.joinFieldRef.current || {}).value, 10))} >
-                Join <input type="text" id="joinField" size="3" className={this.style.radioField} ref={this.joinFieldRef} value={isNaN(task.join) ? 10 : task.join} onChange={e => this.handleTaskProperty('join', parseInt(e.target.value, 10))} /> tasks
+                Join
+                <input
+                  type="text"
+                  id="joinField"
+                  size="3"
+                  className={this.style.radioField}
+                  ref={this.joinFieldRef}
+                  value={isNaN(task.join) ? 10 : task.join}
+                  onChange={e => this.handleTaskProperty('join', parseInt(e.target.value, 10) || 0, true)}
+                  onBlur={e => this.handleTaskProperty('join', parseInt(e.target.value, 10))}
+                />
+                tasks
               </label>
             </div>
           )

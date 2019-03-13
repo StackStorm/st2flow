@@ -259,10 +259,10 @@ export class Task extends Component<{
                   )
                 }
                 {
-                  task.join && (
+                  !!task.join && (
                     <span className={cx(this.style.taskBadge)}>
                       <i className={cx(this.style.taskBadgeJoin)} />
-                      {+task.join ? task.join : ''}
+                      {typeof task.join === 'number' ? task.join : '​\u200B'}
                     </span>
                   )
                 }
