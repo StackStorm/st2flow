@@ -66,6 +66,7 @@ export default class MistralProperties extends Component<TransitionProps, {}> {
     }
   }
 
+
   style = style
   joinFieldRef = React.createRef();
 

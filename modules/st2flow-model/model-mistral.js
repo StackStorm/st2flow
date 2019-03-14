@@ -114,6 +114,11 @@ export default class MistralModel extends BaseModel implements ModelInterface {
         'with-items': restTask['with-items'],
         join: restTask.join,
         concurrency: restTask.concurrency,
+        // for TaskInterface
+        with: restTask['with-items'] ? {
+          items: restTask['with-items'],
+          concurrency: (restTask.concurrency || '').toString(),
+        } : void 0,
         'pause-before': restTask['pause-before'],
         'wait-before': restTask['wait-before'],
         'wait-after': restTask['wait-after'],
