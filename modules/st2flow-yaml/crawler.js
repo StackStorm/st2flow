@@ -152,7 +152,7 @@ const crawler = {
     switch(parentToken.kind) {
       case 1: {
         const oldFirst = this.findFirstValueToken(parentToken.value);
-        parentToken.value = factory.createToken(value);
+        parentToken.value = factory.createToken(value, { escape: true });
 
         const newFirst = this.findFirstValueToken(parentToken.value);
         newFirst.prefix = oldFirst && oldFirst.prefix;
@@ -163,7 +163,7 @@ const crawler = {
       case 3: {
         const index = parseInt(keyToken.jpath[keyToken.jpath.length - 1], 10);
         const oldFirst = this.findFirstValueToken(parentToken.items[index]);
-        parentToken.items.splice(index, 1, factory.createToken(value));
+        parentToken.items.splice(index, 1, factory.createToken(value, { escape: true }));
 
         const newFirst = this.findFirstValueToken(parentToken.items[index]);
         newFirst.prefix = oldFirst.prefix;
@@ -319,7 +319,7 @@ const crawler = {
    */
   spliceCollection(tokenSet: TokenSet, targetKey: JpathKey, start: number, deleteCount: number, ...items: Array<ValueToken>) {
     const token: TokenCollection = getCollectionTokenByKey(tokenSet.tree, targetKey);
-    const tokens = items.map(item => factory.createToken(item));
+    const tokens = items.map(item => factory.createToken(item, { escape: true }));
 
     token.items.splice(start, deleteCount, ...tokens);
     tokenSet.refineTree();
