@@ -17,7 +17,7 @@ export default class ObjectField extends BaseTextareaField {
       return v;
     }
 
-    return JSON.stringify(v || {}, null, 2);
+    return v === null ? '' : JSON.stringify(v || {}, null, 2);
   }
 
   validate(v, spec) {
