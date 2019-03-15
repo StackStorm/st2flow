@@ -1,7 +1,7 @@
 {
   "name": "st2flow",
   "version": "0.2.1",
-  "st2_version": "2.10.3",
+  "st2_version": "2.10.4",
   "description": "StackStorm Workflow Editor",
   "private": true,
   "scripts": {
