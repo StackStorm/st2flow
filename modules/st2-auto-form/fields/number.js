@@ -18,7 +18,7 @@ export default class NumberField extends BaseTextField {
       return v;
     }
 
-    return v ? v.toString(10) : '';
+    return v != null ? v.toString(10) : '';
   }
 
   validate(v, spec={}) {

@@ -18,13 +18,18 @@ export default class IntegerField extends BaseTextField {
       return v;
     }
 
-    return v ? v.toString(10) : '';
+    return v != null ? v.toString(10) : '';
   }
 
   validate(v, spec={}) {
     const invalid = super.validate(v, spec);
     if (invalid !== void 0) {
       return invalid;
+    }
+
+    if (v && Math.abs(+v) > Number.MAX_SAFE_INTEGER) {
+      // too long to represent as integer.  process as string
+      return `'${v}' is too large`;
     }
 
     return v && !validator.isInt(v) && `'${v}' is not an integer`;
