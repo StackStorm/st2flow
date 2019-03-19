@@ -207,7 +207,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
           <AutoForm
             spec={{
               type: 'object',
-              properties: action && action.parameters || {},
+              properties: { ...(action && action.parameters || {}), ...meta.parameters },
             }}
             data={task.input}
             onChange={(runValue) => this.handleTaskFieldChange('input', { ...task.input, ...runValue })}
