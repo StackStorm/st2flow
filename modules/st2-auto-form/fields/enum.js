@@ -29,6 +29,7 @@ export default class EnumField extends BaseTextField {
 
     const wrapperProps = Object.assign({}, this.props, {
       labelClass: 'st2-auto-form__select',
+      icon: this.constructor.icon,
     });
 
     if (invalid) {

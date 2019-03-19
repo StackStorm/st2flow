@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { BaseTextareaField, isJinja } from './base';
 
 export default class ObjectField extends BaseTextareaField {
-  static icon = '{ }'
+  static icon = 'braces'
 
   fromStateValue(v) {
     if (isJinja(v)) {

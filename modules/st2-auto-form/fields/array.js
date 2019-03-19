@@ -49,7 +49,7 @@ function split(value) {
 }
 
 export default class ArrayField extends BaseTextField {
-  static icon = '[ ]'
+  static icon = 'brackets'
 
   fromStateValue(v) {
     if (v === '') {

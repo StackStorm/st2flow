@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import StringField from './string';
 import { Label, Icon, ErrorMessage, Description, Title } from '../wrappers';
 export default class ColorStringField extends StringField {
+  static icon = 'V';
+
   static propTypes = {
     name: PropTypes.string,
     spec: PropTypes.object,
@@ -42,7 +44,7 @@ export default class ColorStringField extends StringField {
       <div className="st2-auto-form__select">
         <div className='st2-auto-form__line'>
           <Label className={this.props.labelClass || 'st2-auto-form__text-field'}>
-            {options && <Icon name={icon} onClick={() => this.setState({ open: !open })} />}
+            {options && <Icon name={icon} style={{pointerEvents:'initial'}} onClick={() => this.setState({ open: !open })} />}
             <Title {...this.props} />
             <span className="st2-auto-form__field-color-block" style={{backgroundColor: value}}>&nbsp;</span>
             <input {...inputProps} />
