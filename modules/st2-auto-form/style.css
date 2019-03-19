@@ -40,7 +40,7 @@
   &__type {
     font-size: 18px;
     font-weight: normal;
-    line-height: 38px;
+    line-height: 31px;
 
     position: absolute;
     right: 0;
@@ -52,6 +52,8 @@
     text-align: center;
 
     color: var(--grey-base);
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   &__button {
@@ -232,28 +234,6 @@
 
   &__select {
     position: relative;
-
-    &:after {
-      font-family: "st2";
-      font-size: 18px;
-      font-weight: normal;
-      font-style: normal;
-      line-height: 32px;
-
-      position: absolute;
-      right: 0;
-      bottom: 0;
-
-      display: block;
-
-      padding: 0 10px 0 0;
-
-      content: "\e91c";
-      vertical-align: middle;
-      pointer-events: none;
-
-      color: black;
-    }
   }
 
   &__select &__field {
@@ -474,4 +454,62 @@
 
 .st2-manual-form {
   position: relative;
+}
+
+.icon-T {
+  &:before {
+    content: 'T';
+    font-family: Garamond, Georgia, Times New Roman, serif !important;;
+  }
+}
+
+.icon-braces {
+  &:before {
+    width: 2em !important;
+    content: '{ }';
+    font-family: Garamond, Georgia, Times New Roman !important;
+  }
+}
+
+.icon-brackets {
+  &:before {
+    width: 2em !important;
+    content: '[ ]';
+    font-family: Garamond, Georgia, Times New Roman !important;
+  }
+}
+
+.icon-12 {
+  &:before {
+    content: '\1D7D9';
+    font-family: Helvetica, Arial !important;
+  }
+}
+
+.icon-\.5 {
+  &:before {
+    content: '\1D7D9.\1D7D8';
+    font-family: Helvetica, Arial !important;
+  }
+}
+
+.icon-\*\* {
+  &:before {
+    content: '***';
+    font-family: Helvetica, Arial !important;
+  }
+}
+
+.icon-V {
+  color: black;
+  opacity: 1;
+  &:before {
+    font-family: "st2";
+    font-size: 18px;
+    font-weight: normal;
+    font-style: normal;
+
+    content: "\e91c";
+    vertical-align: middle;
+  }
 }

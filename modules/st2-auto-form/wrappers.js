@@ -163,8 +163,8 @@ export class TextFieldWrapper extends React.Component {
     const line = (
       <div className='st2-auto-form__line'>
         <Label className={this.props.labelClass || 'st2-auto-form__text-field'}>
-          <Icon name={this.props.icon} />
           <Title {...this.props} />
+          <Icon name={this.props.icon} />
           { this.props.children }
           <ErrorMessage>{ this.props.invalid }</ErrorMessage>
         </Label>
