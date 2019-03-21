@@ -7,6 +7,7 @@ import type { TokenMeta, JPath, JpathKey } from '@stackstorm/st2flow-yaml';
 import diff from 'deep-diff';
 import { crawler } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
+import { unionBy } from 'lodash';
 
 // The model schema is generated in the orquesta repo. Do not update it manually!
 // https://github.com/StackStorm/orquesta/blob/master/docs/source/schemas/orquesta.json
@@ -92,6 +93,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
 
   constructor(yaml: ?string) {
     super(schema, yaml);
+  }
+
+  get input() {
+    const inputs = crawler.getValueByKey(this.tokenSet, 'input');
+    return inputs;
   }
 
   get tasks() {
@@ -180,6 +186,34 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }, []);
 
     return transitions;
+  }
+
+  setInputs(inputs: Object) {
+    const { oldTree } = this.startMutation();
+    let oldVal = this.get('input') || [];
+    oldVal = oldVal.filter(item => {
+      const key = typeof item === 'string' ? item : Object.keys(item)[0];
+      if(inputs[key]) {
+        delete inputs[key];
+        return true;
+      }
+      else {
+        return false;
+      }
+    });
+    Object.keys(inputs).forEach(key => {
+      oldVal.push(key);
+    });
+    crawler.set(this.tokenSet, [ 'input' ], oldVal);
+    this.endMutation(oldTree);
+  }
+
+  setInputValues(inputs: Array<Object | string>) {
+    const { oldTree } = this.startMutation();
+    let oldVal = this.get('input') || [];
+    oldVal = unionBy(inputs, oldVal, maybeKey => typeof maybeKey === 'string' ? maybeKey : Object.keys(maybeKey)[0]);
+    crawler.set(this.tokenSet, 'input', oldVal);
+    this.endMutation(oldTree);
   }
 
   addTask(task: TaskInterface) {

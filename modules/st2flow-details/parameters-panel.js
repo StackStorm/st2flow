@@ -83,7 +83,7 @@ export default class Parameters extends Component<{
         }
         {
           typeof edit === 'string' && (
-            <ParameterEditor 
+            <ParameterEditor
               parameter={{ ...meta.parameters[edit], name: edit }}
               onChange={parameter => this.handleChange(edit, parameter)}
               onCancel={() => this.setState({ edit: false })}

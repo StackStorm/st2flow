@@ -12,7 +12,7 @@ metaModel.fromYAML(metaModel.constructor.minimum);
 metaModel.set('runner_type', 'orquesta');
 
 function workflowModelGetter(model) {
-  const { tasks, transitions, errors } = model;
+  const { tasks, transitions, errors, input } = model;
 
   const lastIndex = tasks
     .map(task => (task.name.match(/task(\d+)/) || [])[1])
@@ -22,6 +22,7 @@ function workflowModelGetter(model) {
     workflowSource: model.toYAML(),
     ranges: getRanges(model),
     tasks,
+    input,
     nextTask: `task${lastIndex + 1}`,
     transitions,
     notifications: errors.map(e => ({ type: 'error', message: e.message })),
@@ -62,6 +63,8 @@ const flowReducer = (state = {}, input) => {
     actions = [],
 
     navigation = {},
+
+    input: stateInput = [],
   } = state;
 
   state = {
@@ -81,6 +84,8 @@ const flowReducer = (state = {}, input) => {
     actions,
 
     navigation,
+
+    input: stateInput,
   };
 
   switch (input.type) {
@@ -141,6 +146,15 @@ const flowReducer = (state = {}, input) => {
           ...state,
           ...workflowModelGetter(workflowModel),
         };
+      }
+
+      if(args[0] === 'parameters') {
+        if(!workflowModel.tokenSet) {
+          workflowModel.fromYAML(state.workflowSource);
+        }
+        workflowModel.setInputs(args[1]);
+        state.workflowSource = workflowModel.toYAML();
+        state.input = workflowModel.input;
       }
 
       return {

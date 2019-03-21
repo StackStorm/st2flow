@@ -5,6 +5,7 @@ import type { TokenMeta, JpathKey } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util, TokenSet } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
+import { unionBy } from 'lodash';
 
 // The model schema is generated in the mistral repo. Do not update it manually!
 // Speak to Winson about getting generated schema.
@@ -74,6 +75,22 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     }
 
     return val;
+  }
+
+  get input() {
+    let val;
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).some(wfName => {
+      const workflow = workflows[ wfName ];
+
+      if(workflow.input) {
+        val = workflow.input;
+        return true; // break
+      }
+
+      return false;
+    });
+    return val || [];
   }
 
   get tasks() {
@@ -174,6 +191,40 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     });
 
     return transitions;
+  }
+
+  setInputs(inputs: Object) {
+    const { oldTree } = this.startMutation();
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).forEach(wfName => {
+      let oldVal = this.get([ wfName, 'input' ]) || [];
+      oldVal = oldVal.filter(item => {
+        const key = typeof item === 'string' ? item : Object.keys(item)[0];
+        if(inputs[key]) {
+          delete inputs[key];
+          return true;
+        }
+        else {
+          return false;
+        }
+      });
+      Object.keys(inputs).forEach(key => {
+        oldVal.push(key);
+      });
+      crawler.set(this.tokenSet, [ wfName, 'input' ], oldVal);
+    });
+    this.endMutation(oldTree);
+  }
+
+  setInputValues(inputs: Array<Object | string>) {
+    const { oldTree } = this.startMutation();
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).forEach(wfName => {
+      let oldVal = this.get([ wfName, 'input' ]) || [];
+      oldVal = unionBy(inputs, oldVal, maybeKey => typeof maybeKey === 'string' ? maybeKey : Object.keys(maybeKey)[0]);
+      crawler.set(this.tokenSet, [ wfName, 'input' ], oldVal);
+    });
+    this.endMutation(oldTree);
   }
 
   addTask(task: TaskInterface) {
