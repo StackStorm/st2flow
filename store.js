@@ -46,6 +46,25 @@ function getRanges(model) {
   return ranges;
 }
 
+function extendedValidation(meta, model) {
+  const errors = [];
+  if(model.input) {
+    const paramNames = Object.keys(meta.parameters || {});
+    model.input.forEach(input => {
+      const key = typeof input === 'string' ? input : Object.keys(input)[0];
+      if(!paramNames.includes(key)) {
+        errors.push(`Input ${key} is not a parameter`);
+      }
+      else if(typeof input === 'string' && !meta.parameters[key].default) {
+        errors.push(`Input ${key} does not have a value nor a parameter default`);
+      }
+    });
+  }
+
+  return errors.length ? errors : null;
+}
+
+
 const flowReducer = (state = {}, input) => {
   const {
     workflowSource = workflowModel.constructor.minimum,
@@ -103,9 +122,24 @@ const flowReducer = (state = {}, input) => {
 
       workflowModel[command](...args);
 
+      const extendedNotifications = [];
+      if(command === 'applyDelta') {
+        // Editor changes mean extended validating the work.
+        const extendedErrors = extendedValidation(meta, workflowModel);
+        state.notifications = state.notifications.filter(e => e.source !== 'input');
+        if(extendedErrors) {
+          extendedNotifications.push(
+            ...extendedErrors.map(message => ({ type: 'error', source: 'input', message }))
+          );
+        }
+      }
+
+      const modelState = workflowModelGetter(workflowModel);
+
       return {
         ...state,
-        ...workflowModelGetter(workflowModel),
+        ...modelState,
+        notifications: modelState.notifications.concat(extendedNotifications),
       };
     }
 
