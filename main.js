@@ -33,8 +33,12 @@ function guardKeyHandlers(obj, names) {
   });
 }
 
+const POLL_INTERVAL = 1000;
+
 @connect(
-  ({ flow: { panels, actions, meta, metaSource, workflowSource, pack } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack }),
+  ({ flow: {
+    panels, actions, meta, metaSource, workflowSource, pack, input,
+  } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack, input }),
   (dispatch) => ({
     toggleCollapse: name => dispatch({
       type: 'PANEL_TOGGLE_COLLAPSE',
@@ -45,6 +49,8 @@ function guardKeyHandlers(obj, names) {
       promise: api.request({ path: '/actions/views/overview' })
         .catch(() => fetch('/actions.json').then(res => res.json())),
     }),
+    sendError: (message) => dispatch({ type: 'PUSH_ERROR', error: message }),
+    sendSuccess: (message) => dispatch({ type: 'PUSH_SUCCESS', message }),
     undo: () => dispatch({ type: 'FLOW_UNDO' }),
     redo: () => dispatch({ type: 'FLOW_REDO' }),
     layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
@@ -55,6 +61,7 @@ class Window extends Component<{
 
   meta: Object,
   metaSource: string,
+  input: Array<Object | string>,
   workflowSource: string,
 
   isCollapsed: Object,
@@ -62,6 +69,8 @@ class Window extends Component<{
 
   actions: Array<Object>,
   fetchActions: Function,
+  sendSuccess: Function,
+  sendError: Function,
 
   undo: Function,
   redo: Function,
@@ -72,6 +81,7 @@ class Window extends Component<{
 
     meta: PropTypes.object,
     metaSource: PropTypes.string,
+    input: PropTypes.array,
     workflowSource: PropTypes.string,
 
     isCollapsed: PropTypes.object,
@@ -87,6 +97,58 @@ class Window extends Component<{
 
   async componentDidMount() {
     this.props.fetchActions();
+  }
+
+  run() {
+    const { meta, input } = this.props;
+
+    const parameters = input.reduce((acc, param) => {
+      if(typeof param === 'string') {
+        acc[param] = meta.parameters[param].default;
+        return acc;
+      }
+      else {
+        return {
+          ...acc,
+          ...param,
+        };
+      }
+    }, {});
+
+    return api.request({
+      method: 'post',
+      path: '/executions',
+    }, {
+      action: `${meta.pack}.${meta.name}`,
+      action_is_workflow: true,
+      parameters,
+    }).then(resp => {
+      setTimeout(this.poll.bind(this), POLL_INTERVAL, resp.id);
+    });
+  }
+
+  poll(workflowId) {
+    const { sendSuccess, sendError } = this.props;
+    return api.request({
+      method: 'get',
+      path: `/executions?id=${workflowId}`,
+    }).then(([ execution ]) => {
+      switch(execution.status) {
+        case 'failed': {
+          sendError(`Workflow failed: ${execution.result.stderr}`);
+          break;
+        }
+        case 'succeeded': {
+          sendSuccess(`Workflow ${execution.liveaction.action} succeeded in ${execution.elapsed_seconds}s`);
+          break;
+        }
+        // requesting, scheduled, or running
+        default: {
+          setTimeout(this.poll.bind(this), POLL_INTERVAL, workflowId);
+          break;
+        }
+      }
+    });
   }
 
   save() {
@@ -148,6 +210,7 @@ class Window extends Component<{
                 <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
                 <ToolbarButton key="rearrange" icon="icon-arrange" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
                 <ToolbarButton key="save" icon="icon-save" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
+                <ToolbarButton key="run" icon="icon-play" successMessage="Workflow started." errorMessage="Error running workflow." onClick={() => this.run()} />
                 {
                   // TODO: Implement this.
                   // <ToolbarButton key="run" icon="icon-play" onClick={() => (undefined)} />
