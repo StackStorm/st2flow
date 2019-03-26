@@ -216,17 +216,6 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     this.endMutation(oldTree);
   }
 
-  setInputValues(inputs: Array<Object | string>) {
-    const { oldTree } = this.startMutation();
-    const workflows = getWorkflows(this.tokenSet);
-    Object.keys(workflows).forEach(wfName => {
-      let oldVal = this.get([ wfName, 'input' ]) || [];
-      oldVal = unionBy(inputs, oldVal, maybeKey => typeof maybeKey === 'string' ? maybeKey : Object.keys(maybeKey)[0]);
-      crawler.set(this.tokenSet, [ wfName, 'input' ], oldVal);
-    });
-    this.endMutation(oldTree);
-  }
-
   addTask(task: TaskInterface) {
     const { oldData, oldTree } = this.startMutation();
     const { name, coords, ...data } = task;

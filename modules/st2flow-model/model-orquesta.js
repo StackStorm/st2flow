@@ -188,31 +188,35 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     return transitions;
   }
 
-  setInputs(inputs: Object) {
+  setInputs(inputs: Array<string>, deletions: Array<string>) {
+    const orderedInputs = inputs.slice(0);
     const { oldTree } = this.startMutation();
     let oldVal = this.get('input') || [];
+    // remove any deletions from params.
+    //  if already exists in inputs, here, delete from supplied inputs.
     oldVal = oldVal.filter(item => {
       const key = typeof item === 'string' ? item : Object.keys(item)[0];
-      if(inputs[key]) {
-        delete inputs[key];
-        return true;
+      if(inputs.includes(key)) {
+        inputs.splice(inputs.indexOf(key), 1);
+      }
+      return !deletions.includes(key);
+    });
+    // add any new inputs from params.
+    oldVal.push(...inputs);
+    // now sort by
+    oldVal.sort((a, b) => {
+      const aKey = typeof a === 'string' ? a : Object.keys(a)[0];
+      const bKey = typeof b === 'string' ? b : Object.keys(b)[0];
+      const aIdx = orderedInputs.indexOf(aKey);
+      const bIdx = orderedInputs.indexOf(bKey);
+      if(aIdx > -1 && aIdx < bIdx) {
+        return 1;
       }
       else {
-        return false;
+        return -1;
       }
     });
-    Object.keys(inputs).forEach(key => {
-      oldVal.push(key);
-    });
     crawler.set(this.tokenSet, [ 'input' ], oldVal);
-    this.endMutation(oldTree);
-  }
-
-  setInputValues(inputs: Array<Object | string>) {
-    const { oldTree } = this.startMutation();
-    let oldVal = this.get('input') || [];
-    oldVal = unionBy(inputs, oldVal, maybeKey => typeof maybeKey === 'string' ? maybeKey : Object.keys(maybeKey)[0]);
-    crawler.set(this.tokenSet, 'input', oldVal);
     this.endMutation(oldTree);
   }
 

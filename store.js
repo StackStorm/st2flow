@@ -3,7 +3,7 @@ import { createScopedStore } from '@stackstorm/module-store';
 import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
-import { debounce } from 'lodash';
+import { debounce, difference } from 'lodash';
 
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
@@ -50,13 +50,18 @@ function extendedValidation(meta, model) {
   const errors = [];
   if(model.input) {
     const paramNames = Object.keys(meta.parameters || {});
-    model.input.forEach(input => {
+    const inputNames = model.input.map(input => {
       const key = typeof input === 'string' ? input : Object.keys(input)[0];
-      if(!paramNames.includes(key)) {
-        errors.push(`Input ${key} is not a parameter`);
+      return key;
+    });
+    paramNames.forEach(paramName => {
+      if(!inputNames.includes(paramName)) {
+        errors.push(`Parameter "${paramName}" must be in input`);
       }
-      else if(typeof input === 'string' && !meta.parameters[key].default) {
-        errors.push(`Input ${key} does not have a value nor a parameter default`);
+    });
+    model.input.forEach(input => {
+      if(typeof input === 'string' && !meta.parameters[input]) {
+        errors.push(`Extra input "${input}" must have a value`);
       }
     });
   }
@@ -164,6 +169,11 @@ const flowReducer = (state = {}, input) => {
         metaModel.fromYAML(metaModel.constructor.minimum);
       }
 
+      const oldParamNames = (Object.keys(metaModel.parameters) || []);
+      oldParamNames.sort((a, b) => {
+        return metaModel.parameters[a].position < metaModel.parameters[b].position ? -1 : 1;
+      });
+
       metaModel[command](...args);
 
       const runner_type = metaModel.get('runner_type');
@@ -182,11 +192,20 @@ const flowReducer = (state = {}, input) => {
         };
       }
 
-      if(args[0] === 'parameters') {
+      if(command === 'set' && args[0] === 'parameters') {
+        const [ , params ] = args;
         if(!workflowModel.tokenSet) {
           workflowModel.fromYAML(state.workflowSource);
         }
-        workflowModel.setInputs(args[1]);
+
+        const paramNames = Object.keys(args[1]);
+        paramNames.sort((a, b) => {
+          return params[a].position < params[b].position ? -1 : 1;
+        });
+
+        const deletions = difference(oldParamNames, paramNames);
+
+        workflowModel.setInputs(paramNames, deletions);
         state.workflowSource = workflowModel.toYAML();
         state.input = workflowModel.input;
       }
