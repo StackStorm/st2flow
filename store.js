@@ -213,20 +213,20 @@ const flowReducer = (state = {}, input) => {
     }
 
     case 'PUSH_ERROR': {
-      const { error } = input;
+      const { error, link } = input;
 
       return {
         ...state,
-        notifications: [ ...notifications, { type: 'error', message: error }],
+        notifications: [ ...notifications, { type: 'error', message: error, link }],
       };
     }
 
     case 'PUSH_SUCCESS': {
-      const { message } = input;
+      const { message, link } = input;
 
       return {
         ...state,
-        notifications: [ ...notifications, { type: 'success', message }],
+        notifications: [ ...notifications, { type: 'success', message, link }],
       };
     }
 

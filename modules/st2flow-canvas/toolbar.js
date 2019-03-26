@@ -31,6 +31,7 @@ export class ToolbarButton extends Component<
     onClick: Function,
     pushError?: Function,
     pushSuccess?: Function,
+    disabled: boolean,
   },
   {
     status: "initial" | "pending" | "success" | "error"
@@ -43,6 +44,7 @@ export class ToolbarButton extends Component<
     onClick: PropTypes.func,
     pushError: PropTypes.func,
     pushSuccess: PropTypes.func,
+    disabled: PropTypes.bool,
   };
 
   static defaultProps = {
@@ -56,7 +58,11 @@ export class ToolbarButton extends Component<
   async handleClick(e: Event) {
     e.stopPropagation();
 
-    const { onClick, errorMessage, successMessage, pushError, pushSuccess } = this.props;
+    const { onClick, errorMessage, successMessage, pushError, pushSuccess, disabled } = this.props;
+
+    if(disabled) {
+      return;
+    }
 
     if (onClick) {
       this.setState({ status: 'pending' });
@@ -86,11 +92,11 @@ export class ToolbarButton extends Component<
   style = style;
 
   render() {
-    const { icon } = this.props;
+    const { icon, disabled } = this.props;
     const { status } = this.state;
     return (
       <div
-        className={cx(this.style.toolbarButton, icon, this.style[status])}
+        className={cx(this.style.toolbarButton, icon, this.style[status], disabled && this.style.disabled)}
         onClick={e => this.handleClick(e)}
       />
     );
