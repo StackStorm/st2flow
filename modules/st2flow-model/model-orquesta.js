@@ -7,7 +7,6 @@ import type { TokenMeta, JPath, JpathKey } from '@stackstorm/st2flow-yaml';
 import diff from 'deep-diff';
 import { crawler } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
-import { unionBy } from 'lodash';
 
 // The model schema is generated in the orquesta repo. Do not update it manually!
 // https://github.com/StackStorm/orquesta/blob/master/docs/source/schemas/orquesta.json
