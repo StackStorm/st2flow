@@ -5,7 +5,6 @@ import type { TokenMeta, JpathKey } from '@stackstorm/st2flow-yaml';
 
 import { crawler, util, TokenSet } from '@stackstorm/st2flow-yaml';
 import BaseModel from './base-model';
-import { unionBy } from 'lodash';
 
 // The model schema is generated in the mistral repo. Do not update it manually!
 // Speak to Winson about getting generated schema.
@@ -193,24 +192,34 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     return transitions;
   }
 
-  setInputs(inputs: Object) {
+  setInputs(inputs: Array<string>, deletions: Array<string>) {
     const { oldTree } = this.startMutation();
     const workflows = getWorkflows(this.tokenSet);
     Object.keys(workflows).forEach(wfName => {
       let oldVal = this.get([ wfName, 'input' ]) || [];
-      oldVal = oldVal.filter(item => {
-        const key = typeof item === 'string' ? item : Object.keys(item)[0];
-        if(inputs[key]) {
-          delete inputs[key];
-          return true;
-        }
-        else {
-          return false;
-        }
+      const keys = oldVal.map(val => typeof val === 'string' ? val : Object.keys(val)[0]);
+      // remove any deletions from params.
+      deletions.forEach(del => {
+        const matchingOldVals = oldVal.map((ov, idx) => {
+          if(ov === del || typeof ov === 'object' && ov.hasOwnProperty(del)) {
+            return idx;
+          }
+          else {
+            return null;
+          }
+        }).filter(idx => idx != null).reverse();
+        //  if already exists in inputs, here, delete from the old val.  we'll add them back later.
+        matchingOldVals.forEach(idx => {
+          oldVal.splice(+idx, 1);
+          keys.splice(+idx, 1);
+        });
       });
-      Object.keys(inputs).forEach(key => {
-        oldVal.push(key);
+      const inp = inputs.map(input => keys.indexOf(input) > -1 ? oldVal[keys.indexOf(input)] : input);
+      oldVal = oldVal.filter((val, idx) => {
+        return !inp.includes(val);
       });
+      // add any new inputs from params.
+      oldVal = inp.concat(oldVal);
       crawler.set(this.tokenSet, [ wfName, 'input' ], oldVal);
     });
     this.endMutation(oldTree);

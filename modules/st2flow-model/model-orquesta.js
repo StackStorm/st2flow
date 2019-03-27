@@ -189,33 +189,32 @@ class OrquestaModel extends BaseModel implements ModelInterface {
   }
 
   setInputs(inputs: Array<string>, deletions: Array<string>) {
-    const orderedInputs = inputs.slice(0);
     const { oldTree } = this.startMutation();
     let oldVal = this.get('input') || [];
+    const keys = oldVal.map(val => typeof val === 'string' ? val : Object.keys(val)[0]);
     // remove any deletions from params.
-    //  if already exists in inputs, here, delete from supplied inputs.
-    oldVal = oldVal.filter(item => {
-      const key = typeof item === 'string' ? item : Object.keys(item)[0];
-      if(inputs.includes(key)) {
-        inputs.splice(inputs.indexOf(key), 1);
-      }
-      return !deletions.includes(key);
+    deletions.forEach(del => {
+      const matchingOldVals = oldVal.map((ov, idx) => {
+        if(ov === del || typeof ov === 'object' && ov.hasOwnProperty(del)) {
+          return idx;
+        }
+        else {
+          return null;
+        }
+      }).filter(idx => idx != null).reverse();
+      //  if already exists in inputs, here, delete from the old val.  we'll add them back later.
+      matchingOldVals.forEach(idx => {
+        oldVal.splice(+idx, 1);
+        keys.splice(+idx, 1);
+      });
+    });
+    inputs = inputs.map(input => keys.indexOf(input) > -1 ? oldVal[keys.indexOf(input)] : input);
+    oldVal = oldVal.filter((val, idx) => {
+      return !inputs.includes(val);
     });
     // add any new inputs from params.
-    oldVal.push(...inputs);
-    // now sort by
-    oldVal.sort((a, b) => {
-      const aKey = typeof a === 'string' ? a : Object.keys(a)[0];
-      const bKey = typeof b === 'string' ? b : Object.keys(b)[0];
-      const aIdx = orderedInputs.indexOf(aKey);
-      const bIdx = orderedInputs.indexOf(bKey);
-      if(aIdx > -1 && aIdx < bIdx) {
-        return 1;
-      }
-      else {
-        return -1;
-      }
-    });
+    oldVal = inputs.concat(oldVal);
+
     crawler.set(this.tokenSet, [ 'input' ], oldVal);
     this.endMutation(oldTree);
   }

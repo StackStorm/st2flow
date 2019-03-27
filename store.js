@@ -169,7 +169,7 @@ const flowReducer = (state = {}, input) => {
         metaModel.fromYAML(metaModel.constructor.minimum);
       }
 
-      const oldParamNames = (Object.keys(metaModel.parameters) || []);
+      const oldParamNames = metaModel.parameters ? Object.keys(metaModel.parameters) : [];
       oldParamNames.sort((a, b) => {
         return metaModel.parameters[a].position < metaModel.parameters[b].position ? -1 : 1;
       });
@@ -198,11 +198,7 @@ const flowReducer = (state = {}, input) => {
           workflowModel.fromYAML(state.workflowSource);
         }
 
-        const paramNames = Object.keys(args[1]);
-        paramNames.sort((a, b) => {
-          return params[a].position < params[b].position ? -1 : 1;
-        });
-
+        const paramNames = Object.keys(params);
         const deletions = difference(oldParamNames, paramNames);
 
         workflowModel.setInputs(paramNames, deletions);
