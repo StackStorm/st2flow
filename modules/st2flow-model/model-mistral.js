@@ -76,6 +76,22 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     return val;
   }
 
+  get input() {
+    let val;
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).some(wfName => {
+      const workflow = workflows[ wfName ];
+
+      if(workflow.input) {
+        val = workflow.input;
+        return true; // break
+      }
+
+      return false;
+    });
+    return val || [];
+  }
+
   get tasks() {
     const flatTasks = getWorkflowTasksMap(this.tokenSet);
 
@@ -174,6 +190,39 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     });
 
     return transitions;
+  }
+
+  setInputs(inputs: Array<string>, deletions: Array<string>) {
+    const { oldTree } = this.startMutation();
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).forEach(wfName => {
+      let oldVal = this.get([ wfName, 'input' ]) || [];
+      const keys = oldVal.map(val => typeof val === 'string' ? val : Object.keys(val)[0]);
+      // remove any deletions from params.
+      deletions.forEach(del => {
+        const matchingOldVals = oldVal.map((ov, idx) => {
+          if(ov === del || typeof ov === 'object' && ov.hasOwnProperty(del)) {
+            return idx;
+          }
+          else {
+            return null;
+          }
+        }).filter(idx => idx != null).reverse();
+        //  if already exists in inputs, here, delete from the old val.  we'll add them back later.
+        matchingOldVals.forEach(idx => {
+          oldVal.splice(+idx, 1);
+          keys.splice(+idx, 1);
+        });
+      });
+      const inp = inputs.map(input => keys.indexOf(input) > -1 ? oldVal[keys.indexOf(input)] : input);
+      oldVal = oldVal.filter((val, idx) => {
+        return !inp.includes(val);
+      });
+      // add any new inputs from params.
+      oldVal = inp.concat(oldVal);
+      crawler.set(this.tokenSet, [ wfName, 'input' ], oldVal);
+    });
+    this.endMutation(oldTree);
   }
 
   addTask(task: TaskInterface) {

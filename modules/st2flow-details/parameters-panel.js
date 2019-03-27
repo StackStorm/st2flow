@@ -10,6 +10,30 @@ import Button from '@stackstorm/module-forms/button.component';
 
 import { Panel } from './layout';
 
+function sortParameters(params: {[string]: { position?: number }}): {[string]: {}} {
+  const keys = Object.keys(params);
+  keys.sort((a, b) => {
+    const aPos = params[a].position;
+    const bPos = params[b].position;
+
+    if(aPos == null && bPos == null) {
+      return 0;
+    }
+    if(aPos == null) {
+      return 1;
+    }
+    if(bPos == null) {
+      return -1;
+    }
+    return aPos - bPos;
+  });
+  const retVal = {};
+  keys.forEach(key => {
+    retVal[key] = params[key];
+  });
+  return retVal;
+}
+
 @connect(
   ({ flow: { meta }}) => ({ meta }),
   (dispatch) => ({
@@ -37,7 +61,7 @@ export default class Parameters extends Component<{
 
   handleAdd({ name, ...properties }: { name: string }) {
     const parameters = this.props.meta.parameters;
-    this.props.setMeta('parameters', { ...parameters, [name]: properties});
+    this.props.setMeta('parameters', sortParameters({ ...parameters, [name]: properties}));
     this.setState({ edit: false });
   }
 
@@ -46,7 +70,7 @@ export default class Parameters extends Component<{
     if (oldName !== name) {
       delete parameters[name];
     }
-    this.props.setMeta('parameters', { ...parameters, [name]: properties});
+    this.props.setMeta('parameters', sortParameters({ ...parameters, [name]: properties}));
     this.setState({ edit: false });
   }
 
@@ -83,7 +107,7 @@ export default class Parameters extends Component<{
         }
         {
           typeof edit === 'string' && (
-            <ParameterEditor 
+            <ParameterEditor
               parameter={{ ...meta.parameters[edit], name: edit }}
               onChange={parameter => this.handleChange(edit, parameter)}
               onCancel={() => this.setState({ edit: false })}

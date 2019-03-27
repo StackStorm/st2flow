@@ -6,6 +6,7 @@ import type { Node } from 'react';
 import React, { Component } from 'react';
 import { PropTypes } from 'prop-types';
 import cx from 'classnames';
+import { get } from 'lodash';
 
 import Vector from './vector';
 import { origin, ORBIT_DISTANCE } from './const';
@@ -94,7 +95,7 @@ export default class TransitionGroup extends Component<{
     if (!from.task || !to.task) {
       return '';
     }
-    if (!taskRefs[from.task.name].current || !taskRefs[to.task.name].current) {
+    if (!get(taskRefs, [ from.task.name, 'current' ]) || !get(taskRefs, [ to.task.name, 'current' ])) {
       return '';
     }
 

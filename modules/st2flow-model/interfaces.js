@@ -57,6 +57,7 @@ export interface TransitionRefInterface {
 export interface ModelInterface {
     +version: number;
     +description: string;
+    +input: Array<Object | string>;
     +tasks: Array<TaskInterface>;
     +transitions: Array<TransitionInterface>;
     +lastTaskIndex: number;

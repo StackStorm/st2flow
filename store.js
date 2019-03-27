@@ -3,7 +3,7 @@ import { createScopedStore } from '@stackstorm/module-store';
 import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
-import { debounce } from 'lodash';
+import { debounce, difference } from 'lodash';
 
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
@@ -12,7 +12,7 @@ metaModel.fromYAML(metaModel.constructor.minimum);
 metaModel.set('runner_type', 'orquesta');
 
 function workflowModelGetter(model) {
-  const { tasks, transitions, errors } = model;
+  const { tasks, transitions, errors, input } = model;
 
   const lastIndex = tasks
     .map(task => (task.name.match(/task(\d+)/) || [])[1])
@@ -22,6 +22,7 @@ function workflowModelGetter(model) {
     workflowSource: model.toYAML(),
     ranges: getRanges(model),
     tasks,
+    input,
     nextTask: `task${lastIndex + 1}`,
     transitions,
     notifications: errors.map(e => ({ type: 'error', message: e.message })),
@@ -45,6 +46,30 @@ function getRanges(model) {
   return ranges;
 }
 
+function extendedValidation(meta, model) {
+  const errors = [];
+  if(model.input) {
+    const paramNames = Object.keys(meta.parameters || {});
+    const inputNames = model.input.map(input => {
+      const key = typeof input === 'string' ? input : Object.keys(input)[0];
+      return key;
+    });
+    paramNames.forEach(paramName => {
+      if(!inputNames.includes(paramName)) {
+        errors.push(`Parameter "${paramName}" must be in input`);
+      }
+    });
+    model.input.forEach(input => {
+      if(typeof input === 'string' && !meta.parameters[input]) {
+        errors.push(`Extra input "${input}" must have a value`);
+      }
+    });
+  }
+
+  return errors.length ? errors : null;
+}
+
+
 const flowReducer = (state = {}, input) => {
   const {
     workflowSource = workflowModel.constructor.minimum,
@@ -62,6 +87,8 @@ const flowReducer = (state = {}, input) => {
     actions = [],
 
     navigation = {},
+
+    input: stateInput = [],
   } = state;
 
   state = {
@@ -81,6 +108,8 @@ const flowReducer = (state = {}, input) => {
     actions,
 
     navigation,
+
+    input: stateInput,
   };
 
   switch (input.type) {
@@ -98,9 +127,24 @@ const flowReducer = (state = {}, input) => {
 
       workflowModel[command](...args);
 
+      const extendedNotifications = [];
+      if(command === 'applyDelta') {
+        // Editor changes mean extended validating the work.
+        const extendedErrors = extendedValidation(meta, workflowModel);
+        state.notifications = state.notifications.filter(e => e.source !== 'input');
+        if(extendedErrors) {
+          extendedNotifications.push(
+            ...extendedErrors.map(message => ({ type: 'error', source: 'input', message }))
+          );
+        }
+      }
+
+      const modelState = workflowModelGetter(workflowModel);
+
       return {
         ...state,
-        ...workflowModelGetter(workflowModel),
+        ...modelState,
+        notifications: modelState.notifications.concat(extendedNotifications),
       };
     }
 
@@ -125,6 +169,11 @@ const flowReducer = (state = {}, input) => {
         metaModel.fromYAML(metaModel.constructor.minimum);
       }
 
+      const oldParamNames = metaModel.parameters ? Object.keys(metaModel.parameters) : [];
+      oldParamNames.sort((a, b) => {
+        return metaModel.parameters[a].position < metaModel.parameters[b].position ? -1 : 1;
+      });
+
       metaModel[command](...args);
 
       const runner_type = metaModel.get('runner_type');
@@ -141,6 +190,20 @@ const flowReducer = (state = {}, input) => {
           ...state,
           ...workflowModelGetter(workflowModel),
         };
+      }
+
+      if(command === 'set' && args[0] === 'parameters') {
+        const [ , params ] = args;
+        if(!workflowModel.tokenSet) {
+          workflowModel.fromYAML(state.workflowSource);
+        }
+
+        const paramNames = Object.keys(params);
+        const deletions = difference(oldParamNames, paramNames);
+
+        workflowModel.setInputs(paramNames, deletions);
+        state.workflowSource = workflowModel.toYAML();
+        state.input = workflowModel.input;
       }
 
       return {

@@ -14,7 +14,7 @@ import Parameters from './parameters-panel';
 const default_runner_type = 'orquesta';
 
 @connect(
-  ({ flow: { pack, actions, navigation, meta }}) => ({ pack, actions, navigation, meta }),
+  ({ flow: { pack, actions, navigation, meta, input }}) => ({ pack, actions, navigation, meta, input }),
   (dispatch) => ({
     navigate: (navigation) => dispatch({
       type: 'CHANGE_NAVIGATION',

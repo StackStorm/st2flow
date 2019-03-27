@@ -94,6 +94,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     super(schema, yaml);
   }
 
+  get input() {
+    const inputs = crawler.getValueByKey(this.tokenSet, 'input');
+    return inputs;
+  }
+
   get tasks() {
     const tasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
@@ -180,6 +185,37 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     }, []);
 
     return transitions;
+  }
+
+  setInputs(inputs: Array<string>, deletions: Array<string>) {
+    const { oldTree } = this.startMutation();
+    let oldVal = this.get('input') || [];
+    const keys = oldVal.map(val => typeof val === 'string' ? val : Object.keys(val)[0]);
+    // remove any deletions from params.
+    deletions.forEach(del => {
+      const matchingOldVals = oldVal.map((ov, idx) => {
+        if(ov === del || typeof ov === 'object' && ov.hasOwnProperty(del)) {
+          return idx;
+        }
+        else {
+          return null;
+        }
+      }).filter(idx => idx != null).reverse();
+      //  if already exists in inputs, here, delete from the old val.  we'll add them back later.
+      matchingOldVals.forEach(idx => {
+        oldVal.splice(+idx, 1);
+        keys.splice(+idx, 1);
+      });
+    });
+    inputs = inputs.map(input => keys.indexOf(input) > -1 ? oldVal[keys.indexOf(input)] : input);
+    oldVal = oldVal.filter((val, idx) => {
+      return !inputs.includes(val);
+    });
+    // add any new inputs from params.
+    oldVal = inputs.concat(oldVal);
+
+    crawler.set(this.tokenSet, [ 'input' ], oldVal);
+    this.endMutation(oldTree);
   }
 
   addTask(task: TaskInterface) {
