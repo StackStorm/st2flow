@@ -29,8 +29,8 @@ export class ToolbarButton extends Component<
     errorMessage?: string,
     successMessage?: string,
     onClick: Function,
-    pushError?: Function,
-    pushSuccess?: Function,
+    pushError: Function,
+    pushSuccess: Function,
     disabled?: boolean,
     title: string,
     className: string,
@@ -74,12 +74,20 @@ export class ToolbarButton extends Component<
         await onClick();
         this.setState({ status: 'success' });
 
+        setTimeout(() => {
+          this.setState({ status: 'initial' });
+        }, 3200);
+
         if (successMessage) {
           pushSuccess(successMessage);
         }
       }
       catch (e) {
         this.setState({ status: 'error' });
+
+        setTimeout(() => {
+          this.setState({ status: 'initial' });
+        }, 3200);
 
         const faultString = _.get(e, 'response.data.faultstring');
 
@@ -118,14 +126,34 @@ export class ToolbarDropdown extends Component<{
   children: any,
   shown: boolean,
   pointerPosition: string,
+  onClose?: Function,
 }> {
   static propTypes = {
     children: PropTypes.node,
     shown: PropTypes.bool,
     pointerPosition: PropTypes.string,
+    onClose: PropTypes.func,
   };
 
+  componentDidMount() {
+    this.boundClickListener = (function(ev: Event) {
+      if(ev.target instanceof HTMLElement
+          && !ev.target.matches(`.${this.style.dropdown} *`)
+          && this.props.onClose
+      ) {
+        this.props.onClose();
+      }
+    }).bind(this);
+    document.body && document.body.addEventListener('click', this.boundClickListener, false);
+  }
+
+  componentWillUnmount() {
+    document.body && document.body.removeEventListener('click', this.boundClickListener, false);
+  }
+
   style = style;
+
+  boundClickListener: (Event) => void;
 
   render() {
     const { children, pointerPosition, shown } = this.props;

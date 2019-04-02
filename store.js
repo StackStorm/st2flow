@@ -49,7 +49,8 @@ function getRanges(model) {
 function extendedValidation(meta, model) {
   const errors = [];
   if(model.input) {
-    const paramNames = Object.keys(meta.parameters || {});
+    const params = meta.parameters || {};
+    const paramNames = Object.keys(params);
     const inputNames = model.input.map(input => {
       const key = typeof input === 'string' ? input : Object.keys(input)[0];
       return key;
@@ -60,7 +61,7 @@ function extendedValidation(meta, model) {
       }
     });
     model.input.forEach(input => {
-      if(typeof input === 'string' && !meta.parameters[input]) {
+      if(typeof input === 'string' && !params[input]) {
         errors.push(`Extra input "${input}" must have a value`);
       }
     });

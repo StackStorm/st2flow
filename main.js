@@ -57,7 +57,6 @@ const POLL_INTERVAL = 5000;
     undo: () => dispatch({ type: 'FLOW_UNDO' }),
     redo: () => dispatch({ type: 'FLOW_REDO' }),
     layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
-    save: () => dispatch({ type: 'SAVE_WORKFLOW' }),
   })
 )
 class Window extends Component<{
@@ -79,7 +78,6 @@ class Window extends Component<{
   undo: Function,
   redo: Function,
   layout: Function,
-  save: Function,
 }, {
   runningWorkflow: boolean,
   showForm: boolean,
@@ -92,6 +90,7 @@ class Window extends Component<{
     metaSource: PropTypes.string,
     input: PropTypes.array,
     workflowSource: PropTypes.string,
+    dirty: PropTypes.bool,
 
     isCollapsed: PropTypes.object,
     toggleCollapse: PropTypes.func,
@@ -102,7 +101,6 @@ class Window extends Component<{
     undo: PropTypes.func,
     redo: PropTypes.func,
     layout: PropTypes.func,
-    save: PropTypes.func,
   }
 
   state = {
@@ -308,11 +306,36 @@ class Window extends Component<{
               <Toolbar>
                 <ToolbarButton key="undo" icon="icon-redirect" title="Undo" errorMessage="Could not undo." onClick={() => undo()} />
                 <ToolbarButton key="redo" icon="icon-redirect2" title="Redo" errorMessage="Could not redo." onClick={() => redo()} />
-                <ToolbarButton key="rearrange" icon="icon-arrange" title="Rearrange tasks" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
-                <ToolbarButton key="save" className={cx(dirty && 'glow')} icon="icon-save" title="Save workflow" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
-                <ToolbarButton key="run" icon="icon-play" title={dirty ? 'Cannot run with unsaved changes' : 'Run workflow'} disabled={runningWorkflow || dirty} onClick={() => this.openForm()} />
-                <ToolbarDropdown shown={showForm} pointerPosition='calc(50% + 85px)'>
-                  <h2>Run workflow with inputs</h2>
+                <ToolbarButton
+                  key="rearrange"
+                  icon="icon-arrange"
+                  title="Rearrange tasks"
+                  successMessage="Rearrange complete."
+                  errorMessage="Error rearranging workflows."
+                  onClick={() => layout()}
+                />
+                <ToolbarButton
+                  key="save"
+                  className={cx(dirty && 'glow')}
+                  icon="icon-save"
+                  title="Save workflow"
+                  successMessage="Workflow saved."
+                  errorMessage="Error saving workflow."
+                  onClick={() => this.save()}
+                />
+                <ToolbarButton
+                  key="run"
+                  icon="icon-play"
+                  title={dirty ? 'Cannot run with unsaved changes' : 'Run workflow'}
+                  disabled={runningWorkflow || dirty}
+                  onClick={() => this.openForm()}
+                />
+                <ToolbarDropdown shown={showForm} pointerPosition='calc(50% + 85px)' onClose={() => this.closeForm()}>
+                  {
+                    meta.parameters && Object.keys(meta.parameters).length
+                      ? <h2>Run workflow with inputs</h2>
+                      : <h2>Run workflow</h2>
+                  }
                   <AutoForm
                     spec={{
                       type: 'object',
