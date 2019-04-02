@@ -4,6 +4,7 @@ import { Provider, connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import { HotKeys } from 'react-hotkeys';
 import { pick, mapValues, get } from 'lodash';
+import cx from 'classnames';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -39,8 +40,8 @@ const POLL_INTERVAL = 5000;
 
 @connect(
   ({ flow: {
-    panels, actions, meta, metaSource, workflowSource, pack, input,
-  } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack, input }),
+    panels, actions, meta, metaSource, workflowSource, pack, input, dirty,
+  } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack, input, dirty }),
   (dispatch) => ({
     toggleCollapse: name => dispatch({
       type: 'PANEL_TOGGLE_COLLAPSE',
@@ -56,6 +57,7 @@ const POLL_INTERVAL = 5000;
     undo: () => dispatch({ type: 'FLOW_UNDO' }),
     redo: () => dispatch({ type: 'FLOW_REDO' }),
     layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
+    save: () => dispatch({ type: 'SAVE_WORKFLOW' }),
   })
 )
 class Window extends Component<{
@@ -77,9 +79,10 @@ class Window extends Component<{
   undo: Function,
   redo: Function,
   layout: Function,
+  save: Function,
 }, {
   runningWorkflow: boolean,
-  showPanel: boolean,
+  showForm: boolean,
   runFormData: Object
 }> {
   static propTypes = {
@@ -99,11 +102,12 @@ class Window extends Component<{
     undo: PropTypes.func,
     redo: PropTypes.func,
     layout: PropTypes.func,
+    save: PropTypes.func,
   }
 
   state = {
     runningWorkflow: false,
-    showPanel: false,
+    showForm: false,
     runFormData: {},
   };
 
@@ -122,13 +126,13 @@ class Window extends Component<{
 
   openForm() {
     this.setState({
-      showPanel: true,
+      showForm: true,
     });
   }
 
   closeForm() {
     this.setState({
-      showPanel: false,
+      showForm: false,
     });
   }
 
@@ -201,7 +205,7 @@ class Window extends Component<{
       this.closeForm();
     }, err => {
       this.setState({ runningWorkflow: false });
-      sendError(`Submitting workflow failed: ${get(err, 'response.data.faultstring') || err.message}`);
+      sendError(`Submitting workflow ${meta.name} failed: ${get(err, 'response.data.faultstring') || err.message}`);
       throw err;
     });
   }
@@ -251,12 +255,19 @@ class Window extends Component<{
       throw { response: { data: { faultstring: 'You must add an Entry point.'}}};
     }
 
-    if (existingAction) {
-      return api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
-    }
-    else {
-      return api.request({ method: 'post', path: '/actions' }, meta);
-    }
+    store.dispatch({
+      type: 'SAVE_WORKFLOW',
+      promise: (async () => {
+        if (existingAction) {
+          await api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
+        }
+        else {
+          await api.request({ method: 'post', path: '/actions' }, meta);
+        }
+        // don't need to return anything to the store. the handler will change dirty.
+        return {};
+      })(),
+    });
   }
 
   style = style
@@ -268,8 +279,8 @@ class Window extends Component<{
   }
 
   render() {
-    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout, meta, input } = this.props;
-    const { runningWorkflow, showPanel } = this.state;
+    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout, meta, input, dirty } = this.props;
+    const { runningWorkflow, showForm } = this.state;
 
     const autoFormData = input && input.reduce((acc, value) => {
       if(typeof value === 'object') {
@@ -295,12 +306,12 @@ class Window extends Component<{
           >
             <Canvas className="canvas">
               <Toolbar>
-                <ToolbarButton key="undo" icon="icon-redirect" errorMessage="Could not undo." onClick={() => undo()} />
-                <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
-                <ToolbarButton key="rearrange" icon="icon-arrange" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
-                <ToolbarButton key="save" icon="icon-save" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
-                <ToolbarButton key="run" icon="icon-play" disabled={runningWorkflow} onClick={() => this.openForm()} />
-                <ToolbarDropdown shown={showPanel} pointerPosition='calc(50% + 85px)'>
+                <ToolbarButton key="undo" icon="icon-redirect" title="Undo" errorMessage="Could not undo." onClick={() => undo()} />
+                <ToolbarButton key="redo" icon="icon-redirect2" title="Redo" errorMessage="Could not redo." onClick={() => redo()} />
+                <ToolbarButton key="rearrange" icon="icon-arrange" title="Rearrange tasks" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
+                <ToolbarButton key="save" className={cx(dirty && 'glow')} icon="icon-save" title="Save workflow" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
+                <ToolbarButton key="run" icon="icon-play" title={dirty ? 'Cannot run with unsaved changes' : 'Run workflow'} disabled={runningWorkflow || dirty} onClick={() => this.openForm()} />
+                <ToolbarDropdown shown={showForm} pointerPosition='calc(50% + 85px)'>
                   <h2>Run workflow with inputs</h2>
                   <AutoForm
                     spec={{

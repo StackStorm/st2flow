@@ -727,9 +727,9 @@ export default class Canvas extends Component<{
         >
           { children }
           <Toolbar position="right">
-            <ToolbarButton key="zoomIn" icon="icon-zoom_in" onClick={() => this.setState({ scale: this.state.scale + .1 })} />
-            <ToolbarButton key="zoomReset" icon="icon-zoom_reset" onClick={() => this.setState({ scale: 0 })} />
-            <ToolbarButton key="zoomOut" icon="icon-zoom_out" onClick={() => this.setState({ scale: this.state.scale - .1 })} />
+            <ToolbarButton key="zoomIn" icon="icon-zoom_in" title="Zoom in" onClick={() => this.setState({ scale: this.state.scale + .1 })} />
+            <ToolbarButton key="zoomReset" icon="icon-zoom_reset" title="Reset zoom" onClick={() => this.setState({ scale: 0 })} />
+            <ToolbarButton key="zoomOut" icon="icon-zoom_out" title="Zoom out" onClick={() => this.setState({ scale: this.state.scale - .1 })} />
           </Toolbar>
           <CollapseButton position="left" state={isCollapsed.palette} onClick={() => toggleCollapse('palette')} />
           <CollapseButton position="right" state={isCollapsed.details} onClick={() => toggleCollapse('details')} />

@@ -31,7 +31,9 @@ export class ToolbarButton extends Component<
     onClick: Function,
     pushError?: Function,
     pushSuccess?: Function,
-    disabled: boolean,
+    disabled?: boolean,
+    title: string,
+    className: string,
   },
   {
     status: "initial" | "pending" | "success" | "error"
@@ -45,6 +47,8 @@ export class ToolbarButton extends Component<
     pushError: PropTypes.func,
     pushSuccess: PropTypes.func,
     disabled: PropTypes.bool,
+    title: PropTypes.string,
+    className: PropTypes.string,
   };
 
   static defaultProps = {
@@ -92,12 +96,19 @@ export class ToolbarButton extends Component<
   style = style;
 
   render() {
-    const { icon, disabled } = this.props;
+    const { icon, disabled, title } = this.props;
     const { status } = this.state;
     return (
       <div
-        className={cx(this.style.toolbarButton, icon, this.style[status], disabled && this.style.disabled)}
+        className={cx(
+          this.style.toolbarButton,
+          icon,
+          this.style[status],
+          disabled && this.style.disabled,
+          ...(this.props.className ? this.props.className.split(' ').map(c => `${this.style.toolbarButton}-${c}`) : [])
+        )}
         onClick={e => this.handleClick(e)}
+        title={title}
       />
     );
   }
