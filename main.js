@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { Provider, connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import { HotKeys } from 'react-hotkeys';
-import { pick, mapValues } from 'lodash';
+import { pick, mapValues, get } from 'lodash';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -13,7 +13,9 @@ import Details from '@stackstorm/st2flow-details';
 import api from '@stackstorm/module-api';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
-import { Toolbar, ToolbarButton } from '@stackstorm/st2flow-canvas/toolbar';
+import { Toolbar, ToolbarButton, ToolbarDropdown } from '@stackstorm/st2flow-canvas/toolbar';
+import AutoForm from '@stackstorm/module-auto-form';
+import Button from '@stackstorm/module-forms/button.component';
 
 import { Router } from '@stackstorm/module-router';
 import globalStore from '@stackstorm/module-store';
@@ -77,6 +79,8 @@ class Window extends Component<{
   layout: Function,
 }, {
   runningWorkflow: boolean,
+  showPanel: boolean,
+  runFormData: Object
 }> {
   static propTypes = {
     pack: PropTypes.string,
@@ -99,33 +103,90 @@ class Window extends Component<{
 
   state = {
     runningWorkflow: false,
+    showPanel: false,
+    runFormData: {},
   };
 
   async componentDidMount() {
     this.props.fetchActions();
   }
 
+  handleFormChange(data: {}) {
+    this.setState({
+      runFormData: {
+        ...this.state.runFormData,
+        ...data,
+      },
+    });
+  }
+
+  openForm() {
+    this.setState({
+      showPanel: true,
+    });
+  }
+
+  closeForm() {
+    this.setState({
+      showPanel: false,
+    });
+  }
+
+  get formIsValid() {
+    const { meta: { parameters = {} } } = this.props;
+    const { runFormData } = this.state;
+    const paramNames = Object.keys(parameters);
+    let valid = true;
+
+    paramNames.forEach(name => {
+      const { required } = parameters[name];
+      if(required && runFormData[name] == null) {
+        valid = false;
+      }
+    });
+    Object.keys(runFormData).forEach(formKey => {
+      if(!paramNames.includes(formKey) && runFormData[formKey] == null) {
+        valid = false;
+      }
+    });
+
+    return valid;
+  }
+
   run() {
-    const { meta, input } = this.props;
-    const { runningWorkflow } = this.state;
+    const { meta, input, sendSuccess, sendError } = this.props;
+    const { runningWorkflow, runFormData } = this.state;
 
     if(runningWorkflow) {
       return Promise.reject('Workflow already started');
     }
     this.setState({ runningWorkflow: true });
 
-    const parameters = input.reduce((acc, param) => {
-      if(typeof param === 'string') {
-        acc[param] = meta.parameters[param].default;
+    const inputValues = input.reduce((acc, maybeInputValue) => {
+      if(typeof maybeInputValue === 'string') {
         return acc;
       }
       else {
+        const key = Object.keys(maybeInputValue)[0];
         return {
           ...acc,
-          ...param,
+          [key]: maybeInputValue[key],
         };
       }
     }, {});
+
+    let parameters = mapValues(meta.parameters || {}, (param, paramName) => {
+      if(inputValues.hasOwnProperty(paramName)) {
+        return inputValues[paramName];
+      }
+      else {
+        return param.default;
+      }
+    }, {});
+    parameters = {
+      ...parameters,
+      ...runFormData,
+    };
 
     return api.request({
       method: 'post',
@@ -135,9 +196,12 @@ class Window extends Component<{
       action_is_workflow: true,
       parameters,
     }).then(resp => {
+      sendSuccess(`Workflow ${resp.liveaction.action} submitted for execution. Details at `, resp.web_url);
       setTimeout(this.poll.bind(this), POLL_INTERVAL, resp.id);
+      this.closeForm();
     }, err => {
       this.setState({ runningWorkflow: false });
+      sendError(`Submitting workflow failed: ${get(err, 'response.data.faultstring') || err.message}`);
       throw err;
     });
   }
@@ -204,8 +268,15 @@ class Window extends Component<{
   }
 
   render() {
-    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout } = this.props;
-    const { runningWorkflow } = this.state;
+    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout, meta, input } = this.props;
+    const { runningWorkflow, showPanel } = this.state;
+
+    const autoFormData = input && input.reduce((acc, value) => {
+      if(typeof value === 'object') {
+        acc = { ...acc, ...value };
+      }
+      return acc;
+    }, {});
 
     return (
       <div className="component">
@@ -228,7 +299,23 @@ class Window extends Component<{
                 <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
                 <ToolbarButton key="rearrange" icon="icon-arrange" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
                 <ToolbarButton key="save" icon="icon-save" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
-                <ToolbarButton key="run" icon="icon-play" disabled={runningWorkflow} successMessage="Workflow started." errorMessage="Error running workflow." onClick={() => this.run()} />
+                <ToolbarButton key="run" icon="icon-play" disabled={runningWorkflow} onClick={() => this.openForm()} />
+                <ToolbarDropdown shown={showPanel} pointerPosition='calc(50% + 85px)'>
+                  <h2>Run workflow with inputs</h2>
+                  <AutoForm
+                    spec={{
+                      type: 'object',
+                      properties: meta.parameters,
+                    }}
+                    data={autoFormData}
+                    onChange={(runValue) => this.handleFormChange(runValue)}
+                    onError={(error, runValue) => this.handleFormChange(runValue)}
+                  />
+                  <div className='buttons' style={{marginTop: 15}}>
+                    <Button onClick={() => this.run()} disabled={!this.formIsValid} value="Execute Workflow" />
+                    <Button onClick={() => this.closeForm()} value="Close" />
+                  </div>
+                </ToolbarDropdown>
               </Toolbar>
             </Canvas>
           </HotKeys>

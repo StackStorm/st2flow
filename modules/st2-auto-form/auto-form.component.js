@@ -21,6 +21,7 @@ export default class AutoForm extends React.Component {
     data: PropTypes.object,
     disabled: PropTypes.bool.isRequired,
     onChange: PropTypes.func,
+    onError: PropTypes.func,
     flat: PropTypes.bool,
   }
 
@@ -62,6 +63,18 @@ export default class AutoForm extends React.Component {
       ...data,
       [name]: value,
     });
+  }
+
+  handleError(name, error, value) {
+    const { spec, data, onError } = this.props;
+    return onError && onError(
+      `['${name}'] ${error}`,
+      {
+        ...getDefaults(spec),
+        ...data,
+        [name]: value,
+      }
+    );
   }
 
   render() {
@@ -116,6 +129,7 @@ export default class AutoForm extends React.Component {
               value={data && data[name]}
               disabled={disabled}
               onChange={(value) => this.handleChange(name, value)}
+              onError={(...args) => this.handleError(name, ...args)}
               data-test={`field:${name}`}
             />
           );

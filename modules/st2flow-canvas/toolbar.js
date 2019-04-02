@@ -103,6 +103,32 @@ export class ToolbarButton extends Component<
   }
 }
 
+export class ToolbarDropdown extends Component<{
+  children: any,
+  shown: boolean,
+  pointerPosition: string,
+}> {
+  static propTypes = {
+    children: PropTypes.node,
+    shown: PropTypes.bool,
+    pointerPosition: PropTypes.string,
+  };
+
+  style = style;
+
+  render() {
+    const { children, pointerPosition, shown } = this.props;
+    return shown && (
+      <div className={this.style.dropdown}>
+        <div className={this.style.dropdownPointer} style={{ left: pointerPosition }}>&nbsp;</div>
+        <div className={this.style.dropdownBody}>
+          { children }
+        </div>
+      </div>
+    );
+  }
+}
+
 export class Toolbar extends Component<{
   children: any,
   position?: string
