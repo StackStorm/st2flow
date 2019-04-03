@@ -30,6 +30,7 @@ export class BaseTextField extends React.Component {
     value: PropTypes.any,
     disabled: PropTypes.bool,
     onChange: PropTypes.func,
+    onError: PropTypes.func,
     'data-test': PropTypes.string,
   }
 
