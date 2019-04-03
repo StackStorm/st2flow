@@ -18,12 +18,12 @@
   "dependencies": {
     "@stackstorm/st2flow-yaml": "1.0.0-pre.5",
     "ajv": "^6.5.4",
-    "dagre": "0.8.2",
+    "dagre": "0.8.4",
     "deep-diff": "^1.0.2",
     "eventemitter3": "^3.1.0"
   },
   "devDependencies": {
-    "babelify": "^8.0.0",
+    "babelify": "^10.0.0",
     "chai-subset": "^1.6.0",
     "js-yaml": "^3.12.0"
   }

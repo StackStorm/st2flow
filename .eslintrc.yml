@@ -4,19 +4,21 @@ globals:
   $Shape: false
 plugins:
   - react
-  - flowtype
 extends:
   - eslint:recommended
   - plugin:react/recommended
 settings:
   react:
-    version: 16.2
+    version: "16.8"
 parser: babel-eslint
 parserOptions:
+  babelOptions:
+    configFile: babel.config.js
   ecmaVersion: 6
   sourceType: module
   ecmaFeatures:
     jsx: true
+    legacyDecorators: true
 env:
   node: true
   mocha: true
