@@ -16,10 +16,10 @@
     ]
   },
   "devDependencies": {
-    "babelify": "^8.0.0"
+    "babelify": "^10.0.0"
   },
   "dependencies": {
     "@stackstorm/st2flow-perf": "1.0.0-pre.5",
-    "yaml-ast-parser": "0.0.40"
+    "yaml-ast-parser": "0.0.43"
   }
 }
