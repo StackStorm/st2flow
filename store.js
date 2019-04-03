@@ -330,6 +330,15 @@ const flowReducer = (state = {}, input) => {
       return state;
     }
 
+    case '@@st2/INIT': {
+      const initMeta = new MetaModel();
+      initMeta.applyDelta(null, metaModel.toYAML());
+      return {
+        ...state,
+        metaSource: metaModel.toYAML(),
+        meta: initMeta,
+      };
+    }
 
     default:
       return state;
