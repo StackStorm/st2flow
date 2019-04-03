@@ -42,6 +42,11 @@ class Notification extends Component<{
           <span aria-hidden="true">&times;</span>
         </button>
         { notification.message }
+        { notification.link && (
+          <a href={notification.link} target="_top">
+            {notification.link}
+          </a>
+        ) }
       </div>
     );
   }

@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import { Provider, connect } from 'react-redux';
 import { PropTypes } from 'prop-types';
 import { HotKeys } from 'react-hotkeys';
-import { pick, mapValues } from 'lodash';
+import { pick, mapValues, get } from 'lodash';
+import cx from 'classnames';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -13,7 +14,9 @@ import Details from '@stackstorm/st2flow-details';
 import api from '@stackstorm/module-api';
 
 import CollapseButton from '@stackstorm/st2flow-canvas/collapse-button';
-import { Toolbar, ToolbarButton } from '@stackstorm/st2flow-canvas/toolbar';
+import { Toolbar, ToolbarButton, ToolbarDropdown } from '@stackstorm/st2flow-canvas/toolbar';
+import AutoForm from '@stackstorm/module-auto-form';
+import Button from '@stackstorm/module-forms/button.component';
 
 import { Router } from '@stackstorm/module-router';
 import globalStore from '@stackstorm/module-store';
@@ -33,8 +36,12 @@ function guardKeyHandlers(obj, names) {
   });
 }
 
+const POLL_INTERVAL = 5000;
+
 @connect(
-  ({ flow: { panels, actions, meta, metaSource, workflowSource, pack } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack }),
+  ({ flow: {
+    panels, actions, meta, metaSource, workflowSource, pack, input, dirty,
+  } }) => ({ isCollapsed: panels, actions, meta, metaSource, workflowSource, pack, input, dirty }),
   (dispatch) => ({
     toggleCollapse: name => dispatch({
       type: 'PANEL_TOGGLE_COLLAPSE',
@@ -45,6 +52,8 @@ function guardKeyHandlers(obj, names) {
       promise: api.request({ path: '/actions/views/overview' })
         .catch(() => fetch('/actions.json').then(res => res.json())),
     }),
+    sendError: (message, link) => dispatch({ type: 'PUSH_ERROR', error: message, link }),
+    sendSuccess: (message, link) => dispatch({ type: 'PUSH_SUCCESS', message, link }),
     undo: () => dispatch({ type: 'FLOW_UNDO' }),
     redo: () => dispatch({ type: 'FLOW_REDO' }),
     layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
@@ -55,6 +64,7 @@ class Window extends Component<{
 
   meta: Object,
   metaSource: string,
+  input: Array<Object | string>,
   workflowSource: string,
 
   isCollapsed: Object,
@@ -62,17 +72,25 @@ class Window extends Component<{
 
   actions: Array<Object>,
   fetchActions: Function,
+  sendSuccess: Function,
+  sendError: Function,
 
   undo: Function,
   redo: Function,
   layout: Function,
+}, {
+  runningWorkflow: boolean,
+  showForm: boolean,
+  runFormData: Object
 }> {
   static propTypes = {
     pack: PropTypes.string,
 
     meta: PropTypes.object,
     metaSource: PropTypes.string,
+    input: PropTypes.array,
     workflowSource: PropTypes.string,
+    dirty: PropTypes.bool,
 
     isCollapsed: PropTypes.object,
     toggleCollapse: PropTypes.func,
@@ -85,8 +103,135 @@ class Window extends Component<{
     layout: PropTypes.func,
   }
 
+  state = {
+    runningWorkflow: false,
+    showForm: false,
+    runFormData: {},
+  };
+
   async componentDidMount() {
     this.props.fetchActions();
+  }
+
+  handleFormChange(data: {}) {
+    this.setState({
+      runFormData: {
+        ...this.state.runFormData,
+        ...data,
+      },
+    });
+  }
+
+  openForm() {
+    this.setState({
+      showForm: true,
+    });
+  }
+
+  closeForm() {
+    this.setState({
+      showForm: false,
+    });
+  }
+
+  get formIsValid() {
+    const { meta: { parameters = {} } } = this.props;
+    const { runFormData } = this.state;
+    const paramNames = Object.keys(parameters);
+    let valid = true;
+
+    paramNames.forEach(name => {
+      const { required } = parameters[name];
+      if(required && runFormData[name] == null) {
+        valid = false;
+      }
+    });
+    Object.keys(runFormData).forEach(formKey => {
+      if(!paramNames.includes(formKey) && runFormData[formKey] == null) {
+        valid = false;
+      }
+    });
+
+    return valid;
+  }
+
+  run() {
+    const { meta, input, sendSuccess, sendError } = this.props;
+    const { runningWorkflow, runFormData } = this.state;
+
+    if(runningWorkflow) {
+      return Promise.reject('Workflow already started');
+    }
+    this.setState({ runningWorkflow: true });
+
+    const inputValues = input.reduce((acc, maybeInputValue) => {
+      if(typeof maybeInputValue === 'string') {
+        return acc;
+      }
+      else {
+        const key = Object.keys(maybeInputValue)[0];
+        return {
+          ...acc,
+          [key]: maybeInputValue[key],
+        };
+      }
+    }, {});
+
+    let parameters = mapValues(meta.parameters || {}, (param, paramName) => {
+      if(inputValues.hasOwnProperty(paramName)) {
+        return inputValues[paramName];
+      }
+      else {
+        return param.default;
+      }
+    }, {});
+    parameters = {
+      ...parameters,
+      ...runFormData,
+    };
+
+    return api.request({
+      method: 'post',
+      path: '/executions',
+    }, {
+      action: `${meta.pack}.${meta.name}`,
+      action_is_workflow: true,
+      parameters,
+    }).then(resp => {
+      sendSuccess(`Workflow ${resp.liveaction.action} submitted for execution. Details at `, resp.web_url);
+      setTimeout(this.poll.bind(this), POLL_INTERVAL, resp.id);
+      this.closeForm();
+    }, err => {
+      this.setState({ runningWorkflow: false });
+      sendError(`Submitting workflow ${meta.name} failed: ${get(err, 'response.data.faultstring') || err.message}`);
+      throw err;
+    });
+  }
+
+  poll(workflowId) {
+    const { sendSuccess, sendError } = this.props;
+    return api.request({
+      method: 'get',
+      path: `/executions?id=${workflowId}`,
+    }).then(([ execution ]) => {
+      switch(execution.status) {
+        case 'failed': {
+          sendError(`Workflow ${execution.liveaction.action} failed. Details at `, execution.web_url);
+          this.setState({ runningWorkflow: false });
+          break;
+        }
+        case 'succeeded': {
+          sendSuccess(`Workflow ${execution.liveaction.action} succeeded in ${execution.elapsed_seconds}s. Details at `, execution.web_url);
+          this.setState({ runningWorkflow: false });
+          break;
+        }
+        // requesting, scheduled, or running
+        default: {
+          setTimeout(this.poll.bind(this), POLL_INTERVAL, workflowId);
+          break;
+        }
+      }
+    });
   }
 
   save() {
@@ -108,12 +253,19 @@ class Window extends Component<{
       throw { response: { data: { faultstring: 'You must add an Entry point.'}}};
     }
 
-    if (existingAction) {
-      return api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
-    }
-    else {
-      return api.request({ method: 'post', path: '/actions' }, meta);
-    }
+    store.dispatch({
+      type: 'SAVE_WORKFLOW',
+      promise: (async () => {
+        if (existingAction) {
+          await api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
+        }
+        else {
+          await api.request({ method: 'post', path: '/actions' }, meta);
+        }
+        // don't need to return anything to the store. the handler will change dirty.
+        return {};
+      })(),
+    });
   }
 
   style = style
@@ -125,7 +277,15 @@ class Window extends Component<{
   }
 
   render() {
-    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout } = this.props;
+    const { isCollapsed = {}, toggleCollapse, actions, undo, redo, layout, meta, input, dirty } = this.props;
+    const { runningWorkflow, showForm } = this.state;
+
+    const autoFormData = input && input.reduce((acc, value) => {
+      if(typeof value === 'object') {
+        acc = { ...acc, ...value };
+      }
+      return acc;
+    }, {});
 
     return (
       <div className="component">
@@ -144,14 +304,52 @@ class Window extends Component<{
           >
             <Canvas className="canvas">
               <Toolbar>
-                <ToolbarButton key="undo" icon="icon-redirect" errorMessage="Could not undo." onClick={() => undo()} />
-                <ToolbarButton key="redo" icon="icon-redirect2" errorMessage="Could not redo." onClick={() => redo()} />
-                <ToolbarButton key="rearrange" icon="icon-arrange" successMessage="Rearrange complete." errorMessage="Error rearranging workflows." onClick={() => layout()} />
-                <ToolbarButton key="save" icon="icon-save" successMessage="Workflow saved." errorMessage="Error saving workflow." onClick={() => this.save()} />
-                {
-                  // TODO: Implement this.
-                  // <ToolbarButton key="run" icon="icon-play" onClick={() => (undefined)} />
-                }
+                <ToolbarButton key="undo" icon="icon-redirect" title="Undo" errorMessage="Could not undo." onClick={() => undo()} />
+                <ToolbarButton key="redo" icon="icon-redirect2" title="Redo" errorMessage="Could not redo." onClick={() => redo()} />
+                <ToolbarButton
+                  key="rearrange"
+                  icon="icon-arrange"
+                  title="Rearrange tasks"
+                  successMessage="Rearrange complete."
+                  errorMessage="Error rearranging workflows."
+                  onClick={() => layout()}
+                />
+                <ToolbarButton
+                  key="save"
+                  className={cx(dirty && 'glow')}
+                  icon="icon-save"
+                  title="Save workflow"
+                  successMessage="Workflow saved."
+                  errorMessage="Error saving workflow."
+                  onClick={() => this.save()}
+                />
+                <ToolbarButton
+                  key="run"
+                  icon="icon-play"
+                  title={dirty ? 'Cannot run with unsaved changes' : 'Run workflow'}
+                  disabled={runningWorkflow || dirty}
+                  onClick={() => this.openForm()}
+                />
+                <ToolbarDropdown shown={showForm} pointerPosition='calc(50% + 85px)' onClose={() => this.closeForm()}>
+                  {
+                    meta.parameters && Object.keys(meta.parameters).length
+                      ? <h2>Run workflow with inputs</h2>
+                      : <h2>Run workflow</h2>
+                  }
+                  <AutoForm
+                    spec={{
+                      type: 'object',
+                      properties: meta.parameters,
+                    }}
+                    data={autoFormData}
+                    onChange={(runValue) => this.handleFormChange(runValue)}
+                    onError={(error, runValue) => this.handleFormChange(runValue)}
+                  />
+                  <div className='buttons' style={{marginTop: 15}}>
+                    <Button onClick={() => this.run()} disabled={!this.formIsValid} value="Execute Workflow" />
+                    <Button onClick={() => this.closeForm()} value="Close" />
+                  </div>
+                </ToolbarDropdown>
               </Toolbar>
             </Canvas>
           </HotKeys>

@@ -5,6 +5,8 @@ import { PropTypes } from 'prop-types';
 import { TextFieldWrapper } from '../wrappers';
 import TextareaAutosize from 'react-textarea-autosize';
 
+const requiredMessage = 'parameter is required';
+
 export class Textarea extends TextareaAutosize {
   constructor (...props) {
     super(...props);
@@ -28,6 +30,7 @@ export class BaseTextField extends React.Component {
     value: PropTypes.any,
     disabled: PropTypes.bool,
     onChange: PropTypes.func,
+    onError: PropTypes.func,
     'data-test': PropTypes.string,
   }
 
@@ -59,7 +62,7 @@ export class BaseTextField extends React.Component {
 
   validate(v, spec={}) {
     if ((v === '' || v === undefined) && spec.required) {
-      return 'parameter is required';
+      return requiredMessage;
     }
 
     if (isJinja(v)) {
@@ -74,11 +77,20 @@ export class BaseTextField extends React.Component {
 
     const invalid = this.validate(value, this.props.spec);
 
-    this.setState({ value, invalid }, this.props.onChange && !invalid ? this.emitChange : undefined);
+    this.setState(
+      { value, invalid },
+      this.props.onChange && !invalid
+        ? this.emitChange
+        : (this.props.onError && invalid ? this.emitError.bind(this, requiredMessage) : undefined)
+    );
   }
 
   emitChange() {
     return this.props.onChange(this.fromStateValue(this.state.value));
+  }
+
+  emitError(message: string) {
+    return this.props.onError(message, this.fromStateValue(this.state.value));
   }
 
   render() {

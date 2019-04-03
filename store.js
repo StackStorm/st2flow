@@ -49,7 +49,8 @@ function getRanges(model) {
 function extendedValidation(meta, model) {
   const errors = [];
   if(model.input) {
-    const paramNames = Object.keys(meta.parameters || {});
+    const params = meta.parameters || {};
+    const paramNames = Object.keys(params);
     const inputNames = model.input.map(input => {
       const key = typeof input === 'string' ? input : Object.keys(input)[0];
       return key;
@@ -60,7 +61,7 @@ function extendedValidation(meta, model) {
       }
     });
     model.input.forEach(input => {
-      if(typeof input === 'string' && !meta.parameters[input]) {
+      if(typeof input === 'string' && !params[input]) {
         errors.push(`Extra input "${input}" must have a value`);
       }
     });
@@ -78,17 +79,17 @@ const flowReducer = (state = {}, input) => {
     meta = metaModel,
     tasks = [],
     transitions = [],
+    input: stateInput = [],
     ranges = {},
-    notifications = [],
     nextTask = 'task1',
 
     panels = [],
-
     actions = [],
+    notifications = [],
 
     navigation = {},
 
-    input: stateInput = [],
+    dirty = false,
   } = state;
 
   state = {
@@ -99,17 +100,17 @@ const flowReducer = (state = {}, input) => {
     meta,
     tasks,
     transitions,
+    input: stateInput,
     ranges,
-    notifications,
     nextTask,
 
     panels,
-
     actions,
+    notifications,
 
     navigation,
 
-    input: stateInput,
+    dirty,
   };
 
   switch (input.type) {
@@ -145,6 +146,7 @@ const flowReducer = (state = {}, input) => {
         ...state,
         ...modelState,
         notifications: modelState.notifications.concat(extendedNotifications),
+        dirty: true,
       };
     }
 
@@ -154,6 +156,7 @@ const flowReducer = (state = {}, input) => {
       return {
         ...state,
         ...workflowModelGetter(workflowModel),
+        dirty: true,
       };
     }
 
@@ -209,24 +212,25 @@ const flowReducer = (state = {}, input) => {
       return {
         ...state,
         ...metaModelGetter(metaModel),
+        dirty: true,
       };
     }
 
     case 'PUSH_ERROR': {
-      const { error } = input;
+      const { error, link } = input;
 
       return {
         ...state,
-        notifications: [ ...notifications, { type: 'error', message: error }],
+        notifications: [ ...notifications, { type: 'error', message: error, link }],
       };
     }
 
     case 'PUSH_SUCCESS': {
-      const { message } = input;
+      const { message, link } = input;
 
       return {
         ...state,
-        notifications: [ ...notifications, { type: 'success', message }],
+        notifications: [ ...notifications, { type: 'success', message, link }],
       };
     }
 
@@ -306,10 +310,24 @@ const flowReducer = (state = {}, input) => {
           workflowSource,
           ...metaModelGetter(metaModel),
           ...workflowModelGetter(workflowModel),
+          dirty: false,
         };
       }
 
       return newState;
+    }
+
+    case 'SAVE_WORKFLOW': {
+      const { status } = input;
+
+      if (status === 'success') {
+        return {
+          ...state,
+          dirty: false,
+        };
+      }
+
+      return state;
     }
 
     case '@@st2/INIT': {
