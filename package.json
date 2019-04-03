@@ -58,6 +58,7 @@
     "@stackstorm/st2flow-palette": "1.0.0",
     "babel-eslint": "^10.0.1",
     "classnames": "^2.2.5",
+    "eslint-plugin-flowtype": "^3.4.2",
     "eventemitter3": "^3.1.0",
     "gulp-uglify-es": "^1.0.4",
     "insert-css": "^2.0.0",

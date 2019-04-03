@@ -4,6 +4,7 @@ globals:
   $Shape: false
 plugins:
   - react
+  - flowtype
 extends:
   - eslint:recommended
   - plugin:react/recommended
