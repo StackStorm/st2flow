@@ -141,7 +141,7 @@ class Window extends Component<{
     let valid = true;
 
     paramNames.forEach(name => {
-      const { required } = parameters[name];
+      const { required } = parameters[name] || {};
       if(required && runFormData[name] == null) {
         valid = false;
       }

@@ -3,7 +3,7 @@ import { createScopedStore } from '@stackstorm/module-store';
 import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
-import { debounce, difference } from 'lodash';
+import { debounce, difference, get } from 'lodash';
 
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
@@ -174,7 +174,9 @@ const flowReducer = (state = {}, input) => {
 
       const oldParamNames = metaModel.parameters ? Object.keys(metaModel.parameters) : [];
       oldParamNames.sort((a, b) => {
-        return metaModel.parameters[a].position < metaModel.parameters[b].position ? -1 : 1;
+        const aPos = get(metaModel, [ 'parameters', a, 'position' ]);
+        const bPos = get(metaModel, [ 'parameters', b, 'position' ]);
+        return aPos < bPos ? -1 : 1;
       });
 
       metaModel[command](...args);

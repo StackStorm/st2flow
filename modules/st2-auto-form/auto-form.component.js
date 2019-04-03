@@ -82,7 +82,7 @@ export default class AutoForm extends React.Component {
 
     const fields = _(spec && spec.properties)
       .map((field, name) => {
-        field._name = name;
+        Object.defineProperty(field, '_name', { value: name });
         return field;
       })
       .reject('immutable')
