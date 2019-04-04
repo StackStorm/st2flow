@@ -3,7 +3,7 @@ import { createScopedStore } from '@stackstorm/module-store';
 import { models, OrquestaModel } from '@stackstorm/st2flow-model';
 import { layout } from '@stackstorm/st2flow-model/layout';
 import MetaModel from '@stackstorm/st2flow-model/model-meta';
-import { debounce, difference, get } from 'lodash';
+import { debounce, difference, get, uniqueId } from 'lodash';
 
 let workflowModel = new OrquestaModel();
 const metaModel = new MetaModel();
@@ -25,7 +25,12 @@ function workflowModelGetter(model) {
     input,
     nextTask: `task${lastIndex + 1}`,
     transitions,
-    notifications: errors.map(e => ({ type: 'error', message: e.message })),
+    notifications: errors.map(e => ({
+      type: 'error',
+      source: 'workflow',
+      message: e.message,
+      id: uniqueId(),
+    })),
   };
 }
 
@@ -135,7 +140,7 @@ const flowReducer = (state = {}, input) => {
         state.notifications = state.notifications.filter(e => e.source !== 'input');
         if(extendedErrors) {
           extendedNotifications.push(
-            ...extendedErrors.map(message => ({ type: 'error', source: 'input', message }))
+            ...extendedErrors.map(message => ({ type: 'error', source: 'input', message, id: uniqueId() }))
           );
         }
       }
@@ -219,20 +224,26 @@ const flowReducer = (state = {}, input) => {
     }
 
     case 'PUSH_ERROR': {
-      const { error, link } = input;
+      const { error, link, source } = input;
 
       return {
         ...state,
-        notifications: [ ...notifications, { type: 'error', message: error, link }],
+        notifications: [
+          ...notifications.filter(n => !source || n.source !== source),
+          { type: 'error', message: error, source, link, id: uniqueId() },
+        ],
       };
     }
 
     case 'PUSH_SUCCESS': {
-      const { message, link } = input;
+      const { message, link, source } = input;
 
       return {
         ...state,
-        notifications: [ ...notifications, { type: 'success', message, link }],
+        notifications: [
+          ...notifications.filter(n => !source || n.source !== source),
+          { type: 'success', message, source, link, id: uniqueId() },
+        ],
       };
     }
 
