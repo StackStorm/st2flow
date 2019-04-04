@@ -26,7 +26,12 @@ Prefix:         /opt/stackstorm/static/webui/flow
 
 
 %description
-  <insert long description, indented with spaces>
+  Workflow Designer is an HTML5-based graphical tool for managing workflows. Using a web browser,
+  users can quickly create new workflows and modify existing ones.
+
+  Workflow Designer provides a graphical representation of the workflow, side-by-side with the
+  underlying code. Users can quickly add new actions to the workflow, and connect them together.
+  Updates to the graphical workflow are immediately reflected in the code, and vice-versa.
 
 %prep
   rm -rf %{buildroot}
