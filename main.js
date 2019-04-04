@@ -253,19 +253,23 @@ class Window extends Component<{
       throw { response: { data: { faultstring: 'You must add an Entry point.'}}};
     }
 
+    const promise = (async () => {
+      if (existingAction) {
+        await api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
+      }
+      else {
+        await api.request({ method: 'post', path: '/actions' }, meta);
+      }
+      // don't need to return anything to the store. the handler will change dirty.
+      return {};
+    })();
+
     store.dispatch({
       type: 'SAVE_WORKFLOW',
-      promise: (async () => {
-        if (existingAction) {
-          await api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
-        }
-        else {
-          await api.request({ method: 'post', path: '/actions' }, meta);
-        }
-        // don't need to return anything to the store. the handler will change dirty.
-        return {};
-      })(),
+      promise,
     });
+
+    return promise;
   }
 
   style = style

@@ -88,7 +88,7 @@ const flowReducer = (state = {}, input) => {
     ranges = {},
     nextTask = 'task1',
 
-    panels = [],
+    panels = {},
     actions = [],
     notifications = [],
 

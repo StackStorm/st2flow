@@ -54,7 +54,7 @@ export default class Meta extends Component<{
   actions: Array<Object>,
 }> {
   static propTypes = {
-    pack: PropTypes.object,
+    pack: PropTypes.string,
     setPack: PropTypes.func,
 
     meta: PropTypes.object,
