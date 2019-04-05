@@ -44,10 +44,12 @@ export default class ColorStringField extends StringField {
       <div className="st2-auto-form__select">
         <div className='st2-auto-form__line'>
           <Label className={this.props.labelClass || 'st2-auto-form__text-field'}>
-            {options && <Icon name={icon} style={{pointerEvents:'initial'}} onClick={() => this.setState({ open: !open })} />}
+            {options && (
+              <Icon  name={icon} style={{pointerEvents:'initial'}} />
+            )}
             <Title {...this.props} />
             <span className="st2-auto-form__field-color-block" style={{backgroundColor: value}}>&nbsp;</span>
-            <input {...inputProps} />
+            <input {...inputProps} onClick={() => this.setState({ open: !open })} />
             { options && open && (
               <div className="st2-auto-form__field-options" onClick={() => this.setState({open: false})}>
                 <div className="st2-auto-form__field-options-menu">
