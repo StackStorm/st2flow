@@ -41,8 +41,8 @@ const default_runner_type = 'orquesta';
       dispatch({
         type: 'MODEL_ISSUE_COMMAND',
         command: 'setVars',
-        args: [ value ]
-      })
+        args: [ value ],
+      });
     },
     setPack: (pack) => dispatch({
       type: 'SET_PACK',
