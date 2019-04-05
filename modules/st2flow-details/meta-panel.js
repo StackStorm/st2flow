@@ -115,7 +115,7 @@ export default class Meta extends Component<{
       <Toolbar key="subtoolbar" secondary={true} >
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('meta')} selected={section === 'meta'}>Meta</ToolbarButton>
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('parameters')} selected={section === 'parameters'}>Parameters</ToolbarButton>
-        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('vars')} selected={section === 'input'}>Vars</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('vars')} selected={section === 'vars'}>Vars</ToolbarButton>
       </Toolbar>,
       section === 'meta' && (
         <Panel key="meta">
