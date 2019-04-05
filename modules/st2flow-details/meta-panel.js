@@ -7,14 +7,16 @@ import { PropTypes } from 'prop-types';
 import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
 import EnumField from '@stackstorm/module-auto-form/fields/enum';
+import Button from '@stackstorm/module-forms/button.component';
 
 import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
+import { StringPropertiesPanel } from './string-properties';
 
 const default_runner_type = 'orquesta';
 
 @connect(
-  ({ flow: { pack, actions, navigation, meta, input }}) => ({ pack, actions, navigation, meta, input }),
+  ({ flow: { pack, actions, navigation, meta, input, vars }}) => ({ pack, actions, navigation, meta, input, vars }),
   (dispatch) => ({
     navigate: (navigation) => dispatch({
       type: 'CHANGE_NAVIGATION',
@@ -35,6 +37,13 @@ const default_runner_type = 'orquesta';
         });
       }
     },
+    setVars: (value) => {
+      dispatch({
+        type: 'MODEL_ISSUE_COMMAND',
+        command: 'setVars',
+        args: [ value ]
+      })
+    },
     setPack: (pack) => dispatch({
       type: 'SET_PACK',
       pack,
@@ -52,6 +61,8 @@ export default class Meta extends Component<{
   navigate: Function,
 
   actions: Array<Object>,
+  vars: Array<Object>,
+  setVars: Function,
 }> {
   static propTypes = {
     pack: PropTypes.object,
@@ -64,6 +75,8 @@ export default class Meta extends Component<{
     navigate: PropTypes.func,
 
     actions: PropTypes.array,
+    vars: PropTypes.array,
+    setVars: PropTypes.func,
   }
 
   componentDidUpdate() {
@@ -78,8 +91,22 @@ export default class Meta extends Component<{
     this.props.navigate({ section });
   }
 
+  handleVarsChange(publish: Array<{}>) {
+    const { setVars } = this.props;
+    const val = publish ? publish.slice(0) : [];
+
+    // Make sure to mutate the copy
+    setVars(val);
+  }
+
+  addVar() {
+    const { setVars, vars } = this.props;
+    const newVal = { key: '<% result().val %>' };
+    setVars((vars || []).concat([ newVal ]));
+  }
+
   render() {
-    const { pack, setPack, meta, setMeta, navigation, actions } = this.props;
+    const { pack, setPack, meta, setMeta, navigation, actions, vars } = this.props;
     const { section = 'meta' } = navigation;
 
     const packs = [ ...new Set(actions.map(a => a.pack)).add(pack) ];
@@ -88,6 +115,7 @@ export default class Meta extends Component<{
       <Toolbar key="subtoolbar" secondary={true} >
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('meta')} selected={section === 'meta'}>Meta</ToolbarButton>
         <ToolbarButton stretch onClick={() => this.handleSectionSwitch('parameters')} selected={section === 'parameters'}>Parameters</ToolbarButton>
+        <ToolbarButton stretch onClick={() => this.handleSectionSwitch('vars')} selected={section === 'input'}>Vars</ToolbarButton>
       </Toolbar>,
       section === 'meta' && (
         <Panel key="meta">
@@ -102,6 +130,13 @@ export default class Meta extends Component<{
       section === 'parameters' && (
         //$FlowFixMe
         <Parameters key="parameters" />
+      ),
+      section === 'vars' && (
+        <Panel key="vars">
+          <StringPropertiesPanel items={vars || []} onChange={val => this.handleVarsChange(val)} />
+          { vars && vars.length > 0 && <hr /> }
+          <Button value="Add variable" onClick={() => this.addVar()} />
+        </Panel>
       ),
     ]);
   }

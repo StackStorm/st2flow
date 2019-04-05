@@ -9,6 +9,7 @@ import cx from 'classnames';
 
 import { StringField, SelectField, ColorStringField } from '@stackstorm/module-auto-form/fields';
 import { Toggle } from '@stackstorm/module-forms/button.component';
+import { StringPropertiesPanel } from './string-properties';
 
 import style from './style.css';
 
@@ -16,10 +17,10 @@ type TransitionProps = {
   transition: {
     to: Array<TaskRefInterface>,
     condition?: string,
-    publish?: string,
+    publish?: Array<{}>,
     color: string,
   },
-  taskNames: Array<string> | string,
+  taskNames: Array<string>,
   selected: boolean,
   onChange?: Function,
 };
@@ -66,7 +67,7 @@ export default class OrquestaTransition extends Component<TransitionProps, {
     super(props);
 
     this.state = {
-      publishOn: !!props.transition.publish && Object.keys(props.transition.publish).length > 0,
+      publishOn: !!props.transition.publish && props.transition.publish.length > 0,
     };
   }
 
@@ -96,12 +97,13 @@ export default class OrquestaTransition extends Component<TransitionProps, {
     this.setState({ publishOn: val });
   }
 
-  handlePublishChange(index: number, key: string, value: string) {
-    const { transition: { publish }, onChange } = this.props;
+  handlePublishChange(publish: Array<{}>) {
+    const { onChange } = this.props;
     const val = publish ? publish.slice(0) : [];
 
+    this.setState({ publishOn: !!val.length });
+
     // Make sure to mutate the copy
-    val[index] = { [key || '']: value };
     onChange && onChange('publish', val);
   }
 
@@ -117,28 +119,15 @@ export default class OrquestaTransition extends Component<TransitionProps, {
   addPublishField = () => {
     const { transition: { publish }, onChange } = this.props;
     const newVal = { key: '<% result().val %>' };
-    const val = this.state.publishOn ? publish.concat(newVal) : [ newVal ];
+    const val = publish && this.state.publishOn ? publish.concat(newVal) : [ newVal ];
 
     onChange && onChange('publish', val);
   }
 
-  addDoItem = (value) => {
+  addDoItem = (value: string) => {
     const { transition: { to }, onChange } = this.props;
     const val = (to || []).map(t => t.name).concat(value);
     onChange && onChange('do', val);
-  }
-
-  removePublishField = (index: number) => {
-    const { transition: { publish }, onChange } = this.props;
-    const val = publish.slice(0);
-
-    // make sure to splice the copy!
-    val.splice(index, 1);
-    if(!val.length) {
-      this.setState({ publishOn: false });
-    }
-
-    onChange && onChange('publish', val);
   }
 
   removeDoItem = (index: number) => {
@@ -177,28 +166,8 @@ export default class OrquestaTransition extends Component<TransitionProps, {
             <Toggle value={publishOn} onChange={this.onPublishToggle} />
           </div>
         </div>
-        <div className={this.style.transitionPublish}>
-          {publish && publish.map((obj, i) => {
-            const key = Object.keys(obj)[0];
-            const val = obj[key];
-
-            return (
-              <div className={this.style.transitionLine} key={`publish-${i}`} >
-                <div className={this.style.transitionPublishKey}>
-                  <StringField value={key} onChange={k => this.handlePublishChange(i, k, val)} />
-                </div>
-                <div className={this.style.transitionPublishValue}>
-                  <StringField value={val} onChange={v => this.handlePublishChange(i, key, v)} />
-                </div>
-                <div className={this.style.transitionButton}>
-                  <i className="icon-delete" onClick={() => this.removePublishField(i)} />
-                  {i ===  publish.length - 1 &&
-                    <i className="icon-plus" onClick={this.addPublishField} />
-                  }
-                </div>
-              </div>
-            );
-          })}
+        <div className={this.style.transitionLine}>
+          <StringPropertiesPanel items={publish || []} onChange={val => this.handlePublishChange(val)} inlineAddButton={true} />
         </div>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>

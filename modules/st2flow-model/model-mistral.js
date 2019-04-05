@@ -92,6 +92,22 @@ export default class MistralModel extends BaseModel implements ModelInterface {
     return val || [];
   }
 
+  get vars() {
+    let val;
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).some(wfName => {
+      const workflow = workflows[ wfName ];
+
+      if(workflow.vars) {
+        val = workflow.vars;
+        return true; // break
+      }
+
+      return false;
+    });
+    return val || [];
+  }
+
   get tasks() {
     const flatTasks = getWorkflowTasksMap(this.tokenSet);
 
@@ -221,6 +237,20 @@ export default class MistralModel extends BaseModel implements ModelInterface {
       // add any new inputs from params.
       oldVal = inp.concat(oldVal);
       crawler.set(this.tokenSet, [ wfName, 'input' ], oldVal);
+    });
+    this.endMutation(oldTree);
+  }
+
+  setVars(vars: Array<Object>) {
+    const { oldTree } = this.startMutation();
+    const workflows = getWorkflows(this.tokenSet);
+    Object.keys(workflows).forEach(wfName => {
+      if (vars && vars.length) {
+        crawler.set(this.tokenSet, [ wfName, 'vars' ], vars);
+      }
+      else {
+        crawler.delete(this.tokenSet, [ wfName, 'vars' ]);
+      }
     });
     this.endMutation(oldTree);
   }

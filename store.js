@@ -12,7 +12,7 @@ metaModel.fromYAML(metaModel.constructor.minimum);
 metaModel.set('runner_type', 'orquesta');
 
 function workflowModelGetter(model) {
-  const { tasks, transitions, errors, input } = model;
+  const { tasks, transitions, errors, input, vars } = model;
 
   const lastIndex = tasks
     .map(task => (task.name.match(/task(\d+)/) || [])[1])
@@ -23,6 +23,7 @@ function workflowModelGetter(model) {
     ranges: getRanges(model),
     tasks,
     input,
+    vars,
     nextTask: `task${lastIndex + 1}`,
     transitions,
     notifications: errors.map(e => ({ type: 'error', message: e.message })),
@@ -80,6 +81,7 @@ const flowReducer = (state = {}, input) => {
     tasks = [],
     transitions = [],
     input: stateInput = [],
+    vars = [],
     ranges = {},
     nextTask = 'task1',
 
@@ -101,6 +103,7 @@ const flowReducer = (state = {}, input) => {
     tasks,
     transitions,
     input: stateInput,
+    vars,
     ranges,
     nextTask,
 
