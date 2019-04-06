@@ -14,7 +14,7 @@ Summary:        Extreme Workflow Designer
 
 Requires: perl, st2web
 
-License:        StackStorm Enterprise EULA
+License:        Extreme Workflow Composer EULA
 URL:            https://www.extremenetworks.com/product/workflow-composer/
 Source0:        st2flow
 

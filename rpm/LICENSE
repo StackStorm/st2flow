@@ -1,140 +1,123 @@
-StackStorm Enterprise EULA
+Extreme Workflow Composer EULA
+-----------------------------------------
 
-1. GRANT AND USE RIGHTS FOR SOFTWARE.
+This document is an agreement (“Agreement”) between You, the end user, and Extreme Networks, Inc., on behalf of itself and its Affiliates (“Extreme”) that sets forth your rights and obligations with respect to the “Licensed Materials”. BY INSTALLING SOFTWARE AND/OR THE LICENSE KEY FOR THE SOFTWARE (“License Key”) (collectively, “Licensed Software”), IF APPLICABLE, COPYING, OR OTHERWISE USING THE LICENSED SOFTWARE AND/OR ANY OF THE LICENSED MATERIALS UNDER THIS AGREEMENT, YOU ARE AGREEING TO BE BOUND BY THE TERMS OF THIS AGREEMENT, WHICH INCLUDES THE LICENSE(S) AND THE LIMITATION(S) OF WARRANTY AND DISCLAIMER(S)/LIMITATION(S) OF LIABILITY. IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, RETURN THE LICENSE KEY (IF APPLICABLE) TO EXTREME OR YOUR DEALER, IF ANY, OR DO NOT USE THE LICENSED SOFTWARE AND/OR LICENSED MATERIALS AND CONTACT EXTREME OR YOUR DEALER WITHIN TEN (10) DAYS FOLLOWING THE DATE OF RECEIPT TO ARRANGE FOR A REFUND. IF YOU HAVE ANY QUESTIONS ABOUT THIS AGREEMENT, CONTACT EXTREME, Attn: LegalTeam@extremenetworks.com.
 
-  1.1 License. This Agreement grants You a non-transferable, non-exclusive,
-  limited right to use one copy of the Software in a non production
-  environment and for a limited time period for the sole purpose of evaluating
-  the Software for purchase. "Software" means software products that are
-  licensed to You under this Agreement, including, but not limited to, any
-  related components provided with the Software, application programming
-  interfaces, associated media, printed materials, online or electronic
-  documentation, and any updates and maintenance releases thereto. Open source
-  software components provided with the Software are licensed to you under the
-  terms of the applicable license agreements included with such open source
-  software components. The open source software licenses can be found in the
-  licenses.txt file, other materials accompanying the Software, the
-  documentation or corresponding source files available
-  at http://github.com/StackStorm.
+1. DEFINITIONS. “Affiliates” means any person, partnership, corporation, limited liability company, or other form of enterprise that directly or indirectly through one or more intermediaries, controls, or is controlled by, or is under common control with the party specified. “Server Application” means the software application associated to software authorized for installation (per License Key, if applicable) on one or more of Your servers as further defined in the Ordering Documentation. “Client Application” shall refer to the application to access the Server Application. “Network Device” for purposes of this Agreement shall mean a physical computer device, appliance, appliance component, controller, wireless access point, or virtual appliance as further described within the applicable product documentation, which includes the Order Documentation. “Licensed Materials” means the Licensed Software (including the Server Application and Client Application), Network Device (if applicable), Firmware, media embodying software, and the accompanying documentation. “Concurrent User” shall refer to any of Your individual employees who You provide access to the Server Application at any one time. “Firmware” refers to any software program or code embedded in chips or other media. “Standalone” software is software licensed for use independent of any hardware purchase as identified in the Ordering Documentation. “Licensed Software” collectively refers to the software, including Standalone software, Firmware, Server Application, Client Application or other application licensed with conditional use parameters as defined in the Ordering Documentation. “Ordering Documentation” shall mean the applicable price quotation, corresponding purchase order, relevant invoice, order acknowledgement, and accompanying documentation or specifications for the products and services purchased, acquired or licensed hereunder from Extreme either directly or indirectly.
 
-  1.2 License Limitations. You may not copy the Software or remove any
-  titles, trademarks or trade names, copyright notices, legends, or other
-  proprietary markings on the Software. You are not granted any rights to any
-  trademarks or service marks of StackStorm. StackStorm retains all rights not
-  expressly granted to You in this Agreement.
+2. TERM. This Agreement is effective from the date on which You accept the terms and conditions of this Agreement via click-through, commence using the products and services or upon delivery of the License Key if applicable, and shall be effective until terminated. In the case of Licensed Materials offered on a subscription basis, the term of “licensed use” shall be as defined within Your Ordering Documentation.
 
-  1.3 Restrictions. Except as expressly permitted by this Agreement or by
-  applicable law, You may not (i) sell, lease, assign, license, sublicense,
-  distribute or otherwise transfer in whole or in part the Software; (ii)
-  permit any use of or access to the Software by any third party, or operate
-  the Software on behalf of or for the benefit of any third party, including
-  the operation of any service that is accessed by a third party; (iii)
-  decompile, disassemble, reverse engineer, or otherwise attempt to derive
-  source code from the Software; (iv) modify or create derivative works based
-  upon the Software; or (v) create, develop, license, install, use, or deploy
-  any software or services to circumvent, enable, modify or provide access,
-  permissions or rights which violate the technical restrictions in the
-  Software. If You wish to exercise any rights to reverse engineer to ensure
-  interoperability in accordance with applicable law, You must first provide
-  StackStorm with written notice and all reasonably requested information
-  to moc.mrotskcats@ofni within 30 days and permit StackStorm to assess Your
-  claim and, at StackStorm’s sole discretion, to make an offer to provide
-  alternatives that reduce any adverse impact on StackStorm’s intellectual
-  property or other rights.
+3. GRANT OF LICENSE. Extreme will grant You a non-transferable, non-sublicensable, non-exclusive license to use the Licensed Materials and the accompanying documentation for Your own business purposes subject to the terms and conditions of this Agreement, applicable licensing restrictions, and any term, user server networking device, field of use, or other restrictions as set forth in Your Ordering Documentation. If the Licensed Materials are being licensed on a subscription and/or capacity basis, the applicable term and/or capacity limit of the license shall be specified in Your Ordering Documentation. You may install and use the Licensed Materials as permitted by the license type purchased as described below in License Types. The license type purchased is specified on the invoice issued to You by Extreme or Your dealer, if any. YOU MAY NOT USE, COPY, OR MODIFY THE LICENSED MATERIALS, IN WHOLEOR IN PART, EXCEPT AS EXPRESSLY PROVIDED IN THIS AGREEMENT.
 
-2. TITLE
+4. LICENSE TYPES.
+* Single User, Single Network Device. Under the terms of this license type, the license granted to You by Extreme authorizes You to use the Licensed Materials as bundled with a single Network Device as identified by a unique serial number for the applicable Term, if and as specified in Your Ordering Documentation, or any replacement for that network device for that same Term, for internal use only. A separate license, under a separate License Agreement, is required for any other network device on which You or another individual, employee or other third party intend to use the Licensed Materials. A separate license under a separate License Agreement is also required if You wish to use a Client license (as described below).
+* Single User, Multiple Network Device. Under the terms of this license type, the license granted to You by Extreme authorizes You to use the Licensed Materials with a defined amount of Network Devices as defined in the Ordering Documentation.
+* Client. Under the terms of the Client license, the license granted to You by Extreme will authorize You to install the License Key for the Licensed Materials on your server and allow the specific number of Concurrent Users as ordered by you and is set forth in Your Ordering Documentation. A separate license is required for each additional Concurrent User.
+* Standalone. Software or other Licensed Materials licensed to You for use independent of any Network Device.
+* Subscription. Licensed Materials, and inclusive Software, Network Device or related appliance updates and maintenance services, licensed to You for use during a subscription period as defined in Your applicable Ordering Documentation.
+* Capacity. Under the terms of this license, the license granted to You by Extreme authorizes You to use the Licensed Materials up to the amount of capacity or usage as defined in the Ordering Documentation.
 
-  StackStorm retains all right, title, and interest in and to the
-  Software and in all related copyrights, trade secrets, patents, trademarks,
-  and any other intellectual and industrial property and proprietary rights,
-  including registrations, applications, renewals, and extensions of such
-  rights.
+5. AUDIT RIGHTS. You agree that Extreme may audit Your use of the Licensed Materials for compliance with these terms and Your License Type at any time, upon reasonable notice. In the event that such audit reveals any use of the Licensed Materials by You other than in full compliance with the license granted and the terms of this Agreement, Extreme reserves the right to charge You for all reasonable expenses related to such audit in addition to any other liabilities and overages applicable as a result of such non-compliance, including but not limited to additional fees for Concurrent Users, excess capacity or usage over and above those specifically granted to You. From time to time, the Licensed Materials may upload information about the Licensed Materials and the associated usage to Extreme. This is to verify the Licensed Materials are being used in accordance with a valid license and/or entitlement. By using the Licensed Materials, you
+consent to the transmission of this information.
 
-3. TERM AND TERMINATION
+6. RESTRICTION AGAINST COPYING OR MODIFYING LICENSED MATERIALS. Except as expressly permitted in this Agreement, You may not copy or otherwise reproduce the Licensed Materials. In no event does the limited copying or reproduction permitted under this Agreement include the right to decompile,
+disassemble, electronically transfer, or reverse engineer the Licensed Materials, including the Licensed Software, or to translate the
+Licensed Materials into another computer language. The media embodying the Licensed Materials may be copied by You, in whole or
+in part, into printed or machine readable form, in sufficient numbers only for backup or archival purposes, or to replace a worn or defective
+copy. However, You agree not to have more than two (2) copies of the Licensed Software in whole or in part, including the original media, in
+your possession for said purposes without Extreme’ prior written consent, and in no event shall You operate more copies of the Licensed
+Software than the specific licenses granted to You. You may not copy or reproduce the documentation. You agree to maintain appropriate
+records of the location of the original media and all copies of the Licensed Software, in whole or in part, made by You. Any portion of
+the Licensed Software included in any such modular work shall be used only on a single computer for internal purposes and shall remain
+subject to all the terms and conditions of this Agreement. You agree to include any copyright or other proprietary notice set forth on the
+label of the media embodying the Licensed Software on any copy of the Licensed Software in any form, in whole or in part, or on any
+modification of the Licensed Software or any such modular work containing the Licensed Software or any part thereof.
 
-  Unless earlier terminated in accordance with this Agreement, StackStorm may
-  terminate this Agreement immediately upon notice if You fail to comply with
-  any term of this Agreement. In the event of termination, You must remove and
-  destroy all copies of the Software, including all backup copies, from the
-  server and all computers and terminals You own, possess or control and on
-  which the Software is installed. The provisions regarding title, exclusion
-  of warranty, and limitation of liability will survive termination or
-  expiration of this Agreement.
+7. TITLE AND PROPRIETARY RIGHTS
+(a) The Licensed Materials are copyrighted works and are the sole and exclusive property of Extreme, any company or a division thereof
+which Extreme controls or is controlled by, or which may result from the merger or consolidation with Extreme (its “Affiliates”), and/or
+their suppliers. This Agreement conveys a limited right to operate the Licensed Materials and shall not be construed to convey title to the
+Licensed Materials to You. There are no implied rights. You shall not sell, lease, transfer, sublicense, dispose of, or otherwise make available
+the Licensed Materials or any portion thereof, to any other party.
+(b) You further acknowledge that in the event of a breach of this Agreement, Extreme shall suffer severe and irreparable damages for
+which monetary compensation alone will be inadequate. You therefore agree that in the event of a breach of this Agreement, Extreme
+shall be entitled to monetary damages and its reasonable attorney’s fees and costs in enforcing this Agreement, as well as injunctive relief
+to restrain such breach, in addition to any other remedies available to Extreme.
 
-4. EXCLUSION OF WARRANTY AND LIMITATION OF LIABILITY
+8. PROTECTION AND SECURITY. In the performance of this
+Agreement or in contemplation thereof, You and your employees and agents may have access to private or confidential information owned
+or controlled by Extreme relating to the Licensed Materials supplied hereunder including, but not limited to, product specifications and
+schematics, and such information may contain proprietary details and disclosures. All information and data so acquired by You or your
+employees or agents under this Agreement or in contemplation hereof shall be and shall remain Extreme’ exclusive property, and You shall
+use all commercially reasonable efforts to keep, and have your employees and agents keep, any and all such information and data
+confidential, and shall not copy, publish, or disclose it to others, without Extreme’ prior written approval, and shall return such
+information and data to Extreme at its request. Nothing herein shall limit your use or dissemination of information not actually derived Extreme or of information which has been or subsequently is made public by Extreme, or a third party having authority to do so. You agree not to deliver or otherwise make available the Licensed Materials or any part thereof, including without limitation the object or source code (if provided) of the Licensed Software, to any party other than Extreme or its employees, except for purposes specifically related to your use of the Licensed Materials on a single computer as expressly provided in this Agreement, without the prior written consent of Extreme. You acknowledge that the Licensed Materials
+contain valuable confidential information and trade secrets, and that unauthorized use, copying and/or disclosure thereof are harmful to
+Extreme or its Affiliates and/or its/their software suppliers.
 
-  4.1 EXCLUSION OF WARRANTY. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE
-  MANDATORY LAW, STACKSTORM AND ITS LICENSORS PROVIDE THE SOFTWARE WITHOUT ANY
-  WARRANTIES OF ANY KIND, EXPRESS, IMPLIED, STATUTORY, OR IN ANY OTHER
-  PROVISION OF THIS AGREEMENT OR COMMUNICATION WITH YOU, AND STACKSTORM AND
-  ITS LICENSORS SPECIFICALLY DISCLAIM ANY IMPLIED WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+9. MAINTENANCE AND UPDATES. Except as otherwise defined below, updates and certain maintenance and support services, if any, shall be provided to You pursuant to the terms of an Extreme Service and Maintenance Agreement, if Extreme and You enter into such an agreement. Except as specifically set forth in such agreement, Extreme shall not be under any obligation to provide updates, modifications, or enhancements, or maintenance and support services for the Licensed Materials to You. If you have purchased Licensed Materials on a subscription basis then the applicable service terms for
+Your Licensed Materials are as provided in Your Ordering Documentation. Extreme will perform the maintenance and updates in a timely and professional manner, during the Term of Your subscription, using qualified and experienced personnel. You will cooperate in good faith with Extreme in the performance of the support services including, but not limited to, providing Extreme with:
+(a) access to the Extreme Licensed Materials (and related systems); and
+(b) reasonably requested assistance and information. Further information about the applicable maintenance and updates terms can
+be found on Extreme’s website at http://www.extremenetworks.com/support/end-of-sale-and-end-ofsupport-products.
 
-  4.2 LIMITATION OF LIABILITY. TO THE MAXIMUM EXTENT MANDATED BY LAW, IN NO
-  EVENT WILL STACKSTORM AND ITS LICENSORS BE LIABLE FOR ANY LOST PROFITS OR
-  BUSINESS OPPORTUNITIES, LOSS OF USE, BUSINESS INTERRUPTION, LOSS OF DATA, OR
-  ANY OTHER INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES UNDER ANY
-  THEORY OF LIABILITY, WHETHER BASED IN CONTRACT, TORT, NEGLIGENCE, PRODUCT
-  LIABILITY, OR OTHERWISE. BECAUSE SOME JURISDICTIONS DO NOT ALLOW THE
-  EXCLUSION OR LIMITATION OF LIABILITY FOR CONSEQUENTIAL OR INCIDENTAL
-  DAMAGES, THE PRECEDING LIMITATION MAY NOT APPLY TO YOU. STACKSTORM’S AND
-  ITS LICENSORS’ LIABILITY UNDER THIS AGREEMENT WILL NOT, IN ANY EVENT,
-  EXCEED THE LICENSE FEES YOU PAID FOR THE SOFTWARE, IF ANY. THE FOREGOING
-  LIMITATIONS SHALL APPLY REGARDLESS OF WHETHER STACKSTORM OR ITS LICENSORS
-  HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES AND REGARDLESS OF
-  WHETHER ANY REMEDY FAILS OF ITS ESSENTIAL PURPOSE.
+10. DEFAULT AND TERMINATION. In the event that You shall fail to keep, observe, or perform any obligation under this Agreement,
+including a failure to pay any sums due to Extreme, or in the event that you become insolvent or seek protection, voluntarily or involuntarily,
+under any bankruptcy law, Extreme may, in addition to any other remedies it may have under law, terminate the License and any other
+agreements between Extreme and You.
+(a) Immediately after any termination of the Agreement, Your licensed subscription term, or if You have for any reason discontinued
+use of Licensed Materials, You shall return to Extreme the original and any copies of the Licensed Materials and remove the Licensed
+Materials, including an Licensed Software, from any modular works made pursuant to Section 3, and certify in writing that through your
+best efforts and to the best of your knowledge the original and all copies of the terminated or discontinued Licensed Materials have been
+returned to Extreme.
+(b) Sections 1, 7, 8, 10, 11, 12, 13, 14 and 15 shall survive termination of this Agreement for any reason.
 
-5. GENERAL
+11. EXPORT REQUIREMENTS. You are advised that the Licensed Materials, including the Licensed Software is of United States origin
+and subject to United States Export Administration Regulations; diversion contrary to United States law and regulation is prohibited.
+You agree not to directly or indirectly export, import or transmit the Licensed Materials, including the Licensed Software to any country,
+end user or for any Use that is prohibited by applicable United States regulation or statute (including but not limited to those countries
+embargoed from time to time by the United States government); or contrary to the laws or regulations of any other governmental entity
+that has jurisdiction over such export, import, transmission or Use.
 
-  5.1 Entire Agreement. This Agreement sets forth StackStorm’s entire
-  liability and Your exclusive remedy with respect to the Software and
-  supersedes the terms of any communications or advertising with respect to
-  the Software. You acknowledge that this Agreement is a complete statement of
-  the agreement between You and StackStorm with respect to the Software, and
-  that there are no other prior or contemporaneous understandings, promises,
-  representations, or descriptions with respect to the Software.
+12. UNITED STATES GOVERNMENT RESTRICTED RIGHTS. The Licensed Materials (i) were developed solely at private expense;
+(ii) contain “restricted computer software” submitted with restricted rights in accordance with section 52.227-19 (a) through (d) of the
+Commercial Computer Software-Restricted Rights Clause and its successors, and (iii) in all respects is proprietary data belonging to
+Extreme and/or its suppliers. For Department of Defense units, the Licensed Materials are considered commercial computer software in
+accordance with DFARS section 227.7202-3 and its successors, and use, duplication, or disclosure by the U.S. Government is subject to
+restrictions set forth herein.
 
-  5.2 Headings. Headings under this Agreement are intended only for
-  convenience and shall not affect the interpretation of this Agreement.
+13. LIMITED WARRANTY AND LIMITATION OF LIABILITY. Extreme warrants to You that (a) the initially-shipped version of the
+Licensed Materials will materially conform to the Documentation; and (b) the media on which the Licensed Software is recorded will be free
+from material defects for a period of ninety (90) days from the date of delivery to You or such other minimum period required under
+applicable law. Extreme does not warrant that Your use of the Licensed Materials will be error-free or uninterrupted.
+NEITHER EXTREME NOR ITS AFFILIATES MAKE ANY OTHER WARRANTY OR REPRESENTATION, EXPRESS OR IMPLIED, WITH RESPECT TO THE LICENSED MATERIALS, WHICH ARE
+LICENSED "AS IS". THE LIMITED WARRANTY AND REMEDY PROVIDED ABOVE ARE EXCLUSIVE AND IN LIEU OF ALL OTHER WARRANTIES, INCLUDING IMPLIED WARRANTIES
+OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, WHICH ARE EXPRESSLY DISCLAIMED, AND STATEMENTS OR REPRESENTATIONS MADE BY ANY
+OTHER PERSON OR FIRM ARE VOID. IN NO EVENT WILL EXTREME OR ANY OTHER PARTY WHO HAS BEEN INVOLVED IN THE CREATION, PRODUCTION OR DELIVERY
+OF THE LICENSED MATERIALS BE LIABLE FOR SPECIAL, DIRECT, INDIRECT, RELIANCE, INCIDENTAL OR CONSEQUENTIAL DAMAGES, INCLUDING LOSS OF DATA OR PROFITS OR FOR INABILITY TO USE THE LICENSED MATERIALS, TO ANY PARTY EVEN IF EXTREME OR SUCH OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. IN NO EVENT SHALL EXTREME OR SUCH OTHER PARTY'S LIABILITY FOR ANY DAMAGES OR LOSS TO YOU OR ANY OTHER PARTY EXCEED THE LICENSE FEE YOU PAID FOR THE LICENSED MATERIALS.
+Some states do not allow limitations on how long an implied warranty lasts and some states do not allow the exclusion or limitation of incidental or consequential damages, so the above limitation and exclusion may not apply to You. This limited warranty gives You specific legal rights, and You may also have other rights which vary from state to state.
 
-  5.3 Waiver and Modification. No failure of either party to exercise or
-  enforce any of its rights under this Agreement will act as a waiver of those
-  rights. This Agreement may only be modified, or any rights under it waived,
-  by a written document executed by the party against which it is asserted.
+14. JURISDICTION. The rights and obligations of the parties to this Agreement shall be governed and construed in accordance with the laws and in the State and Federal courts of the State of California, without regard to its rules with respect to choice of law. You waive any objections to the personal jurisdiction and venue of such courts. None of the 1980 United Nations Convention on the Limitation Period in the International Sale of Goods, and the Uniform Computer Information Transactions Act shall apply to this Agreement.
 
-  5.4 Severability. If any provision of this Agreement is found illegal or
-  unenforceable, it will be enforced to the maximum extent permissible, and
-  the legality and enforceability of the other provisions of this Agreement
-  will not be affected.
+15. FREE AND OPEN SOURCE SOFTWARE. Portions of the Software (Open Source Software) provided to you may be subject to alicense that permits you to modify these portions and redistribute the modifications (an Open Source License). Your use, modification and redistribution of the Open Source Software are governed by the terms and conditions of the applicable Open Source License. More details regarding the Open Source Software and the applicable Open Source Licenses are available at www.extremenetworks.com/services/SoftwareLicensing.aspx. Some of the Open Source software may be subject to the GNU General Public License v.x (GPL) or the Lesser General Public Library (LGPL), copies of which are provided with the
+Licensed Materials and are further available for review at www.extremenetworks.com/services/SoftwareLicensing.aspx, or upon request as directed herein. In accordance with the terms of the GPL and LGPL, you may request a copy of the relevant source code. See the Software Licensing web site for additional details. This offer is valid for up to three years from the date of original download of the software.
 
-  5.5 Governing Law. This Agreement will be governed by California law and
-  the United States of America, without regard to its choice of law
-  principles. The United Nations Convention for the International Sale of
-  Goods shall not apply.
-
-  5.6 Government Restrictions. The Software and accompanying documentation
-  are deemed to be "commercial computer software" and "commercial computer
-  software documentation," respectively, pursuant to DFAR Section 227.7202 and
-  FAR Section 12.212(b), as applicable. Any use, modification, reproduction,
-  release, performing, displaying, or disclosing of the Software by the U.S.
-  Government shall be governed solely by the terms of this Agreement.
-
-  5.7 Export Controls. The Software is of United States origin and is
-  provided subject to the U.S. Export Administration Regulations. Diversion
-  contrary to U.S. law is prohibited. Without limiting the foregoing, You
-  agree that (1) You are not, and are not acting on behalf of, any person who
-  is a citizen, national, or resident of, or who is controlled by the
-  government of, Cuba, Iran, North Korea, Sudan, or Syria, or any other
-  country to which the United States has prohibited export transactions; (2)
-  You are not, and are not acting on behalf of, any person or entity listed on
-  the U.S. Treasury Department list of Specially Designated Nationals and
-  Blocked Persons, or the U.S. Commerce Department Denied Persons List or
-  Entity List; and (3) You will not use the Software for, and will not permit
-  the Software to be used for, any purposes prohibited by law, including,
-  without limitation, for any prohibited development, design, manufacture or
-  production of missiles or nuclear, chemical or biological weapons.
-
-  5.8 Contact Information. If You have any questions about this Agreement, or
-  if You want to contact StackStorm for any reason, please direct all
-  correspondence to: StackStorm, Inc., 395 Page Mill Road, Suite 150, Palo
-  Alto, CA 94306, United States of America or email: info@StackStorm.com
+16. GENERAL.
+(a) This Agreement is the entire agreement between Extreme and You regarding the Licensed Materials, and all prior agreements, representations, statements, and undertakings, oral or written, are hereby expressly superseded and canceled.
+(b) This Agreement may not be changed or amended except in writing signed by both parties hereto.
+(c) You represent that You have full right and/or authorization to enter into this Agreement.
+(d) This Agreement shall not be assignable by You without the express written consent of Extreme. The rights of Extreme and Your
+obligations under this Agreement shall inure to the benefit of Extreme’ assignees, licensors, and licensees.
+(e) Section headings are for convenience only and shall not be considered in the interpretation of this Agreement.
+(f) The provisions of the Agreement are severable and if any one or more of the provisions hereof are judicially determined to be illegal or
+otherwise unenforceable, in whole or in part, the remaining provisions of this Agreement shall nevertheless be binding on and enforceable by
+and between the parties hereto.
+(g) Extreme’s waiver of any right shall not constitute waiver of that right in future. This Agreement constitutes the entire understanding
+between the parties with respect to the subject matter hereof, and all prior agreements, representations, statements and undertakings, oral or
+written, are hereby expressly superseded and canceled. No purchase order shall supersede this Agreement.
+(h) Should You have any questions regarding this Agreement, You may contact Extreme at the address set forth below. Any notice or
+other communication to be sent to Extreme must be mailed by certified mail to the following address:
+Extreme Networks, Inc.
+145 Rio Robles
+San Jose, CA 95134 United States
+ATTN: Legal Department
