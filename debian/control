@@ -4,15 +4,13 @@ Priority: optional
 Maintainer: StackStorm Engineering <opsadmin@stackstorm.com>
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.9.5
-Homepage: <insert the upstream URL, if relevant>
-#Vcs-Git: git://github.com/stackstorm/st2flow.git
-#Vcs-Browser: https://github.com/stackstorm/st2flow
+Homepage: https://www.extremenetworks.com/product/workflow-composer/
 
 Package: st2flow
 Architecture: any
 Pre-Depends: dpkg (>= 1.16.16), perl, st2web
 Depends: perl, st2web
-Description: St2Flow - StackStorm Workflow Editor
+Description: Extreme Workflow Designer
  Workflow Designer is an HTML5-based graphical tool for managing workflows. Using a web browser,
  users can quickly create new workflows and modify existing ones.
  .

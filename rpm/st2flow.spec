@@ -10,12 +10,12 @@ Version:        %{version}
 Epoch: %{epoch}
 %endif
 Release:        %{release}
-Summary:        St2Flow - StackStorm Workflow Editor
+Summary:        Extreme Workflow Designer
 
 Requires: perl, st2web
 
 License:        StackStorm Enterprise EULA
-URL:            https://github.com/stackstorm/st2flow
+URL:            https://www.extremenetworks.com/product/workflow-composer/
 Source0:        st2flow
 
 Prefix:         /opt/stackstorm/static/webui/flow
