@@ -64,9 +64,18 @@ const factory = {
       prefix: [],
     });
 
-    if(options.escape && /\n/.test(val)) {
+    /*
+    Couch a string in yaml iff any are true:
+    - The string starts with a special character: One of !#%@&*`?|>{[ or -.
+    - The string starts or ends with whitespace characters.
+    - The string starts or ends with quotes
+    - The string contains : or # character sequences.
+    - The string ends with a colon.
+    */
+    if(options.escape && /^[!%@&*`?|>{["\s]|[\s":]$|[\n#]/.test(val)) {
       token.rawValue = `"${val.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
     }
+
     else if(/^"|"$/.test(val.trim())) {
       // quotes need to be escaped if they bookend the value.
       token.rawValue = `"${val.replace(/"/g, '\\"')}"`;
