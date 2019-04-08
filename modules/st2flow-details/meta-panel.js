@@ -8,6 +8,7 @@ import BooleanField from '@stackstorm/module-auto-form/fields/boolean';
 import StringField from '@stackstorm/module-auto-form/fields/string';
 import EnumField from '@stackstorm/module-auto-form/fields/enum';
 import Button from '@stackstorm/module-forms/button.component';
+import { isJinja } from '@stackstorm/module-auto-form/fields/base';
 
 import { Panel, Toolbar, ToolbarButton } from './layout';
 import Parameters from './parameters-panel';
@@ -93,7 +94,25 @@ export default class Meta extends Component<{
 
   handleVarsChange(publish: Array<{}>) {
     const { setVars } = this.props;
-    const val = publish ? publish.slice(0) : [];
+    const val = (publish ? publish.slice(0) : []).map(kv => {
+      const key = Object.keys(kv)[0];
+      const val = kv[key];
+      if (val === '') {
+        return { [key]: null };
+      }
+      else if (isJinja(val)) {
+        return kv;
+      }
+      else {
+        try {
+          const parsedVal = JSON.parse(val);
+          return { [key]: typeof parsedVal === 'object' ? parsedVal : val };
+        }
+        catch(e) {
+          return kv;
+        }
+      }
+    });
 
     // Make sure to mutate the copy
     setVars(val);
@@ -101,13 +120,25 @@ export default class Meta extends Component<{
 
   addVar() {
     const { setVars, vars } = this.props;
-    const newVal = { key: '<% result().val %>' };
+    const newVal = { key: '' };
     setVars((vars || []).concat([ newVal ]));
   }
 
   render() {
     const { pack, setPack, meta, setMeta, navigation, actions, vars } = this.props;
     const { section = 'meta' } = navigation;
+
+    const stringVars = vars && vars.map(kv => {
+      const key = Object.keys(kv)[0];
+      const val = kv[key];
+      if(typeof val === 'object') {
+        // nulls and objects both here.
+        return { [key]: val ? JSON.stringify(val, null, 2) : '' };
+      }
+      else {
+        return { [key]: val.toString() };
+      }
+    });
 
     const packs = [ ...new Set(actions.map(a => a.pack)).add(pack) ];
 
@@ -133,7 +164,12 @@ export default class Meta extends Component<{
       ),
       section === 'vars' && (
         <Panel key="vars">
-          <StringPropertiesPanel items={vars || []} onChange={val => this.handleVarsChange(val)} />
+          <StringPropertiesPanel
+            items={stringVars || []}
+            defaultKey="key"
+            defaultValue=""
+            onChange={val => this.handleVarsChange(val)}
+          />
           { vars && vars.length > 0 && <hr /> }
           <Button value="Add variable" onClick={() => this.addVar()} />
         </Panel>

@@ -24,6 +24,8 @@ export class StringPropertiesPanel extends React.Component <{
   items: Array<{}>,
   onChange: Array<{}> => void,
   inlineAddButton?: boolean,
+  defaultKey?: string,
+  defaultValue?: string,
 }, {
   publish: Array<{}>,
 }> {
@@ -31,6 +33,8 @@ export class StringPropertiesPanel extends React.Component <{
     items: PropTypes.array,
     onChange: PropTypes.func,
     inlineAddButton: PropTypes.bool,
+    defaultKey: PropTypes.string,
+    defaultValue: PropTypes.string,
   };
 
   style = style;
@@ -45,8 +49,8 @@ export class StringPropertiesPanel extends React.Component <{
   }
 
   addField = () => {
-    const { items, onChange } = this.props;
-    const newVal = { key: '<% result().val %>' };
+    const { items, onChange, defaultKey = 'key', defaultValue = null } = this.props;
+    const newVal = { [defaultKey]: defaultValue };
     const val = items ? items.concat(newVal) : [ newVal ];
 
     onChange && onChange(val);

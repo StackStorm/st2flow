@@ -167,7 +167,13 @@ export default class OrquestaTransition extends Component<TransitionProps, {
           </div>
         </div>
         <div className={this.style.transitionLine}>
-          <StringPropertiesPanel items={publish || []} onChange={val => this.handlePublishChange(val)} inlineAddButton={true} />
+          <StringPropertiesPanel
+            items={publish || []}
+            onChange={val => this.handlePublishChange(val)}
+            defaultKey="key"
+            defaultValue="<% result().val %>"
+            inlineAddButton={true}
+          />
         </div>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
