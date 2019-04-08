@@ -9,6 +9,8 @@ import style from './style.css';
 export type NotificationInterface = {
   type: 'error' | 'warning' | 'info' | 'success',
   message: string,
+  source?: string,
+  id: string,
 };
 
 class Notification extends Component<{
@@ -77,7 +79,7 @@ class Notifications extends Component<{
   render() {
     return (
       <div className={cx(this.props.className, style.component, style[this.props.position])}>
-        {this.props.notifications.map((notif, i) => <Notification key={i} notification={notif} />)}
+        {this.props.notifications.map(notif => <Notification key={notif.id} notification={notif} />)}
       </div>
     );
   }

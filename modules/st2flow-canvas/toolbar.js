@@ -11,14 +11,16 @@ import style from './style.css';
 @connect(
   null,
   dispatch => ({
-    pushError: error =>
+    pushError: (error, source) =>
       dispatch({
         type: 'PUSH_ERROR',
+        source,
         error,
       }),
-    pushSuccess: message =>
+    pushSuccess: (message, source) =>
       dispatch({
         type: 'PUSH_SUCCESS',
+        source,
         message,
       }),
   })
@@ -62,7 +64,7 @@ export class ToolbarButton extends Component<
   async handleClick(e: Event) {
     e.stopPropagation();
 
-    const { onClick, errorMessage, successMessage, pushError, pushSuccess, disabled } = this.props;
+    const { onClick, errorMessage, successMessage, pushError, pushSuccess, disabled, icon } = this.props;
 
     if(disabled) {
       return;
@@ -79,7 +81,7 @@ export class ToolbarButton extends Component<
         }, 3200);
 
         if (successMessage) {
-          pushSuccess(successMessage);
+          pushSuccess(successMessage, icon);
         }
       }
       catch (e) {
@@ -92,10 +94,10 @@ export class ToolbarButton extends Component<
         const faultString = _.get(e, 'response.data.faultstring');
 
         if (errorMessage && faultString) {
-          pushError(`${errorMessage}: ${faultString}`);
+          pushError(`${errorMessage}: ${faultString}`, icon);
         }
         else if (errorMessage || faultString) {
-          pushError(`${errorMessage || ''}${faultString || ''}`);
+          pushError(`${errorMessage || ''}${faultString || ''}`, icon);
         }
       }
     }
