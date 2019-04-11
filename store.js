@@ -36,8 +36,10 @@ function workflowModelGetter(model) {
 }
 
 function metaModelGetter(model) {
+  const { errors } = model;
   return {
     metaSource: model.toYAML(),
+    notifications: errors.map(e => ({ type: 'error', message: e.message, source: 'meta-yaml-error' })),
     meta: model.tokenSet.toObject(),
   };
 }
@@ -219,9 +221,12 @@ const flowReducer = (state = {}, input) => {
         state.input = workflowModel.input;
       }
 
+      const metaModelState = metaModelGetter(metaModel);
+
       return {
         ...state,
-        ...metaModelGetter(metaModel),
+        ...metaModelState,
+        notifications: notifications.filter(n => n.source !== 'meta-yaml-error').concat(metaModelState.notifications),
         dirty: true,
       };
     }

@@ -64,9 +64,10 @@ const factory = {
       prefix: [],
     });
 
-    if(options.escape && /\n/.test(val)) {
+    if(options.escape && /^[!%@&*`|>{["\s-]|[\s"]$|[\n#:]/.test(val)) {
       token.rawValue = `"${val.replace(/\n/g, '\\n').replace(/"/g, '\\"')}"`;
     }
+
     else if(/^"|"$/.test(val.trim())) {
       // quotes need to be escaped if they bookend the value.
       token.rawValue = `"${val.replace(/"/g, '\\"')}"`;
