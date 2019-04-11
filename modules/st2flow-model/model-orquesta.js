@@ -99,6 +99,11 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     return inputs;
   }
 
+  get vars() {
+    const vars = crawler.getValueByKey(this.tokenSet, 'vars');
+    return vars;
+  }
+
   get tasks() {
     const tasks: RawTasks = crawler.getValueByKey(this.tokenSet, 'tasks');
 
@@ -215,6 +220,18 @@ class OrquestaModel extends BaseModel implements ModelInterface {
     oldVal = inputs.concat(oldVal);
 
     crawler.set(this.tokenSet, [ 'input' ], oldVal);
+    this.endMutation(oldTree);
+  }
+
+  setVars(vars: Array<Object>) {
+    const { oldTree } = this.startMutation();
+
+    if (vars && vars.length) {
+      crawler.set(this.tokenSet, [ 'vars' ], vars);
+    }
+    else {
+      crawler.delete(this.tokenSet, [ 'vars' ]);
+    }
     this.endMutation(oldTree);
   }
 

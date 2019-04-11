@@ -698,7 +698,7 @@ export default class Canvas extends Component<{
     const selectedTransitionGroups = transitionGroups
       .filter(({ transition }) => {
         const { task, toTasks = [] } = navigation;
-        return transition.from.name === task && fp.isEqual(toTasks, transition.to.map(t => t.name));
+        return transition.from.name === task && transition.to.length && fp.isEqual(toTasks, transition.to.map(t => t.name));
       });
 
     // Currently this component is registering global key handlers (attach = document.body)
