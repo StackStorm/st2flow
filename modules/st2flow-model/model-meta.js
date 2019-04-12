@@ -8,7 +8,7 @@ class MetaModel extends BaseClass {
     super(schema, yaml);
   }
 
-  static minimum = 'pack: default\n';
+  static minimum = 'pack: default\nenabled: true\n';
 
   get name(): string {
     return this.get('name');
