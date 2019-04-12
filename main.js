@@ -57,6 +57,7 @@ const POLL_INTERVAL = 5000;
     undo: () => dispatch({ type: 'FLOW_UNDO' }),
     redo: () => dispatch({ type: 'FLOW_REDO' }),
     layout: () => dispatch({ type: 'MODEL_LAYOUT' }),
+    setMeta: (attribute, value) => dispatch({ type: 'META_ISSUE_COMMAND', command: 'set', args: [ attribute, value ] }),
   })
 )
 class Window extends Component<{
@@ -88,6 +89,7 @@ class Window extends Component<{
 
     meta: PropTypes.object,
     metaSource: PropTypes.string,
+    setMeta: PropTypes.func,
     input: PropTypes.array,
     workflowSource: PropTypes.string,
     dirty: PropTypes.bool,
@@ -235,9 +237,17 @@ class Window extends Component<{
   }
 
   save() {
-    const { pack, meta, actions, workflowSource, metaSource } = this.props;
+    const { pack, meta, actions, workflowSource, metaSource, setMeta } = this.props;
 
     const existingAction = actions.find(e => e.name === meta.name && e.pack === pack);
+
+
+    if (typeof meta.entry_point === 'undefined' && typeof meta.name !== 'undefined') {
+      const entryPoint = `workflows/${meta.name}.yaml`;
+      meta.entry_point = entryPoint;
+      setMeta('entry_point', entryPoint);
+    }
+
 
     meta.pack = pack;
     meta.metadata_file = existingAction && existingAction.metadata_file && existingAction.metadata_file || `actions/${meta.name}.meta.yaml`;
