@@ -204,6 +204,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
       </Toolbar>,
       section === 'input' && (
         <Panel key="input">
+          {!action && <p>Couldn&apos;t find action. Is the pack installed?</p>}
           <AutoForm
             spec={{
               type: 'object',
