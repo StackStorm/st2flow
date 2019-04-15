@@ -7,7 +7,7 @@ import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import cx from 'classnames';
 
-import { StringField, SelectField, ColorStringField } from '@stackstorm/module-auto-form/fields';
+import { StringField, SelectField, ColorStringField, EnumField} from '@stackstorm/module-auto-form/fields';
 
 import style from './style.css';
 
@@ -69,6 +69,13 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
     onChange && onChange(transition, { condition, from, to });
   }
 
+  handleTypeChange(type: string) {
+    const { transition, onChange } = this.props;
+    const { from, to } = transition;
+
+    onChange && onChange(transition, { type, from, to });
+  }
+
   handleColorChange(color: string) {
     const { transition, onChange } = this.props;
 
@@ -90,6 +97,15 @@ export default class MistralTransition extends Component<TransitionProps, {}> {
 
     return (
       <div className={cx(this.style.transition, { [this.style.transitionSelected]: selected })}>
+        <div className={this.style.transitionLine} >
+          <div className={this.style.transitionLabel}>
+            On
+          </div>
+          <div className={this.style.transitionField}>
+            <EnumField value={transition.type} spec={{enum: [ ...new Set([ 'Success', 'Error', 'Complete' ]) ], default: 'Success'}} onChange={(v) => this.handleTypeChange(v)} />
+          </div>
+          <div className={this.style.transitionButton} />
+        </div>
         <div className={this.style.transitionLine} >
           <div className={this.style.transitionLabel}>
             When
