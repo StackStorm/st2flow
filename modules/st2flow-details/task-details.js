@@ -183,7 +183,7 @@ export default class TaskDetails extends Component<TaskDetailsProps, {
                 <StringField value={name} onChange={name => this.handleNameChange(name)} />
               </div>
             )
-            : <Task task={task} />
+            : <Task onDoubleClick={() => this.handleToggleRename()} task={task} />
         }
         {
           rename

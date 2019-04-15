@@ -11,6 +11,7 @@ import style from './style.css';
 export default class Task extends Component<{
   task: TaskInterface,
   onClick?: Function,
+  onDoubleClick?: Function,
 }> {
   static propTypes = {
     task: PropTypes.object.isRequired,
@@ -31,6 +32,18 @@ export default class Task extends Component<{
     onClick(e);
   }
 
+  handleDoubleClick = (e: Event) => {
+    const { onDoubleClick } = this.props;
+
+    if (!onDoubleClick) {
+      return;
+    }
+
+    e.stopPropagation();
+
+    onDoubleClick(e);
+  }
+
   render() {
     const { task } = this.props;
 
@@ -39,6 +52,7 @@ export default class Task extends Component<{
         key={task.name}
         className={this.style.task}
         onClick={this.handleClick}
+        onDoubleClick={this.handleDoubleClick}
       >
         <div className={this.style.taskInfo}>
           <div className={this.style.taskName}>{ task.name }</div>
