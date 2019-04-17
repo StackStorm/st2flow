@@ -5,15 +5,8 @@ Source: https://www.extremenetworks.com/product/workflow-composer/
 Files: *
 Copyright: 2016-2019 Extreme Networks <support@extremenetworks.com>
 License: Extreme_Workflow_Composer_EULA
-
-Files: debian/*
-Copyright: 2016-2019 Extreme Networks <support@extremenetworks.com>
-License: GPL-3.0+
-
-License: Extreme_Workflow_Composer_EULA
 Extreme Workflow Composer EULA
 -----------------------------------------
-
  This document is an agreement (“Agreement”) between You, the end user, and Extreme Networks, Inc., on behalf of itself and its Affiliates (“Extreme”) that sets forth your rights and obligations with respect to the “Licensed Materials”. BY INSTALLING SOFTWARE AND/OR THE LICENSE KEY FOR THE SOFTWARE (“License Key”) (collectively, “Licensed Software”), IF APPLICABLE, COPYING, OR OTHERWISE USING THE LICENSED SOFTWARE AND/OR ANY OF THE LICENSED MATERIALS UNDER THIS AGREEMENT, YOU ARE AGREEING TO BE BOUND BY THE TERMS OF THIS AGREEMENT, WHICH INCLUDES THE LICENSE(S) AND THE LIMITATION(S) OF WARRANTY AND DISCLAIMER(S)/LIMITATION(S) OF LIABILITY. IF YOU DO NOT AGREE TO THE TERMS OF THIS AGREEMENT, RETURN THE LICENSE KEY (IF APPLICABLE) TO EXTREME OR YOUR DEALER, IF ANY, OR DO NOT USE THE LICENSED SOFTWARE AND/OR LICENSED MATERIALS AND CONTACT EXTREME OR YOUR DEALER WITHIN TEN (10) DAYS FOLLOWING THE DATE OF RECEIPT TO ARRANGE FOR A REFUND. IF YOU HAVE ANY QUESTIONS ABOUT THIS AGREEMENT, CONTACT EXTREME, Attn: LegalTeam@extremenetworks.com.
  .
  1. DEFINITIONS. “Affiliates” means any person, partnership, corporation, limited liability company, or other form of enterprise that directly or indirectly through one or more intermediaries, controls, or is controlled by, or is under common control with the party specified. “Server Application” means the software application associated to software authorized for installation (per License Key, if applicable) on one or more of Your servers as further defined in the Ordering Documentation. “Client Application” shall refer to the application to access the Server Application. “Network Device” for purposes of this Agreement shall mean a physical computer device, appliance, appliance component, controller, wireless access point, or virtual appliance as further described within the applicable product documentation, which includes the Order Documentation. “Licensed Materials” means the Licensed Software (including the Server Application and Client Application), Network Device (if applicable), Firmware, media embodying software, and the accompanying documentation. “Concurrent User” shall refer to any of Your individual employees who You provide access to the Server Application at any one time. “Firmware” refers to any software program or code embedded in chips or other media. “Standalone” software is software licensed for use independent of any hardware purchase as identified in the Ordering Documentation. “Licensed Software” collectively refers to the software, including Standalone software, Firmware, Server Application, Client Application or other application licensed with conditional use parameters as defined in the Ordering Documentation. “Ordering Documentation” shall mean the applicable price quotation, corresponding purchase order, relevant invoice, order acknowledgement, and accompanying documentation or specifications for the products and services purchased, acquired or licensed hereunder from Extreme either directly or indirectly.
@@ -133,26 +126,4 @@ Extreme Workflow Composer EULA
  Extreme Networks, Inc.
  145 Rio Robles
  San Jose, CA 95134 United States
- ATTN: Legal Department   
-
-License: GPL-3.0+
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- .
- This package is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- .
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- .
- On Debian systems, the complete text of the GNU General
- Public License version 3 can be found in "/usr/share/common-licenses/GPL-3".
-
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
-# Please avoid to pick license terms that are more restrictive than the
-# packaged work, as it may make Debian's contributions unacceptable upstream.
+ ATTN: Legal Department
