@@ -93,13 +93,17 @@ export default class MistralModel extends BaseModel implements ModelInterface {
   }
 
   get vars() {
-    let val;
+    const val = [];
     const workflows = getWorkflows(this.tokenSet);
     Object.keys(workflows).some(wfName => {
       const workflow = workflows[ wfName ];
 
       if(workflow.vars) {
-        val = workflow.vars;
+        Object.keys(workflow.vars).map(key => {
+          const newVar = {};
+          newVar[key] = workflow.vars[key];
+          val.push(newVar);
+        });
         return true; // break
       }
 
@@ -244,9 +248,15 @@ export default class MistralModel extends BaseModel implements ModelInterface {
   setVars(vars: Array<Object>) {
     const { oldTree } = this.startMutation();
     const workflows = getWorkflows(this.tokenSet);
+    const objectVars = {};
+    vars.forEach(varInstance => {
+      Object.keys(varInstance).map(key => {
+        objectVars[key] = varInstance[key];
+      });
+    });
     Object.keys(workflows).forEach(wfName => {
       if (vars && vars.length) {
-        crawler.set(this.tokenSet, [ wfName, 'vars' ], vars);
+        crawler.set(this.tokenSet, [ wfName, 'vars' ], objectVars);
       }
       else {
         crawler.delete(this.tokenSet, [ wfName, 'vars' ]);
