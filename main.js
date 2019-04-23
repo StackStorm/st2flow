@@ -5,6 +5,7 @@ import { PropTypes } from 'prop-types';
 import { HotKeys } from 'react-hotkeys';
 import { pick, mapValues, get } from 'lodash';
 import cx from 'classnames';
+import url from 'url';
 
 import Header from '@stackstorm/st2flow-header';
 import Palette from '@stackstorm/st2flow-palette';
@@ -192,6 +193,7 @@ class Window extends Component<{
       ...runFormData,
     };
 
+    
     return api.request({
       method: 'post',
       path: '/executions',
@@ -200,7 +202,12 @@ class Window extends Component<{
       action_is_workflow: true,
       parameters,
     }).then(resp => {
-      sendSuccess(`Workflow ${resp.liveaction.action} submitted for execution. Details at `, resp.web_url);
+      const executionUrl = url.parse(resp.web_url);
+
+      sendSuccess(
+        `Workflow ${resp.liveaction.action} submitted for execution. Details at `,
+        `${executionUrl.path}${executionUrl.hash}`
+      );
       setTimeout(this.poll.bind(this), POLL_INTERVAL, resp.id);
       this.closeForm();
     }, err => {
@@ -216,14 +223,21 @@ class Window extends Component<{
       method: 'get',
       path: `/executions?id=${workflowId}`,
     }).then(([ execution ]) => {
+      const executionUrl = url.parse(execution.web_url);
       switch(execution.status) {
         case 'failed': {
-          sendError(`Workflow ${execution.liveaction.action} failed. Details at `, execution.web_url);
+          sendError(
+            `Workflow ${execution.liveaction.action} failed. Details at `,
+            `${executionUrl.path}${executionUrl.hash}`
+          );
           this.setState({ runningWorkflow: false });
           break;
         }
         case 'succeeded': {
-          sendSuccess(`Workflow ${execution.liveaction.action} succeeded in ${execution.elapsed_seconds}s. Details at `, execution.web_url);
+          sendSuccess(
+            `Workflow ${execution.liveaction.action} succeeded in ${execution.elapsed_seconds}s. Details at `,
+            `${executionUrl.path}${executionUrl.hash}`
+          );
           this.setState({ runningWorkflow: false });
           break;
         }
