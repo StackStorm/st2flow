@@ -50,8 +50,15 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
   static minimum = 'version: \'2.0\'\nmain:\n  tasks: {}\n';
 
+  #workbook;
+
   constructor(yaml: ?string) {
     super(schema, yaml);
+    this.#workbook = this.tokenSet.toObject().workflows ? true : false;
+
+    if (this.#workbook) {
+      this.emitError(new Error('Mistral workbooks are not supported.'));
+    }
   }
 
   get description() {
@@ -541,7 +548,14 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
   getRangeForTask(task: TaskRefInterface) {
     const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
-    return crawler.getRangeForKey(this.tokenSet, [ workflowName, 'tasks', taskName ]);
+    const key = [];
+    if (this.#workbook) {
+      key.push('workflows');
+    }
+    key.push(workflowName);
+    key.push('tasks');
+    key.push(taskName);
+    return crawler.getRangeForKey(this.tokenSet, key);
   }
 }
 
