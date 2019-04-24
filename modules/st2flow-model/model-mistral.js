@@ -54,7 +54,12 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
   constructor(yaml: ?string) {
     super(schema, yaml);
-    this.#workbook = this.tokenSet.toObject().workflows ? true : false;
+    if (this.tokenSet) {
+      this.#workbook = this.tokenSet.toObject().workflows ? true : false;
+    }
+    else {
+      this.#workbook = false;
+    }
 
     if (this.#workbook) {
       this.emitError(new Error('Mistral workbooks are not supported.'));
@@ -186,7 +191,11 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
     tasks.forEach((task: RawTask, key: Array<string>) => {
       STATUSES.forEach(status => {
-        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach((next, tidx) => {
+        let tasks = task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY;
+        if (!Array.isArray(tasks)) {
+          tasks = [ tasks ];
+        }
+        tasks.forEach((next, tidx) => {
           // NOTE: The first item in the "key" array will always be
           // the workflow name at this point in time.
           const toName = getToName(next);
