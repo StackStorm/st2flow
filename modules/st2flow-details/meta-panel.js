@@ -45,10 +45,25 @@ const default_runner_type = 'orquesta';
         args: [ value ],
       });
     },
-    setPack: (pack) => dispatch({
-      type: 'SET_PACK',
-      pack,
-    }),
+    setPack: (pack) => {
+      dispatch({
+        type: 'SET_PACK',
+        pack,
+      });
+      try{
+        dispatch({
+          type: 'META_ISSUE_COMMAND',
+          command: 'set',
+          args: [ 'pack', pack ],
+        });
+      }
+      catch(error) {
+        dispatch({
+          type: 'PUSH_ERROR',
+          error,
+        });
+      }
+    },
   })
 )
 export default class Meta extends Component<{

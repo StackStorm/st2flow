@@ -18,6 +18,17 @@ function workflowModelGetter(model) {
     .map(task => (task.name.match(/task(\d+)/) || [])[1])
     .reduce((acc, item) => Math.max(acc, item || 0), 0);
 
+  model.on(
+    'error',
+    (err) => errors.push(...err)
+  );
+
+  if (model.checkWorkbook) {
+    model.checkWorkbook();
+  }
+
+  model.validate();
+
   return {
     workflowSource: model.toYAML(),
     ranges: getRanges(model),
@@ -36,9 +47,16 @@ function workflowModelGetter(model) {
 }
 
 function metaModelGetter(model) {
+  const metaSource = model.toYAML();
   const { errors } = model;
+
+  model.on(
+    'error',
+    (err) => errors.push(err[0].message)
+  );
+
   return {
-    metaSource: model.toYAML(),
+    metaSource,
     notifications: errors.map(e => ({ type: 'error', message: e.message, source: 'meta-yaml-error' })),
     meta: model.tokenSet.toObject(),
   };
