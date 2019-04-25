@@ -21,7 +21,11 @@
 
 .subtitle {
   font-size: 12px;
-  padding-top: 6px;
+  line-height: 28px;
+  padding-bottom: 4px;
+  padding-left: 3px;
+
+  vertical-align: middle;
 }
 
 .separator {
