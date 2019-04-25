@@ -1603,7 +1603,7 @@
     sinon-chai "3.3.0"
     zombie "5.0.8"
 
-"@stackstorm/st2-build@^2.4.1", "@stackstorm/st2-build@^2.4.2":
+"@stackstorm/st2-build@^2.4.2":
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/@stackstorm/st2-build/-/st2-build-2.4.2.tgz#9fbf0bf63b2e3d3e81bf50d343784cf60800f0e4"
   integrity sha512-t6HogTUhx7LtXkPNMTjtTjjsds6tVz4kWG8nuBiLBxNc6isJ8y/i87H8J159HbUbUK1BYPfQSr+Dx0sIQJqrJQ==
@@ -4090,7 +4090,7 @@ escodegen@~1.9.0:
   optionalDependencies:
     source-map "~0.6.1"
 
-eslint-plugin-flowtype@^3.4.2, eslint-plugin-flowtype@^3.5.1:
+eslint-plugin-flowtype@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-3.5.1.tgz#903c542c33039bc1db16355fff2d26733903bb0b"
   integrity sha512-mIhq7jhBSWNMp3ECmlWK+b9EFmLE+3Jd9axk05LB+snbRPkc3/lYTgb4Bu9lgt1QLmrxFDWsASdKj9CAIehckg==

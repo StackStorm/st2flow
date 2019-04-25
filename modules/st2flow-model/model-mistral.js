@@ -50,8 +50,25 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
   static minimum = 'version: \'2.0\'\nmain:\n  tasks: {}\n';
 
+  #workbook;
+
   constructor(yaml: ?string) {
     super(schema, yaml);
+
+    this.checkWorkbook();
+  }
+
+  checkWorkbook() {
+    if (this.tokenSet) {
+      this.#workbook = this.tokenSet.toObject().workflows ? true : false;
+    }
+    else {
+      this.#workbook = false;
+    }
+
+    if (this.#workbook) {
+      this.emitError(new Error('Mistral workbooks are not supported.'));
+    }
   }
 
   get description() {
@@ -93,13 +110,17 @@ export default class MistralModel extends BaseModel implements ModelInterface {
   }
 
   get vars() {
-    let val;
+    const val = [];
     const workflows = getWorkflows(this.tokenSet);
     Object.keys(workflows).some(wfName => {
       const workflow = workflows[ wfName ];
 
       if(workflow.vars) {
-        val = workflow.vars;
+        Object.keys(workflow.vars).map(key => {
+          const newVar = {};
+          newVar[key] = workflow.vars[key];
+          val.push(newVar);
+        });
         return true; // break
       }
 
@@ -175,7 +196,11 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
     tasks.forEach((task: RawTask, key: Array<string>) => {
       STATUSES.forEach(status => {
-        (task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY).forEach((next, tidx) => {
+        let tasks = task[`on-${status.toLowerCase()}`] || EMPTY_ARRAY;
+        if (!Array.isArray(tasks)) {
+          tasks = [ tasks ];
+        }
+        tasks.forEach((next, tidx) => {
           // NOTE: The first item in the "key" array will always be
           // the workflow name at this point in time.
           const toName = getToName(next);
@@ -244,9 +269,15 @@ export default class MistralModel extends BaseModel implements ModelInterface {
   setVars(vars: Array<Object>) {
     const { oldTree } = this.startMutation();
     const workflows = getWorkflows(this.tokenSet);
+    const objectVars = {};
+    vars.forEach(varInstance => {
+      Object.keys(varInstance).map(key => {
+        objectVars[key] = varInstance[key];
+      });
+    });
     Object.keys(workflows).forEach(wfName => {
       if (vars && vars.length) {
-        crawler.set(this.tokenSet, [ wfName, 'vars' ], vars);
+        crawler.set(this.tokenSet, [ wfName, 'vars' ], objectVars);
       }
       else {
         crawler.delete(this.tokenSet, [ wfName, 'vars' ]);
@@ -531,7 +562,14 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
   getRangeForTask(task: TaskRefInterface) {
     const [ workflowName, taskName ] = splitTaskName(task.name, this.tokenSet);
-    return crawler.getRangeForKey(this.tokenSet, [ workflowName, 'tasks', taskName ]);
+    const key = [];
+    if (this.#workbook) {
+      key.push('workflows');
+    }
+    key.push(workflowName);
+    key.push('tasks');
+    key.push(taskName);
+    return crawler.getRangeForKey(this.tokenSet, key);
   }
 }
 

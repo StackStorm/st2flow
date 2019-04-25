@@ -6,13 +6,8 @@
   "title": "Mistral Schema",
   "description": "A schema describing Mistral workflows and workbooks.",
   "type": "object",
-  "dependencies": {
-    "workflows": {
-      "additionalProperties": false
-    }
-  },
   "patternProperties": {
-    "^(?!version)\\w+$": {
+    "^(?!version|name|description|workflows)\\w+$": {
       "$ref": "#/definitions/workflow"
     }
   },
