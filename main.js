@@ -255,6 +255,9 @@ class Window extends Component<{
 
     const existingAction = actions.find(e => e.name === meta.name && e.pack === pack);
 
+    if (!meta.name) {
+      throw { response: { data: { faultstring: 'You must provide a name of the workflow.'}}};
+    }
 
     if (typeof meta.entry_point === 'undefined' && typeof meta.name !== 'undefined') {
       const entryPoint = `workflows/${meta.name}.yaml`;
@@ -273,16 +276,13 @@ class Window extends Component<{
       content: metaSource,
     }];
 
-    if (!meta.entry_point) {
-      throw { response: { data: { faultstring: 'You must add an Entry point.'}}};
-    }
-
     const promise = (async () => {
       if (existingAction) {
         await api.request({ method: 'put', path: `/actions/${pack}.${meta.name}` }, meta);
       }
       else {
         await api.request({ method: 'post', path: '/actions' }, meta);
+        this.props.fetchActions();
       }
       // don't need to return anything to the store. the handler will change dirty.
       return {};
