@@ -118,15 +118,18 @@ class BaseClass {
     this.emitChange(oldTree);
   }
 
+  validate() {
+    if(!ajv.validate(this.modelName, this.tokenSet.toObject())) {
+      this.emitError(formatAjvErrors(ajv.errors, this.tokenSet), STR_ERROR_SCHEMA);
+      return;
+    }
+  }
+
   emitChange(oldTree: Object): void {
     const newTree = this.tokenSet.toObject();
     this.errors = [];
 
-
-    if(!ajv.validate(this.modelName, newTree)) {
-      this.emitError(formatAjvErrors(ajv.errors, this.tokenSet), STR_ERROR_SCHEMA);
-      return;
-    }
+    this.validate();
 
     const deltas = diff(oldTree, newTree) || [];
 

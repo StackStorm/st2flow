@@ -54,6 +54,11 @@ export default class MistralModel extends BaseModel implements ModelInterface {
 
   constructor(yaml: ?string) {
     super(schema, yaml);
+
+    this.checkWorkbook();
+  }
+
+  checkWorkbook() {
     if (this.tokenSet) {
       this.#workbook = this.tokenSet.toObject().workflows ? true : false;
     }
