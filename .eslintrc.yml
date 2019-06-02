@@ -5,6 +5,7 @@ globals:
 plugins:
   - react
   - flowtype
+  - notice
 extends:
   - eslint:recommended
   - plugin:react/recommended
@@ -140,3 +141,7 @@ rules:
       condition: parens-new-line
       logical: parens-new-line
       prop: parens-new-line
+
+  notice/notice:
+    - error
+    - mustMatch: "(// Copyright \\d{4} [a-zA-Z0-9,\\.\\s]+\\n)+//\\n// Unauthorized copying of this file, via any medium is strictly\\n// prohibited. Proprietary and confidential. See the LICENSE file\\n// included with this work for details\\.\\n"
