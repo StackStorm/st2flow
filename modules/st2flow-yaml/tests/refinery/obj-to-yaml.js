@@ -1,3 +1,9 @@
+// Copyright 2019 Extreme Networks, Inc.
+//
+// Unauthorized copying of this file, via any medium is strictly
+// prohibited. Proprietary and confidential. See the LICENSE file
+// included with this work for details.
+
 // This is a plain JS object that will get converted to the expected
 // YAML below. It is intentionally complex to ensure we can "refine"
 // complex data into well-formatted YAML. If new edge cases are discovered,

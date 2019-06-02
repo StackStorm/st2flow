@@ -1,3 +1,9 @@
+// Copyright 2019 Extreme Networks, Inc.
+//
+// Unauthorized copying of this file, via any medium is strictly
+// prohibited. Proprietary and confidential. See the LICENSE file
+// included with this work for details.
+
 // This is an example of YAML that contains JS-style data objects.
 // The tests will mutate this data, and the expected result is
 // defined below. If new edge cases are discovered, they should be
