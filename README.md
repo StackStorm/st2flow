@@ -53,3 +53,11 @@ gulp test-unit
 # Linting
 gulp lint
 ```
+
+## Copyright, License, and Contributors Agreement
+
+Copyright 2015-2019 Extreme Networks, Inc.
+
+Unauthorized copying of this file, via any medium is strictly prohibited. Proprietary and confidential. See the [LICENSE](LICENSE) file included with this work for details.
+
+By contributing you agree that these contributions are your own (or approved by your employer) and you grant a full, complete, irrevocable copyright license to all users and developers of the project, present and future, pursuant to the license of the project.
