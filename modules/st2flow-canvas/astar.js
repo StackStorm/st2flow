@@ -1,3 +1,9 @@
+// Copyright 2019 Extreme Networks, Inc.
+//
+// Unauthorized copying of this file, via any medium is strictly
+// prohibited. Proprietary and confidential. See the LICENSE file
+// included with this work for details.
+
 // This code is derived from javascript-astar 0.4.1
 // http://github.com/bgrins/javascript-astar
 // Copyright (c) Brian Grinstead, http://briangrinstead.com, licensed MIT
