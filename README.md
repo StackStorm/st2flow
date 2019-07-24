@@ -1,6 +1,6 @@
 # st2flow - StackStorm Workflow Editor
 
-[![CircleCI](https://circleci.com/gh/StackStorm/st2flow.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/StackStorm/st2flow)
+[![CircleCI](https://circleci.com/gh/extremenetworks/st2flow.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/extremenetworks/st2flow)
 
 Visual editor for creating and updating StackStorm workflows. This editor is currently only available for enterprise licenses.
 
@@ -8,7 +8,7 @@ Visual editor for creating and updating StackStorm workflows. This editor is cur
 
 - Node v10
 - Lerna, Yarn, and Gulp
-    
+
     ```
     sudo npm install -g gulp-cli lerna yarn
     ```
@@ -26,15 +26,15 @@ This project uses Lerna and should be considered a "subset" of the [st2flow](htt
 Here is the basic flow of commands to get started:
 
 ```
-git clone git@github.com:StackStorm/st2flow.git
-# ...or https: https://github.com/StackStorm/st2flow.git
+git clone git@github.com:extremenetworks/st2flow.git
+# ...or https: https://github.com/extremenetworks/st2flow.git
 
 cd st2flow
 lerna bootstrap
 
 cd ../
-git clone git@github.com:StackStorm/st2flow.git
-# ...or https: https://github.com/StackStorm/st2flow.git
+git clone git@github.com:extremenetworks/st2flow.git
+# ...or https: https://github.com/extremenetworks/st2flow.git
 
 cd st2flow
 lerna bootstrap
