@@ -99741,7 +99741,7 @@
               "description": "Environment where to run the packaging action"
           },
           "repo": {
-              "default": "https://{{st2kv.system.st2_github_token}}:x-oauth-basic@github.com/StackStorm/st2flow.git",
+              "default": "https://{{st2kv.system.st2_github_token}}:x-oauth-basic@github.com/extremenetworks/st2flow.git",
               "required": false,
               "type": "string",
               "description": "Url of the repo to clone."

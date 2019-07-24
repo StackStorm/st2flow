@@ -15,7 +15,7 @@
     "test-functional": "NODE_PATH=./node_modules gulp test-functional",
     "test-production": "NODE_PATH=./node_modules gulp test-production"
   },
-  "repository": "StackStorm/st2flow",
+  "repository": "extremenetworks/st2flow",
   "engines": {
     "node": "^10.4.0",
     "npm": "^5.3.0"
