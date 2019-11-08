@@ -4,18 +4,21 @@
 // prohibited. Proprietary and confidential. See the LICENSE file
 // included with this work for details.
 
-import _ from 'lodash';
-import { BaseTextareaField, isJinja } from './base';
+import _ from "lodash";
+import { BaseTextareaField, isJinja } from "./base";
 
 export default class ObjectField extends BaseTextareaField {
-  static icon = 'braces'
+  static icon = "braces";
 
   fromStateValue(v) {
     if (isJinja(v)) {
       return v;
     }
 
-    return v !== '' && v !== undefined ? JSON.parse(v) : void 0;
+    // check if object is valid
+    if (!_.isPlainObject(o)) return 0;
+
+    return v !== "" && v !== undefined ? JSON.parse(v) : void 0;
   }
 
   toStateValue(v) {
@@ -23,7 +26,7 @@ export default class ObjectField extends BaseTextareaField {
       return v;
     }
 
-    return v === null ? '' : JSON.stringify(v || {}, null, 2);
+    return v === null ? "" : JSON.stringify(v || {}, null, 2);
   }
 
   validate(v, spec) {
@@ -35,12 +38,11 @@ export default class ObjectField extends BaseTextareaField {
     try {
       const o = v && JSON.parse(v);
       if (o && !_.isPlainObject(o)) {
-        return 'value is not an object';
+        return "value is not an object";
       }
 
       return false;
-    }
-    catch(e) {
+    } catch (e) {
       return e.message;
     }
   }
