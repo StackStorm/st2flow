@@ -8,11 +8,16 @@ import _ from 'lodash';
 import { BaseTextareaField, isJinja } from './base';
 
 export default class ObjectField extends BaseTextareaField {
-  static icon = 'braces'
+  static icon = 'braces';
 
   fromStateValue(v) {
     if (isJinja(v)) {
       return v;
+    }
+
+    // check if object is valid
+    if (!_.isPlainObject(v)) {
+      return 0;
     }
 
     return v !== '' && v !== undefined ? JSON.parse(v) : void 0;
@@ -40,7 +45,7 @@ export default class ObjectField extends BaseTextareaField {
 
       return false;
     }
-    catch(e) {
+    catch (e) {
       return e.message;
     }
   }
