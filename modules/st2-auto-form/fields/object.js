@@ -15,12 +15,16 @@ export default class ObjectField extends BaseTextareaField {
       return v;
     }
 
-    // check if object is valid
-    if (!_.isPlainObject(v)) {
-      return 0;
+    if (v !== '' && v !== undefined) {
+      try {
+        return JSON.parse(v);
+      } catch (error) {
+        console.error('Could not parse JSON - ', error);
+        return void 0;
+      }
     }
 
-    return v !== '' && v !== undefined ? JSON.parse(v) : void 0;
+    return void 0;
   }
 
   toStateValue(v) {
