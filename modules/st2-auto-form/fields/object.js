@@ -18,7 +18,8 @@ export default class ObjectField extends BaseTextareaField {
     if (v !== '' && v !== undefined) {
       try {
         return JSON.parse(v);
-      } catch (error) {
+      } 
+      catch (error) {
         console.error('Could not parse JSON - ', error);
         return void 0;
       }
