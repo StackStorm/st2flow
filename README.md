@@ -56,7 +56,7 @@ gulp lint
 
 ## Copyright, License, and Contributors Agreement
 
-Copyright 2015-2019 Extreme Networks, Inc.
+Copyright 2015-2020 Extreme Networks, Inc.
 
 Unauthorized copying of this file, via any medium is strictly prohibited. Proprietary and confidential. See the [LICENSE](LICENSE) file included with this work for details.
 
