@@ -1,3 +1,7 @@
+# Copyright (C) 2020 Extreme Networks, Inc - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly prohibited
+# Proprietary and confidential
+
 COMPONENT := $(notdir $(CURDIR))
 PKG_RELEASE ?= 1
 PKG_VERSION ?= $(shell node -e "console.log(require('./package.json').st2_version)")
