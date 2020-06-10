@@ -1,10 +1,10 @@
 Source: st2flow
 Section: unknown
 Priority: optional
-Maintainer: Extreme Networks <support@extremenetworks.com>
+Maintainer: StackStorm Authors
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.9.5
-Homepage: https://www.extremenetworks.com/product/workflow-composer/
+Homepage: https://github.com/StackStorm/st2flow
 
 Package: st2flow
 Architecture: any
