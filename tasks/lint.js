@@ -1,4 +1,4 @@
-// Copyright 2020 Extreme Networks, Inc.
+// Copyright 2019 Extreme Networks, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* jshint node: true */
 'use strict';
 
-require('./tasks');
+const gulp = require('gulp');
+const settings = require('./settings.json');
+const plugins = require('gulp-load-plugins')(settings.plugins);
+
+gulp.task('lint', () => gulp.src(settings.lint, { cwd: settings.dev })
+  .pipe(plugins.plumber())
+  .pipe(plugins.eslint())
+  .pipe(plugins.eslint.format())
+);

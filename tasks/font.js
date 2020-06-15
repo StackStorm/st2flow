@@ -1,4 +1,4 @@
-// Copyright 2020 Extreme Networks, Inc.
+// Copyright 2019 Extreme Networks, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* jshint node: true */
 'use strict';
 
-require('./tasks');
+const gulp = require('gulp');
+const fontelloUpdate = require('fontello-update');
+
+gulp.task('font', () => fontelloUpdate({
+  config: 'fontello.json',
+  fonts: 'font',
+  css: 'font',
+}));
