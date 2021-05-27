@@ -1,6 +1,8 @@
 # st2flow - StackStorm Workflow Editor
 
-[![CircleCI](https://circleci.com/gh/extremenetworks/st2flow.svg?style=shield&circle-token=ab4b62655342fb8d0f1abbb7c5ec3e92425a71b8)](https://circleci.com/gh/extremenetworks/st2flow)
+> **DEPRECATED!**<br> 
+> The Workflow Designer codebase was integrated directly into [st2web](https://github.com/StackStorm/st2web/) since st2 `v3.4.0` (see [announcement](https://stackstorm.com/2021/03/04/v3-4-0-released/)) and this repository is obsolete now.
+
 
 Visual editor for creating and updating StackStorm workflows. This editor is currently only available for enterprise licenses.
 
